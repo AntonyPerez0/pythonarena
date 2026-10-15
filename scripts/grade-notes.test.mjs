@@ -7,7 +7,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
+import fs from "node:fs";
 import { pythonPool, referencePython } from "./content/python.mjs";
+import { pyodidePool } from "./content/pyodide.mjs";
 
 let python = null;
 try {
@@ -17,14 +19,31 @@ try {
   console.warn(`grade-notes: skipped (${e.message})`);
 }
 const pool = python ? pythonPool({ exe: python.exe, size: 2, timeLimitMs: 5000 }) : null;
-test.after(() => pool?.close());
+// pygame programs run in Pyodide on Node, as the content build runs them (the reference CPython has no pygame).
+let windowPool = null;
+test.after(() => {
+  pool?.close();
+  windowPool?.close();
+});
+const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
+// The challenge's images, as the page fetches them from images/.
+globalThis.fetch = async (url) => {
+  const name = /images\/([\w.-]+)$/.exec(String(url))?.[1];
+  if (!name) return new Response("", { status: 404 });
+  return new Response(fs.readFileSync(new URL(`../content/assets/${name}`, import.meta.url)));
+};
 
 /** The engine's client, standing in for the browser's: each input runs in the reference CPython. */
 globalThis.__gradeNotesRun = async (files, inputs) =>
   Promise.all(
     inputs.map(async (c) => {
-      const r = await pool.run({ files: Object.fromEntries(files.map((f) => [f.path, f.text])), main: "main.py", stdin: c.stdin ?? "", given: c.files ?? {}, args: c.args ?? [], ...(c.call != null ? { call: c.call } : {}) });
-      return { stdout: r.stdout, stderr: r.stderr, output: r.output, exitCode: r.exit, timedOut: r.timedOut, truncated: r.truncated, ms: 1, files: r.files, callStart: r.callStart, callError: r.callError, loadInput: r.loadInput, callValue: r.callValue };
+      const given = Object.fromEntries(Object.entries(c.files ?? {}).map(([n, v]) => [n, typeof v === "string" ? v : { base64: Buffer.from(v).toString("base64") }]));
+      const spec = { files: Object.fromEntries(files.map((f) => [f.path, f.text])), main: "main.py", stdin: c.stdin ?? "", given, args: c.args ?? [], ...(c.call != null ? { call: c.call } : {}), ...(c.window ? { window: c.window } : {}) };
+      const pygame = c.window || files.some((f) => PYGAME.test(f.text));
+      const r = pygame ? await (windowPool ??= pyodidePool({ size: 1 })).run(spec) : await pool.run(spec);
+      const last = r.frames?.at(-1);
+      const window = r.window ? { ...r.window, png: last?.png ? new Uint8Array(Buffer.from(last.png, "base64")) : null } : null;
+      return { stdout: r.stdout, stderr: r.stderr, output: r.output, exitCode: r.exit, timedOut: r.timedOut, truncated: r.truncated, ms: 1, files: r.files, callStart: r.callStart, callError: r.callError, loadInput: r.loadInput, callValue: r.callValue, window };
     }),
   );
 const engine = {
@@ -42,7 +61,7 @@ const engine = {
 };
 // grade.ts is TypeScript that imports other modules: bundle it into one module to import it here.
 const load = async (entry, plugins = []) => {
-  const out = await build({ entryPoints: [new URL(entry, import.meta.url).pathname], bundle: true, format: "esm", platform: "node", write: false, logLevel: "silent", plugins });
+  const out = await build({ entryPoints: [new URL(entry, import.meta.url).pathname], bundle: true, format: "esm", platform: "node", write: false, logLevel: "silent", plugins, define: { "import.meta.env.BASE_URL": '"/"' } });
   return import(`data:text/javascript;base64,${Buffer.from(out.outputFiles[0].text).toString("base64")}`);
 };
 const { crashOf, describeRun, grade, selfCallingFunction } = await load("../src/grader/grade.ts", [engine]);
@@ -222,6 +241,56 @@ it("a file the test wants written is compared with what the program wrote", asyn
   assert.deepEqual(r.tests[0].writes?.map((w) => [w.name, w.got, w.pass]), [["out.txt", "one", false]]);
   const ok = await grade(want, 'with open("out.txt", "w") as f:\n    f.write("one\\ntwo\\n")\n');
   assert.equal(ok.status, "pass");
+});
+
+// ------------------------------------------------------------------ pygame windows
+
+const WINDOW_PROGRAM = (draw) => `import pygame
+
+pygame.init()
+window = pygame.display.set_mode((200, 120))
+robot = pygame.image.load("robot.png")
+x = 0
+right = False
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+            right = True
+        if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
+            right = False
+        if event.type == pygame.QUIT:
+            exit()
+${draw}
+    pygame.display.flip()
+`;
+const MOVING = "    if right:\n        x += 2\n    window.fill((0, 0, 0))\n    window.blit(robot, (x, 40))";
+/** A window challenge as the content build makes it: the model's window after the test's frames and events. */
+const windowTest = { name: "Window", stdin: "", expect: "", window: { frames: 12, events: [{ at: 2, type: "keydown", key: "K_RIGHT" }, { at: 7, type: "keyup", key: "K_RIGHT" }] }, expectWindow: { frames: 12, log: "fill (0, 0, 0)\nblit robot.png at (10, 40)", size: [200, 120], title: "pygame window", image: "lessons/windows/x.png" } };
+const windowChallenge = { id: "w", prompt: "", seed: "", tests: [windowTest], assets: ["robot.png"] };
+
+it("a window test passes when the last frame's drawing and the number of frames are the model's", async () => {
+  const r = await grade(windowChallenge, WINDOW_PROGRAM(MOVING));
+  assert.equal(r.status, "pass", JSON.stringify(r.tests[0]));
+  assert.equal(r.tests[0].window.pass, true);
+  assert.equal(r.tests[0].window.got.frames, 12);
+  assert.ok(r.tests[0].window.got.png?.length > 100, "the learner's last frame has a picture for the results");
+});
+
+it("a window that moves too far fails with the window's note, the output comparison is not shown as the problem", async () => {
+  const r = await grade(windowChallenge, WINDOW_PROGRAM(MOVING.replace("x += 2", "x += 3")));
+  assert.equal(r.status, "fail");
+  const t = r.tests[0];
+  assert.equal(t.window.pass, false);
+  assert.equal(t.window.got.log, "fill (0, 0, 0)\nblit robot.png at (15, 40)");
+  has(t.note, "The window's last frame isn't what it should be");
+  assert.deepEqual(t.windowEvents, windowTest.window.events);
+});
+
+it("a program that draws once and ends, or shows no window, gets a note that says so", async () => {
+  const once = await grade(windowChallenge, 'import pygame\nwindow = pygame.display.set_mode((200, 120))\nwindow.fill((0, 0, 0))\nwindow.blit(pygame.image.load("robot.png"), (10, 40))\npygame.display.flip()\n');
+  has(once.tests[0].note, "Your window showed 1 frame and then the program ended", "until the window is closed (12 in this test)");
+  const none = await grade(windowChallenge, "import pygame\nprint('no window')\n");
+  has(none.tests[0].note, "Your program shows no window");
 });
 
 // ------------------------------------------------------------------ the helpers on their own

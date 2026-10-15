@@ -651,7 +651,8 @@ def _install(win):
 
         def tick(self, framerate=0):
             if framerate and framerate > 0:
-                win.now = max(win.now, self._last + 1000 / framerate)
+                # Rounded, so that twelve 60ths of a second make 200 ms, not 199.99999.
+                win.now = round(max(win.now, self._last + 1000 / framerate), 6)
             elapsed = win.now - self._last
             self._last = win.now
             self._time = int(elapsed)

@@ -40,7 +40,7 @@ const path = require("node:path");
         if (f.again) {
           const last = frames.find((x) => x.index === f.index);
           if (last) last.png = png;
-        } else frames.push({ index: f.index, log: f.log, png, title: f.title });
+        } else frames.push({ index: f.index, log: f.log, png, title: f.title, ms: f.ms });
         return;
       }
       parts[stream] += text;
