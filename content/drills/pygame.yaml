@@ -1,0 +1,195 @@
+topic: pygame
+drills:
+  - type: choice
+    after: first-window
+    prompt: What does `pygame.display.flip()` do?
+    choices:
+      - It shows what has been drawn in the window, as one new frame
+      - It turns the window upside down
+      - It clears the window to black
+    answer: 1
+    why: "Drawing happens out of sight. `flip` shows the finished picture all at once, and each picture shown is a frame."
+
+  - type: choice
+    after: first-window
+    prompt: Why does the main loop check every event for `pygame.QUIT`?
+    choices:
+      - So that pygame can load its images
+      - So that clicking the window's close button ends the program
+      - So that the window gets its size
+    answer: 2
+    why: "Closing the window is an event of the type `pygame.QUIT`. A program that handles it with `exit()` ends when the player closes the window; without it the close button does nothing."
+
+  - type: choice
+    after: first-window
+    prompt: What does `pygame.event.get()` give the main loop?
+    choices:
+      - The key the player pressed last
+      - A list of the events that have happened since it was last called
+      - "`True` if the window is still open"
+    answer: 2
+    why: "Each round of the main loop asks for the events so far: key presses, mouse clicks, closing the window. The list can also be empty."
+
+  - type: predict
+    after: first-window
+    code: |
+      import pygame
+
+      color = pygame.Color("white")
+      print(color.r, color.g, color.b)
+    why: "White light has all three colors at full strength, so its RGB numbers are 255, 255 and 255."
+
+  - type: fill
+    after: first-window
+    code: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode([[(320, 240)‖(320,240)]])
+      print(window.get_width(), window.get_height())
+    why: "The size is one tuple, so it has parentheses of its own inside the call: `set_mode((320, 240))`."
+
+  - type: runs
+    after: first-window
+    code: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode(320, 240)
+    why: "`set_mode` takes the size as one tuple. Given two separate numbers, it stops with `TypeError: size must be two numbers`. Write `set_mode((320, 240))`."
+
+  - type: runs
+    after: first-window
+    code: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      window.fill(0, 0, 0)
+    why: "`fill` takes the color as one tuple, `fill((0, 0, 0))`. Given three numbers, it reads the second one as the rectangle to fill, and stops with `ValueError: invalid rectstyle object`."
+
+  - type: choice
+    after: images
+    prompt: In a pygame window, where is the point (0, 0)?
+    choices:
+      - In the center of the window
+      - In the bottom-left corner
+      - In the top-left corner
+    answer: 3
+    why: "x grows to the right from the left edge and y grows downward from the top edge, so (0, 0) is the top-left corner."
+
+  - type: choice
+    after: images
+    prompt: The robot is drawn at (100, 50) in one frame and at (100, 80) in the next. Where did it move?
+    choices:
+      - Down
+      - Up
+      - To the right
+    answer: 1
+    why: "In pygame y grows downward, so a bigger y is lower in the window."
+
+  - type: predict
+    after: images
+    code: |
+      window_width = 320
+      window_height = 240
+      robot_size = 40
+      print(window_width - robot_size, window_height - robot_size)
+    why: "`blit` puts the image's top-left corner at the point it's given. For a 40 x 40 robot to touch the bottom-right corner, that corner goes to (320 - 40, 240 - 40)."
+
+  - type: choice
+    after: images
+    prompt: "A frame draws `window.blit(robot, (100, 50))`, then `window.fill((0, 0, 0))`, then calls `pygame.display.flip()`. What does the window show?"
+    choices:
+      - The robot on a black background
+      - Only black
+      - Only the robot, with no background
+    answer: 2
+    why: "What's drawn later covers what's already there. The fill paints the whole window over the robot, so the fill has to come first."
+
+  - type: choice
+    after: images
+    prompt: "Where should `robot = pygame.image.load(\"robot.png\")` go?"
+    choices:
+      - Before the main loop, so the file is read once
+      - Inside the main loop, so the image is fresh on every frame
+      - After the main loop
+    answer: 1
+    why: "Reading a file takes time, and the image doesn't change. Load it once before the main loop and draw it in every frame. Code after `while True:` never runs."
+
+  - type: predict
+    after: many-images
+    code: |
+      print((400 - 40) / 2)
+      print((400 - 40) // 2)
+    why: "`/` always gives a float. `//` gives the whole number, which is the position pygame really uses (it drops the fraction)."
+
+  - type: bug
+    after: many-images
+    code: |
+      window_width = 320
+      image_width = 40
+      x = window_width // 2 - image_width  # BUG
+      print(x)
+    fix: x = (window_width - image_width) // 2
+    why: "To center the image, its top-left corner goes half of the image's width left of the center. Subtracting the whole width puts it too far to the left; the space left over, divided in two, is right."
+
+  - type: predict
+    after: many-images
+    code: |
+      places = []
+      for i in range(3):
+          places.append((8 + i * 40, 20))
+      print(places)
+    why: "Each round adds 40 to x: 8, 48 and 88. y stays 20, so the images are in a row."
+
+  - type: predict
+    after: many-images
+    code: |
+      count = 0
+      for row in range(6):
+          for column in range(8):
+              count += 1
+              last = (column * 40, row * 40)
+      print(count, last)
+    why: "The inner loop runs 8 times for each of the 6 rows, 48 tiles in all. The last tile is in column 7 and row 5, at (280, 200)."
+
+  - type: boss
+    after: many-images
+    prompt: |
+      Write a function `centered(window_size, image_size)`. Both parameters are tuples (width, height). The function returns a tuple: the point where the image's top-left corner goes so that the image is in the center of the window, in whole numbers. For example,
+
+      ```python fragment
+      print(centered((320, 240), (40, 40)))
+      ```
+
+      should print:
+
+      ```
+      (140, 100)
+      ```
+    seed: |
+      def centered(window_size, image_size):
+          pass
+
+
+      if __name__ == "__main__":
+          print(centered((320, 240), (40, 40)))
+    solution: |
+      def centered(window_size, image_size):
+          window_width, window_height = window_size
+          image_width, image_height = image_size
+          return ((window_width - image_width) // 2, (window_height - image_height) // 2)
+
+
+      if __name__ == "__main__":
+          print(centered((320, 240), (40, 40)))
+    hints:
+      - The space left over next to the image is the window's width minus the image's width. Half of it goes on each side, and the same for the height.
+      - "Take the tuples apart first: `window_width, window_height = window_size`. Use `//` for whole numbers."
+    tests:
+      - call: print(centered((320, 240), (40, 40)))
+      - call: centered((400, 300), (24, 24))
+        hidden: true
+      - call: centered((640, 480), (100, 50))
+        hidden: true

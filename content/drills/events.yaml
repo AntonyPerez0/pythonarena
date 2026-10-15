@@ -1,0 +1,209 @@
+topic: events
+drills:
+  - type: choice
+    after: key-presses
+    prompt: Which event comes when the player lets go of a key?
+    choices:
+      - "`pygame.KEYDOWN`"
+      - "`pygame.KEYUP`"
+      - "`pygame.QUIT`"
+    answer: 2
+    why: "A key press is two events: `KEYDOWN` when the key goes down and `KEYUP` when it's let go."
+
+  - type: choice
+    after: key-presses
+    prompt: Which attribute of a key event tells which key it was?
+    choices:
+      - "`event.type`"
+      - "`event.key`"
+      - "`event.pos`"
+    answer: 2
+    why: "`event.type` says what kind of event it is, such as `pygame.KEYDOWN`. For key events, `event.key` is the key, which you compare with names such as `pygame.K_LEFT`."
+
+  - type: predict
+    after: key-presses
+    code: |
+      import pygame
+
+      x = 140
+      for key in [pygame.K_RIGHT, pygame.K_RIGHT, pygame.K_UP, pygame.K_LEFT]:
+          if key == pygame.K_LEFT:
+              x -= 10
+          if key == pygame.K_RIGHT:
+              x += 10
+      print(x)
+    why: "Two steps right and one left: 140 + 20 - 10. The up arrow changes nothing here, since neither `if` is about it."
+
+  - type: predict
+    after: key-presses
+    code: |
+      import pygame
+
+      print(pygame.K_a == pygame.K_a, pygame.K_LEFT == pygame.K_RIGHT)
+    why: "The key names are numbers, one for each key, so the same key's name is equal to itself and two different keys' names are not equal."
+
+  - type: choice
+    after: key-presses
+    prompt: "A program moves the robot 10 pixels on each `KEYDOWN` of the right arrow. The player holds the arrow down for two seconds. How far does the robot move?"
+    choices:
+      - 10 pixels
+      - 1200 pixels, 10 on every frame
+      - It keeps moving until the window is closed
+    answer: 1
+    why: "`KEYDOWN` comes once, when the key goes down, however long it's held. Moving while it's held needs a variable that remembers the key is down."
+
+  - type: predict
+    after: holding-keys
+    code: |
+      held = False
+      x = 0
+      events = {2: "down", 5: "up"}
+      for frame in range(1, 8):
+          if events.get(frame) == "down":
+              held = True
+          if events.get(frame) == "up":
+              held = False
+          if held:
+              x += 3
+      print(x)
+    why: "The key goes down in frame 2 and up in frame 5, so it's held in frames 2, 3 and 4: three moves of 3 pixels."
+
+  - type: predict
+    after: holding-keys
+    code: |
+      x = 290
+      x += 3
+      if x < 0:
+          x = 0
+      if x > 320 - 40:
+          x = 320 - 40
+      print(x)
+    why: "x became 293, past the last place where a 40-pixel robot fits in a 320-pixel window, so it's put back at 280."
+
+  - type: predict
+    after: holding-keys
+    code: |
+      for x in [-6, 150, 300]:
+          print(max(0, min(x, 280)))
+    why: "`min(x, 280)` keeps x from going over 280, and `max(0, ...)` from going under 0. Values in between stay as they are."
+
+  - type: fill
+    after: holding-keys
+    code: |
+      y = 230
+      if y > 240 - [[40]]:
+          y = 240 - 40
+      print(y)
+    why: "A robot 40 pixels high fits in a 240-pixel window as long as its y is at most 240 - 40 = 200."
+
+  - type: choice
+    after: holding-keys
+    prompt: "What does `pygame.key.get_pressed()` tell the program?"
+    choices:
+      - Which keys are held down right now
+      - Which keys were pressed since the last frame
+      - The last key the player pressed
+    answer: 1
+    why: "Index it with a key's name: `keys[pygame.K_LEFT]` is `True` while the left arrow is down."
+
+  - type: runs
+    after: holding-keys
+    code: |
+      import pygame
+
+      keys = pygame.key.get_pressed()
+      print(keys[pygame.K_LEFT])
+    why: "The program never called `pygame.init()`, so pygame's keyboard isn't started: `pygame.error: video system not initialized`."
+
+  - type: predict
+    after: mouse
+    code: |
+      pos = (200, 60)
+      x = pos[0] - 40 // 2
+      y = pos[1] - 40 // 2
+      print(x, y)
+    why: "`pos[0]` is the x and `pos[1]` the y. `//` comes before `-`, so each one is minus 20, half of the robot's size."
+
+  - type: predict
+    after: mouse
+    code: |
+      x, y = 100, 50
+      for click in [(100, 50), (140, 60), (139, 89)]:
+          mouse_x, mouse_y = click
+          print(x <= mouse_x < x + 40 and y <= mouse_y < y + 40)
+    why: "A 40 x 40 image at (100, 50) covers x from 100 to 139 and y from 50 to 89. (140, 60) is just past its right edge."
+
+  - type: bug
+    after: mouse
+    code: |
+      x = 100
+      mouse_x = 140
+      if x <= mouse_x <= x + 40:  # BUG
+          print("hit")
+      else:
+          print("miss")
+    fix: "if x <= mouse_x < x + 40:"
+    why: "An image 40 pixels wide at x = 100 covers the pixels 100 to 139. With `<=` the pixel 140, just outside, counts as a hit."
+
+  - type: choice
+    after: mouse
+    prompt: "A `pygame.MOUSEBUTTONDOWN` event has `event.button == 3`. Which button was it?"
+    choices:
+      - The left button
+      - The middle button
+      - The right button
+    answer: 3
+    why: "1 is the left button, 2 the middle one and 3 the right one."
+
+  - type: choice
+    after: mouse
+    prompt: Which event does a program handle to follow the mouse pointer?
+    choices:
+      - "`pygame.MOUSEMOTION`, whose `pos` is where the pointer is now"
+      - "`pygame.MOUSEBUTTONUP`, whose `pos` is where the pointer is now"
+      - "`pygame.KEYDOWN`, whose `key` is the pointer"
+    answer: 1
+    why: "`MOUSEMOTION` comes whenever the mouse moves over the window. The button events come only with clicks."
+
+  - type: boss
+    after: mouse
+    prompt: |
+      Write a function `count_hits(corner, size, clicks)`. `corner` is the top-left corner (x, y) of a square image, `size` its width and height, and `clicks` a list of points (x, y). The function returns how many of the points are inside the image, as the lesson checks a click. For example,
+
+      ```python fragment
+      print(count_hits((100, 50), 40, [(100, 50), (140, 60), (120, 89)]))
+      ```
+
+      should print:
+
+      ```
+      2
+      ```
+    seed: |
+      def count_hits(corner, size, clicks):
+          pass
+
+
+      if __name__ == "__main__":
+          print(count_hits((100, 50), 40, [(100, 50), (140, 60), (120, 89)]))
+    solution: |
+      def count_hits(corner, size, clicks):
+          x, y = corner
+          hits = 0
+          for mouse_x, mouse_y in clicks:
+              if x <= mouse_x < x + size and y <= mouse_y < y + size:
+                  hits += 1
+          return hits
+
+
+      if __name__ == "__main__":
+          print(count_hits((100, 50), 40, [(100, 50), (140, 60), (120, 89)]))
+    hints:
+      - "Take the corner apart, `x, y = corner`, and go through the clicks with a loop."
+      - "A click is inside when `x <= mouse_x < x + size` and the same for y. Count those."
+    tests:
+      - call: print(count_hits((100, 50), 40, [(100, 50), (140, 60), (120, 89)]))
+      - call: count_hits((0, 0), 24, [(23, 23), (24, 0), (0, 24), (12, 12)])
+        hidden: true
+      - call: count_hits((200, 100), 40, [])
+        hidden: true

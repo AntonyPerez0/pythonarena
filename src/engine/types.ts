@@ -38,7 +38,7 @@ export type WindowSpec = { frames?: number; events?: WindowEvent[]; png?: "all" 
  * before), its text (the drawing that made it), and `ms`, the program's clock when it was shown (a
  * game that ticks at 60 frames a second shows a frame every 16 or 17 ms), for playing frames back.
  */
-export type WindowFrame = { index: number; log: string; png: Uint8Array | null; title: string; ms: number };
+export type WindowFrame = { index: number; log: string; png: Uint8Array | null; title: string; ms: number; same?: boolean };
 
 /**
  * How a pygame program's window ended: the frames it showed (of `budget`), its size and title, how

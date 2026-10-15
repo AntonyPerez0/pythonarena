@@ -196,3 +196,78 @@ test("random is seeded the same way on every run of a window; sound is silent", 
   assert.equal(a.stderr, "");
   assert.equal(a.stdout, b.stdout);
 });
+
+test("a program that draws once and then only waits for events: the window keeps its picture until it's closed, as many frames as one that draws every frame", async () => {
+  const code = `import pygame
+pygame.init()
+window = pygame.display.set_mode((100, 80))
+window.fill((0, 0, 0))
+pygame.draw.circle(window, (255, 0, 0), (50, 40), 10)
+pygame.display.flip()
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exit()
+`;
+  const r = await run(code, { frames: 30, png: "last" });
+  assert.equal(r.exit, 0);
+  assert.equal(r.window.frames, 30);
+  assert.equal(r.window.ended, "closed");
+  assert.equal(r.window.log, "fill (0, 0, 0)\ncircle (255, 0, 0) at (50, 40) radius 10");
+  assert.equal(r.frames.filter((f) => f.same).length, 29, "frames 2 to 30 hold the first one's picture");
+  assert.ok(r.frames.at(-1).png, "the last frame (a held one) gets the picture");
+  // The same picture drawn every frame: the same window, frame for frame.
+  const every = await run(code.replace("pygame.display.flip()\nwhile True:", "while True:\n    pygame.display.flip()"), { frames: 30 });
+  assert.equal(every.window.frames, 30);
+  assert.equal(every.window.log, r.window.log);
+});
+
+test("a program that draws only when something happens gets its events at their frames, with held frames between", async () => {
+  const code = `import pygame
+pygame.init()
+window = pygame.display.set_mode((100, 80))
+clicks = []
+window.fill((0, 0, 0))
+pygame.display.flip()
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            clicks.append(event.pos)
+            window.fill((0, 0, 0))
+            for x, y in clicks:
+                pygame.draw.rect(window, (0, 255, 0), (x, y, 4, 4))
+            pygame.display.flip()
+        if event.type == pygame.QUIT:
+            print(len(clicks), "clicks")
+            exit()
+`;
+  const r = await run(code, { frames: 20, events: [{ at: 5, type: "mousedown", pos: [10, 10] }, { at: 12, type: "mousedown", pos: [30, 40] }] });
+  assert.equal(r.stdout, "2 clicks\n");
+  assert.equal(r.window.frames, 20);
+  // Frame 1 drawn at the start, frames 2 to 5 held; the first click draws frame 6.
+  assert.deepEqual(r.frames.filter((f) => !f.same).map((f) => f.index), [1, 6, 13]);
+  assert.equal(r.window.log, "fill (0, 0, 0)\nrect (0, 255, 0) (10, 10, 4, 4)\nrect (0, 255, 0) (30, 40, 4, 4)");
+});
+
+test("event.wait(): the window waits for the next event (frames go by), and is closed when no more come", async () => {
+  const code = `import pygame
+pygame.init()
+window = pygame.display.set_mode((100, 80))
+window.fill((0, 0, 0))
+pygame.display.flip()
+while True:
+    event = pygame.event.wait()
+    if event.type == pygame.KEYDOWN:
+        print("key", pygame.key.name(event.key))
+        window.fill((255, 255, 255))
+        pygame.display.flip()
+    if event.type == pygame.QUIT:
+        print("closed")
+        break
+`;
+  const r = await run(code, { frames: 10, events: [{ at: 4, type: "keydown", key: "K_a" }] });
+  assert.equal(r.stdout, "key a\nclosed\n");
+  assert.equal(r.window.frames, 10);
+  assert.deepEqual(r.frames.filter((f) => !f.same).map((f) => f.index), [1, 5]);
+  assert.equal(r.window.log, "fill (255, 255, 255)");
+});

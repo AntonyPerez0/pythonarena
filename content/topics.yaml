@@ -2190,3 +2190,257 @@
   steps:
   - regex-checking-input
   drills: regex
+- term: pygame
+  kind: module
+  about: A library for writing games and other programs with graphics, installed with `pip install pygame-ce` and taken into use with `import pygame`.
+  aliases:
+  - pygame-ce
+  - games
+  - graphics
+  steps:
+  - pygame-first-window
+  drills: pygame
+- term: pygame.display.set_mode
+  kind: function
+  about: Opens a window of the given size, as in `set_mode((320, 240))`, and returns it as a surface to draw on.
+  aliases:
+  - set_mode
+  - window
+  steps:
+  - pygame-first-window
+  drills: pygame
+- term: pygame.display.flip
+  kind: function
+  about: Shows everything drawn in the window so far as one new frame.
+  aliases:
+  - flip
+  - display.update
+  steps:
+  - pygame-first-window
+  drills: pygame
+- term: pygame.event.get
+  kind: function
+  about: Returns a list of the events that have happened since it was last called, such as key presses, mouse clicks and closing the window.
+  steps:
+  - pygame-first-window
+  - events-keys
+  drills: events
+- term: event
+  kind: idea
+  about: Something that happens to a pygame program, such as a key press or a click, with a type like `pygame.KEYDOWN` and attributes like `key` or `pos`.
+  aliases:
+  - pygame.QUIT
+  - pygame.KEYDOWN
+  - pygame.KEYUP
+  - pygame.MOUSEBUTTONDOWN
+  - pygame.MOUSEMOTION
+  - event.key
+  - event.pos
+  steps:
+  - pygame-first-window
+  - events-keys
+  - events-mouse
+  drills: events
+- term: main loop
+  kind: idea
+  about: The `while True` loop of a game, which in every round handles the events, updates the game's state, draws the picture and shows it as a frame.
+  aliases:
+  - game loop
+  steps:
+  - pygame-first-window
+  - pygame-techniques-game
+  drills: pygame
+- term: frame
+  kind: idea
+  about: One picture that a pygame window shows when the program calls `pygame.display.flip()`; an animation is many frames that each differ a little.
+  aliases:
+  - frames per second
+  - FPS
+  steps:
+  - pygame-first-window
+  - animation-moving
+  drills: animation
+- term: RGB
+  kind: idea
+  about: A way to give a color as three numbers from 0 to 255 for its red, green and blue light, such as `(255, 255, 0)` for yellow.
+  aliases:
+  - color
+  - colour
+  - pygame.Color
+  steps:
+  - pygame-first-window
+  drills: pygame
+- term: Surface.fill
+  kind: method
+  about: Paints a whole surface, such as the window, with one color, as in `window.fill((0, 0, 0))`.
+  aliases:
+  - fill
+  check:
+  - window.fill((0, 0, 120))
+  - window.fill((255, 140, 0))
+  steps:
+  - pygame-first-window
+  drills: pygame
+- term: pygame.image.load
+  kind: function
+  about: Reads an image file, such as a PNG, and returns it as a surface that can be drawn with `blit`.
+  aliases:
+  - image
+  - load image
+  steps:
+  - pygame-images
+  drills: pygame
+- term: Surface.blit
+  kind: method
+  about: Draws an image on another surface with its top-left corner at the given point, as in `window.blit(robot, (100, 50))`.
+  aliases:
+  - blit
+  - draw an image
+  check:
+  - window.blit(robot, (100, 50))
+  steps:
+  - pygame-images
+  drills: pygame
+- term: coordinates
+  kind: idea
+  about: In pygame, (0, 0) is the top-left corner of the window, x grows to the right and y grows downward.
+  aliases:
+  - x and y
+  - position
+  - top-left corner
+  steps:
+  - pygame-images
+  drills: pygame
+- term: Surface.get_width
+  kind: method
+  about: Gives the width of a surface, such as an image or the window, in pixels; `get_height` gives its height.
+  aliases:
+  - get_width
+  - get_height
+  - Surface.get_height
+  check:
+  - window.get_width() - robot.get_width()
+  steps:
+  - pygame-many-images
+  drills: pygame
+- term: pygame.time.Clock
+  kind: type
+  about: A clock whose `tick(60)`, called once in every round of the main loop, keeps the loop from going round more than 60 times a second.
+  aliases:
+  - clock
+  - tick
+  - Clock.tick
+  steps:
+  - animation-moving
+  drills: animation
+- term: animation
+  kind: idea
+  about: Movement made of frames that each draw things a little differently, such as an image whose position changes by a few pixels per frame.
+  aliases:
+  - velocity
+  - bouncing
+  steps:
+  - animation-moving
+  drills: animation
+- term: math.sin
+  kind: function
+  about: Gives the sine of an angle in radians; with `math.cos`, it gives the point at that angle on a circle.
+  aliases:
+  - math.cos
+  - sine
+  - cosine
+  - radians
+  - math.pi
+  steps:
+  - animation-circles
+  drills: animation
+- term: pygame.transform.rotate
+  kind: function
+  about: Returns a new image, the given one turned counterclockwise by a number of degrees, made bigger so that its corners fit.
+  aliases:
+  - rotate
+  - turn an image
+  steps:
+  - animation-circles
+  drills: animation
+- term: pygame.key.get_pressed
+  kind: function
+  about: 'Tells which keys are held down right now: `keys[pygame.K_LEFT]` is `True` while the left arrow is down.'
+  aliases:
+  - get_pressed
+  - held keys
+  steps:
+  - events-holding
+  drills: events
+- term: pygame.display.set_caption
+  kind: function
+  about: Sets the title in the window's title bar.
+  aliases:
+  - set_caption
+  - window title
+  steps:
+  - pygame-techniques-shapes
+  drills: pygame-techniques
+- term: pygame.draw
+  kind: module
+  about: Draws shapes on a surface with functions such as `rect`, `circle`, `line` and `polygon`, which take the surface and the color first.
+  aliases:
+  - pygame.draw.rect
+  - pygame.draw.circle
+  - pygame.draw.line
+  - pygame.draw.polygon
+  - shapes
+  steps:
+  - pygame-techniques-shapes
+  drills: pygame-techniques
+- term: pygame.font.SysFont
+  kind: function
+  about: Makes a font of a named typeface and size, whose `render` method makes an image of a text to draw with `blit`.
+  aliases:
+  - font
+  - render
+  - Font.render
+  - text
+  steps:
+  - pygame-techniques-text
+  drills: pygame-techniques
+- term: pygame.time.get_ticks
+  kind: function
+  about: Gives the number of milliseconds since the program called `pygame.init()`.
+  aliases:
+  - get_ticks
+  - milliseconds
+  steps:
+  - pygame-techniques-text
+  drills: pygame-techniques
+- term: pygame.Rect
+  kind: type
+  about: A rectangle with a position and a size, with attributes such as `right` and `center` that follow when it moves.
+  aliases:
+  - Rect
+  - rectangle
+  - get_rect
+  steps:
+  - pygame-techniques-game
+  drills: pygame-techniques
+- term: Rect.colliderect
+  kind: method
+  about: Tells whether two rectangles overlap, as in `robot.colliderect(coin)`; rectangles that only touch side by side don't.
+  aliases:
+  - colliderect
+  - collision
+  check:
+  - .colliderect(
+  steps:
+  - pygame-techniques-game
+  drills: pygame-techniques
+- term: Rect.collidepoint
+  kind: method
+  about: Tells whether a point, such as the `pos` of a mouse click, is inside the rectangle.
+  aliases:
+  - collidepoint
+  check:
+  - .collidepoint(
+  steps:
+  - pygame-techniques-game
+  drills: pygame-techniques

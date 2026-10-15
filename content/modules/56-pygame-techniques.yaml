@@ -1,0 +1,756 @@
+id: pygame-techniques
+summary: The finishing touches and a first game. The window's title, drawing rectangles, circles, lines and polygons, text in the window, the time since the program started, rectangles that tell when two things touch, and a small game with a score and an end.
+steps:
+  - id: pygame-techniques-shapes
+    slug: title-and-shapes
+    title: The title and shapes
+    text: |
+      A window's title bar says "pygame window" until the program gives it a name of its own with `pygame.display.set_caption`. Call it once, after opening the window:
+
+      ```python fragment
+      pygame.display.set_caption("Coin Rain")
+      ```
+
+      The page shows the title in the window's title bar. (The checks compare the drawing, not the title.)
+
+      ### Drawing shapes
+
+      Not everything has to be an image. The module `pygame.draw` draws shapes straight into the window. Each function takes the surface to draw on first and the color second:
+
+      - `pygame.draw.rect(window, color, (x, y, width, height))` draws a rectangle with its top-left corner at (x, y).
+      - `pygame.draw.circle(window, color, (x, y), radius)` draws a circle with its **center** at (x, y). Note the difference: an image's position is its top-left corner, but a circle's is its center.
+      - `pygame.draw.polygon(window, color, points)` draws a shape with corners at the points of the list, such as a triangle.
+      - `pygame.draw.line(window, color, start, end, width)` draws a line from one point to another, `width` pixels thick.
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      pygame.display.set_caption("A house")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((120, 180, 255))
+          pygame.draw.rect(window, (60, 160, 60), (0, 180, 320, 60))
+          pygame.draw.rect(window, (200, 120, 80), (100, 110, 100, 80))
+          pygame.draw.polygon(window, (150, 40, 40), [(90, 110), (150, 60), (210, 110)])
+          pygame.draw.rect(window, (90, 60, 30), (140, 150, 24, 40))
+          pygame.draw.circle(window, (255, 220, 0), (270, 50), 25)
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      The shapes are part of the window as text, one line for each, in the order they were drawn:
+
+      ```text
+      fill (120, 180, 255)
+      rect (60, 160, 60) (0, 180, 320, 60)
+      rect (200, 120, 80) (100, 110, 100, 80)
+      polygon (150, 40, 40) through (90, 110), (150, 60), (210, 110)
+      rect (90, 60, 30) (140, 150, 24, 40)
+      circle (255, 220, 0) at (270, 50) radius 25
+      ```
+
+      The order matters here as it does with images: the ground is drawn before the house, and the door after the house, so that it's in front of the wall.
+
+      ### Outlines and lines
+
+      A rectangle or a circle is filled by default. With one more number, the line width, you get only its outline. Here a game board of tic-tac-toe is drawn with lines and outlines:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      pygame.display.set_caption("Tic-tac-toe")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((255, 255, 255))
+          pygame.draw.line(window, (0, 0, 0), (130, 30), (130, 210), 4)
+          pygame.draw.line(window, (0, 0, 0), (190, 30), (190, 210), 4)
+          pygame.draw.line(window, (0, 0, 0), (70, 90), (250, 90), 4)
+          pygame.draw.line(window, (0, 0, 0), (70, 150), (250, 150), 4)
+          pygame.draw.circle(window, (0, 0, 220), (160, 120), 22, 5)
+          pygame.draw.line(window, (220, 0, 0), (82, 42), (118, 78), 5)
+          pygame.draw.line(window, (220, 0, 0), (118, 42), (82, 78), 5)
+          pygame.draw.rect(window, (0, 0, 0), (60, 20, 200, 200), 2)
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      Shapes move just like images: take their positions from variables and change the variables between frames. A ball can just as well be a `pygame.draw.circle` whose center moves.
+
+      **Your turn:** fill in the blanks, so the program gives the window the title `Night`, draws a moon (a circle) and the dark ground (a rectangle).
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      pygame.display.[[set_caption]]("Night")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((10, 10, 50))
+          pygame.draw.[[circle]](window, (240, 240, 200), (250, 60), 30)
+          pygame.draw.[[rect]](window, (40, 40, 40), (0, 200, 320, 40))
+          pygame.display.flip()
+    hints:
+      - "The title is set with a function of `pygame.display`. The moon has a center and a radius; the ground has a corner, a width and a height."
+      - "The functions are `set_caption`, `circle` and `rect`."
+    tests:
+      - window: {frames: 10}
+      - window: {frames: 3}
+        hidden: true
+    more:
+      - task: |
+          Draw a target in a black 320 x 240 window: five filled circles, all centered at (160, 120), with the radii 100, 80, 60, 40 and 20. They are red, `(220, 0, 0)`, and white, `(255, 255, 255)`, in turns, starting with red for the biggest. Draw them from the biggest to the smallest with a loop, so that each smaller circle is in front of the bigger ones.
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          pygame.display.set_caption("Target")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              pygame.draw.circle(window, (220, 0, 0), (160, 120), 100)
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          pygame.display.set_caption("Target")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              for i in range(5):
+                  if i % 2 == 0:
+                      color = (220, 0, 0)
+                  else:
+                      color = (255, 255, 255)
+                  pygame.draw.circle(window, color, (160, 120), 100 - i * 20)
+              pygame.display.flip()
+        hints:
+          - The radius gets 20 smaller each time. A loop over `range(5)` gives the numbers 0 to 4.
+          - "Circle number `i` has the radius `100 - i * 20`. With a `range(100, 0, -20)` loop, you get the radii directly."
+          - "The color depends on whether the circle's number is even or odd: `i % 2 == 0` is red."
+        require:
+          - pattern: \bfor\b
+            message: Draw the circles with a loop.
+          - pattern: draw\.circle\s*\(
+            max: 1
+            message: "Use one `pygame.draw.circle` call, inside the loop."
+        tests:
+          - window: {frames: 3}
+          - window: {frames: 9}
+            hidden: true
+      - task: |
+          Draw a loading bar that fills up. In each frame, first draw the bar: a green, `(0, 200, 0)`, filled rectangle at (22, 102) that is 36 high and `width` pixels wide. Then draw the frame around it: a white outline, line width 2, of the rectangle (20, 100, 280, 40). The bar's width is 0 on the first frame and grows by 4 after each frame, until it's 276, the whole inside of the frame. After that it stays 276. The window is black.
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          pygame.display.set_caption("Loading")
+
+          width = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              pygame.display.flip()
+
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          pygame.display.set_caption("Loading")
+
+          width = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              pygame.draw.rect(window, (0, 200, 0), (22, 102, width, 36))
+              pygame.draw.rect(window, (255, 255, 255), (20, 100, 280, 40), 2)
+              pygame.display.flip()
+
+              if width < 276:
+                  width += 4
+              clock.tick(60)
+        hints:
+          - "The bar is `pygame.draw.rect(window, (0, 200, 0), (22, 102, width, 36))`. The frame is a rectangle too, with a fifth argument, the line width 2."
+          - Draw the bar first and the frame second, as the task says, and grow `width` after `flip`.
+          - "Grow it only while it's less than 276: `if width < 276:`."
+        tests:
+          - window: {frames: 40}
+          - window: {frames: 100}
+            hidden: true
+          - window: {frames: 30}
+            hidden: true
+
+  - id: pygame-techniques-text
+    slug: text
+    title: Text in the window
+    text: |
+      pygame draws text in two steps. First, a **font** object knows the shape of the letters and their size. Its `render` method then makes an image of a piece of text, and that image is drawn with `blit`, like any other image:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      font = pygame.font.SysFont("Arial", 32)
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          text = font.render("Hello, pygame!", True, (255, 220, 0))
+          window.blit(text, (40, 100))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      - `pygame.font.SysFont("Arial", 32)` makes a font: the typeface Arial, 32 pixels high. Make the font once, before the main loop, since loading it takes time.
+      - `font.render("Hello, pygame!", True, (255, 220, 0))` makes an image of the text in yellow. `True` asks for smooth edges on the letters.
+      - The window as text names the text it drew: `blit text "Hello, pygame!" at (40, 100)`.
+
+      On your own computer, `SysFont` looks for the named typeface, and if the computer doesn't have it, it uses pygame's own font. On this site every font is pygame's own, whatever its name. (`pygame.font.Font(None, 32)` always gives that font.) Letters look a little different on different computers, so the checks compare the window as text, not the pictures.
+
+      ### Text that changes
+
+      A score or a time changes during the game, so make its image in every frame, from the current value. An f-string puts the value in the text. Here each press of the space bar is a point:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      font = pygame.font.SysFont("Arial", 24)
+      score = 0
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                  score += 1
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          text = font.render(f"Score: {score}", True, (255, 255, 255))
+          window.blit(text, (10, 10))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30, events: [{at: 5, type: keydown, key: K_SPACE}, {at: 6, type: keyup, key: K_SPACE}, {at: 12, type: keydown, key: K_SPACE}, {at: 13, type: keyup, key: K_SPACE}, {at: 20, type: keydown, key: K_SPACE}, {at: 21, type: keyup, key: K_SPACE}]}
+      ```
+
+      ### The time, and centered text
+
+      `pygame.time.get_ticks()` gives the number of milliseconds since the program called `pygame.init()`. With `// 1000` it's whole seconds, which makes a stopwatch. A text image has a width like any other image, so it can be centered the same way:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      font = pygame.font.SysFont("Arial", 40)
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          seconds = pygame.time.get_ticks() // 1000
+          text = font.render(f"{seconds} s", True, (255, 255, 255))
+          x = (320 - text.get_width()) // 2
+
+          window.fill((0, 0, 60))
+          window.blit(text, (x, 100))
+          pygame.display.flip()
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 200}
+      ```
+
+      The text is narrower or wider as the number changes, and `get_width` keeps it centered. On this site the clock is counted: every `clock.tick(60)` is a 60th of a second, so after 200 frames the stopwatch says 3 seconds, the same in every run.
+
+      **Your turn:** fill in the blanks, so the program makes a font and an image of the text `Level 1`, and draws it.
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      font = pygame.font.[[SysFont]]("Arial", 32)
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          text = font.[[render]]("Level 1", True, (255, 255, 255))
+          window.blit(text, (110, 100))
+          pygame.display.flip()
+    hints:
+      - The font comes from a function of `pygame.font` that takes a typeface's name and a size. The font's method that makes an image of a text comes second.
+      - "`pygame.font.SysFont` makes the font, and `font.render` the text's image."
+    tests:
+      - window: {frames: 10}
+      - window: {frames: 4}
+        hidden: true
+    more:
+      - task: |
+          Count clicks. The window shows the text `Clicks: 0` at (10, 10), and each press of a mouse button, any button, makes the number one bigger. Draw the text in white on black, with any font.
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          font = pygame.font.SysFont("Arial", 32)
+          clicks = 0
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.MOUSEBUTTONDOWN:
+                      clicks += 1
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              text = font.render(f"Clicks: {clicks}", True, (255, 255, 255))
+              window.blit(text, (10, 10))
+              pygame.display.flip()
+        hints:
+          - Make the font before the main loop, and keep the count in a variable that starts at 0.
+          - "On a `pygame.MOUSEBUTTONDOWN` event, add one to the count."
+          - "In every frame, render `f\"Clicks: {clicks}\"` and blit it at (10, 10)."
+        tests:
+          - name: Three clicks
+            window: {frames: 20, events: [{at: 3, type: mousedown, pos: [100, 100], button: 1}, {at: 4, type: mouseup, pos: [100, 100], button: 1}, {at: 8, type: mousedown, pos: [200, 50], button: 3}, {at: 9, type: mouseup, pos: [200, 50], button: 3}, {at: 13, type: mousedown, pos: [50, 200], button: 1}, {at: 14, type: mouseup, pos: [50, 200], button: 1}]}
+          - name: No clicks
+            window: {frames: 6}
+            hidden: true
+          - window: {frames: 25, events: [{at: 2, type: mousedown, pos: [10, 10], button: 1}, {at: 3, type: mouseup, pos: [10, 10], button: 1}, {at: 5, type: mousedown, pos: [10, 10], button: 1}, {at: 6, type: mouseup, pos: [10, 10], button: 1}, {at: 8, type: mousedown, pos: [300, 230], button: 1}, {at: 9, type: mouseup, pos: [300, 230], button: 1}, {at: 11, type: mousedown, pos: [160, 120], button: 2}, {at: 12, type: mouseup, pos: [160, 120], button: 2}, {at: 15, type: mousedown, pos: [10, 200], button: 1}, {at: 16, type: mouseup, pos: [10, 200], button: 1}]}
+            hidden: true
+      - task: |
+          Make a countdown from 10 seconds. The window shows `Time left: 10` at first, and the number is 10 minus the whole seconds since `pygame.init()` (use `pygame.time.get_ticks()`). When no time is left (the number would be 0 or less), it shows `Time's up!` instead. Use the starter code's font, and center the text across the window with its top at y = 100: its x is `(320 - text.get_width()) // 2`. Use a clock at 60 frames per second.
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          font = pygame.font.SysFont("Arial", 32)
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              text = font.render("Time left: 10", True, (255, 255, 255))
+              window.blit(text, (10, 100))
+              pygame.display.flip()
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          font = pygame.font.SysFont("Arial", 32)
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              left = 10 - pygame.time.get_ticks() // 1000
+              if left > 0:
+                  text = font.render(f"Time left: {left}", True, (255, 255, 255))
+              else:
+                  text = font.render("Time's up!", True, (255, 255, 255))
+
+              window.fill((0, 0, 0))
+              window.blit(text, ((320 - text.get_width()) // 2, 100))
+              pygame.display.flip()
+              clock.tick(60)
+        hints:
+          - "`pygame.time.get_ticks() // 1000` is the whole seconds so far. The time left is 10 minus that."
+          - "Make the text with an `if`: while the time left is more than 0, `f\"Time left: {left}\"`, and otherwise `\"Time's up!\"`."
+          - "Render the text first, then center it with its own width: `(320 - text.get_width()) // 2`."
+        tests:
+          - name: After 150 frames
+            window: {frames: 150}
+          - window: {frames: 330}
+            hidden: true
+          - name: After 700 frames
+            window: {frames: 700}
+            hidden: true
+
+  - id: pygame-techniques-game
+    slug: small-game
+    title: A small game
+    text: |
+      Games ask one question all the time: do these two things touch? Does the robot touch the coin, does the monster touch the robot? pygame has a type for the question: **`pygame.Rect`**, a rectangle with a position and a size.
+
+      ```python run
+      import pygame
+
+      robot = pygame.Rect(100, 150, 40, 40)
+      print(robot)
+      print(robot.x, robot.y, robot.width, robot.height)
+      print(robot.right, robot.bottom)
+      print(robot.center)
+      robot.x += 10
+      print(robot.topleft, robot.right)
+      ```
+
+      ```output
+      Rect(100, 150, 40, 40)
+      100 150 40 40
+      140 190
+      (120, 170)
+      (110, 150) 150
+      ```
+
+      `right` is `x + width`, the first x past the rectangle (it covers x from 100 to 139), and `bottom` the same for y. `center` is its middle point. Change `x` or `y` and the rectangle moves: `right`, `center` and the rest follow. You can also set them: `robot.center = (160, 120)` moves the rectangle so that its center is there.
+
+      An image gives a rectangle of its own size with `get_rect`: `robot_image.get_rect(topleft=(100, 150))` is the same as `pygame.Rect(100, 150, 40, 40)` for the 40 x 40 robot. And `blit` takes a rectangle as the position, using its top-left corner: `window.blit(robot_image, robot)`.
+
+      ### Touching
+
+      `a.colliderect(b)` tells whether the rectangles `a` and `b` overlap, and `a.collidepoint(point)` whether the point is inside `a`. That's the click test of the previous module, ready-made.
+
+      ```python run
+      import pygame
+
+      robot = pygame.Rect(100, 150, 40, 40)
+      coin = pygame.Rect(130, 130, 24, 24)
+      wall = pygame.Rect(140, 150, 40, 40)
+      print(robot.colliderect(coin))
+      print(robot.colliderect(wall))
+      print(robot.collidepoint((120, 160)))
+      print(robot.collidepoint((140, 160)))
+      ```
+
+      ```output
+      True
+      False
+      True
+      False
+      ```
+
+      The coin's corner overlaps the robot's top-right corner. The wall starts at x = 140, right where the robot ends, so they're side by side but don't overlap.
+
+      ### Putting it together
+
+      Here is a whole game. Coins fall, one at a time, and the player moves the robot with the arrow keys to catch them. Each catch is a point, and the next coin starts falling from the top. When a coin falls to the bottom without being caught, the game is over: nothing moves any more, and the window says so until it's closed. A real game would choose each coin's place with `random`; this one takes them in turn from a list.
+
+      ```asset robot.png
+      ```
+
+      ```asset coin.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      pygame.display.set_caption("Coin Rain")
+      robot_image = pygame.image.load("robot.png")
+      coin_image = pygame.image.load("coin.png")
+      font = pygame.font.SysFont("Arial", 24)
+
+      robot = robot_image.get_rect(topleft=(140, 200))
+      coin_xs = [60, 220, 150, 30, 260]
+      next_x = 0
+      coin = coin_image.get_rect(topleft=(coin_xs[0], 0))
+      score = 0
+      game_over = False
+      going_left = False
+      going_right = False
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_LEFT:
+                      going_left = True
+                  if event.key == pygame.K_RIGHT:
+                      going_right = True
+              if event.type == pygame.KEYUP:
+                  if event.key == pygame.K_LEFT:
+                      going_left = False
+                  if event.key == pygame.K_RIGHT:
+                      going_right = False
+              if event.type == pygame.QUIT:
+                  exit()
+
+          if not game_over:
+              if going_left and robot.x > 0:
+                  robot.x -= 4
+              if going_right and robot.right < 320:
+                  robot.x += 4
+              coin.y += 3
+              if robot.colliderect(coin):
+                  score += 1
+                  next_x = (next_x + 1) % len(coin_xs)
+                  coin.topleft = (coin_xs[next_x], 0)
+              elif coin.top >= 240:
+                  game_over = True
+
+          window.fill((0, 0, 0))
+          window.blit(robot_image, robot)
+          window.blit(coin_image, coin)
+          score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+          window.blit(score_text, (10, 10))
+          if game_over:
+              text = font.render("Game over", True, (255, 80, 80))
+              window.blit(text, ((320 - text.get_width()) // 2, 100))
+          pygame.display.flip()
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 220, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 25, type: keyup, key: K_LEFT}, {at: 70, type: keydown, key: K_RIGHT}, {at: 105, type: keyup, key: K_RIGHT}]}
+      ```
+
+      The game is the same main loop as before, with its three parts:
+
+      1. **Events** only change variables: the arrow keys set `going_left` and `going_right`.
+      2. **Updating** applies the game's rules to its **state**, the variables that describe the game: the robot moves (but not out of the window), the coin falls, a catch adds a point and starts the next coin, and a missed coin sets `game_over`. When `game_over` is `True`, this part does nothing, so everything stays where it was.
+      3. **Drawing** shows the state as it is now, including the score and, at the end, the words "Game over".
+
+      Keeping the parts apart makes a game much easier to change. A new rule goes in the updating part, and the drawing part draws whatever the state is.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      import pygame
+
+      player = pygame.Rect(100, 150, 40, 40)
+      wall = pygame.Rect(130, 100, 50, 60)
+      print(player.right, player.bottom)
+      print(player.center)
+      print(player.colliderect(wall))
+      player.x -= 20
+      print(player.colliderect(wall))
+    hints:
+      - "`right` is x + width and `bottom` is y + height. The center is half the size from the top-left corner."
+      - "The wall covers x from 130 to 179 and y from 100 to 159. The player covers x from 100 to 139 and y from 150 to 189."
+      - "After moving 20 to the left, the player covers x from 80 to 119, which doesn't reach the wall's 130."
+    more:
+      - task: |
+          Collect the coins with clicks. Each coin is a `pygame.Rect`, and a click on a coin removes it from the list. The text at the bottom tells how many coins are left. Fill in the blanks: the rectangle method that tells whether a point is inside, and the function that gives the length of the list.
+        assets: [coin.png]
+        fill: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          coin = pygame.image.load("coin.png")
+          font = pygame.font.SysFont("Arial", 24)
+
+          coins = [pygame.Rect(40, 40, 24, 24), pygame.Rect(150, 100, 24, 24), pygame.Rect(260, 60, 24, 24)]
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.MOUSEBUTTONDOWN:
+                      for coin_rect in coins:
+                          if coin_rect.[[collidepoint]](event.pos):
+                              coins.remove(coin_rect)
+                              break
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              for coin_rect in coins:
+                  window.blit(coin, coin_rect)
+              text = font.render(f"Coins left: {[[len]](coins)}", True, (255, 255, 255))
+              window.blit(text, (10, 200))
+              pygame.display.flip()
+        hints:
+          - One method of a rectangle checks a point, the other checks another rectangle. Which one is for a point?
+          - "`coin_rect.collidepoint(event.pos)`, and the length of a list is `len(coins)`."
+        tests:
+          - name: Two coins collected
+            window: {frames: 20, events: [{at: 3, type: mousedown, pos: [50, 50], button: 1}, {at: 4, type: mouseup, pos: [50, 50], button: 1}, {at: 8, type: mousedown, pos: [10, 150], button: 1}, {at: 9, type: mouseup, pos: [10, 150], button: 1}, {at: 12, type: mousedown, pos: [270, 80], button: 1}, {at: 13, type: mouseup, pos: [270, 80], button: 1}]}
+          - window: {frames: 20, events: [{at: 2, type: mousedown, pos: [160, 110], button: 1}, {at: 3, type: mouseup, pos: [160, 110], button: 1}, {at: 6, type: mousedown, pos: [64, 64], button: 1}, {at: 7, type: mouseup, pos: [64, 64], button: 1}]}
+            hidden: true
+      - task: |
+          Write a dodging game. The robot stands at the bottom of the window, at (140, 200), and a monster falls toward it. The player moves the robot with the arrow keys, 4 pixels per frame while the key is held, and the robot's x stays between 0 and 280.
+
+          The monster starts at the top (y = 0) and falls 5 pixels per frame. Its x comes from the list `[40, 200, 120, 260, 0]`: the first monster falls at x = 40, the next one at 200, and so on, back to the start of the list after the last one. When a monster's y reaches 240 or more, it has been dodged: the count of dodged monsters grows by one, and the next monster starts at the top.
+
+          When the robot and the monster touch (their rectangles overlap), the game is over: from then on nothing moves, and the window shows `Game over` too, until it's closed.
+
+          In each frame: handle the events, then (unless the game is over) move the robot, move the monster, check for a dodged monster and check for touching. Then draw: fill the window black, draw the robot, the monster, the text `Dodged: 2` (with the real count) at (10, 10), and, when the game is over, the text `Game over` centered across the window with its top at y = 100. Use the starter code's font for both texts.
+        assets: [robot.png, monster.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          pygame.display.set_caption("Dodge")
+          robot_image = pygame.image.load("robot.png")
+          monster_image = pygame.image.load("monster.png")
+          font = pygame.font.SysFont("Arial", 24)
+
+          robot = robot_image.get_rect(topleft=(140, 200))
+          monster_xs = [40, 200, 120, 260, 0]
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot_image, robot)
+              pygame.display.flip()
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          pygame.display.set_caption("Dodge")
+          robot_image = pygame.image.load("robot.png")
+          monster_image = pygame.image.load("monster.png")
+          font = pygame.font.SysFont("Arial", 24)
+
+          robot = robot_image.get_rect(topleft=(140, 200))
+          monster_xs = [40, 200, 120, 260, 0]
+          next_x = 0
+          monster = monster_image.get_rect(topleft=(monster_xs[0], 0))
+          dodged = 0
+          game_over = False
+          going_left = False
+          going_right = False
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          going_left = True
+                      if event.key == pygame.K_RIGHT:
+                          going_right = True
+                  if event.type == pygame.KEYUP:
+                      if event.key == pygame.K_LEFT:
+                          going_left = False
+                      if event.key == pygame.K_RIGHT:
+                          going_right = False
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              if not game_over:
+                  if going_left:
+                      robot.x -= 4
+                  if going_right:
+                      robot.x += 4
+                  if robot.x < 0:
+                      robot.x = 0
+                  if robot.x > 280:
+                      robot.x = 280
+                  monster.y += 5
+                  if monster.y >= 240:
+                      dodged += 1
+                      next_x = (next_x + 1) % len(monster_xs)
+                      monster.topleft = (monster_xs[next_x], 0)
+                  if robot.colliderect(monster):
+                      game_over = True
+
+              window.fill((0, 0, 0))
+              window.blit(robot_image, robot)
+              window.blit(monster_image, monster)
+              text = font.render(f"Dodged: {dodged}", True, (255, 255, 255))
+              window.blit(text, (10, 10))
+              if game_over:
+                  over = font.render("Game over", True, (255, 80, 80))
+                  window.blit(over, ((320 - over.get_width()) // 2, 100))
+              pygame.display.flip()
+              clock.tick(60)
+        hints:
+          - "Start from the lesson's game: the same arrow-key variables, a `pygame.Rect` for the monster made with `monster_image.get_rect(topleft=(monster_xs[0], 0))`, a count and `game_over = False`."
+          - "In the updating part, under `if not game_over:`, move and clamp the robot, then `monster.y += 5`. When `monster.y >= 240`, count it and set `monster.topleft` to the next x of the list and y 0."
+          - "Then `if robot.colliderect(monster):` ends the game. Draw the `Game over` text only when `game_over` is `True`, centered with its own `get_width()`."
+        require:
+          - pattern: \.colliderect\s*\(
+            message: "Check for touching with `colliderect`."
+        tests:
+          - name: Standing still
+            window: {frames: 150}
+          - name: Dodging to the right
+            window: {frames: 240, events: [{at: 100, type: keydown, key: K_RIGHT}, {at: 130, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - name: A long game
+            window: {frames: 300, events: [{at: 100, type: keydown, key: K_LEFT}, {at: 120, type: keyup, key: K_LEFT}, {at: 250, type: keydown, key: K_RIGHT}, {at: 262, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - name: In the middle of the game
+            window: {frames: 70, events: [{at: 10, type: keydown, key: K_RIGHT}, {at: 30, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - name: Into the wall
+            window: {frames: 60, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 55, type: keyup, key: K_RIGHT}]}
+            hidden: true

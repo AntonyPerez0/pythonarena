@@ -530,3 +530,43 @@ questions:
 
     print(re.findall(r"\d+", "7 days, 24 hours"))
   why: '`\d+` matches a whole run of digits, and `re.findall` returns every match as a string.'
+- type: predict
+  module: pygame
+  code: |
+    window_width = 320
+    window_height = 240
+    robot_size = 40
+    print(window_width - robot_size, window_height - robot_size)
+  why: '`blit` puts the image''s top-left corner at the point it''s given. For a 40 x 40 robot to touch the bottom-right corner, that corner goes to (320 - 40, 240 - 40).'
+- type: predict
+  module: animation
+  code: |
+    x = 280
+    speed = 3
+    x += speed
+    if x + 40 >= 320 or x <= 0:
+        speed = -speed
+    print(x, speed)
+  why: x becomes 283, and its right edge 283 + 40 = 323 is past 320, so the speed turns to -3.
+- type: predict
+  module: events
+  code: |
+    import pygame
+
+    x = 140
+    for key in [pygame.K_RIGHT, pygame.K_RIGHT, pygame.K_UP, pygame.K_LEFT]:
+        if key == pygame.K_LEFT:
+            x -= 10
+        if key == pygame.K_RIGHT:
+            x += 10
+    print(x)
+  why: 'Two steps right and one left: 140 + 20 - 10. The up arrow changes nothing here, since neither `if` is about it.'
+- type: predict
+  module: pygame-techniques
+  code: |
+    import pygame
+
+    box = pygame.Rect(20, 30, 50, 40)
+    print(box.right, box.bottom)
+    print(box.center)
+  why: '`right` is x + width (20 + 50) and `bottom` is y + height (30 + 40). The center is half the size from the corner: (20 + 25, 30 + 20).'

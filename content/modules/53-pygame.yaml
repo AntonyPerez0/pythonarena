@@ -1,0 +1,638 @@
+id: pygame
+summary: Your first programs with graphics, written with the pygame library. A window and its main loop, events and closing the window, RGB colors, images and where they go in the window, drawing order, and many images drawn with loops.
+steps:
+  - id: pygame-first-window
+    slug: first-window
+    title: A window of your own
+    text: |
+      So far your programs have printed text and read what the user types. In this part you'll write programs with **graphics**: a window with pictures in it that move and react to the keyboard and the mouse. The tool for it is **pygame**, a library for writing games in Python. A **library** is a collection of modules that someone else has written for you to use. Unlike `math` and `random`, pygame doesn't come with Python: on your own computer you'd install it first with the command `pip install pygame-ce` (pygame-ce is the actively developed edition of pygame, and programs still say `import pygame`). On this site there's nothing to install. The site runs pygame for you and shows its window on the page.
+
+      ### A first window
+
+      Here is a complete pygame program. It opens a window and fills it with dark blue:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 120))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      Line by line:
+
+      - `import pygame` takes the library into use, and `pygame.init()` starts its parts. Call it once, at the start of the program.
+      - `pygame.display.set_mode((320, 240))` opens a window 320 pixels wide and 240 pixels high. A **pixel** is one dot of the picture. Note the two pairs of parentheses: the size is one tuple, `(320, 240)`. The function returns the window, and the variable `window` keeps it, so that the program can draw in it.
+      - `while True:` starts the **main loop**. A game runs until the player closes it, so its loop never ends on its own.
+      - `pygame.event.get()` returns a list of the **events** that have happened since the program last asked: key presses, mouse clicks, and a click on the window's close button. Closing the window is an event of the type `pygame.QUIT`, and `exit()` ends the program right there. Without these lines the close button would do nothing.
+      - `window.fill((0, 0, 120))` paints the whole window with one color.
+      - `pygame.display.flip()` shows what has been drawn. The drawing happens out of sight, and `flip` shows the finished picture all at once, so the player never sees a half-drawn one. Each picture shown is a **frame**.
+
+      So every round of the main loop does three things: it handles the events, draws the picture and shows it. Here the picture is the same in every frame. In the next module it changes a little from one frame to the next, and that's animation.
+
+      You may see pygame programs that draw their picture once, before the main loop, and then only wait for events. That works here too: the window keeps showing that picture until it's closed. But games redraw in every round, because their picture changes, and the programs in these lessons do the same from the start.
+
+      ### Colors
+
+      A color is a tuple of three numbers from 0 to 255: how much **red**, **green** and **blue** light it has. It's called an **RGB** color.
+
+      | Color | RGB |
+      |---|---|
+      | black | `(0, 0, 0)` |
+      | white | `(255, 255, 255)` |
+      | red | `(255, 0, 0)` |
+      | green | `(0, 255, 0)` |
+      | blue | `(0, 0, 255)` |
+      | yellow | `(255, 255, 0)` |
+      | gray | `(128, 128, 128)` |
+
+      The colors mix like light, not like paint: red and green light together make yellow. Smaller numbers make darker colors, so `(0, 0, 120)` is a dark blue.
+
+      pygame also knows the names of many colors. `pygame.Color` turns a name into its RGB numbers:
+
+      ```python run
+      import pygame
+
+      orange = pygame.Color("orange")
+      print(orange)
+      print(orange.r, orange.g, orange.b)
+      ```
+
+      ```output
+      Color(255, 165, 0, 255)
+      255 165 0
+      ```
+
+      The fourth number is the color's **alpha**, how solid it is: 255 means not see-through at all. `window.fill("orange")` works too, but with RGB numbers you can mix any color you like.
+
+      ### The window on this site
+
+      The window here has no screen of its own. The site runs your program for a number of frames and then closes the window: the program gets a `pygame.QUIT` event, and `exit()` ends it. Press Play under an example to watch its frames.
+
+      The site also keeps **the window as text**: a line for each thing drawn in the window since it was last filled with one color. The window above, as text, is:
+
+      ```text
+      fill (0, 0, 120)
+      ```
+
+      The checks of a challenge compare the last frame of your window, as text, with the model solution's, and they compare how many frames it showed. That's what "Your window should end like this" on a task card is: the window your program should end with. Open "The window as text" under its picture to see exactly what your program should draw.
+
+      **Your turn:** fill in the two blanks so the program fills the window with green, `(0, 160, 0)`, and shows it, frame after frame.
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.[[fill]]((0, 160, 0))
+          pygame.display.[[flip]]()
+    hints:
+      - The first blank is the method that paints the whole window with one color. The second shows the finished picture.
+      - "The window's method is `fill`, and the function that shows a frame is `pygame.display.flip`."
+    tests:
+      - window: {frames: 10}
+      - window: {frames: 25}
+        hidden: true
+    more:
+      - task: |
+          Write a whole pygame program yourself. It opens a window 400 pixels wide and 300 pixels high and fills it with orange, `(255, 140, 0)`, on every frame. Handle `pygame.QUIT` in the main loop, so that closing the window ends the program.
+        seed: |
+          # A 400 x 300 window, orange, until it's closed.
+          import pygame
+        solution: |
+          # A 400 x 300 window, orange, until it's closed.
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((400, 300))
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((255, 140, 0))
+              pygame.display.flip()
+        hints:
+          - "Start the program as the lesson does: `pygame.init()`, then `set_mode` with the size as one tuple, `(400, 300)`."
+          - "The main loop is `while True:`. In it, a `for` loop goes through `pygame.event.get()` and calls `exit()` when an event's `type` is `pygame.QUIT`."
+          - After the event loop, still inside `while True:`, fill the window with the color and call `pygame.display.flip()`.
+        require:
+          - pattern: set_mode\(\s*\(\s*400\s*,\s*300\s*\)\s*\)
+            message: "Open the window with `pygame.display.set_mode((400, 300))`: 400 wide, 300 high."
+          - pattern: pygame\.QUIT
+            message: "Handle the `pygame.QUIT` event, so that closing the window ends the program."
+        tests:
+          - window: {frames: 20}
+          - window: {frames: 7}
+            hidden: true
+      - task: |
+          This program should fill a 320 x 240 window with white, but it stops with an error. Run it and read the message, fix that line, and then fix the next error the same way.
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode(320, 240)
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill(255, 255, 255)
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((255, 255, 255))
+              pygame.display.flip()
+        hints:
+          - "The first message is `TypeError: size must be two numbers`. `set_mode` takes the size as one value, a tuple, but here it gets two separate numbers."
+          - "Put the size in its own parentheses: `set_mode((320, 240))`."
+          - "`fill` has the same problem. Given three numbers, it reads the second one as a rectangle to fill (`invalid rectstyle object`). The color is one tuple too."
+        tests:
+          - window: {frames: 12}
+          - window: {frames: 5}
+            hidden: true
+
+  - id: pygame-images
+    slug: images
+    title: Images and coordinates
+    text: |
+      Most of what a game shows is images. This is `robot.png`, one of the images on this site:
+
+      ```asset robot.png
+      ```
+
+      `pygame.image.load("robot.png")` reads an image file and returns it as a **surface**, the same kind of object as the window: a rectangle of pixels. The file has to be in the same folder as your program. On this site, the images that an example or a challenge uses are there already. Load each image once, before the main loop: reading a file takes time, and the image stays the same.
+
+      `window.blit(robot, (100, 50))` draws the image in the window with its top-left corner at the point (100, 50). (**Blit** is old graphics slang for copying a block of pixels onto another.)
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (100, 50))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      As text, this window is:
+
+      ```text
+      fill (0, 0, 0)
+      blit robot.png at (100, 50)
+      ```
+
+      ### Coordinates
+
+      A point in the window is a pair (x, y). The point (0, 0) is the window's **top-left corner**. x grows to the right, as in math, but y grows **downward**: (100, 50) is 100 pixels from the left edge and 50 pixels down from the top. Computer graphics almost always count this way, so it's worth getting used to.
+
+      The robot is 40 by 40 pixels, so at (100, 50) it covers x from 100 to 139 and y from 50 to 89. To put it in the window's bottom-right corner, its top-left corner goes to (320 - 40, 240 - 40), which is (280, 200). At (320, 240) it would be just outside the window, and you wouldn't see it at all.
+
+      An image you've loaded can be drawn as many times as you like. Here is the robot between two coins, which are 24 by 24 pixels:
+
+      ```asset coin.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+      coin = pygame.image.load("coin.png")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (140, 100))
+          window.blit(coin, (80, 108))
+          window.blit(coin, (216, 108))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      ### Drawing order
+
+      Drawing in the window works like painting: what you draw later covers what's already there. That's why `fill` comes first in each frame. It paints over the previous frame, and then the images go on top. Here the fill comes last by mistake, and it paints over the robot:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.blit(robot, (100, 50))
+          window.fill((0, 0, 0))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      The window is all black, and its text is only `fill (0, 0, 0)`: like the picture, the text starts over at each fill that covers the whole window. When images overlap, the one drawn last is in front. The order is part of the window as text, so the checks compare it too, and when a task has several things to draw, it says in which order.
+
+      **Your turn:** fill in the blanks so the program loads the image `monster.png` and draws it with its top-left corner at (200, 30).
+    assets: [monster.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      monster = pygame.image.[[load]]("monster.png")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.[[blit]](monster, (200, 30))
+          pygame.display.flip()
+    hints:
+      - The first blank reads the image file. The second draws the image in the window.
+      - "`pygame.image.load` reads the file, and the window's method `blit` draws it."
+    tests:
+      - window: {frames: 10}
+      - window: {frames: 3}
+        hidden: true
+    more:
+      - task: |
+          Draw three images in a black 320 x 240 window: the robot in the bottom-left corner, the monster in the bottom-right corner and a coin in the top-right corner. Each image must be completely inside the window and touch the corner's two edges. The robot and the monster are 40 x 40 pixels, the coin 24 x 24. Draw them in this order: the robot, the monster, the coin.
+        assets: [robot.png, monster.png, coin.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+          monster = pygame.image.load("monster.png")
+          coin = pygame.image.load("coin.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              # Draw the robot, the monster and the coin here.
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+          monster = pygame.image.load("monster.png")
+          coin = pygame.image.load("coin.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (0, 200))
+              window.blit(monster, (280, 200))
+              window.blit(coin, (296, 0))
+              pygame.display.flip()
+        hints:
+          - The point you give `blit` is where the image's top-left corner goes. In the bottom-left corner, x is 0, and y is the window's height minus the image's height.
+          - "The robot goes to (0, 240 - 40). The monster's x is 320 - 40, and the coin's x is 320 - 24 with y 0."
+          - "Three `blit` calls, in the order the task gives: robot, monster, coin."
+        tests:
+          - window: {frames: 10}
+          - window: {frames: 4}
+            hidden: true
+      - task: |
+          A coin should lie on top of a box in the middle of a dark gray window, but the window shows only gray. Fix the order of the drawing: first fill the window, then draw the box, and the coin last, so that it's in front of the box.
+        assets: [box.png, coin.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          box = pygame.image.load("box.png")
+          coin = pygame.image.load("coin.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.blit(coin, (148, 108))
+              window.blit(box, (140, 100))
+              window.fill((40, 40, 40))
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          box = pygame.image.load("box.png")
+          coin = pygame.image.load("coin.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((40, 40, 40))
+              window.blit(box, (140, 100))
+              window.blit(coin, (148, 108))
+              pygame.display.flip()
+        hints:
+          - What's drawn later covers what's already there. Here the fill comes last, so it covers everything.
+          - "Move the `fill` line to the top of the drawing. Then swap the two `blit` lines, so the box is drawn before the coin."
+        tests:
+          - window: {frames: 10}
+          - window: {frames: 6}
+            hidden: true
+
+  - id: pygame-many-images
+    slug: many-images
+    title: Centering and many images
+    text: |
+      An image knows its own size: `robot.get_width()` and `robot.get_height()` give it in pixels. The window has the same methods. They're handy for placing images without typing their sizes into the program.
+
+      ```asset robot.png
+      ```
+
+      ### Centering an image
+
+      The center of a 400 x 300 window is (200, 150). To put the robot's center there, its top-left corner goes half of the robot's width to the left and half of its height up from the center. The same thing in one calculation: the space left over next to the image, divided in two.
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((400, 300))
+      robot = pygame.image.load("robot.png")
+
+      x = (window.get_width() - robot.get_width()) // 2
+      y = (window.get_height() - robot.get_height()) // 2
+      print(x, y)
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      ```output
+      180 130
+      ```
+
+      The program calculates the position once, before the main loop, since it never changes. With `/` the position would be `180.0`. pygame accepts that too, but it drops the fraction, and with `//` you see the whole number it really uses. And if you change the window's size or the image, the robot stays in the center without any other change.
+
+      ### Many images with a loop
+
+      A loop draws many images with a few lines of code. This one draws a row of eight coins, one in the middle of each 40-pixel-wide column of the window:
+
+      ```asset coin.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      coin = pygame.image.load("coin.png")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          for i in range(8):
+              window.blit(coin, (8 + i * 40, 20))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      The window as text has a line for each coin, from `blit coin.png at (8, 20)` to `blit coin.png at (288, 20)`, in the order they were drawn.
+
+      Two loops, one inside the other, fill a grid. The window is 8 tiles of 40 pixels wide and 6 high, so these loops cover it with floor tiles, row by row from the top, each row from left to right:
+
+      ```asset floor.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      floor = pygame.image.load("floor.png")
+      robot = pygame.image.load("robot.png")
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          for row in range(6):
+              for column in range(8):
+                  window.blit(floor, (column * 40, row * 40))
+          window.blit(robot, (120, 80))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      ### Random places
+
+      To scatter coins in random places, choose the places once, before the main loop, and keep them in a list. If you chose them inside the main loop, the coins would jump to new places on every frame.
+
+      ```python window
+      import random
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      coin = pygame.image.load("coin.png")
+
+      places = []
+      for i in range(12):
+          x = random.randint(0, 320 - 24)
+          y = random.randint(0, 240 - 24)
+          places.append((x, y))
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          for place in places:
+              window.blit(coin, place)
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30}
+      ```
+
+      The site starts `random` the same way in every run of a window, so here the coins land in the same places each time you press Play. On your own computer they'd land somewhere new in every run. That's also why no challenge here asks for random places: the checks couldn't know where your coins went.
+
+      **Your turn:** the window is 400 x 300. Fill in the blanks so the program draws the monster exactly in the center of the window, whatever the sizes of the window and the image.
+    assets: [monster.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((400, 300))
+      monster = pygame.image.load("monster.png")
+
+      x = (window.get_width() - monster.[[get_width]]()) // 2
+      y = (window.get_height() - monster.[[get_height]]()) // 2
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(monster, (x, y))
+          pygame.display.flip()
+    hints:
+      - The space left over next to the monster is the window's width minus the monster's width. Half of it goes on each side.
+      - "The image has the same methods as the window: `monster.get_width()` and `monster.get_height()`."
+    tests:
+      - window: {frames: 10}
+      - window: {frames: 4}
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          places = []
+          for row in range(2):
+              for column in range(3):
+                  places.append((column * 40, row * 40))
+          print(len(places))
+          print(places[0], places[2])
+          print(places[3], places[-1])
+        hints:
+          - The inner loop goes through all three columns for each of the two rows, so the list gets 2 × 3 points.
+          - "The points come row by row: first the three of row 0, with y = 0, then the three of row 1, with y = 40."
+          - "`places[2]` is the last point of the first row, and `places[3]` the first point of the second row."
+      - task: |
+          Draw a room in a 320 x 240 window, which is 8 tiles wide and 6 tiles high (each tile is 40 x 40). The tiles along the four edges of the window are walls, and all the others are floor. Draw the tiles row by row from the top, each row from left to right, with two loops. Then draw the robot in the room at (120, 80).
+        assets: [wall.png, floor.png, robot.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          wall = pygame.image.load("wall.png")
+          floor = pygame.image.load("floor.png")
+          robot = pygame.image.load("robot.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              # Draw the tiles here, then the robot.
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          wall = pygame.image.load("wall.png")
+          floor = pygame.image.load("floor.png")
+          robot = pygame.image.load("robot.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              for row in range(6):
+                  for column in range(8):
+                      if row == 0 or row == 5 or column == 0 or column == 7:
+                          window.blit(wall, (column * 40, row * 40))
+                      else:
+                          window.blit(floor, (column * 40, row * 40))
+              window.blit(robot, (120, 80))
+              pygame.display.flip()
+        hints:
+          - "Start from the lesson's grid of floor tiles: an outer loop over the 6 rows and an inner loop over the 8 columns. Tile (column, row) goes to `(column * 40, row * 40)`."
+          - "A tile is on an edge when its row is the first or the last one (0 or 5), or its column is the first or the last one (0 or 7)."
+          - "In the inner loop, an `if` with that condition draws `wall`, and its `else` draws `floor`."
+        require:
+          - pattern: \bfor\b
+            min: 2
+            message: Draw the tiles with two loops, one inside the other.
+        tests:
+          - window: {frames: 10}
+          - window: {frames: 2}
+            hidden: true

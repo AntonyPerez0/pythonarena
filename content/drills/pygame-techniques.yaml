@@ -1,0 +1,221 @@
+topic: pygame-techniques
+drills:
+  - type: choice
+    after: title-and-shapes
+    prompt: "What does `pygame.display.set_caption(\"Coin Rain\")` do?"
+    choices:
+      - It writes Coin Rain in the middle of the window
+      - It gives the window the title Coin Rain, in its title bar
+      - It saves the window as a picture named Coin Rain
+    answer: 2
+    why: "`set_caption` sets the window's title. To write text in the window itself, you render it with a font and blit it."
+
+  - type: choice
+    after: title-and-shapes
+    prompt: "In `pygame.draw.circle(window, (255, 0, 0), (160, 120), 30)`, what is the point (160, 120)?"
+    choices:
+      - The circle's center
+      - The top-left corner of the square around the circle
+      - The point where the circle's edge starts
+    answer: 1
+    why: "A circle is given by its center and radius. An image's position, and a rectangle's, is its top-left corner instead."
+
+  - type: choice
+    after: title-and-shapes
+    prompt: "A frame draws a white circle of radius 20 and then a red circle of radius 60, both centered at (160, 120). What does the window show?"
+    choices:
+      - A red ring with a white dot in the middle
+      - Only a red circle
+      - Only a white circle
+    answer: 2
+    why: "What's drawn later covers what's already there. The big red circle covers the small white one completely; draw the biggest first."
+
+  - type: choice
+    after: title-and-shapes
+    prompt: "What does the last number do in `pygame.draw.rect(window, (255, 255, 255), (20, 100, 280, 40), 2)`?"
+    choices:
+      - It draws only the outline, 2 pixels thick
+      - It draws the rectangle twice
+      - It makes the corners 2 pixels round
+    answer: 1
+    why: "Without it, the rectangle is filled. With a line width, only its outline is drawn, that many pixels thick."
+
+  - type: predict
+    after: title-and-shapes
+    code: |
+      for i in range(4):
+          radius = 80 - i * 20
+          print(radius, "red" if i % 2 == 0 else "white")
+    why: "The radius gets 20 smaller each round, and the color changes with every circle: even rounds red, odd rounds white."
+
+  - type: fill
+    after: text
+    code: |
+      score = 7
+      label = [[f]]"Score: {score}"
+      print(label)
+    why: "An f-string puts the value of `score` into the text, which is how a game makes the text of a score that changes."
+
+  - type: choice
+    after: text
+    prompt: "What does `font.render(\"Score: 3\", True, (255, 255, 255))` give?"
+    choices:
+      - An image of the text, to draw with `blit`
+      - Nothing, it draws the text in the window right away
+      - The width of the text in pixels
+    answer: 1
+    why: "Text is drawn in two steps: `render` makes an image of the text, and `window.blit` draws that image where you want it."
+
+  - type: choice
+    after: text
+    prompt: "Where should `font = pygame.font.SysFont(\"Arial\", 24)` go in a game?"
+    choices:
+      - Before the main loop, once
+      - In the main loop, before each `render`
+      - In the event loop
+    answer: 1
+    why: "Loading a font takes time, and the font doesn't change. Make it once, then render with it in every frame."
+
+  - type: runs
+    after: text
+    code: |
+      import pygame
+
+      pygame.init()
+      font = pygame.font.SysFont("Arial", 24)
+      score = 5
+      text = font.render("Score: " + score, True, (255, 255, 255))
+    why: "`\"Score: \" + score` adds an int to a string, and Python stops with `TypeError: can only concatenate str (not \"int\") to str`. Use an f-string: `f\"Score: {score}\"`."
+
+  - type: predict
+    after: text
+    code: |
+      for ticks in [999, 1000, 2500]:
+          print(10 - ticks // 1000)
+    why: "`ticks // 1000` is the whole seconds: 0, 1 and 2. A countdown from 10 shows 10, 9 and 8."
+
+  - type: predict
+    after: small-game
+    code: |
+      import pygame
+
+      box = pygame.Rect(20, 30, 50, 40)
+      print(box.right, box.bottom)
+      print(box.center)
+    why: "`right` is x + width (20 + 50) and `bottom` is y + height (30 + 40). The center is half the size from the corner: (20 + 25, 30 + 20)."
+
+  - type: predict
+    after: small-game
+    code: |
+      import pygame
+
+      a = pygame.Rect(0, 0, 40, 40)
+      b = pygame.Rect(40, 0, 40, 40)
+      print(a.colliderect(b))
+      b.x -= 1
+      print(a.colliderect(b))
+    why: "`a` covers x from 0 to 39 and `b` starts at 40: side by side, but not overlapping. One pixel to the left, they share the column 39."
+
+  - type: predict
+    after: small-game
+    code: |
+      import pygame
+
+      coin = pygame.Rect(100, 100, 24, 24)
+      print(coin.collidepoint((100, 100)), coin.collidepoint((124, 110)))
+    why: "The coin covers x and y from 100 to 123. Its corner (100, 100) is inside, but x = 124 is just past its right edge."
+
+  - type: predict
+    after: small-game
+    code: |
+      import pygame
+
+      robot = pygame.Rect(0, 0, 40, 40)
+      robot.center = (160, 120)
+      print(robot.topleft)
+    why: "Setting `center` moves the rectangle so that its middle is at (160, 120). Its top-left corner is half its size up and left: (140, 100)."
+
+  - type: bug
+    after: small-game
+    code: |
+      import pygame
+
+      robot = pygame.Rect(100, 200, 40, 40)
+      coin = pygame.Rect(110, 150, 24, 24)
+      for frame in range(10):
+          coin.y += 5
+          if robot.collidepoint(coin.topleft):  # BUG
+              print("caught at y", coin.y)
+              break
+    fix: "if robot.colliderect(coin):"
+    why: "`collidepoint` checks one point, here the coin's top-left corner, which reaches the robot only at y = 200. `colliderect` notices as soon as any part of the coin overlaps the robot."
+
+  - type: choice
+    after: small-game
+    prompt: In a game's main loop, where does a rule such as "a caught coin gives a point" belong?
+    choices:
+      - In the updating part, which changes the game's state
+      - In the drawing part, next to the score's text
+      - In the event loop, under `pygame.QUIT`
+    answer: 1
+    why: "Events change variables, updating applies the rules to the state, and drawing shows the state. Keeping them apart makes a game easy to change."
+
+  - type: boss
+    after: small-game
+    prompt: |
+      Write a function `count_touching(player, others)`. `player` is a `pygame.Rect` and `others` a list of `pygame.Rect` objects. The function returns how many of the rectangles in the list overlap the player. For example,
+
+      ```python fragment
+      player = pygame.Rect(100, 100, 40, 40)
+      others = [pygame.Rect(130, 90, 20, 20), pygame.Rect(140, 100, 10, 10), pygame.Rect(90, 130, 40, 40)]
+      print(count_touching(player, others))
+      ```
+
+      should print:
+
+      ```
+      2
+      ```
+    seed: |
+      import pygame
+
+
+      def count_touching(player, others):
+          pass
+
+
+      if __name__ == "__main__":
+          player = pygame.Rect(100, 100, 40, 40)
+          others = [pygame.Rect(130, 90, 20, 20), pygame.Rect(140, 100, 10, 10), pygame.Rect(90, 130, 40, 40)]
+          print(count_touching(player, others))
+    solution: |
+      import pygame
+
+
+      def count_touching(player, others):
+          count = 0
+          for other in others:
+              if player.colliderect(other):
+                  count += 1
+          return count
+
+
+      if __name__ == "__main__":
+          player = pygame.Rect(100, 100, 40, 40)
+          others = [pygame.Rect(130, 90, 20, 20), pygame.Rect(140, 100, 10, 10), pygame.Rect(90, 130, 40, 40)]
+          print(count_touching(player, others))
+    hints:
+      - Go through the list with a loop and count the rectangles that overlap.
+      - "`player.colliderect(other)` is `True` when the two overlap."
+    require:
+      - pattern: \.colliderect\s*\(
+        message: "Check the overlap with `colliderect`."
+    tests:
+      - call: |
+          player = pygame.Rect(100, 100, 40, 40)
+          others = [pygame.Rect(130, 90, 20, 20), pygame.Rect(140, 100, 10, 10), pygame.Rect(90, 130, 40, 40)]
+          print(count_touching(player, others))
+      - call: count_touching(pygame.Rect(0, 0, 40, 40), [pygame.Rect(39, 39, 5, 5), pygame.Rect(40, 0, 5, 5), pygame.Rect(0, 40, 5, 5), pygame.Rect(10, 10, 5, 5)])
+        hidden: true
+      - call: count_touching(pygame.Rect(50, 50, 10, 10), [])
+        hidden: true
