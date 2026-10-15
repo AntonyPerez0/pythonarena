@@ -7,10 +7,14 @@ const BASE = new URL("./", self.location).pathname;
 const CACHE = "python-arena-shell-" + VERSION;
 
 self.addEventListener("install", (event) => {
+  // Each file is checked with the server (cache: "no-cache"), not taken from the browser's HTTP cache:
+  // GitHub Pages lets the browser keep a file for 10 minutes, and a page kept from before a deploy
+  // names scripts that are gone once activate deletes the old cache. A file the browser already has
+  // from this deploy costs only a "not modified" answer.
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS.map((a) => BASE + a)))
+      .then((cache) => cache.addAll(ASSETS.map((a) => new Request(BASE + a, { cache: "no-cache" }))))
       .then(() => self.skipWaiting()),
   );
 });
@@ -34,9 +38,9 @@ self.addEventListener("fetch", (event) => {
   if (/^pro\/[^/]+\.zip$/.test(url.pathname.slice(BASE.length))) return;
 
   if (request.mode === "navigate") {
-    // Pages: the network first (fresh content), the saved copy when offline.
+    // Pages: the network first (fresh content: checked with the server, as in install), the saved copy when offline.
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-cache" })
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();

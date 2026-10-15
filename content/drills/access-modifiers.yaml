@@ -97,19 +97,19 @@ drills:
   - type: bug
     after: protected
     code: |
-      class Notebook:
+      class PiggyBank:
           def __init__(self):
-              self._notes = ["milk", "eggs"]
+              self._coins = [2, 5, 1]
 
 
-      class Searchable(Notebook):
-          def has(self, word):
-              return word in self.__notes  # BUG
+      class CountingBank(PiggyBank):
+          def total(self):
+              return sum(self.__coins)  # BUG
 
 
-      print(Searchable().has("eggs"))
-    fix: return word in self._notes
-    why: "The list is protected, with one underscore: `self._notes`. With two, Python looks for the private `_Searchable__notes`, which doesn't exist."
+      print(CountingBank().total())
+    fix: return sum(self._coins)
+    why: "The coins are protected, with one underscore: `self._coins`. With two, Python looks for the private `_CountingBank__coins`, which doesn't exist."
 
   - type: runs
     after: protected

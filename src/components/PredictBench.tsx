@@ -144,7 +144,7 @@ export default function PredictBench({ ex, progress, onChange, onPass, report }:
             </pre>
           </>
         }
-        report={() => ({ ...report, code: answers.map((a, i) => `// line ${i + 1}: ${a}`).join("\n"), result: result ? announce(result) : undefined })}
+        report={() => ({ ...report, code: answers.map((a, i) => `# line ${i + 1}: ${a}`).join("\n"), result: result ? announce(result) : undefined })}
       />
     </div>
   );

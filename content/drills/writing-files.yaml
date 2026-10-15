@@ -116,12 +116,13 @@ drills:
   - type: predict
     after: csv
     code: |
-      line = ""
+      fields = ["Eva"]
       for value in [4, 8, 15]:
-          line += f"{value};"
+          fields.append(str(value))
+      line = ";".join(fields)
       print(line)
-      print(line[:-1])
-    why: "The loop puts a semicolon after every value, the last one too. The slice `[:-1]` drops the last character."
+      print(len(line))
+    why: "`join` puts `;` only between the strings of the list, not after the last one. The numbers became strings with `str` first, because `join` only joins strings."
 
   - type: fill
     after: csv

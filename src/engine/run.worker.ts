@@ -53,6 +53,24 @@ async function readAll(res: Response, onChunk: (n: number) => void): Promise<Uin
   return all;
 }
 
+/**
+ * Copies the packages (pygame-ce) that an older version of the engine had saved, because a program
+ * imported them, into this version's cache, so they still work offline once download() deletes the
+ * older caches. Only an unchanged wheel is copied: the same file name, which carries its version and
+ * platform. A new wheel is downloaded when a program imports it (loadPackage), as for a learner who
+ * never ran it: the download the page asks about on mobile data is the engine alone.
+ */
+async function keepPackages(base: string, m: Manifest, cache: Cache) {
+  for (const key of await caches.keys()) {
+    if (!key.startsWith(CACHE_PREFIX) || key === CACHE_PREFIX + m.version) continue;
+    const old = await caches.open(key);
+    for (const pkg of Object.values(m.packages ?? {})) {
+      const wheel = await old.match(base + pkg.file);
+      if (wheel && !(await cache.match(base + pkg.file))) await cache.put(base + pkg.file, wheel);
+    }
+  }
+}
+
 /** Downloads every engine file that isn't in the cache yet, with progress, and saves it there (unpacked). */
 async function download(base: string, m: Manifest, cache: Cache) {
   const missing: string[] = [];
@@ -73,6 +91,9 @@ async function download(base: string, m: Manifest, cache: Cache) {
     if (body.length !== m.files[name]) throw new Error(`${name} arrived incomplete (${body.length} of ${m.files[name]} bytes)`);
     await cache.put(base + name, new Response(body as BlobPart, { headers: { "Content-Type": typeOf(name), "Content-Length": String(body.length) } }));
   }
+  // Kept packages are only for offline use: one that can't be copied is downloaded when a program
+  // imports it, and never stops Python from starting.
+  await keepPackages(base, m, cache).catch(() => {});
   // The manifest too, so the engine can start offline.
   await cache.put(base + "manifest.json", new Response(JSON.stringify(m), { headers: { "Content-Type": "application/json" } }));
   // Older versions of the engine are no longer needed.
@@ -117,7 +138,8 @@ async function start(base: string, m: Manifest) {
     // Nothing is printed outside a run; during a run, the harness takes the output.
     stdout: () => {},
     stderr: () => {},
-    env: { HOME: "/home/pyodide", PYTHONHASHSEED: "random" },
+    // UTF-8 mode, as the build's CPython runs (-X utf8): open() without an encoding says utf-8, not UTF-8.
+    env: { HOME: "/home/pyodide", PYTHONHASHSEED: "random", PYTHONUTF8: "1" },
   })) as Pyodide;
   py.FS.mkdirTree("/arena");
   py.FS.writeFile("/arena/arena.py", harness);
@@ -182,11 +204,9 @@ type FrameOut = { index: number; log: string; png: Uint8Array | null; title: str
 function runCase(index: number, files: Record<string, string>, main: string, c: RunInput): RunResult {
   const parts = { stdout: "", stderr: "", output: "" };
   let pending: { stream: string; text: string }[] = [];
-  let last = performance.now();
   const flush = () => {
     if (pending.length) post({ type: "output", index, chunks: pending });
     pending = [];
-    last = performance.now();
   };
   let lastPicture: Uint8Array | null = null;
   const sink = (stream: string, text: string | PyProxy) => {
@@ -203,8 +223,9 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
     parts[stream as "stdout" | "stderr"] += text;
     parts.output += text;
     pending.push({ stream, text });
-    // The worker is busy until the program ends, so output goes out as it's printed (a few times a second at most).
-    if (performance.now() - last > 40) flush();
+    // The worker is busy until the program ends, so each piece goes out as it's printed: the last line before an
+    // endless loop must reach the page, which keeps what the program printed when it stops it.
+    flush();
   };
   // Keys left out rather than null: toPy turns null into a JsNull, not None.
   const spec = py!.toPy({ files, main, stdin: c.stdin ?? "", given: c.files ?? {}, args: c.args ?? [], ...(c.call != null ? { call: c.call } : {}), ...(c.window ? { window: c.window } : {}) });

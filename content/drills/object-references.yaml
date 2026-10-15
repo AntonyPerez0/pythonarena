@@ -224,28 +224,28 @@ drills:
           def __init__(self):
               self.wins = 3
 
-          def find_best(self, other):
-              self.best = max(self.wins, other.wins)
+          def compare(self, other):
+              self.lead = self.wins - other.wins
 
           def show(self):
-              print(self.best)
+              print(self.lead)
 
 
       Team().show()
-    why: "The attribute `best` is only created when `find_best` runs. This team never ran it, so `show` stops with an `AttributeError`. Helper values belong in local variables, and attributes in `__init__`."
+    why: "The attribute `lead` is only created when `compare` runs. This team never ran it, so `show` stops with an `AttributeError`. Helper values belong in local variables, and attributes in `__init__`."
 
   - type: boss
     after: comparing-objects
     prompt: |
-      Write the method `older_than(self, other)` in the class `Tree`. It returns `True` when the tree was planted in an earlier year than the other tree, and `False` otherwise.
+      A lap time is stored in minutes and seconds. Write the method `beats(self, other)` in the class `Lap`. It returns `True` when this lap was faster (took less time in all) than the other lap, and `False` otherwise.
 
       For example, this code:
 
       ```python fragment
-      oak = Tree("oak", 1950)
-      birch = Tree("birch", 1987)
-      print(oak.older_than(birch))
-      print(birch.older_than(oak))
+      first = Lap(1, 58)
+      second = Lap(2, 3)
+      print(first.beats(second))
+      print(second.beats(first))
       ```
 
       prints:
@@ -255,49 +255,51 @@ drills:
       False
       ```
     seed: |
-      class Tree:
-          def __init__(self, kind, planted):
-              self.kind = kind
-              self.planted = planted
+      class Lap:
+          def __init__(self, minutes, seconds):
+              self.minutes = minutes
+              self.seconds = seconds
 
-          def older_than(self, other):
+          def beats(self, other):
               pass
 
 
       if __name__ == "__main__":
-          oak = Tree("oak", 1950)
-          birch = Tree("birch", 1987)
-          print(oak.older_than(birch))
-          print(birch.older_than(oak))
+          first = Lap(1, 58)
+          second = Lap(2, 3)
+          print(first.beats(second))
+          print(second.beats(first))
     solution: |
-      class Tree:
-          def __init__(self, kind, planted):
-              self.kind = kind
-              self.planted = planted
+      class Lap:
+          def __init__(self, minutes, seconds):
+              self.minutes = minutes
+              self.seconds = seconds
 
-          def older_than(self, other):
-              return self.planted < other.planted
+          def beats(self, other):
+              mine = self.minutes * 60 + self.seconds
+              theirs = other.minutes * 60 + other.seconds
+              return mine < theirs
 
 
       if __name__ == "__main__":
-          oak = Tree("oak", 1950)
-          birch = Tree("birch", 1987)
-          print(oak.older_than(birch))
-          print(birch.older_than(oak))
+          first = Lap(1, 58)
+          second = Lap(2, 3)
+          print(first.beats(second))
+          print(second.beats(first))
     hints:
-      - "An older tree was planted earlier, so its year is smaller."
-      - "Compare `self.planted` with `other.planted` and return the result of the comparison."
+      - "Comparing only the seconds isn't enough: 1:58 is faster than 2:03, although 58 is more than 3. And the minutes alone can't tell 2:10 from 2:20."
+      - "Turn each lap into seconds first, `self.minutes * 60 + self.seconds` and the same for `other`, and return whether this lap's total is smaller."
     tests:
       - call: |
-          oak = Tree("oak", 1950)
-          birch = Tree("birch", 1987)
-          print(oak.older_than(birch))
-          print(birch.older_than(oak))
+          first = Lap(1, 58)
+          second = Lap(2, 3)
+          print(first.beats(second))
+          print(second.beats(first))
       - call: |
-          a = Tree("pine", 2001)
-          b = Tree("elm", 2001)
-          print(a.older_than(b))
-          print(Tree("yew", 1700).older_than(a))
+          print(Lap(2, 10).beats(Lap(2, 20)))
+          print(Lap(3, 1).beats(Lap(2, 59)))
+          print(Lap(0, 59).beats(Lap(1, 0)))
+          print(Lap(1, 30).beats(Lap(1, 30)))
         hidden: true
 
   - type: boss

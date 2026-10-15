@@ -7,9 +7,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
+import { marked } from "marked";
 import fs from "node:fs";
 import { pythonPool, referencePython } from "./content/python.mjs";
 import { pyodidePool } from "./content/pyodide.mjs";
+import { PYGAME_IMPORT as PYGAME } from "../src/engine/pygame-import.ts";
 
 let python = null;
 try {
@@ -25,7 +27,6 @@ test.after(() => {
   pool?.close();
   windowPool?.close();
 });
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 // The challenge's images, as the page fetches them from images/.
 globalThis.fetch = async (url) => {
   const name = /images\/([\w.-]+)$/.exec(String(url))?.[1];
@@ -179,13 +180,17 @@ it("a function that prints instead of returning fails the tests that need a valu
   // double(21) prints 42 (the text matches) but gives None.
   assert.equal(b.got, "42");
   assert.equal(b.pass, false);
-  has(b.note, "`double(21)` printed something but returned None", "use return instead of print");
+  has(b.note, "The call double(21) printed something but returned None", "use return instead of print");
+  lacks(b.note, "`");
+  // A hidden test's call isn't named.
+  has(r.tests[2].note, "Your function printed something but returned None");
+  lacks(r.tests[2].note, "double(-3)");
 });
 
 it("a function with no return line at all gets the returned-None note", async () => {
   const code = "def double(n):\n    result = n * 2\n";
   const r = await grade(exercise(FUNCTION_TESTS), code);
-  has(r.tests[1].note, "`double(21)` returned None", "Give it a return line");
+  has(r.tests[1].note, "The call double(21) returned None", "Give it a return line");
 });
 
 it("a misnamed function is a call error that names both names", async () => {
@@ -201,7 +206,35 @@ it("a function with the wrong parameters is a call error", async () => {
   const code = "def double():\n    return 2\n";
   const r = await grade(exercise(FUNCTION_TESTS), code);
   assert.equal(r.status, "call-error");
+  // One reason, in the words of the first visible test; the hidden test's call isn't shown.
+  assert.equal(r.callProblems.length, 1, r.callProblems.join(" | "));
   has(r.callProblems[0], "The test runs `print(double(4))`", "takes 0 positional arguments but 1 was given", "exactly the parameters");
+  lacks(r.callProblems.join(" "), "double(-3)");
+});
+
+/** A call problem as the page shows it (Results renders it with InlineMd, that is marked.parseInline): its HTML, and its text. */
+const shown = (md) => {
+  const html = marked.parseInline(md, { async: false });
+  const text = html.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  return { html, text };
+};
+
+it("a call problem shows Python's names as Python wrote them: __init__, __str__ and <lambda> aren't read as Markdown", async () => {
+  const person = "class Person:\n    def __init__(self, name):\n        self.name = name\n\n    def __str__(self):\n        return self.name\n";
+  const args = await grade(exercise([{ call: 'p = Person("Ada", 30)', expect: "" }]), person);
+  assert.equal(args.status, "call-error");
+  const a = shown(args.callProblems[0]);
+  has(a.html, "<code>Person.__init__()</code> takes 2 positional arguments but 3 were given. Give the def line");
+  lacks(a.html, "<strong>", "<em>");
+  // Python's suggestion ends with a question mark: no full stop after it.
+  const attr = await grade(exercise([{ call: 'print(Person("Ada").__strr__())', expect: "Ada\n" }]), person);
+  assert.equal(attr.status, "call-error");
+  const b = shown(attr.callProblems[0]);
+  has(b.text, "but 'Person' object has no attribute '__strr__'. Did you mean: '__str__'? Name your methods");
+  lacks(b.html, "<strong>", "<em>");
+  const lambda = await grade(exercise([{ call: "print(double(4))", expect: "8\n" }]), "double = lambda: 8\n");
+  assert.equal(lambda.status, "call-error");
+  has(shown(lambda.callProblems[0]).html, "<code>&lt;lambda&gt;()</code> takes 0 positional arguments but 1 was given.");
 });
 
 it("an error inside the learner's function is a failed test, not a call error", async () => {
@@ -284,6 +317,12 @@ it("a window that moves too far fails with the window's note, the output compari
   assert.equal(t.window.got.log, "fill (0, 0, 0)\nblit robot.png at (15, 40)");
   has(t.note, "The window's last frame isn't what it should be");
   assert.deepEqual(t.windowEvents, windowTest.window.events);
+});
+
+it("a window of another size fails with a note that names both sizes", async () => {
+  const r = await grade(windowChallenge, WINDOW_PROGRAM(MOVING).replace("set_mode((200, 120))", "set_mode((240, 120))"));
+  assert.equal(r.tests[0].window.pass, false);
+  has(r.tests[0].note, "Your window is 240 x 120 pixels, but it should be 200 x 120");
 });
 
 it("a program that draws once and ends, or shows no window, gets a note that says so", async () => {

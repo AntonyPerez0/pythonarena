@@ -5,7 +5,7 @@ steps:
     slug: binary-trees
     title: Binary trees
     text: |
-      So far a loop could have done everything recursion did. Recursion really pays off with data that branches, such as a family tree, folders inside folders or a tournament bracket. The simplest branching structure is a **binary tree**:
+      A list is a row: after each item comes one next item, and a loop walks along the row from the start to the end. Plenty of data isn't a row. A family tree, the folders on a computer and a tournament bracket all branch: one thing leads to two or more, and each of those leads on to more again. The simplest data that branches is a **binary tree**:
 
       ```text
               8
@@ -15,7 +15,7 @@ steps:
           1   6    14
       ```
 
-      Each value in it sits in a **node**. A node has a value and at most two **children**, a left one and a right one. The node at the top is the **root** (trees in computer science grow downwards), and the nodes without children are **leaves**: here 1, 6 and 14.
+      Each value in it sits in a **node**. A node has a value and at most two **children**, a left one and a right one. The **root** is the node at the top, the one that all the others hang from, and the nodes without children are **leaves**: here 1, 6 and 14.
 
       A tree needs only one class, for a node that knows its value and its two children. A missing child is `None`:
 
@@ -33,44 +33,11 @@ steps:
       tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
       ```
 
-      ### Every child is a tree too
+      ### A tree made of trees
 
-      Each child is the root of a smaller tree, a **subtree**: the node 3 with its children 1 and 6 is a complete binary tree of its own. That's why recursion fits trees so well. To do something to every node, do it to this node, and then do the same to the left subtree and to the right subtree:
+      Look at the left child of the root in that line: `Node(3, Node(1), Node(6))`. It's built in just the same way as the whole tree, only smaller. Any node, together with everything below it, is a tree in its own right, a **subtree**. So a question about a tree can be answered by asking the same question about its two subtrees and adding what the node at the top brings. That's a recursive function, and the empty tree, `None`, makes a handy base case.
 
-      ```python run
-      class Node:
-          def __init__(self, value, left=None, right=None):
-              self.value = value
-              self.left = left
-              self.right = right
-
-
-      def print_values(node):
-          print(node.value)
-          if node.left is not None:
-              print_values(node.left)
-          if node.right is not None:
-              print_values(node.right)
-
-
-      tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
-      print_values(tree)
-      ```
-
-      ```output
-      8
-      3
-      1
-      6
-      10
-      14
-      ```
-
-      The function goes down the left side first, and each node is printed exactly once, however big the tree is. A loop would struggle here: after the left subtree it would have to remember every right subtree it skipped on the way down. With recursion, the waiting calls remember them for you.
-
-      ### None as the base case
-
-      `print_values` checks each child before calling itself. Another way is to let the function accept `None`, an empty tree, and make that the base case. Counting the nodes works like this: an empty tree has no nodes, and any other tree has this node plus the nodes of its two subtrees:
+      Counting the nodes shows how. An empty tree has 0 nodes. Any other tree has its root, which is 1 node, plus the nodes of its left subtree, plus the nodes of its right subtree:
 
       ```python run
       class Node:
@@ -95,6 +62,8 @@ steps:
       6
       3
       ```
+
+      `count_nodes(tree.left)` counts only the subtree of 3, 1 and 6. The calls stop at the leaves: a leaf's `left` and `right` are both `None`, and a call that gets `None` returns 0 straight away.
 
       Without the check for `None`, the calls run into the missing children of the leaves:
 
@@ -128,6 +97,41 @@ steps:
       ```
 
       The leaf's `left` is `None`, and `None` has no attributes. Whenever you see `'NoneType' object has no attribute`, look for a missing check for `None`.
+
+      ### Printing every value
+
+      A function that prints the values has the same shape. It has nothing to return, so for an empty tree it simply returns, and for any other tree it prints the node's value and then hands each subtree to a call of its own:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def print_values(node):
+          if node is None:
+              return
+          print(node.value)
+          print_values(node.left)
+          print_values(node.right)
+
+
+      tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+      print_values(tree)
+      ```
+
+      ```output
+      8
+      3
+      1
+      6
+      10
+      14
+      ```
+
+      Follow the calls. The call for the root prints 8 and then calls the function for the subtree of 3. That call prints 3 and calls the function for 1, which prints 1 and finds `None` on both sides. Next the call for 3 deals with 6. Only when the subtree of 3 is done does the call for the root get to its last line and move on to 10. Where the `print` stands decides the order: here it comes before the two calls, so every node is printed before the nodes below it.
 
       **Your turn:** the function prints a tree as an outline, each value indented by two spaces per level. Fill in the blank so the left subtree is printed one level deeper. The program should print:
 
@@ -262,7 +266,7 @@ steps:
 
   - id: recursion-examples-sum-max-depth
     slug: sum-max-depth
-    title: Sums, the greatest value and depth
+    title: Sums, the smallest value and depth
     text: |
       Most algorithms on trees have the same shape as `count_nodes`: an answer for the empty tree, and for any other tree, this node's value combined with the answers for its two subtrees. Here is a tree with a negative number in it:
 
@@ -382,19 +386,19 @@ steps:
           6
     more:
       - task: |
-          Write a recursive function `greatest(node)` that returns the greatest value in a tree. The tree is never empty, but its values can be negative.
+          The values in a tree can be words as well as numbers. Write a recursive function `longest_word(node)` that returns the longest word in a tree of words. The tree is never empty, and in the tests no other word is as long as the longest one.
 
           For example, this program:
 
           ```python fragment
-          tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
-          print(greatest(tree))
+          tree = Node("oak", Node("birch", Node("fir")), Node("maple", Node("chestnut"), Node("elm")))
+          print(longest_word(tree))
           ```
 
           prints:
 
           ```
-          12
+          chestnut
           ```
         seed: |
           class Node:
@@ -404,13 +408,13 @@ steps:
                   self.right = right
 
 
-          def greatest(node):
+          def longest_word(node):
               pass
 
 
           if __name__ == "__main__":
-              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
-              print(greatest(tree))
+              tree = Node("oak", Node("birch", Node("fir")), Node("maple", Node("chestnut"), Node("elm")))
+              print(longest_word(tree))
         solution: |
           class Node:
               def __init__(self, value, left=None, right=None):
@@ -419,34 +423,40 @@ steps:
                   self.right = right
 
 
-          def greatest(node):
+          def longest_word(node):
               result = node.value
               if node.left is not None:
-                  result = max(result, greatest(node.left))
+                  word = longest_word(node.left)
+                  if len(word) > len(result):
+                      result = word
               if node.right is not None:
-                  result = max(result, greatest(node.right))
+                  word = longest_word(node.right)
+                  if len(word) > len(result):
+                      result = word
               return result
 
 
           if __name__ == "__main__":
-              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
-              print(greatest(tree))
+              tree = Node("oak", Node("birch", Node("fir")), Node("maple", Node("chestnut"), Node("elm")))
+              print(longest_word(tree))
         hints:
-          - "Start from the node's own value: `result = node.value`."
-          - "For each child that isn't `None`, compare `result` with the greatest value of that subtree."
-          - "`result = max(result, greatest(node.left))`, and the same for the right child."
+          - "An empty tree has no longest word, so the base case is a leaf. Start from the node's own word, `result = node.value`."
+          - "For each child that isn't `None`, `longest_word(node.left)` (or `node.right`) gives the longest word of that subtree."
+          - "Compare the lengths, not the words: `max` of two strings gives the one that comes later in alphabetical order. If `len(word) > len(result)`, the subtree's word is the new `result`."
         require:
-          - pattern: def greatest\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bgreatest\s*\(
-            message: Make `greatest` call itself inside its own body.
+          - pattern: def longest_word\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\blongest_word\s*\(
+            message: Make `longest_word` call itself inside its own body.
         tests:
           - call: |
-              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
-              print(greatest(tree))
-          - call: greatest(Node(-8, Node(-3), Node(-10)))
+              tree = Node("oak", Node("birch", Node("fir")), Node("maple", Node("chestnut"), Node("elm")))
+              print(longest_word(tree))
+          - call: longest_word(Node("sun"))
             hidden: true
-          - call: greatest(Node(4))
+          - call: longest_word(Node("zoo", Node("apple"), Node("banana")))
             hidden: true
-          - call: greatest(Node(1, Node(2, None, Node(30)), Node(3)))
+          - call: longest_word(Node("elephant", Node("cat", Node("ant")), Node("dog")))
+            hidden: true
+          - call: longest_word(Node("a", Node("bb", None, Node("cccc", Node("ddddddd"))), Node("eee")))
             hidden: true
       - task: |
           Write a recursive function `contains(node, value)` that returns `True` if the value is in the tree and `False` if it isn't. The values can be anywhere in the tree, in no particular order. An empty tree, `None`, contains nothing.

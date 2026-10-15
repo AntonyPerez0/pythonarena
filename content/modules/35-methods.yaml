@@ -5,7 +5,27 @@ steps:
     slug: first-methods
     title: Methods in a class
     text: |
-      A class with only attributes isn't very different from a dictionary. What makes classes useful is that they can also have **methods**: functions that belong to the class and work with the data of its objects. The data and the code that handles it are kept together.
+      In the previous module, a `Room` worked out its area in the constructor and kept it in an attribute. That number is right when the room is made, and wrong as soon as the room changes:
+
+      ```python run
+      class Room:
+          def __init__(self, name, width, length):
+              self.name = name
+              self.width = width
+              self.length = length
+              self.area = width * length
+
+
+      kitchen = Room("Kitchen", 3, 4)
+      kitchen.width = 5
+      print(kitchen.width, kitchen.length, kitchen.area)
+      ```
+
+      ```output
+      5 4 12
+      ```
+
+      A room 5 meters by 4 isn't 12 square meters. The area shouldn't be stored at all: it should be worked out when someone asks for it, from the width and the length the room has at that moment. That's a job for a **method**, a function that is part of the class and works with the attributes of the object it is called on.
 
       A method is defined inside the class, as the constructor is, and its first parameter is `self`, the object it is called on:
 
@@ -177,7 +197,7 @@ steps:
               t.celsius = 100
               print(t.fahrenheit(), t.is_freezing())
             hidden: true
-          - call: Temperature(37).fahrenheit()
+          - call: Temperature(36).fahrenheit()
             hidden: true
       - task: |
           Write a class `Password` whose constructor stores the password in the attribute `text`. Give it three methods:
@@ -888,54 +908,57 @@ steps:
 
       Look at `per_night` in `price`. It has no `self.` in front, so it is an ordinary **local variable**: it exists only while the method runs, like a variable inside any function. Use attributes for what the object must remember from one call to the next, and local variables for the steps of a calculation.
 
-      ### Remembering just enough
+      ### What an object needs to remember
 
-      A class that collects numbers doesn't always need to keep them all. To know how many numbers there were and their mean, a count and a total are enough:
+      An object doesn't have to keep a record of everything that happens to it, only what its methods need. A habit tracker that reports your current streak (how many days in a row you have practiced, up to the last one) and your longest streak needs two numbers, not a list of every day:
 
       ```python run
-      class Tally:
+      class Streak:
           def __init__(self):
-              self.count = 0
-              self.total = 0
+              self.current = 0
+              self.longest = 0
 
-          def add(self, number):
-              self.count += 1
-              self.total += number
+          def log(self, done):
+              if done:
+                  self.current += 1
+                  if self.current > self.longest:
+                      self.longest = self.current
+              else:
+                  self.current = 0
 
-          def mean(self):
-              if self.count == 0:
-                  return 0
-              return self.total / self.count
 
-
-      steps = Tally()
+      guitar = Streak()
       while True:
-          line = input("Steps today: ")
-          if line == "":
+          answer = input("Practiced today? ")
+          if answer == "":
               break
-          steps.add(int(line))
+          guitar.log(answer == "yes")
 
-      print("Days:", steps.count)
-      print("Mean:", steps.mean())
+      print("Current streak:", guitar.current)
+      print("Longest streak:", guitar.longest)
       ```
 
       ```input
-      4200
-      9800
-      7000
+      yes
+      yes
+      yes
+      no
+      yes
 
       ```
 
       ```output
-      Steps today: 4200
-      Steps today: 9800
-      Steps today: 7000
-      Steps today:
-      Days: 3
-      Mean: 7000.0
+      Practiced today? yes
+      Practiced today? yes
+      Practiced today? yes
+      Practiced today? no
+      Practiced today? yes
+      Practiced today?
+      Current streak: 1
+      Longest streak: 3
       ```
 
-      The main program reads the input and the `Tally` object does the bookkeeping. `mean` checks for zero first, so that a tally with no numbers never divides by zero.
+      Each call of `log` keeps both numbers up to date: a day of practice makes the current streak one longer, and the longest one too if it was just beaten, and a day off starts the current streak again from 0. The main program only reads the answers and hands each one to the object. `answer == "yes"` is already `True` or `False`, just what `log` expects.
 
       **Your turn:** this class has two mistakes, both in how it calls its own methods. Fix them, so that the program prints:
 
@@ -1080,74 +1103,71 @@ steps:
               print(empty.count())
             hidden: true
       - task: |
-          The starter code has the class `Tally` from the lesson. Write the main program below it: it asks for the lengths of workouts in minutes, until the user types an empty line. Use two `Tally` objects: one for all the workouts and one for the long workouts, those of 60 minutes or more. At the end, print how many workouts of each kind there were and their mean, as in this example:
+          Write a class `Elevator` for a building with the floors 0 to 10. An elevator remembers just two numbers: the floor it is on, in the attribute `floor`, and how many floors it has traveled in all, in the attribute `traveled`. A new elevator is on floor 0 and has traveled 0 floors. Give the class two methods:
+
+          - `exists(floor)`, a helper method, returns `True` when the building has that floor.
+          - `go_to(floor)` moves the elevator to the floor, adds the number of floors it passes to `traveled` and returns `True`. From floor 2 up to 7 is 5 floors, and from 7 down to 3 is 4. For a floor that doesn't exist, it changes nothing and returns `False`: use `exists` to find out.
+
+          Then write the main program. It asks for floors until the user types an empty line, prints `No such floor` when the elevator can't go to the floor, and at the end tells where the elevator is and how far it went, as in this example:
 
           ```
-          Minutes: 30
-          Minutes: 75
-          Minutes: 45
-          Minutes: 90
-          Minutes:
-          All workouts: 4, mean 60.0
-          Long workouts: 2, mean 82.5
+          Floor: 4
+          Floor: 12
+          No such floor
+          Floor: 1
+          Floor:
+          Now on floor 1, traveled 7 floors
           ```
         seed: |
-          class Tally:
+          class Elevator:
               def __init__(self):
-                  self.count = 0
-                  self.total = 0
+                  self.floor = 0
+                  self.traveled = 0
 
-              def add(self, number):
-                  self.count += 1
-                  self.total += number
-
-              def mean(self):
-                  if self.count == 0:
-                      return 0
-                  return self.total / self.count
+              # Write the methods here.
 
 
           # Write the main program here.
         solution: |
-          class Tally:
+          class Elevator:
               def __init__(self):
-                  self.count = 0
-                  self.total = 0
+                  self.floor = 0
+                  self.traveled = 0
 
-              def add(self, number):
-                  self.count += 1
-                  self.total += number
+              def exists(self, floor):
+                  return 0 <= floor <= 10
 
-              def mean(self):
-                  if self.count == 0:
-                      return 0
-                  return self.total / self.count
+              def go_to(self, floor):
+                  if not self.exists(floor):
+                      return False
+                  self.traveled += abs(floor - self.floor)
+                  self.floor = floor
+                  return True
 
 
-          all_workouts = Tally()
-          long_workouts = Tally()
+          lift = Elevator()
           while True:
-              line = input("Minutes: ")
+              line = input("Floor: ")
               if line == "":
                   break
-              minutes = int(line)
-              all_workouts.add(minutes)
-              if minutes >= 60:
-                  long_workouts.add(minutes)
+              if not lift.go_to(int(line)):
+                  print("No such floor")
 
-          print(f"All workouts: {all_workouts.count}, mean {all_workouts.mean()}")
-          print(f"Long workouts: {long_workouts.count}, mean {long_workouts.mean()}")
+          print(f"Now on floor {lift.floor}, traveled {lift.traveled} floors")
         hints:
-          - "Make the two objects before the loop: `all_workouts = Tally()` and `long_workouts = Tally()`."
-          - "Read with a `while True:` loop and `break` when the line is empty. Add every workout to the first tally, and only those of 60 minutes or more to the second."
-          - "Print with f-strings: `f\"All workouts: {all_workouts.count}, mean {all_workouts.mean()}\"`."
+          - "`exists` can return a comparison: `0 <= floor <= 10`. In `go_to`, check `if not self.exists(floor):` first, and return `False` before anything changes."
+          - "The floors passed are the difference between the new floor and the old one, without its minus sign: `abs(floor - self.floor)`. Add it to `self.traveled` before `self.floor` changes."
+          - "In the main program, make one `Elevator()` before the loop. `go_to` tells you whether the move worked, so print the message when it returns `False`: `if not lift.go_to(int(line)):`."
         require:
-          - pattern: Tally\(\)
-            min: 2
-            message: Make two `Tally` objects, one for all the workouts and one for the long ones.
+          - pattern: self\.exists\(
+            message: "Use the helper method in `go_to`: call it with `self.exists(floor)`."
+          - pattern: Elevator\(\)
+            message: Make an `Elevator` object in the main program with `Elevator()`.
         tests:
-          - stdin: "30\n75\n45\n90\n\n"
-          - stdin: "20\n15\n\n"
+          - stdin: "4\n12\n1\n\n"
+          - stdin: "10\n-1\n0\n10\n11\n5\n\n"
             hidden: true
-          - stdin: "120\n60\n59\n61\n\n"
+          - stdin: "3\n3\n7\n\n"
+            hidden: true
+          - stdin: "\n"
             hidden: true

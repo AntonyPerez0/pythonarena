@@ -128,19 +128,21 @@ steps:
               result = width * height
 
 
-          area(3, 4)
-          print("Kitchen:", result)
-          area(5, 6)
-          print("Living room:", result)
+          if __name__ == "__main__":
+              area(3, 4)
+              print("Kitchen:", result)
+              area(5, 6)
+              print("Living room:", result)
         solution: |
           def area(width, height):
               return width * height
 
 
-          kitchen = area(3, 4)
-          print("Kitchen:", kitchen)
-          living_room = area(5, 6)
-          print("Living room:", living_room)
+          if __name__ == "__main__":
+              kitchen = area(3, 4)
+              print("Kitchen:", kitchen)
+              living_room = area(5, 6)
+              print("Living room:", living_room)
         hints:
           - "`result` is a local variable of `area`, so the main program can't see it. The function has to hand the value out with `return`."
           - "Store each return value in a variable of the main program, `kitchen = area(3, 4)`, or print the call directly: `print(\"Kitchen:\", area(3, 4))`."
@@ -156,6 +158,10 @@ steps:
           - expect: |
               Kitchen: 12
               Living room: 30
+          - call: area(7, 3)
+            hidden: true
+          - call: area(2, 2)
+            hidden: true
       - task: |
           What does this program print? Type each line it prints.
         predict: |

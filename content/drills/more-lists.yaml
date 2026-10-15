@@ -194,32 +194,38 @@ drills:
   - type: boss
     after: game-board
     prompt: |
-      In a board game, `0` is an empty square and other numbers are pieces. Write a function `count_pieces(board, piece)` that returns how many squares of the board hold `piece`. For example, `count_pieces([[1, 0, 2], [2, 2, 0]], 2)` returns `3`.
+      A cinema keeps its seats in a matrix with one list per row of seats: `0` is a free seat and `1` a taken one. Write a function `first_free(seats)` that returns the place of the first free seat as a list `[row, column]`. Look through the rows from row 0 on, and each row from left to right. If no seat is free, return an empty list `[]`.
+
+      For example, `first_free([[1, 1, 1], [1, 0, 1], [0, 0, 1]])` returns `[1, 1]`.
     seed: |
-      def count_pieces(board: list, piece: int) -> int:
+      def first_free(seats: list) -> list:
           pass
 
 
       if __name__ == "__main__":
-          print(count_pieces([[1, 0, 2], [2, 2, 0]], 2))
+          print(first_free([[1, 1, 1], [1, 0, 1], [0, 0, 1]]))
     solution: |
-      def count_pieces(board: list, piece: int) -> int:
-          count = 0
-          for row in board:
-              for square in row:
-                  if square == piece:
-                      count += 1
-          return count
+      def first_free(seats: list) -> list:
+          for i in range(len(seats)):
+              for j in range(len(seats[i])):
+                  if seats[i][j] == 0:
+                      return [i, j]
+          return []
 
 
       if __name__ == "__main__":
-          print(count_pieces([[1, 0, 2], [2, 2, 0]], 2))
+          print(first_free([[1, 1, 1], [1, 0, 1], [0, 0, 1]]))
     hints:
-      - Go through the rows with one loop and the squares of each row with a second loop inside it.
-      - "Add 1 to a counter whenever a square equals `piece`. (`row.count(piece)` counts one row in one go, too.)"
+      - "You need the indexes, not just the values: `for i in range(len(seats)):` for the rows, and a loop over `range(len(seats[i]))` inside it for the columns."
+      - "As soon as `seats[i][j]` is `0`, return `[i, j]`: that ends the function and both loops."
+      - If both loops finish, no seat was free, so return `[]` after them.
     tests:
-      - call: count_pieces([[1, 0, 2], [2, 2, 0]], 2)
-      - call: count_pieces([[1, 0, 2], [2, 2, 0]], 1)
+      - call: first_free([[1, 1, 1], [1, 0, 1], [0, 0, 1]])
+      - call: first_free([[0, 1], [1, 1]])
         hidden: true
-      - call: count_pieces([[1, 1], [1, 1], [1, 1]], 2)
+      - call: first_free([[1, 1, 0], [0, 1, 1]])
+        hidden: true
+      - call: first_free([[1, 1, 1, 1], [1, 1, 1, 0]])
+        hidden: true
+      - call: first_free([[1, 1], [1, 1]])
         hidden: true

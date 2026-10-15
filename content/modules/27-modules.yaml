@@ -440,9 +440,11 @@ steps:
           - Check the length first, and return `False` right away if it's wrong.
           - "Make one string of all the allowed characters: `string.ascii_lowercase + string.digits + \"_\"`."
           - Loop over the characters of the name. As soon as one is `not in` the allowed string, return `False`. If the loop finishes, the name is valid.
-        forbid:
-          - pattern: abcdef
-            message: Use `string.ascii_lowercase` instead of typing the alphabet.
+        require:
+          - pattern: \bascii_lowercase\b
+            message: Use `string.ascii_lowercase` for the letters a to z instead of typing them.
+          - pattern: \bdigits\b
+            message: Use `string.digits` for the digits instead of typing them.
         tests:
           - call: valid_username("ada_99")
           - call: valid_username("Ada")
@@ -459,14 +461,14 @@ steps:
           - call: valid_username("abcdefghijkl")
             hidden: true
       - task: |
-          Reading the documentation of `math` turns up `math.comb(n, k)`: the number of different ways to choose `k` things out of `n`, when the order doesn't matter. In a lottery that draws 7 numbers out of 40, there are `math.comb(40, 7)` different rows, and a single row wins with a chance of one in that many.
+          Reading the documentation of `math` turns up `math.comb(n, k)`: the number of different ways to choose `k` things out of `n`, when the order doesn't matter. A chess club with 12 members that sends 4 players to a tournament can pick its team in `math.comb(12, 4)` different ways. (Ada, Ben, Cy and Di are the same team as Di, Cy, Ben and Ada.)
 
-          Write a program that asks how many numbers there are in the draw and how many are picked, and prints the chance of a full row. For example:
+          Write a program that asks how many members the club has and how many players go to the tournament, and prints how many different teams there are. For example:
 
           ```
-          Numbers in the draw: 40
-          Numbers picked: 7
-          Your chance of a full row: 1 in 18643560
+          Members in the club: 12
+          Players in a team: 4
+          Different teams: 495
           ```
         seed: |
           import math
@@ -475,24 +477,28 @@ steps:
         solution: |
           import math
 
-          total = int(input("Numbers in the draw: "))
-          picked = int(input("Numbers picked: "))
-          print("Your chance of a full row: 1 in", math.comb(total, picked))
+          members = int(input("Members in the club: "))
+          players = int(input("Players in a team: "))
+          print("Different teams:", math.comb(members, players))
         hints:
           - Read the two numbers with `int(input(...))`, using the prompts of the example.
-          - "The number of possible rows is `math.comb(total, picked)`: the total first, then how many are picked."
+          - "The number of different teams is `math.comb(members, players)`: the number to choose from first, then how many are chosen."
         require:
           - pattern: math\.comb\s*\(
-            message: Calculate the number of rows with `math.comb`.
+            message: Calculate the number of teams with `math.comb`.
         tests:
           - stdin: |
-              40
-              7
+              12
+              4
           - stdin: |
-              49
-              6
+              52
+              5
             hidden: true
           - stdin: |
               10
               2
+            hidden: true
+          - stdin: |
+              6
+              6
             hidden: true

@@ -188,7 +188,7 @@ steps:
                 2026-08-01;31
             hidden: true
       - task: |
-          The file `products.csv` has a product's name, its price and how many are in stock on each line, separated by commas. Some names have a comma in them, and those are in double quotes. Write a function `stock_value(filename)` that reads the file with the `csv` module and returns the total value of the stock: the sum of price times count over all the lines. For example, for this file the function returns `40.0`:
+          The file `products.csv` has a product's name, its price and how many are in stock on each line, separated by commas. Some names have a comma in them, and those are in double quotes. Write a function `stock_value(filename)` that reads the file with the `csv` module and returns the total value of the stock: the sum of price times count over all the lines. For example, for this file the function returns `39.0`:
 
           ```text
           "Pencils, box of 12",4.50,4
@@ -310,7 +310,7 @@ steps:
       Goals in all: 8
       ```
 
-      (Inside the f-string the keys are in single quotes, because the f-string itself is in double quotes.) The module also has `json.load(file)`, without the s, which reads the open file directly.
+      (Inside the f-string the keys are in single quotes, so they stand out from the f-string's own double quotes. Python 3.12 and later accept double quotes there too, but older versions don't, so you'll see single quotes in most code.) The module also has `json.load(file)`, without the s, which reads the open file directly.
 
       ### JSON is not quite Python
 
@@ -448,7 +448,7 @@ steps:
         hints:
           - "Ask for the file's name with `input(\"File: \")` and open the file of that name."
           - "Each recipe is a dictionary. The number of ingredients is the length of the list `recipe[\"ingredients\"]`."
-          - "In an f-string in double quotes, write the keys in single quotes: `recipe['name']`."
+          - "In an f-string in double quotes, write the keys in single quotes, so they stand out: `recipe['name']`."
         require:
           - pattern: json\.loads?\s*\(
             message: Read the file with the `json` module.

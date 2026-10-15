@@ -149,7 +149,7 @@ drills:
   - type: boss
     after: classes-and-objects
     prompt: |
-      Write a function `add_all(parts)` that takes a list of `Fraction` objects and returns their sum as a `Fraction`. For an empty list it returns `Fraction(0)`.
+      Write a function `add_all(parts)` that takes a list of `Fraction` objects and returns their sum as a `Fraction`. For an empty list it returns `Fraction(0)`: a fraction too, not the whole number `0`.
 
       This code:
 
@@ -194,7 +194,7 @@ drills:
         hidden: true
       - call: print(add_all([Fraction(2, 3), Fraction(1, 6), Fraction(5, 12)]))
         hidden: true
-      - call: print(add_all([]))
+      - call: add_all([])
         hidden: true
 
   - type: boss

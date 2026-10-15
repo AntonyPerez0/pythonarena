@@ -980,6 +980,8 @@ steps:
             hidden: true
           - window: {frames: 40, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_RIGHT}, {at: 30, type: keyup, key: K_RIGHT}, {at: 35, type: keydown, key: K_RIGHT}, {at: 35, type: keyup, key: K_RIGHT}]}
             hidden: true
+          - window: {frames: 40, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_DOWN}, {at: 15, type: keyup, key: K_DOWN}, {at: 20, type: keydown, key: K_DOWN}, {at: 20, type: keyup, key: K_DOWN}, {at: 25, type: keydown, key: K_DOWN}, {at: 25, type: keyup, key: K_DOWN}, {at: 30, type: keydown, key: K_DOWN}, {at: 30, type: keyup, key: K_DOWN}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}]}
+            hidden: true
 
   - id: game-project-boxes
     slug: boxes
@@ -1056,7 +1058,7 @@ steps:
 
       ### Code that says what it means
 
-      There are other ways to store this game. One is a single grid of numbers for everything: 0 for floor, 1 for a wall, 3 for a box, 5 for a box on its target, and so on. It needs less code, but a line like `if grid[y][x] in [3, 5]:` means nothing unless you remember what each number stands for. Numbers like these are called **magic numbers**, and they make code hard to read and easy to break.
+      There are other ways to store this game. One is to give every kind of square a number and keep everything in a single grid of numbers: say 7 for a wall, 2 for a box and 6 for a box that's on its target. It can be shorter, but a line like `if grid[y][x] == 7:` means nothing unless you remember that 7 stands for a wall. Numbers like these, whose meaning lives only in the programmer's head, are called **magic numbers**, and they make code hard to read and easy to break.
 
       This game uses characters that look like what they mean, `#` for a wall, and attributes with names, `self.robot` and `self.boxes`, for what moves. When working code is hard to read, it's worth rewriting it to be clearer without changing what it does. That's called **refactoring**.
 
@@ -2311,12 +2313,12 @@ steps:
           - "For Esc, call `exit()`, as the code does for `pygame.QUIT`."
         tests:
           - name: Pushing a box, then R
-            window: {frames: 30, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_r}, {at: 20, type: keyup, key: K_r}]}
+            window: {frames: 30, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_r}, {at: 23, type: keyup, key: K_r}]}
           - name: Esc
-            window: {frames: 30, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 3, type: keyup, key: K_RIGHT}, {at: 8, type: keydown, key: K_ESCAPE}, {at: 8, type: keyup, key: K_ESCAPE}]}
-          - window: {frames: 40, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_r}, {at: 20, type: keyup, key: K_r}, {at: 25, type: keydown, key: K_UP}, {at: 25, type: keyup, key: K_UP}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}]}
+            window: {frames: 30, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 3, type: keyup, key: K_RIGHT}, {at: 8, type: keydown, key: K_ESCAPE}, {at: 11, type: keyup, key: K_ESCAPE}]}
+          - window: {frames: 40, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_r}, {at: 23, type: keyup, key: K_r}, {at: 25, type: keydown, key: K_UP}, {at: 25, type: keyup, key: K_UP}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}]}
             hidden: true
-          - window: {frames: 40, events: [{at: 4, type: keydown, key: K_UP}, {at: 4, type: keyup, key: K_UP}, {at: 8, type: keydown, key: K_RIGHT}, {at: 8, type: keyup, key: K_RIGHT}, {at: 12, type: keydown, key: K_DOWN}, {at: 12, type: keyup, key: K_DOWN}, {at: 16, type: keydown, key: K_ESCAPE}, {at: 16, type: keyup, key: K_ESCAPE}]}
+          - window: {frames: 40, events: [{at: 4, type: keydown, key: K_UP}, {at: 4, type: keyup, key: K_UP}, {at: 8, type: keydown, key: K_RIGHT}, {at: 8, type: keyup, key: K_RIGHT}, {at: 12, type: keydown, key: K_DOWN}, {at: 12, type: keyup, key: K_DOWN}, {at: 16, type: keydown, key: K_ESCAPE}, {at: 19, type: keyup, key: K_ESCAPE}]}
             hidden: true
       - task: |
           Write the method `solved()`. It returns `True` when every box is on a target square, and `False` otherwise. The rest of the game uses it already: once it works, the bar shows a message when the puzzle is solved, and the robot stops.

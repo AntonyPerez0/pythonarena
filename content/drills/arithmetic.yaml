@@ -7,12 +7,14 @@ drills:
       print(17 % 5)
     why: "5 fits into 17 three times (`//`), and 2 is left over (`%`)."
 
-  - type: predict
+  - type: bug
     after: operators
     code: |
-      print(2 ** 4)
-      print(2 ^ 4)
-    why: "`**` is the power: 2 * 2 * 2 * 2 is 16. `^` is a different operator altogether, so it gives a wrong answer without an error."
+      side = 4
+      area = side ^ 2  # BUG
+      print(f"Area: {area}")
+    fix: area = side ** 2
+    why: "In Python, `^` is not a power. It's a different operator, so `side ^ 2` gives a wrong number without any error. The power operator is `**`: `4 ** 2` is 16."
 
   - type: fill
     after: operators
@@ -134,24 +136,34 @@ drills:
   - type: boss
     after: using-variables
     prompt: |
-      Write a program that asks how many days and prints how many seconds there are in that many days. If the user types `2`, the run looks like this:
+      A film's length is given in hours and minutes. Write a program that asks for both and prints the length in minutes. If the user types `2` and `15`, the run looks like this:
 
       ```
-      Days: 2
-      Seconds: 172800
+      Hours: 2
+      Minutes: 15
+      Length: 135 minutes
       ```
     seed: |
-      # Ask for the days, then print the seconds.
+      # Ask for the hours and the minutes, then print the length in minutes.
     solution: |
-      # Ask for the days, then print the seconds.
-      days = int(input("Days: "))
-      print(f"Seconds: {days * 24 * 60 * 60}")
+      # Ask for the hours and the minutes, then print the length in minutes.
+      hours = int(input("Hours: "))
+      minutes = int(input("Minutes: "))
+      print(f"Length: {hours * 60 + minutes} minutes")
     hints:
-      - Read the number of days with `int(input(...))`.
-      - "A day has 24 hours, an hour 60 minutes and a minute 60 seconds: multiply them all."
+      - Read both numbers with `int(input(...))`, each into a variable of its own.
+      - "Each hour is 60 minutes, so the length is the hours times 60, plus the minutes."
     tests:
-      - stdin: "2"
-      - stdin: "7"
+      - stdin: |
+          2
+          15
+      - stdin: |
+          1
+          50
+        hidden: true
+      - stdin: |
+          3
+          0
         hidden: true
 
   - type: boss

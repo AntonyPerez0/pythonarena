@@ -62,6 +62,7 @@ export function pyodidePool({ size = Math.max(1, Math.min(4, Number(process.env.
         clearTimeout(job.timer);
         if (!job.retried && !closed) {
           job.retried = true;
+          console.warn(`pyodide: a Pyodide process stopped (${signal ?? `exit ${code}`}) while running a program; running it again in a new one. ${tail()}`);
           queues[HASH_SEEDS.indexOf(w.seed)].unshift(job);
         } else job.reject(new Error(`the Pyodide process stopped (${signal ?? `exit ${code}`}) twice running this program: ${tail()}`));
       }

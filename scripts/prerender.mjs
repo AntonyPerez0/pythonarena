@@ -3,7 +3,9 @@
 // React app replaces the pre-rendered content when it starts. Also writes 404.html (GitHub Pages
 // serves it for unknown addresses, and the app then shows the right page), sitemap.xml and robots.txt.
 //
-// Env: SITE_URL (default https://antonyperez0.github.io/pythonarena), BASE_PATH (default /).
+// Env: SITE_URL (default https://antonyperez0.github.io/pythonarena), BASE_PATH (default /). CI sets
+// both. A plain local build keeps the live site's address in canonical links and the sitemap while its
+// pages sit at /: scripts/check-links.mjs reads that address from the home page and checks it in dist.
 import fs from "node:fs";
 import path from "node:path";
 import { marked } from "marked";
@@ -168,7 +170,7 @@ page("/learn", {
 /** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the Pro Track, as src/pages/ModulePage.tsx does. */
 const COURSE_END = content.plan.filter((m) => m.course === "II").pop()?.id;
 const courseEnd = (m) =>
-  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can go on with the extra modules, or try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
+  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can ${content.plan.some((x) => x.course === "extra") ? "go on with the extra modules" : `<a href="${link("/projects")}">build the projects</a>`}, or try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
 for (const m of content.modules) {
   page(modulePath(m), {
     title: `Module ${m.number}: ${m.title} | ${NAME}`,
@@ -468,5 +470,8 @@ fs.writeFileSync(
 
 const indexed = pages.filter((p) => p.index).map((p) => canonical(p.route));
 fs.writeFileSync(path.join(DIST, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${indexed.map((u) => `  <url><loc>${u}</loc></url>`).join("\n")}\n</urlset>\n`);
+// Crawlers read robots.txt only at the top of a host (RFC 9309): at the site's own domain (BASE_PATH /)
+// it names the sitemap. On a github.io project page it sits at /<repo>/robots.txt, where no crawler
+// looks, so the sitemap is submitted by hand there (README.md, "Deploy").
 fs.writeFileSync(path.join(DIST, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
 console.log(`prerender: ${pages.length} pages, 404.html, sitemap.xml with ${indexed.length} addresses`);

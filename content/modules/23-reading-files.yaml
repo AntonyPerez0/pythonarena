@@ -532,61 +532,83 @@ steps:
           - "`int` ignores the line break around a number, so the third piece converts fine. `//` divides and drops the decimals."
           - The line was never stripped, so the last piece still ends with `\n`, and the comparison with `"709000"` is false.
       - task: |
-          The file `menu.csv` lists the dishes of a café and their prices, after a header line. Write a function `read_menu(filename)` that reads the file and returns a dictionary whose keys are the dishes and whose values are the prices as decimal numbers (`float`).
+          The file `menu.csv` lists the dishes of a café after a header line. Each line has a dish, its price and its course: `starter`, `main` or `dessert`. Write a function `prices_in(filename, course)` that returns a dictionary of the dishes of the given course only. Its keys are the dishes, and its values are their prices as decimal numbers (`float`). When the menu has no dishes of that course, the dictionary is empty.
 
           With this file
 
           ```text
-          dish;price
-          soup;6.50
-          pasta;11.90
-          salad;8.00
+          dish;price;course
+          soup;6.50;starter
+          pasta;11.90;main
+          salad;8.00;starter
+          cake;5.20;dessert
           ```
 
-          `print(read_menu("menu.csv"))` prints:
+          `print(prices_in("menu.csv", "starter"))` prints:
 
           ```
-          {'soup': 6.5, 'pasta': 11.9, 'salad': 8.0}
+          {'soup': 6.5, 'salad': 8.0}
           ```
         seed: |
-          def read_menu(filename):
+          def prices_in(filename, course):
               pass
 
 
           if __name__ == "__main__":
-              print(read_menu("menu.csv"))
+              print(prices_in("menu.csv", "starter"))
         solution: |
-          def read_menu(filename):
-              menu = {}
+          def prices_in(filename, course):
+              prices = {}
               with open(filename) as file:
                   for line in file:
                       parts = line.strip().split(";")
                       if parts[0] == "dish":
                           continue
-                      menu[parts[0]] = float(parts[1])
-              return menu
+                      if parts[2] == course:
+                          prices[parts[0]] = float(parts[1])
+              return prices
 
 
           if __name__ == "__main__":
-              print(read_menu("menu.csv"))
+              print(prices_in("menu.csv", "starter"))
         hints:
-          - Start with an empty dictionary, open the file named by the parameter, and split each stripped line at `;`.
-          - "Skip the header: when the first field is `dish`, `continue` to the next line."
-          - "Store each dish with `menu[parts[0]] = float(parts[1])`, and return the dictionary after the `with` block."
+          - Start with an empty dictionary, open the file named by the parameter, and split each stripped line at `;`. Skip the header line, whose first field is `dish`.
+          - "The course is the last field, `parts[2]`. Strip the line before you split it: otherwise that field ends with `\\n` and is never equal to `\"starter\"`."
+          - "Only when `parts[2] == course`, store the dish: `prices[parts[0]] = float(parts[1])`. Return the dictionary after the `with` block."
         tests:
-          - call: print(read_menu("menu.csv"))
+          - call: print(prices_in("menu.csv", "starter"))
             files:
               menu.csv: |
-                dish;price
-                soup;6.50
-                pasta;11.90
-                salad;8.00
-          - call: read_menu("drinks.csv")
+                dish;price;course
+                soup;6.50;starter
+                pasta;11.90;main
+                salad;8.00;starter
+                cake;5.20;dessert
+          - call: prices_in("lunch.csv", "dessert")
             files:
-              drinks.csv: |
-                dish;price
-                tea;2.20
-                lemonade;3.50
+              lunch.csv: |
+                dish;price;course
+                pancakes;7.40;main
+                ice cream;3.90;dessert
+                burger;12.50;main
+                fruit bowl;4.00;dessert
+            hidden: true
+          - call: prices_in("lunch.csv", "starter")
+            files:
+              lunch.csv: |
+                dish;price;course
+                pancakes;7.40;main
+                ice cream;3.90;dessert
+                burger;12.50;main
+            hidden: true
+          - call: prices_in("menu.csv", "main")
+            files:
+              menu.csv: |
+                dish;price;course
+                soup;6.50;starter
+                pasta;11.90;main
+                risotto;13.00;main
+                cake;5.20;dessert
             hidden: true
 
   - id: reading-files-read-once
@@ -651,41 +673,45 @@ steps:
 
       ### Reading into a dictionary
 
-      When each line is about something with a name, a dictionary is a good home for the data. This program reads each student's quiz scores into a dictionary: the keys are the names, and each value is a list of that student's scores. The reading happens in a function that returns the dictionary, so the rest of the program doesn't need to know what the file looks like:
+      When each line is about something with a name, a dictionary is a good home for the data. In this file, each line is one customer's shopping basket: the customer's name, then everything in the basket. A function reads the file into a dictionary whose keys are the customers and whose values are lists of their items, and returns it. After that, the program asks the dictionary as many questions as it likes:
 
-      ```file quizzes.csv
-      Ines;7;9;8
-      Tom;5;6;10
-      Yara;10;9;10
+      ```file baskets.csv
+      Mia;bread;milk;apples
+      Noah;coffee;bananas
+      Lena;apples;bread;cheese;milk
       ```
 
       ```python run
-      def read_scores(filename):
-          scores = {}
+      def read_baskets(filename):
+          baskets = {}
           with open(filename) as file:
               for line in file:
                   parts = line.strip().split(";")
-                  name = parts[0]
-                  scores[name] = []
-                  for score in parts[1:]:
-                      scores[name].append(int(score))
-          return scores
+                  baskets[parts[0]] = parts[1:]
+          return baskets
 
 
-      scores = read_scores("quizzes.csv")
-      print(scores["Tom"])
-      for name, results in scores.items():
-          print(f"{name}: total {sum(results)}, best {max(results)}")
+      baskets = read_baskets("baskets.csv")
+      print(baskets["Noah"])
+      for customer, items in baskets.items():
+          print(f"{customer}: {len(items)} items")
+      for customer, items in baskets.items():
+          if "bread" in items:
+              print(customer, "bought bread")
       ```
 
       ```output
-      [5, 6, 10]
-      Ines: total 24, best 9
-      Tom: total 21, best 10
-      Yara: total 29, best 10
+      ['coffee', 'bananas']
+      Mia: 3 items
+      Noah: 2 items
+      Lena: 4 items
+      Mia bought bread
+      Lena bought bread
       ```
 
-      The scores are converted to `int` once, while reading, so every later calculation can use them as numbers. Splitting the work this way, one function that reads and other code that uses the data, keeps each part short and easy to check.
+      The slice `parts[1:]` is already a list: every field after the name. Here the fields are words, so the list can go into the dictionary as it is. When they are numbers, build the list with a loop that converts each field with `int`, as the rounds example in the previous step did, and store that list under the name. Then the numbers are converted once, while reading, and every later calculation can use them.
+
+      Two loops over the dictionary are no problem, unlike two loops over the file. And the rest of the program never sees a semicolon or a line break: only `read_baskets` knows what the file looks like.
 
       **Your turn:** the program should print the number of days in the file `temperatures.txt` and their average temperature, but the average comes out wrong. Fix it, so that with this file
 
@@ -878,6 +904,13 @@ steps:
                 Tetris;5;5
                 Snake;4
             hidden: true
+          - call: best_rated("shows.csv")
+            files:
+              shows.csv: |
+                Long Saga;3;5;3;3;3
+                Quiz Night;4;4;3
+                Short Gem;5
+            hidden: true
 
   - id: reading-files-combine
     slug: combine
@@ -1028,11 +1061,11 @@ steps:
               parts = line.strip().split(";")
               item = parts[0]
               count = int(parts[1])
-              total += count * [[prices[item]]]
+              total += count * prices[[[item]]]
       print(f"Total: {total:.2f}")
     hints:
-      - The price of an item is in the dictionary `prices`, under the item's name.
-      - "Look it up with square brackets: `prices[item]`."
+      - The price of an item is in the dictionary `prices`, under the item's name. The blank is the key that goes between the square brackets.
+      - "The key is the item's name, which the line before has stored in the variable `item`."
     tests:
       - files:
           prices.csv: |

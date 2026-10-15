@@ -5,7 +5,7 @@ steps:
     slug: items
     title: Lists and indexes
     text: |
-      So far each value has had its own variable. That gets clumsy fast: a week of temperatures would need seven variables, and a program can't know in advance how many values the user will type. A **list** keeps any number of values under one name. You write it in square brackets, with commas between the values:
+      Think of a program that keeps a week of temperatures. With what you know now, it would need seven variables, `monday` to `sunday`, and a program that reads values until the user stops couldn't work at all, because it can't make up new variable names as it runs. A **list** solves both problems: it keeps any number of values under one name. You write it in square brackets, with commas between the values:
 
       ```python run
       temperatures = [18, 21, 17, 25]  # a list of four numbers
@@ -33,14 +33,14 @@ steps:
       print(temperatures[0])
       print(temperatures[2])
       print(temperatures[-1])
-      print("First two together:", temperatures[0] + temperatures[1])
+      print("Change from first to last:", temperatures[-1] - temperatures[0])
       ```
 
       ```output
       18
       17
       25
-      First two together: 39
+      Change from first to last: 7
       ```
 
       The function `len` gives the number of items, so the last index is `len(temperatures) - 1`. An index past the end stops the program:
@@ -330,12 +330,9 @@ steps:
     slug: removing
     title: "Removing items: pop and remove"
     text: |
-      There are two ways to remove an item from a list. Which one you use depends on what you know about the item:
+      A queue at a counter shrinks from the front: whoever stands first is served next, whatever their name. A guest list shrinks by name: Linus cancels, wherever he is on the list. Lists have a method for each of these.
 
-      - if you know its **index**, use `pop`;
-      - if you know its **value**, use `remove`.
-
-      **`pop`** removes the item at the index you give, and the items after it move one place to the left. It also returns the item it removed, so you can still use it:
+      **`pop`** works with places. It removes the item at the index you give, and the items after it move one place to the left. It also returns the item it removed, so you can still use it:
 
       ```python run
       queue = ["Ada", "Linus", "Grace", "Guido"]
@@ -356,7 +353,7 @@ steps:
 
       Without an argument, `pop()` removes the last item.
 
-      **`remove`** looks for a value and removes it. If the value is in the list more than once, only the first one goes:
+      **`remove`** works with values, for when you know what to take out but not where it is. It looks for the value and removes it. If the value is in the list more than once, only the first one goes:
 
       ```python run
       colors = ["red", "blue", "green", "blue"]
@@ -840,18 +837,39 @@ steps:
 
       The function builds the list in a variable of its own and returns it when the loop ends. The code that called it stores the list and goes on working with it.
 
-      ### Why split a program into functions?
+      ### What functions buy you
 
-      The same program could be written without `read_words`. But with the function, each part has a name that says what it does, and the main code reads almost like a description: read the fruit, print them in order. Each function can also be tried out on its own in the main block, which makes bugs much easier to find.
+      Read the last three lines of that program: read the fruit, print them in order, print the last one. Each line says *what* happens, while *how* it happens (the loop, the empty line, `append`) is tucked away in `read_words`. A program split into named pieces is easier to follow, and when something goes wrong, the name tells you where to look.
 
-      A function can be used again, too. Once `read_words` works, reading a second list takes one line:
+      A function also does its job wherever it's needed. Here `spread` is written once and used by two other functions:
 
-      ```python fragment
-      fruit = read_words("Fruit: ")
-      vegetables = read_words("Vegetable: ")
+      ```python run
+      def spread(numbers: list) -> int:
+          return max(numbers) - min(numbers)
+
+
+      def weather(temperatures: list) -> str:
+          if spread(temperatures) > 10:
+              return "a day of big changes"
+          return "a steady day"
+
+
+      def judges(scores: list) -> str:
+          return f"the judges differ by up to {spread(scores)} points"
+
+
+      print(weather([12, 19, 25, 14]))
+      print(weather([20, 22, 21]))
+      print(judges([7, 9, 8, 6]))
       ```
 
-      Without the function, the whole loop would have to be written out twice.
+      ```output
+      a day of big changes
+      a steady day
+      the judges differ by up to 3 points
+      ```
+
+      If `spread` had a bug, you would fix it in one place, and both functions would be right again.
 
       **Your turn:** write the function `price_range(prices: list) -> str`, which returns the lowest and the highest price of a list as text. For example, `price_range([12, 3, 8])` returns `'from 3 to 12'`.
     seed: |
@@ -870,7 +888,7 @@ steps:
           print(price_range([12, 3, 8]))
     hints:
       - "`min(prices)` and `max(prices)` give the lowest and the highest price."
-      - "Put them in an f-string and return it: `return f\"from {min(prices)} to {max(prices)}\"`."
+      - "Return an f-string that has `min(prices)` and `max(prices)` in its braces, with the words `from` and `to` around them."
     tests:
       - call: price_range([12, 3, 8])
       - call: price_range([5])

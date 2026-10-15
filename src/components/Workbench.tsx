@@ -13,11 +13,11 @@ import SymbolBar from "./SymbolBar";
 import HintsPanel from "./HintsPanel";
 import { DownloadCard, EngineErrorCard, UnsupportedCard, useEngineAutoload, useEngineStatus } from "./Engine";
 import { engineSupported } from "../engine/client";
+import { PYGAME_IMPORT } from "../engine/pygame-import";
 import { splitFiles } from "../grader/files.js";
 
 // A pygame challenge's window (loaded only for those challenges).
 const WindowPanel = lazy(() => import("./WindowPanel"));
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 
 type Props = {
   ex: Exercise;
@@ -80,9 +80,10 @@ export default function Workbench({ ex, progress, onChange, onPass, report }: Pr
   // A challenge whose tests call functions: "Run with my input" runs the program as it is, which runs
   // the code under if __name__ == "__main__": too.
   const callsOnly = ex.tests.length > 0 && ex.tests.every((t) => t.call != null);
-  // A pygame challenge: "Run with my input" opens its window, with what the first test does in it.
+  // A pygame challenge: "Run with my input" opens its window, with what the first test does in it. The
+  // window keeps the code it started with (see WindowPanel); "Run it again" starts it on the code as it is now.
   const windowTest = ex.tests.find((t) => !t.hidden && t.window) ?? ex.tests.find((t) => t.window);
-  const pygame = !!windowTest || PYGAME.test(source);
+  const pygame = !!windowTest || PYGAME_IMPORT.test(source);
   const windowFiles = useMemo(() => (pygame && showConsole ? (splitFiles(source) as { path: string; text: string }[]) : []), [pygame, showConsole, source]);
   const [windowRun, setWindowRun] = useState(0);
 
@@ -126,6 +127,9 @@ export default function Workbench({ ex, progress, onChange, onPass, report }: Pr
     setCode(ex.seed);
     setBlanks(blanksOf.map(() => ""));
     setResult(null);
+    // The last run (its output and error marks) was of the old code; an open window starts over on the starting code.
+    setFreeRun(null);
+    if (showConsole && pygame) setWindowRun((n) => n + 1);
     onChange({ code: ex.seed, blanks: blanksOf.map(() => "") });
   };
 

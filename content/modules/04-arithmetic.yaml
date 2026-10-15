@@ -124,7 +124,7 @@ steps:
       3. multiplication and division: `*`, `/`, `//` and `%`
       4. addition and subtraction: `+` and `-`
 
-      Operators on the same level are worked out from left to right.
+      Operators on the same level are worked out from left to right. Powers are the exception: `2 ** 3 ** 2` is worked out from the right, as `2 ** 9`.
 
       ```python run
       print(2 + 3 * 4)
@@ -248,11 +248,7 @@ steps:
 
       ### The type of a result
 
-      The types of the operands decide the type of the result:
-
-      - Two integers with `+`, `-`, `*`, `//`, `%` or `**` give an integer.
-      - If even one operand is a float, the result is a float.
-      - `/` is the exception: it always gives a float.
+      What type a calculation gives depends on its operator and on its operands. Compare these:
 
       ```python repl
       >>> 2 + 3
@@ -269,7 +265,9 @@ steps:
       <class 'float'>
       ```
 
-      `//` on a float still rounds down to a whole number, but the result is a float. The type shows in what you print, so choose the operator that gives the output you want:
+      Look at them in pairs. `2 + 3` is the integer 5, but put the float `3.0` in place of `3` and the answer turns into the float `5.0`, though it's still a whole number. `6 / 3` divides two integers evenly and still gives `2.0`: division with `/` gives a float every time. `7 // 2` is the integer 3, and `7.5 // 2` rounds down as well, to `3.0`, a float because a float went in.
+
+      The type shows in what you print, so choose the operator that gives the output you want:
 
       ```python run
       minutes = 240
@@ -378,48 +376,48 @@ steps:
       `input` always gives a string, even when the user types digits. Calculating with that string as if it were a number fails:
 
       ```python run crash
-      born = input("Year of birth: ")
-      print(2050 - born)
+      guests = input("Guests: ")
+      print(guests + 2)
       ```
 
       ```input
-      1990
+      8
       ```
 
       ```output
-      Year of birth: 1990
+      Guests: 8
       ```
 
       ```crash
       Traceback (most recent call last):
         File "main.py", line 2, in <module>
-          print(2050 - born)
-                ~~~~~^~~~~~
-      TypeError: unsupported operand type(s) for -: 'int' and 'str'
+          print(guests + 2)
+                ~~~~~~~^~~
+      TypeError: can only concatenate str (not "int") to str
       ```
 
-      The user typed 1990, but `born` holds the string `"1990"`, and an integer minus a string makes no sense.
+      The user typed 8, but `guests` holds the string `"8"`. With a string on its left, `+` means joining, and Python can't join a number to a string.
 
       ### int and float
 
-      You converted numbers into strings with `str`. The functions `int` and `float` go the other way: `int("1990")` is the integer 1990, and `float("2.5")` is the float 2.5.
+      You converted numbers into strings with `str`. The functions `int` and `float` go the other way: `int("8")` is the integer 8, and `float("2.5")` is the float 2.5.
 
       ```python run
-      text = input("Year of birth: ")
-      born = int(text)
-      print(f"In 2050 you will turn {2050 - born}.")
+      answer = input("Guests: ")
+      guests = int(answer)
+      print(f"Put out {guests + 2} chairs: one for each guest and two spare.")
       ```
 
       ```input
-      1990
+      8
       ```
 
       ```output
-      Year of birth: 1990
-      In 2050 you will turn 60.
+      Guests: 8
+      Put out 10 chairs: one for each guest and two spare.
       ```
 
-      You don't need the extra variable. Put `input` inside `int`, and Python first runs `input` and then converts what it gives:
+      Programs usually do the reading and the converting in one line, with `input` inside the parentheses of `int`. Python works from the inside out: it runs `input` first and hands the string it gets to `int`:
 
       ```python run
       dog_age = int(input("Dog's age in years: "))
@@ -548,29 +546,29 @@ steps:
     slug: using-variables
     title: Calculating with variables
     text: |
-      A program that works with numbers usually reads them, stores them in variables and then calculates with the variables. This one prints the sum and the mean of three numbers:
+      A program that works with numbers usually reads them, stores them in variables and then calculates with the variables. This one adds up three days of running, in whole kilometers, and works out the distance per day:
 
       ```python run
-      first = int(input("First number: "))
-      second = int(input("Second number: "))
-      third = int(input("Third number: "))
-      total = first + second + third
-      print(f"Sum: {total}")
-      print(f"Mean: {total / 3}")
+      monday = int(input("Monday, km: "))
+      tuesday = int(input("Tuesday, km: "))
+      wednesday = int(input("Wednesday, km: "))
+      total = monday + tuesday + wednesday
+      print(f"Distance run: {total} km")
+      print(f"Per day: {total / 3} km")
       ```
 
       ```input
-      4
-      9
+      5
+      8
       2
       ```
 
       ```output
-      First number: 4
-      Second number: 9
-      Third number: 2
-      Sum: 15
-      Mean: 5.0
+      Monday, km: 5
+      Tuesday, km: 8
+      Wednesday, km: 2
+      Distance run: 15 km
+      Per day: 5.0 km
       ```
 
       ### Adding to a variable
@@ -622,23 +620,23 @@ steps:
       Reusing one variable is fine for a running total. But if the program needs every value at the end, each one needs a variable of its own:
 
       ```python run
-      first = int(input("First number: "))
-      second = int(input("Second number: "))
-      print(f"{first} + {second} = {first + second}")
+      morning = int(input("Temperature in the morning: "))
+      evening = int(input("Temperature in the evening: "))
+      print(f"From {morning} to {evening} degrees: a change of {evening - morning}")
       ```
 
       ```input
       12
-      30
+      19
       ```
 
       ```output
-      First number: 12
-      Second number: 30
-      12 + 30 = 42
+      Temperature in the morning: 12
+      Temperature in the evening: 19
+      From 12 to 19 degrees: a change of 7
       ```
 
-      And reuse a variable only for values of the same kind. Storing a name and later an age in one variable called `data` would work, but `name` and `age` tell the reader what each value is.
+      When you do reuse a variable, keep it for values that play the same part, like the prices above. A variable `value` that first holds the number of guests and later the price of a ticket would work, but the reader would have to work out what it means on every line. `guests` and `ticket_price` say it at once.
 
       **Your turn:** fill in the blanks so the program adds both answers to `total`. If the user types `3` and `5`, the run looks like this:
 

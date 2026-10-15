@@ -11,7 +11,7 @@ const send = (m) => new Promise((resolve) => process.send(m, resolve));
 
 try {
   const { loadPyodide } = await import(path.join(PYODIDE_INDEX, "pyodide.mjs"));
-  const py = await loadPyodide({ indexURL: PYODIDE_INDEX + "/", stdout: () => {}, stderr: () => {}, env: { HOME: "/home/pyodide", PYTHONHASHSEED } });
+  const py = await loadPyodide({ indexURL: PYODIDE_INDEX + "/", stdout: () => {}, stderr: () => {}, env: { HOME: "/home/pyodide", PYTHONHASHSEED, PYTHONUTF8: "1" } });
   for (const wheel of JSON.parse(PYODIDE_WHEELS || "[]")) await py.loadPackage(wheel, { messageCallback: () => {}, errorCallback: () => {} });
   py.FS.mkdirTree("/arena");
   py.FS.writeFile("/arena/arena.py", fs.readFileSync(path.join(ARENA_ENGINE, "arena.py"), "utf8"));

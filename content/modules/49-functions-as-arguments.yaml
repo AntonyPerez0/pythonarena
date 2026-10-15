@@ -5,67 +5,77 @@ steps:
     slug: key-functions
     title: Sorting with a key function
     text: |
-      Python puts a list in order with the function `sorted`, which returns a new list, or with the method `sort`, which changes the list itself. Numbers go from smallest to largest and strings in alphabetical order. A list of tuples is sorted by the first item of each tuple, and by the second item when the first ones are equal:
+      Python puts a list in order with the function `sorted`, which returns a new list, or with the method `sort`, which changes the list itself. Numbers go from smallest to largest, strings in alphabetical order, and tuples by their first item (and by the second item when the first ones are equal). That's their **natural order**, and often it's just what you need. But not always.
+
+      Say four players of a guessing game have guessed a secret number, and the number was 50. Sorting the guesses puts them from the smallest to the largest:
 
       ```python run
-      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15), ("cookies", 3.25)]
-
-      for snack in sorted(snacks):
-          print(snack)
+      guesses = [62, 41, 55, 30]
+      print(sorted(guesses))
       ```
 
       ```output
-      ('apples', 1.99)
-      ('cookies', 3.25)
-      ('nuts', 4.15)
-      ('pretzels', 2.49)
+      [30, 41, 55, 62]
       ```
 
-      That's alphabetical order by name. But what if you want the cheapest snack first?
+      To see who came closest, you'd rather sort the guesses by how far each one is from 50.
 
       ### A key function
 
-      `sorted` and `sort` accept a **key function**: a function that takes one item and returns the value to sort that item by. You write it like any other function, and hand it to `sorted` with `key=`:
+      `sorted` and `sort` accept a **key function**: a function that takes one item and returns the value to sort that item by. You write it like any other function, and hand it to `sorted` with `key=`. Here the key is a guess's distance from 50. Python's `abs` gives it, since `abs` returns a number without its minus sign:
 
       ```python run
-      def price(snack):
-          return snack[1]
+      def distance(guess):
+          return abs(guess - 50)
 
 
-      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15), ("cookies", 3.25)]
-
-      for snack in sorted(snacks, key=price):
-          print(snack)
+      guesses = [62, 41, 55, 30]
+      print(sorted(guesses, key=distance))
       ```
 
       ```output
-      ('apples', 1.99)
-      ('pretzels', 2.49)
-      ('cookies', 3.25)
-      ('nuts', 4.15)
+      [55, 41, 62, 30]
       ```
 
-      `sorted` calls `price` once for each snack and puts the snacks in the order of the values it returns: 1.99, 2.49, 3.25, 4.15. The snacks themselves don't change. The key only decides their order.
+      `sorted` calls `distance` once for each guess and puts the guesses in the order of the values it returns: 5, 9, 12, 20. The guesses themselves don't change: the new list holds 55, not 5. The key only decides their order.
+
+      With tuples, the key often picks one item of each tuple. Here each tuple holds a chore and the minutes it takes, and the key returns the minutes, so the quickest chore comes first:
+
+      ```python run
+      def minutes(chore):
+          return chore[1]
+
+
+      chores = [("laundry", 45), ("email", 10), ("dishes", 20)]
+      for chore in sorted(chores, key=minutes):
+          print(chore[0], chore[1])
+      ```
+
+      ```output
+      email 10
+      dishes 20
+      laundry 45
+      ```
 
       ### The function itself, not its result
 
-      Look closely at `key=price`: there are no parentheses after `price`. A function's name on its own refers to the function, just as a variable's name refers to a list. So you can pass a function to another function like any other value, and the other function decides when to call it. With parentheses, Python would call `price` right away, before `sorted` even starts, and with no snack to give it:
+      Look closely at `key=distance`: there are no parentheses after `distance`. A function's name on its own refers to the function, just as a variable's name refers to a list. So you can pass a function to another function like any other value, and the other function decides when to call it. With parentheses, Python would call `distance` right away, before `sorted` even starts, and with no guess to give it:
 
       ```python run crash
-      def price(snack):
-          return snack[1]
+      def distance(guess):
+          return abs(guess - 50)
 
 
-      snacks = [("pretzels", 2.49), ("apples", 1.99)]
-      print(sorted(snacks, key=price()))
+      guesses = [62, 41, 55, 30]
+      print(sorted(guesses, key=distance()))
       ```
 
       ```crash
       Traceback (most recent call last):
         File "main.py", line 6, in <module>
-          print(sorted(snacks, key=price()))
-                                   ~~~~~^^
-      TypeError: price() missing 1 required positional argument: 'snack'
+          print(sorted(guesses, key=distance()))
+                                    ~~~~~~~~^^
+      TypeError: distance() missing 1 required positional argument: 'guess'
       ```
 
       So give `key` the function's name, without parentheses.
@@ -189,22 +199,23 @@ steps:
     slug: lambda
     title: Lambda expressions
     text: |
-      A key function like `price` is often needed in one place only. When just one function uses it, you can define it **inside** that function. It then exists only there and doesn't clutter the rest of the program:
+      The guessing game's secret number won't always be 50. A function `closest_first(guesses, secret)` can take it as a parameter, but then its key function needs the secret number too. The answer is to define the key function **inside** `closest_first`. A function defined inside another one can use that function's variables and parameters, such as `secret`, and it exists only there, so it doesn't clutter the rest of the program:
 
       ```python run
-      def cheapest_first(snacks):
-          def price(snack):
-              return snack[1]
+      def closest_first(guesses, secret):
+          def distance(guess):
+              return abs(guess - secret)
 
-          return sorted(snacks, key=price)
+          return sorted(guesses, key=distance)
 
 
-      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15)]
-      print(cheapest_first(snacks))
+      print(closest_first([62, 41, 55, 30], 50))
+      print(closest_first([3, 9, 6], 7))
       ```
 
       ```output
-      [('apples', 1.99), ('pretzels', 2.49), ('nuts', 4.15)]
+      [55, 41, 62, 30]
+      [6, 9, 3]
       ```
 
       ### A function without a name
@@ -212,17 +223,19 @@ steps:
       For a function this small, Python has a shorter way to write it: a **lambda expression**. It makes a function right where you need it, without `def` and without a name:
 
       ```python fragment
-      lambda snack: snack[1]
+      lambda guess: abs(guess - secret)
       ```
 
-      This is the same function as `price` above. After the word `lambda` come the parameters, then a colon, then one expression. Calling the function gives the value of that expression. There's no `return`: the value is returned automatically. Since a lambda has no name, it's also called an **anonymous function**.
+      After the word `lambda` come the parameters, then a colon, then one expression. Calling the function gives the value of that expression. There's no `return`: the value is returned automatically. Because a function made this way has no name of its own, it's also called an **anonymous function**.
 
-      With a lambda, sorting fits on one line:
+      With a lambda, `closest_first` is one line long, and a simple key needs no helper function at all:
 
       ```python run
-      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15)]
-      snacks.sort(key=lambda snack: snack[1])
-      print(snacks)
+      def closest_first(guesses, secret):
+          return sorted(guesses, key=lambda guess: abs(guess - secret))
+
+
+      print(closest_first([62, 41, 55, 30], 50))
 
       names = ["bea", "Cal", "ann", "Dot"]
       print(sorted(names))
@@ -230,7 +243,7 @@ steps:
       ```
 
       ```output
-      [('apples', 1.99), ('pretzels', 2.49), ('nuts', 4.15)]
+      [55, 41, 62, 30]
       ['Cal', 'Dot', 'ann', 'bea']
       ['ann', 'bea', 'Cal', 'Dot']
       ```
@@ -295,16 +308,16 @@ steps:
           - "The second line compares the lengths of the names. Rex and Mia are both 3 letters long, and `max` returns the first of them; `[0]` then takes its name."
           - "The last line sorts by the last letter of each name: x, a and o."
       - task: |
-          Write a function `sort_by_last_name(names)` that gets a list of full names, such as `"Ada Lovelace"`, and returns a new list sorted by the last names. Use a lambda expression as the key. For example,
+          Write a function `sort_by_last_name(names)` that gets a list of full names, such as `"Ada Lovelace"` or `"Grace Murray Hopper"`, and returns a new list sorted by the last names. The last name is the **last word** of a full name, however many words it has: `"Grace Murray Hopper"` goes under Hopper. Use a lambda expression as the key. For example,
 
           ```python fragment
-          print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+          print(sort_by_last_name(["Grace Murray Hopper", "Alan Turing", "Ada Lovelace"]))
           ```
 
           should print:
 
           ```
-          ['Grace Hopper', 'Ada Lovelace', 'Alan Turing']
+          ['Grace Murray Hopper', 'Ada Lovelace', 'Alan Turing']
           ```
         seed: |
           def sort_by_last_name(names):
@@ -312,23 +325,23 @@ steps:
 
 
           if __name__ == "__main__":
-              print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+              print(sort_by_last_name(["Grace Murray Hopper", "Alan Turing", "Ada Lovelace"]))
         solution: |
           def sort_by_last_name(names):
               return sorted(names, key=lambda name: name.split()[-1])
 
 
           if __name__ == "__main__":
-              print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+              print(sort_by_last_name(["Grace Murray Hopper", "Alan Turing", "Ada Lovelace"]))
         hints:
-          - "The key gets one full name and must return its last name. `split()` cuts a name into a list of words."
-          - "The last word of a list is at index `-1`, so the key is `lambda name: name.split()[-1]`."
+          - "The key gets one full name and must return its last word. `split()` cuts a name into a list of words."
+          - "Some names have three words, so the second word won't do. The last item of a list is at index `-1`, so the key is `lambda name: name.split()[-1]`."
           - Return what `sorted(names, key=...)` gives.
         require:
           - pattern: \blambda\b
             message: Use a lambda expression as the key.
         tests:
-          - call: print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+          - call: print(sort_by_last_name(["Grace Murray Hopper", "Alan Turing", "Ada Lovelace"]))
           - call: sort_by_last_name(["Linus Torvalds", "Guido van Rossum", "Margaret Hamilton", "Tim Berners-Lee"])
             hidden: true
           - call: sort_by_last_name(["Zoe Adams", "Al Zane"])
@@ -407,7 +420,7 @@ steps:
       Emma (Jane Austen, 1815)
       ```
 
-      A key can call a method too, such as `key=lambda account: account.balance()`, when the value comes from a method instead of an attribute.
+      A key can call a method too, such as `key=lambda shape: shape.area()`, when the value comes from a method instead of an attribute.
 
       ### Best, worst and ties
 
@@ -669,10 +682,10 @@ steps:
 
       ### A function as a rule
 
-      A function argument is a neat way to pass a **rule**: which items to keep, to count or to look for. A parameter can even have a function as its default value. Here the default is a lambda that says `True` to everything, so without a rule every item counts:
+      A function argument is a neat way to pass a **rule**: which items to keep, to count or to look for. The function that gets the rule does the looping, and the caller only says what counts. So one `count_matching` can count long words, words with an o or negative numbers:
 
       ```python run
-      def count_matching(items, condition=lambda item: True):
+      def count_matching(items, condition):
           count = 0
           for item in items:
               if condition(item):
@@ -680,16 +693,20 @@ steps:
           return count
 
 
-      words = ["sun", "moon", "star", "comet"]
-      print(count_matching(words))
-      print(count_matching(words, lambda word: len(word) == 4))
+      def is_long(word):
+          return len(word) > 4
+
+
+      words = ["sun", "moon", "star", "comet", "planet", "nebula"]
+      print(count_matching(words, is_long))
       print(count_matching(words, lambda word: "o" in word))
+      print(count_matching([3, -1, 8], lambda n: n < 0))
       ```
 
       ```output
-      4
+      3
       2
-      2
+      1
       ```
 
       **Your turn:** the function `keep` returns the items for which the function `wanted` returns `True`. Fill in the blank so that the program prints:

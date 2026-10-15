@@ -5,41 +5,51 @@ steps:
     slug: strings-and-objects
     title: Strings and your own objects
     text: |
-      A comprehension can go through any series, not only a list. A string is a series of characters, so a comprehension over a string goes through it one character at a time:
+      A comprehension goes through anything a `for` loop can, and a string is a series of characters. So a comprehension over a string gets one character at a time. Here it picks the digits out of a code:
 
       ```python repl
-      >>> [c.upper() for c in "hello"]
-      ['H', 'E', 'L', 'L', 'O']
-      >>> [c for c in "a1b2c3" if c in "0123456789"]
+      >>> code = "a1b2c3"
+      >>> [c for c in code if c in "0123456789"]
       ['1', '2', '3']
+      >>> [int(c) for c in code if c in "0123456789"]
+      [1, 2, 3]
+      >>> sum([int(c) for c in code if c in "0123456789"])
+      6
       ```
 
-      The result is still a list, because of the square brackets. To turn a list of strings back into one string, use the string method `join` from part 8. You call it on the string that goes between the pieces, the "glue", and give it the list:
+      Whatever it goes through, a comprehension in square brackets makes a list. When you want a string instead, hand the list of strings to the string method `join` from part 4. It makes one string of the pieces, with the string you call it on between each two of them:
 
       ```python repl
-      >>> letters = ["c", "o", "d", "e"]
-      >>> "".join(letters)
-      'code'
-      >>> "-".join(letters)
-      'c-o-d-e'
+      >>> digits = [c for c in "a1b2c3" if c in "0123456789"]
+      >>> "".join(digits)
+      '123'
+      >>> "+".join(digits)
+      '1+2+3'
       ```
 
-      Together, a comprehension and `join` make a new string out of an old one. Here every vowel is hidden:
+      The pieces must be strings, though. The digits as numbers stop `join`:
+
+      ```python run crash
+      numbers = [int(c) for c in "a1b2c3" if c in "0123456789"]
+      print("+".join(numbers))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print("+".join(numbers))
+                ~~~~~~~~^^^^^^^^^
+      TypeError: sequence item 0: expected str instance, int found
+      ```
+
+      Item 0, the first one, is an `int`, not a `str`. Keep the pieces as strings for `join`, or turn each number back into a string with a comprehension: `"+".join([str(n) for n in numbers])` gives `1+2+3`.
+
+      ### Word by word
+
+      To work on whole words instead of characters, `split` the string first. `split()` gives a list of the words, a comprehension changes each of them, and `join` puts them back together with a space between each two. The string method `capitalize` gives a word with its first letter in capitals and the rest in small letters, so it also fixes the all-capitals `LORD`:
 
       ```python run
-      word = "comprehension"
-      hidden = "".join(["*" if c in "aeiou" else c for c in word])
-      print(hidden)
-      ```
-
-      ```output
-      c*mpr*h*ns**n
-      ```
-
-      With `split`, a comprehension can work word by word. `split()` cuts a sentence into a list of words, the comprehension changes each word (the string method `capitalize` makes its first letter a capital), and `join` glues the words back together with spaces:
-
-      ```python run
-      title = "the lord of the rings"
+      title = "the LORD of the rings"
       print(" ".join([word.capitalize() for word in title.split()]))
       ```
 
@@ -47,26 +57,21 @@ steps:
       The Lord Of The Rings
       ```
 
-      `join` accepts only strings. A list of numbers stops it:
+      Back at the level of characters, an `if` and `else` in front of the `for`, as in the previous module, changes some characters and keeps the rest. This makes a file name out of a title:
 
-      ```python run crash
-      numbers = [3, 1, 4]
-      print(", ".join(numbers))
+      ```python run
+      title = "My Summer Photos"
+      file_name = "".join(["_" if c == " " else c.lower() for c in title])
+      print(file_name + ".zip")
       ```
 
-      ```crash
-      Traceback (most recent call last):
-        File "main.py", line 2, in <module>
-          print(", ".join(numbers))
-                ~~~~~~~~~^^^^^^^^^
-      TypeError: sequence item 0: expected str instance, int found
+      ```output
+      my_summer_photos.zip
       ```
-
-      Item 0, the first one, is an `int`, not a `str`. A comprehension fixes it by converting each number: `", ".join([str(n) for n in numbers])` gives `3, 1, 4`.
 
       ### Objects of your own classes
 
-      A list of objects works like any other list. The expression and the condition can use the objects' attributes and methods:
+      A list of objects works like any other list. The expression and the condition can use the objects' attributes and methods. The expression decides what goes into the new list: below, the first comprehension collects names, and the second one, with just `recipe` in front of the `for`, keeps the `Recipe` objects themselves:
 
       ```python run
       class Recipe:
@@ -76,17 +81,24 @@ steps:
 
 
       recipes = [Recipe("Pancakes", 20), Recipe("Toast", 5), Recipe("Lasagna", 90), Recipe("Salad", 10)]
-      quick = [recipe.name for recipe in recipes if recipe.minutes <= 15]
-      print(quick)
+      print([recipe.name for recipe in recipes if recipe.minutes <= 15])
+
+      quick = [recipe for recipe in recipes if recipe.minutes <= 15]
+      for recipe in quick:
+          recipe.name += " (quick)"
+      print([recipe.name for recipe in recipes])
       ```
 
       ```output
       ['Toast', 'Salad']
+      ['Pancakes', 'Toast (quick)', 'Lasagna', 'Salad (quick)']
       ```
 
-      This list holds names, which print nicely. `[recipe for recipe in recipes if recipe.minutes <= 15]` would hold the `Recipe` objects themselves, which is handy when you need several of their attributes later.
+      `quick` is a new list, but its items aren't new objects. As in part 9, a list holds references, so `quick` and `recipes` refer to the same two objects, `Toast` and `Salad`. The loop changes them through `quick`, and the change shows when the last line goes through `recipes`.
 
-      In part 10 you made classes that a `for` loop can go through, with the methods `__iter__` and `__next__`. A comprehension goes through a series the same way a `for` loop does, so it works on those objects too:
+      ### Your own iterable classes
+
+      The `for` inside a comprehension is the same `for` as in a loop, so it accepts the same things. That includes objects of a class with the methods `__iter__` and `__next__`, the iterable classes of part 10. A `Countdown` hands out the numbers from its start down to 1, and the comprehension gets them one by one, just like items of a list:
 
       ```python run
       class Countdown:
@@ -156,12 +168,12 @@ steps:
               print(double_letters("hello"))
         hints:
           - "A comprehension over `word` goes through its characters. A character times 2 is that character twice: `\"e\" * 2` is `\"ee\"`."
-          - "`[c * 2 for c in word]` is a list of doubled characters. Glue them together with nothing between them: `\"\".join(...)`."
+          - "`[c * 2 for c in word]` is a list of doubled characters. Join them with nothing between them: `\"\".join(...)`."
         require:
           - pattern: \[[^\n]*\bfor\b
             message: Make the doubled characters with a list comprehension.
           - pattern: \.join\s*\(
-            message: Glue the pieces together into one string with `join`.
+            message: Put the pieces together into one string with `join`.
         tests:
           - call: print(double_letters("hello"))
           - call: double_letters("ab c")
@@ -231,16 +243,30 @@ steps:
     slug: dictionaries
     title: Dictionary comprehensions
     text: |
-      There's nothing about comprehensions that only works for lists. The square brackets are what make the result a list. Put a comprehension in curly brackets and give it a key and a value, separated by a colon, and it makes a dictionary. This is a **dictionary comprehension**:
+      In part 5 you built dictionaries with a loop: start from an empty dictionary, and in each round store a value under a key. This one turns temperatures in Celsius into Fahrenheit:
 
       ```python run
-      words = ["tea", "coffee", "cocoa"]
-      lengths = {word: len(word) for word in words}
-      print(lengths)
+      celsius = [0, 25, 100]
+      fahrenheit = {}
+      for c in celsius:
+          fahrenheit[c] = c * 9 / 5 + 32
+      print(fahrenheit)
       ```
 
       ```output
-      {'tea': 3, 'coffee': 6, 'cocoa': 5}
+      {0: 32.0, 25: 77.0, 100: 212.0}
+      ```
+
+      A **dictionary comprehension** says the same in one line. It's written in curly brackets, like a dictionary, and in front of the `for` it has a key and a value with a colon between them, like a pair in a dictionary:
+
+      ```python run
+      celsius = [0, 25, 100]
+      fahrenheit = {c: c * 9 / 5 + 32 for c in celsius}
+      print(fahrenheit)
+      ```
+
+      ```output
+      {0: 32.0, 25: 77.0, 100: 212.0}
       ```
 
       The shape is:
@@ -249,23 +275,23 @@ steps:
       {key: value for item in series}
       ```
 
-      For each item, the comprehension works out a key and a value and puts the pair into the new dictionary. A filter with `if` at the end works just as in a list comprehension.
+      Compare it with the loop: what comes before the colon, `c`, is what went between the square brackets in `fahrenheit[c]`, and what comes after it is the value that was stored there. A filter with `if` at the end works just as in a list comprehension.
 
       ### A key only once
 
-      A dictionary has each key only once. When a comprehension makes the same key again, the new value replaces the old one, and the key keeps its place from the first time. That makes counting easy:
+      A dictionary has each key only once. When a comprehension makes the same key again, the new value replaces the old one, and the key keeps its place from the first time. Here every fruit goes under its first letter:
 
       ```python run
-      votes = ["red", "blue", "red", "green", "red", "blue"]
-      counts = {color: votes.count(color) for color in votes}
-      print(counts)
+      fruits = ["apple", "avocado", "banana", "blueberry", "cherry"]
+      by_letter = {fruit[0]: fruit for fruit in fruits}
+      print(by_letter)
       ```
 
       ```output
-      {'red': 3, 'blue': 2, 'green': 1}
+      {'a': 'avocado', 'b': 'blueberry', 'c': 'cherry'}
       ```
 
-      The comprehension goes through all six votes, so it sets the value of `"red"` three times, each time to the same count, 3.
+      `"apple"` went in first, under `"a"`, and then `"avocado"` took its place. Five fruits went in, but the dictionary has only three keys, and for each letter the last fruit wins.
 
       ### From a dictionary to a dictionary
 
@@ -299,14 +325,14 @@ steps:
       A key and a value with a colon only work inside curly brackets. In square brackets, Python stops at the colon:
 
       ```python run crash
-      words = ["tea", "coffee"]
-      lengths = [w: len(w) for w in words]
+      celsius = [0, 25, 100]
+      fahrenheit = [c: c * 9 / 5 + 32 for c in celsius]
       ```
 
       ```crash
         File "main.py", line 2
-          lengths = [w: len(w) for w in words]
-                      ^
+          fahrenheit = [c: c * 9 / 5 + 32 for c in celsius]
+                         ^
       SyntaxError: invalid syntax
       ```
 
@@ -327,15 +353,15 @@ steps:
       - task: |
           What does this program print? Type each line it prints.
         predict: |
-          answers = ["yes", "no", "yes", "yes"]
-          counts = {a: answers.count(a) for a in answers}
-          print(counts)
-          print(len(counts))
-          print({a: len(a) for a in counts})
+          words = ["sun", "moon", "star", "sky"]
+          by_length = {len(w): w for w in words}
+          print(by_length)
+          print(len(by_length))
+          print({w: n for n, w in by_length.items()})
         hints:
-          - Each key is in a dictionary only once, however many times the comprehension makes it.
-          - "`len` of a dictionary is the number of its keys."
-          - "Going through a dictionary gives its keys, so the last comprehension goes through `\"yes\"` and `\"no\"`."
+          - "The key is the length of each word. Two of the words have 3 letters, and two have 4."
+          - When a key comes again, its new value replaces the old one, but the key stays where it was first put. `len` of a dictionary is the number of its keys.
+          - "The last comprehension goes through the pairs that `items()` gives and swaps each key and value."
       - task: |
           Write a function `passed(scores, limit)` that gets a dictionary of names and scores, and returns a new dictionary with only the people whose score is at least `limit`. Use a dictionary comprehension.
 

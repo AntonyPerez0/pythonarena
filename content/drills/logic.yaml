@@ -84,7 +84,7 @@ drills:
     after: not
     code: |
       print(True or False and False)
-    why: "`and` goes before `or`, so this is `True or (False and False)`, which is `True or False`, which is `True`."
+    why: "`and` is grouped before `or`, so this is `True or (False and False)`. The left side of `or` is already `True`, so the whole is `True`."
 
   - type: choice
     after: not
@@ -94,7 +94,7 @@ drills:
       - "`a or (b and c)`"
       - It's an error without parentheses
     answer: 2
-    why: "Python evaluates `not` first, then `and`, and `or` last. Parentheses make the order clear to the reader as well."
+    why: "Python groups `not` first, then `and`, with `or` last, as if there were parentheses around `b and c`. Writing the parentheses yourself makes the grouping clear to the reader as well."
 
   - type: predict
     after: chained-comparisons

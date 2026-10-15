@@ -76,7 +76,7 @@ export default function Learn() {
           Topics A to Z
         </h2>
         <p>
-          Looking for one thing, such as <code>switch</code>, <code>HashMap</code> or recursion? Each topic has one line and links to the steps that teach it. <Link to="/topics/">See the topics</Link>
+          Looking for one thing, such as <code>for</code>, <code>str.split</code> or recursion? Each topic has one line and links to the steps that teach it. <Link to="/topics/">See the topics</Link>
         </p>
       </section>
       {courses.map((c) => (

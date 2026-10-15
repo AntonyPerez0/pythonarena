@@ -10,7 +10,8 @@
 //   README files go only to ALLOWED_HOSTS (never a link shortener).
 //
 // Usage: npm run build && node scripts/check-links.mjs   (BASE_PATH as for the build; the site's own
-// address is read from the home page's canonical link). Exits with 1 and lists every bad link.
+// address is read from the home page's canonical link, and links to it are checked in dist). Exits
+// with 1 and lists every bad link.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -39,6 +40,8 @@ export const ALLOWED_HOSTS = [
   'docs.astral.sh',
   'code.visualstudio.com',
   'github.com',
+  // A Pro Track README's images: its page shows them from this repository's raw files (scripts/pro-track/site.mjs).
+  'raw.githubusercontent.com',
   'docs.github.com',
   'cli.github.com',
   'desktop.github.com',
@@ -130,6 +133,17 @@ export function resolveInternal(href, from, base) {
   return { file: path, fragment: u.hash ? decodeURIComponent(u.hash.slice(1)) : '' };
 }
 
+/**
+ * The page a lesson file's markdown is shown on, which its relative links are relative to:
+ * lessons/<module>/<slug>-<hash>.json is the step's page /learn/<module>/<slug>/, and
+ * lessons/projects/<id>-<hash>.json the project's page /projects/<id>/.
+ */
+export function lessonPage(file, base) {
+  const m = /^lessons\/([^/]+)\/(.+)-[0-9a-f]+\.json$/.exec(file);
+  if (!m) return `${base}learn/`;
+  return m[1] === 'projects' ? `${base}projects/${m[2]}/` : `${base}learn/${m[1]}/${m[2]}/`;
+}
+
 /** Whether an address is external (has its own scheme and host) and isn't one that needs no check. */
 const kindOf = (href) => {
   if (/^(data|mailto|tel|blob):/i.test(href)) return 'skip';
@@ -154,8 +168,11 @@ export async function checkLinks({ root, dist, base }) {
   const home = readFileSync(join(dist, 'index.html'), 'utf8');
   const canonical = /<link rel="canonical" href="([^"]+)"/.exec(home)?.[1];
   if (!canonical) problems.push('index.html: no canonical link, so the site\'s own address is unknown');
-  const siteUrl = canonical ? new URL(canonical) : null;
+  // The site's own address names dist's top folder. Its path is usually the base path, but a local build
+  // keeps the live site's address (SITE_URL's default, /pythonarena/) while its pages sit at BASE_PATH (/).
+  const siteHome = canonical ? new URL('./', canonical).href : null;
   const repoUrl = /\bhref="(https:\/\/github\.com\/[^/"]+\/[^/"]+)"/.exec(home)?.[1];
+  const rawUrl = repoUrl?.replace('https://github.com/', 'https://raw.githubusercontent.com/');
 
   const idCache = new Map();
   const idsOf = (file) => {
@@ -182,13 +199,12 @@ export async function checkLinks({ root, dist, base }) {
     counts.external++;
     const problem = externalProblem(href);
     if (problem) return problems.push(`${where}: ${problem}`);
-    // This repository's own files: the path must be in the repository.
-    if (repoUrl && href.startsWith(`${repoUrl}/`)) {
-      const m = /^\/(?:blob|tree)\/main\/([^?#]+)/.exec(href.slice(repoUrl.length));
-      if (m) {
-        counts.repo++;
-        if (!existsSync(join(root, decodeURIComponent(m[1])))) problems.push(`${where}: ${href} names ${m[1]}, which isn't in the repository`);
-      }
+    // This repository's own files (on GitHub, or a file's raw bytes): the path must be in the repository.
+    const inRepo = (prefix, re) => (prefix && href.startsWith(`${prefix}/`) ? re.exec(href.slice(prefix.length))?.[1] : null);
+    const path = inRepo(repoUrl, /^\/(?:blob|tree)\/main\/([^?#]+)/) ?? inRepo(rawUrl, /^\/main\/([^?#]+)/);
+    if (path) {
+      counts.repo++;
+      if (!existsSync(join(root, decodeURIComponent(path)))) problems.push(`${where}: ${href} names ${path}, which isn't in the repository`);
     }
   };
   const checkAny = (where, href, from) => {
@@ -197,7 +213,7 @@ export async function checkLinks({ root, dist, base }) {
     if (kind === 'script') return problems.push(`${where}: a javascript: link`);
     if (kind === 'external') {
       // The site's own address (canonical links, links that name the live site) is checked as internal.
-      if (siteUrl && href.startsWith(siteUrl.origin + base)) return checkInternal(where, href.slice(siteUrl.origin.length), from);
+      if (siteHome && href.startsWith(siteHome)) return checkInternal(where, base + href.slice(siteHome.length), from);
       return checkExternal(where, href);
     }
     checkInternal(where, href, from);
@@ -218,7 +234,7 @@ export async function checkLinks({ root, dist, base }) {
   // The lesson files: links in their markdown.
   for (const full of walk(join(dist, 'lessons'), (f) => f.endsWith('.json'))) {
     const file = relative(dist, full).split('\\').join('/');
-    for (const s of markdownStrings(JSON.parse(readFileSync(full, 'utf8')))) for (const href of markdownLinks(s)) checkAny(file, href, `${base}learn/`);
+    for (const s of markdownStrings(JSON.parse(readFileSync(full, 'utf8')))) for (const href of markdownLinks(s)) checkAny(file, href, lessonPage(file, base));
   }
   // The sources: content and the Pro Track's README files (external links only: their internal ones are in the built pages).
   const { parse } = await import('yaml');

@@ -6,8 +6,12 @@
 // that helps. The notes are written for people in their first weeks of programming: they name the
 // likely cause first, then what to change.
 
-/** One frame of a traceback: where the program was when the error happened. */
-export type Frame = { file: string; line: number; func: string | null; code?: string };
+/**
+ * One frame of a traceback: where the program was when the error happened. `marks` are the ~ and ^
+ * Python put under `code`, lined up with it, when it showed them: the ^ under what failed (for a call,
+ * its parentheses) and the ~ under the rest (for a call, what was called).
+ */
+export type Frame = { file: string; line: number; func: string | null; code?: string; marks?: string };
 
 export type PyError = {
   /** The error's name: SyntaxError, NameError, ValueError... (without a module in front). */
@@ -21,7 +25,11 @@ export type PyError = {
   /** Where it happened: the innermost frame, or for a syntax error the place Python points at. */
   file?: string;
   line?: number;
-  /** For a syntax error: the column (from 1) the ^ marks start at in the line as written, when it can be told. */
+  /**
+   * For a syntax error: the column (from 1) the ^ marks start at, when it can be told. It counts from the
+   * start of the line as Python showed it, without the spaces it starts with (as `code`), so in the line as
+   * written it's after those spaces (tabs stay, so they count).
+   */
   column?: number;
   /** The line of code Python showed, as it showed it (without its indentation). */
   code?: string;
@@ -31,6 +39,8 @@ export type PyError = {
 
 const SYNTAX_NAMES = new Set(["SyntaxError", "IndentationError", "TabError", "_IncompleteInputError"]);
 const CHAIN = /\n\n(?:During handling of the above exception, another exception occurred|The above exception was the direct cause of the following exception):\n\n/;
+/** A warning's first line ("main.py:2: SyntaxWarning: ..."): the program went on after it. */
+const WARNING = /^\S+:\d+: \w+: /;
 
 /** Reads what Python printed for an uncaught error. Null when stderr has no error in it. */
 export function parseError(stderr: string): PyError | null {
@@ -42,14 +52,19 @@ export function parseError(stderr: string): PyError | null {
   // The error line: the last line at the left margin that reads "Name" or "Name: message".
   let at = -1;
   for (let i = lines.length - 1; i >= 0; i--) {
-    if (/^[A-Za-z_][\w.]*(?::|$)/.test(lines[i]) && !/^Traceback \(most recent call last\):$/.test(lines[i])) {
+    if (/^[A-Za-z_][\w.]*(?::|$)/.test(lines[i]) && !/^Traceback \(most recent call last\):$/.test(lines[i]) && !WARNING.test(lines[i])) {
       at = i;
       // A message of several lines: keep going up while the lines above aren't part of the traceback.
-      while (at > 0 && !/^\s/.test(lines[at - 1]) && !/^Traceback/.test(lines[at - 1]) && lines[at - 1] !== "") at--;
+      while (at > 0 && !/^\s/.test(lines[at - 1]) && !/^Traceback/.test(lines[at - 1]) && lines[at - 1] !== "" && !WARNING.test(lines[at - 1])) at--;
       break;
     }
   }
   if (at < 0) return null;
+  // An error comes after its traceback, or for a syntax error after the place Python points at. Without
+  // either, it must at least have an error's name: what the program wrote to stderr itself, or the text of
+  // sys.exit("Cancelled"), isn't an error.
+  const traced = lines.slice(0, at).some((l) => /^Traceback \(most recent call last\):$|^ {2}File "/.test(l));
+  if (!traced && !/^[A-Za-z_][\w.]*(?:Error|Exception|Warning|Exit|Interrupt|Iteration)(?::|$)/.test(lines[at])) return null;
   const head = /^([A-Za-z_][\w.]*)(?::\s?([\s\S]*))?$/.exec(lines.slice(at).join("\n"));
   if (!head) return null;
   const name = head[1].split(".").pop()!;
@@ -66,7 +81,10 @@ export function parseError(stderr: string): PyError | null {
     if (code != null && /^ {4}/.test(code) && !/^\s*[~^]+\s*$/.test(code)) {
       frame.code = code.slice(4);
       const marks = lines[i + 2];
-      if (marks != null && /^ {4}\s*[~^]+\s*$/.test(marks) && !m[3]) column = marks.slice(4).search(/[~^]/) + 1;
+      if (marks != null && /^ {4}\s*[~^]+\s*$/.test(marks)) {
+        frame.marks = marks.slice(4).trimEnd();
+        if (!m[3]) column = frame.marks.search(/[~^]/) + 1;
+      }
     }
     frames.push(frame);
     if (!m[3]) syntaxFrame = frame;
@@ -74,6 +92,14 @@ export function parseError(stderr: string): PyError | null {
   const syntax = SYNTAX_NAMES.has(name);
   const where = syntax && syntaxFrame ? syntaxFrame : frames[frames.length - 1];
   return { name, message, frames, syntax, file: where?.file, line: where?.line, column: syntax ? column : undefined, code: where?.code, chained: blocks.length > 1 };
+}
+
+/**
+ * Where a syntax error's column (PyError.column) is in its line as written, from 0: Python shows the line
+ * without the spaces (and form feeds) it starts with, and counts the column from there.
+ */
+export function columnOffset(lineText: string, column: number): number {
+  return /^[ \f]*/.exec(lineText)![0].length + Math.max(column - 1, 0);
 }
 
 type Source = { path: string; text: string };
@@ -90,7 +116,10 @@ const q = (s: string) => `"${s}"`;
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Python's built-in function names that learners often reuse as variable names (which then hides the function). */
-const BUILTINS = new Set("print input len int float str list dict set tuple range sum min max abs round sorted type bool open".split(" "));
+const BUILTINS = new Set("print input len int float str list dict set tuple range sum min max abs round sorted type bool open id map filter zip next iter all any chr ord pow enumerate reversed format hash".split(" "));
+
+/** Python's own modules that the lessons import: a name of one of these with a dot after it is the module. */
+const MODULES = new Set("math random datetime re csv json functools itertools collections fractions decimal statistics os sys difflib".split(" "));
 
 /** Smart quotes and other characters that sneak in when code is copied from a document. */
 const LOOKALIKES: Record<string, string> = { "“": '"', "”": '"', "‘": "'", "’": "'", "–": "-", "—": "-", "×": "*", "÷": "/", " ": " ", "：": ":" };
@@ -108,6 +137,8 @@ export function explainError(e: PyError, sources: Source[] = []): string | null 
     // ------------------------------------------------------------ syntax
     case "SyntaxError":
     case "_IncompleteInputError": {
+      // Python reads "else if x:" as an else missing its colon (expected ':'), so this comes before that check.
+      if (/^else\s+if\b/.test(code)) return "In Python, \"else if\" is written as one word: elif.";
       if ((r = /^'([([{])' was never closed/.exec(m))) return `A ${r[1] === "(" ? "parenthesis (" : r[1] === "[" ? "square bracket [" : "curly bracket {"} opened on this line is never closed. Every ${r[1]} needs a matching ${r[1] === "(" ? ")" : r[1] === "[" ? "]" : "}"}: count them on the line, and look for one missing at its end.`;
       if ((r = /^unmatched '([)\]}])'/.exec(m))) return `This line has a closing ${r[1]} without an opening one before it. Remove the extra ${r[1]}, or add the opening bracket that's missing.`;
       if ((r = /^closing parenthesis '(.)' does not match opening parenthesis '(.)'/.exec(m))) return `Brackets are mixed up: a ${r[2]} is closed with ${r[1]}. Each kind of bracket closes with its own partner: ( with ), [ with ] and { with }.`;
@@ -139,7 +170,6 @@ export function explainError(e: PyError, sources: Source[] = []): string | null 
       if (/^expected '\('/.test(m)) return "A def line needs parentheses after the function's name, even when it takes nothing: def greet():";
       if (/^invalid syntax/.test(m)) {
         if (/^\s*(?:if|elif|while|for|def|class|else|try|except|with)\b[^:]*$/.test(line)) return "This line starts a block, so it must end with a colon :";
-        if (/^\s*else\s+if\b/.test(line)) return "In Python, \"else if\" is written as one word: elif.";
         if (/\b(?:And|Or|Not|AND|OR|NOT|&&|\|\|)\b|&&|\|\|/.test(line)) return "Python's logical operators are the words and, or and not, in small letters (not && or ||).";
         if (/\bTrue\b|\bFalse\b/.test(line) === false && /\btrue\b|\bfalse\b/.test(line)) return "Python's truth values start with a capital letter: True and False.";
         return "Python couldn't read the part marked with ^. Look at that spot and just before it: a missing quote, colon, parenthesis or comma is the usual cause.";
@@ -159,10 +189,19 @@ export function explainError(e: PyError, sources: Source[] = []): string | null 
       if ((r = /^name '(\w+)' is not defined/.exec(m))) {
         const name = r[1];
         const suggestion = /Did you mean: '([\w.]+)'\?/.exec(m)?.[1];
+        // For a name that is one of Python's own modules, Python asks "Did you forget to import 'math'?".
+        // The name can be a variable of the learner's too (numbers, string), so only a module the lessons
+        // use, used with a dot after it, is surely one. When Python also suggests a name of the program's
+        // ("Did you mean: 'res'? Or did you forget to import 're'?"), it may be a typo of that: say both.
+        const module = /[Dd]id you forget to import '(\w+)'\?/.exec(m)?.[1];
+        if (module && suggestion) return `Python doesn't know the name ${q(name)}. Check the spelling: did you mean ${q(suggestion)}? If you mean Python's module ${module}, add import ${module} at the top of the file.`;
+        if (module && MODULES.has(module) && new RegExp(`\\b${module}\\s*\\.`).test(code)) return `The program uses the module ${module} without importing it. Add import ${module} at the top of the file.`;
         if (suggestion && suggestion.toLowerCase() === name.toLowerCase()) return `Python doesn't know the name ${q(name)}. Capital letters matter: you probably mean ${q(suggestion)}.`;
         if (suggestion) return `Python doesn't know the name ${q(name)}. Check the spelling: did you mean ${q(suggestion)}? A variable or function must be created (given a value, or defined with def) before it's used.`;
+        if (module) return `Python doesn't know the name ${q(name)}. If you mean Python's module ${module}, import it first: add import ${module} at the top of the file. If it's a variable, it must get a value on a line before this one.`;
         if (["true", "false", "none"].includes(name)) return `Python's ${name[0].toUpperCase() + name.slice(1)} starts with a capital letter.`;
-        if (new RegExp(`print\\s*\\(\\s*${name}\\b`).test(code) && /^[A-Za-z]+$/.test(name)) return `Python doesn't know the name ${q(name)}. If you meant it as text to print, put it in quotes: print("${name}"). If it's a variable, it must get a value on a line before this one.`;
+        // print(Hello) or print(Hello, world): a word on its own, not one with a dot or brackets after it.
+        if (new RegExp(`print\\s*\\(\\s*${name}\\s*[,)]`).test(code) && /^[A-Za-z]+$/.test(name)) return `Python doesn't know the name ${q(name)}. If you meant it as text to print, put it in quotes: print("${name}"). If it's a variable, it must get a value on a line before this one.`;
         return `Python doesn't know the name ${q(name)}. A variable must get a value (with =) on a line that runs before this one, and a function must be defined with def before it's called. Check the spelling and the capital letters too.`;
       }
       return null;
@@ -194,11 +233,65 @@ export function explainError(e: PyError, sources: Source[] = []): string | null 
       if ((r = /^(\w+(?:\.\w+)?)\(\) missing (\d+) required positional arguments?: (.+)$/.exec(m))) return `${r[1]}() needs ${plural(Number(r[2]), "more argument")} (${r[3].replace(/'/g, "")}), but the call doesn't give ${Number(r[2]) === 1 ? "it" : "them"}. Give one value for each parameter in the def line.`;
       if ((r = /^(\w+(?:\.\w+)?)\(\) got an unexpected keyword argument '(\w+)'/.exec(m))) return `${r[1]}() has no parameter named ${q(r[2])}. Check the name in the def line.`;
       if ((r = /^'(\w+)' object is not callable/.exec(m))) {
-        const called = /\b(\w+)\s*\(/.exec(code)?.[1];
-        if (called && BUILTINS.has(called)) return `Here ${q(called)} isn't the built-in function any more: the program gave a variable that same name, which hides the function. Rename the variable (for example ${called}_value).`;
-        if (r[1] === "int" || r[1] === "float") return `Parentheses right after a number, like 2(3 + 4), read as calling it as a function. Multiplication needs a *: 2 * (3 + 4).`;
-        return `Parentheses after a value call it as a function, but this ${r[1]} isn't one. Check for a variable with the same name as a function, or a missing operator.`;
+        const type = r[1];
+        if (type === "module") {
+          const s = /Did you mean: '([\w.]+)\(\.\.\.\)'\?/.exec(m)?.[1];
+          return `A module can't be called like a function. Call a function from it, with a dot after the module's name${s ? `: Python suggests ${s}(...)` : ""}.`;
+        }
+        // What was called, if it can be told. An error inside a call, like sorted(items, key=5), marks the
+        // outer call (sorted), which is still the function. So a name is blamed only if the program gives it
+        // a value the line can see, and only if it's the one such name: the called one, or one the call
+        // passes on as a function (key=age, map(int, values)), which the call then calls.
+        const call = failedCall(e);
+        const called = call?.callee;
+        if (called && /^\d/.test(called)) return "Parentheses right after a number, like 2(3 + 4), read as calling it as a function. Multiplication needs a *: 2 * (3 + 4).";
+        // Only a string on its own: ", ".join is a string's method, called fine.
+        if (called && /^[rbfu]{0,2}["'].*["']$/i.test(called)) return "Parentheses right after a string, like \"Sum:\" (a + b), read as calling it as a function. A comma is probably missing between them: \"Sum:\", (a + b).";
+        const at = e.frames[e.frames.length - 1];
+        const attr = called && /^\w+(?:\.\w+)*\.(\w+)$/.exec(called)?.[1];
+        // map and filter call their function later, when what they give is gone through: by the call around
+        // them (list(map(int, values))), or by a for loop, which marks map itself. reduce calls it at once.
+        // So the function they're given is in the failing call's arguments, or is the failing call's first.
+        const passed = [...(call?.args ?? "").matchAll(/\bkey\s*=\s*([A-Za-z_]\w*)\s*[,)]|\b(?:map|filter)\s*\(\s*([A-Za-z_]\w*)\s*,/g)].map((p) => ({ name: p[1] ?? p[2], key: p[1] != null }));
+        // Only when the called name can be the built-in: an attribute the program sets (self.map) or a map or filter it
+        // assigns (a grid called map) is the program's own value, which fails before its first argument is called.
+        // reduce can be the program's own name for functools.reduce, so it stays a suspect's call.
+        const builtin = called && (attr ? !setsAttribute(sources, attr) : called === "reduce" || !assigns(sources, called, at));
+        const first = builtin && /^(?:\w+\.)?(?:map|filter|reduce)$/.test(called) ? /^\(\s*([A-Za-z_]\w*)\s*,/.exec(call!.args)?.[1] : undefined;
+        if (first) passed.push({ name: first, key: false });
+        const suspects = new Set(passed.map((p) => p.name).filter((n) => assigns(sources, n, at)));
+        if (called && (/^\w+$/.test(called) ? assigns(sources, called, at) : attr && setsAttribute(sources, attr))) suspects.add(called);
+        const name = suspects.size === 1 ? [...suspects][0] : null;
+        if (name && name === called && attr) {
+          const both = classBodies(sources).some((c) => new RegExp(`^\\s+def\\s+${attr}\\s*\\(`, "m").test(c) && new RegExp(`\\bself\\.${attr}\\s*=(?!=)`).test(c));
+          if (both) return `${called} is ${article(type)} here, not a method. The class has an attribute and a method both named ${attr}, and the attribute hides the method: give them different names.`;
+          return `${called} is ${article(type)} here, not a method, so it can't be called with ( ). To use its value, leave out the parentheses: ${called}.`;
+        }
+        if (name) {
+          if (BUILTINS.has(name)) return `Here ${q(name)} isn't the built-in function any more: the program gave a variable that same name, which hides the function. Rename the variable (for example ${name}_value).`;
+          if (sources.some((s) => new RegExp(`^def\\s+${name}\\s*\\(`, "m").test(s.text))) return `${q(name)} is the name of a function, but here it holds ${article(type)}: a variable with the same name hides the function. Give the variable another name.`;
+          if (name !== called) return `${q(name)} is given where a function is needed, but here it holds ${article(type)}, not a function.${passed.some((p) => p.key && p.name === name) ? " key= takes a function, such as len, or a lambda: key=lambda item: item[1]." : ""}`;
+          const hint = type === "int" || type === "float" ? ` To multiply, put * before the parenthesis: ${name} * (...).` : ["list", "str", "tuple", "dict"].includes(type) ? ` To get an item, use square brackets: ${name}[...].` : "";
+          return `${q(name)} holds ${article(type)} here, not a function, so it can't be called with ( ).${hint}`;
+        }
+        return `Parentheses after a value call it as a function, but ${article(type)} isn't one. Check for a variable with the same name as a function, or a missing operator.`;
       }
+      if ((r = /^'(\w+)' object cannot be interpreted as an integer/.exec(m))) {
+        const what = failedCall(e)?.callee === "range" ? "range() needs a whole number (int)" : "A whole number (int) is needed here";
+        if (r[1] === "str") return `${what}, but this is text (str). input() always gives text: turn it into a number with int(...) first.`;
+        if (r[1] === "float") return `${what}, not a decimal number (float). Division with / always gives a float: use // for whole-number division, or int(...).`;
+        return `${what}, not ${article(r[1])}.${r[1] === "NoneType" ? " Check that the function you called returns a value." : ""}`;
+      }
+      if ((r = /^(__str__|__repr__) returned non-string \(type (\w+)\)/.exec(m)))
+        return `A class's ${r[1]} method must return a string, but this one returned ${article(r[2])}. Give the text back with return, for example return f"Name: {self.name}"${r[2] === "NoneType" ? "; printing it isn't enough" : ""}.`;
+      if ((r = /^(\w+)\(\) takes no arguments$/.exec(m)) && sources.some((s) => new RegExp(`^\\s*class\\s+${r![1]}\\b`, "m").test(s.text)))
+        return `The class ${r[1]} has no __init__ method, so ${r[1]}(...) can't be given values. Check that __init__ is spelled with two underscores on each side: def __init__(self, ...):`;
+      if ((r = /^(?:\w+\.)?(\w+)\(\) takes (exactly one|no|at most|at least) (\d+ )?(?:positional )?arguments? \((\d+) given\)/.exec(m))) {
+        const [, fn, takes, n, got] = r;
+        const more = fn === "append" && Number(got) > 1 ? " append adds one item; to add several, use extend with a list of them: items.extend([a, b])." : "";
+        return `${fn}() takes ${takes === "exactly one" ? "exactly one argument" : takes === "no" ? "no arguments" : `${takes} ${plural(Number(n), "argument")}`}, but the call gives it ${got}.${more}`;
+      }
+      if ((r = /^(\w+) expected (at most |at least )?(\d+) arguments?, got (\d+)/.exec(m))) return `${r[1]}() takes ${r[2] ?? ""}${plural(Number(r[3]), "argument")}, but the call gives it ${r[4]}.`;
       if ((r = /^'(\w+)' object is not subscriptable/.exec(m))) {
         if (r[1] === "NoneType") return "Square brackets [ ] were used on None, the value meaning \"nothing\". A function without a return gives None: check that the function you called returns its result.";
         if (r[1] === "builtin_function_or_method" || r[1] === "function" || r[1] === "method") return "Square brackets were used on a function. To call a function, use parentheses: len(text), not len[text].";
@@ -209,8 +302,13 @@ export function explainError(e: PyError, sources: Source[] = []): string | null 
       if ((r = /^(?:list|string|tuple) indices must be integers or slices, not (\w+)/.exec(m))) return r[1] === "float" ? "An index must be a whole number, but this one is a float. Division with / always gives a float: use // for whole-number division." : r[1] === "str" ? "An index must be a whole number, but this one is text. If it came from input(), turn it into a number with int(...). (For a dictionary, use one instead of a list.)" : `An index must be a whole number, not ${article(r[1])}.`;
       if ((r = /^'(\w+)' object is not iterable/.exec(m))) return r[1] === "int" ? "A for loop goes through the items of a collection, but this is a single number. To repeat something n times, loop over range(n)." : r[1] === "NoneType" ? "A for loop was given None, the value meaning \"nothing\". Check that the function that should give the list returns it." : `A for loop (or another tool that goes through items) was given ${article(r[1])}, which has no items to go through.`;
       if ((r = /^cannot unpack non-iterable (\w+) object/.exec(m))) return `Several variables on the left of = take the items of a collection, but the value on the right is ${article(r[1])}.${r[1] === "NoneType" ? " Check that the function you called returns its values." : ""}`;
-      if ((r = /^unhashable type: '(\w+)'/.exec(m))) return `${article(r[1], true)} can't be a key of a dictionary or an item of a set, because it can change. Use a tuple instead of a list as a key.`;
-      if (/^int\(\) argument must be a string, a bytes-like object or a real number, not 'NoneType'/.test(m)) return "int() was given None. Check that the function you called returns a value.";
+      // Python 3.14: "cannot use 'list' as a dict key (unhashable type: 'list')", or "as a set element"; hash() still says "unhashable type: 'list'".
+      if ((r = /unhashable type: '(\w+)'/.exec(m))) {
+        const where = /as a dict key/.test(m) ? "a dictionary's key" : /as a set element/.test(m) ? "an item of a set" : "a key of a dictionary or an item of a set";
+        return `${article(r[1], true)} can't be ${where}, because it can change.${r[1] === "list" ? " Use a tuple instead of a list: (1, 2), not [1, 2]." : ""}`;
+      }
+      if ((r = /^(int|float)\(\) argument must be a string.* not '(\w+)'/.exec(m)))
+        return r[2] === "NoneType" ? `${r[1]}() was given None. Check that the function you called returns a value.` : `${r[1]}() turns text or a number into a number, but it was given ${article(r[2])}.`;
       if (/^'NoneType' object is not iterable/.test(m)) return "This expected a collection, but got None. Check that the function you called returns its result.";
       if (/^%d format: a real number is required/.test(m)) return "A %d placeholder needs a number. Try an f-string instead: f\"{value}\".";
       if (/^(?:sequence item \d+: )?expected str instance, (\w+) found/.test(m)) return "join() puts strings together, but one item isn't a string. Turn each item into text first, for example with str(...).";
@@ -225,9 +323,17 @@ export function explainError(e: PyError, sources: Source[] = []): string | null 
         return `int() can only turn text that is a whole number into a number, and ${value} isn't one. Check what the program reads at this point: maybe the input is in a different order than the program expects.`;
       }
       if ((r = /^could not convert string to float: (.*)$/.exec(m))) return `float() can only turn text that is a number into one, and ${r[1]} isn't a number. (It accepts 3.5, -2 or 1e3, but not 3,5 with a comma.)`;
-      if (/^math domain error/.test(m)) return "The math function was given a value outside the values it accepts, such as the square root of a negative number.";
+      // Python 3.14 names what the function expects (math.sqrt(-4): "expected a nonnegative input, got -4.0"); pow and fmod still say "math domain error".
+      if (/^math domain error|^expected a (?:nonnegative|positive|finite) input|^expected a number (?:in range|between)|^expected argument value|^expected a noninteger or positive integer/.test(m))
+        return "The math function was given a value outside the values it accepts, such as the square root of a negative number.";
       if (/^list\.remove\(x\): x not in list/.test(m)) return "remove() looked for a value that isn't in the list. Check with in first: if value in items: items.remove(value).";
-      if ((r = /^(.+) is not in list$/.exec(m))) return `index() looked for ${r[1]}, which isn't in the list. Check with in first.`;
+      if ((r = /^(\w+)\.index\(x\): x not in \w+/.exec(m))) return `index() looked for a value that isn't in the ${r[1] === "list" || r[1] === "tuple" ? r[1] : "collection"}. Check with in first: if value in items:`;
+      if ((r = /^Unknown format code '(.)' for object of type '(\w+)'/.exec(m))) {
+        const [, c, type] = r;
+        if (type === "str") return `A format such as :.2f or :d works only for numbers, but this value is text (str). If it came from input(), turn it into a number first with ${c === "d" ? "int" : "float"}(...).`;
+        if (type === "float" && c === "d") return "The format :d is for whole numbers, but this value is a decimal number (float). Use :.0f to show it with no decimals.";
+        return `The format code ${c} after : doesn't suit ${article(type)}.`;
+      }
       if (/^substring not found/.test(m)) return "index() looked for a part of the string that isn't in it. find() gives -1 instead of an error; or check with in first.";
       if ((r = /^too many values to unpack \(expected (\d+)(?:, got (\d+))?\)/.exec(m))) return `There are ${plural(Number(r[1]), "variable")} on the left of =, but the value on the right has more items${r[2] ? ` (${r[2]})` : ""}. With split(), check what the text is split into.`;
       if ((r = /^not enough values to unpack \(expected (\d+), got (\d+)\)/.exec(m))) return `There are ${plural(Number(r[1]), "variable")} on the left of =, but the value on the right has only ${plural(Number(r[2]), "item")}. With split(), check that the line really has the parts you expect.`;
@@ -313,6 +419,76 @@ function raisedHere(e: PyError, sources: Source[]): string | null {
   const line = sourceLine(sources, e.file, e.line);
   if (/^\s*raise\b/.test(line)) return `The program raised this ${e.name} itself, with the raise on this line. That's what raise is for: it stops the function and reports the problem, unless code that called it catches the error with try and except.`;
   return null;
+}
+
+/**
+ * The call that failed, as written: what it called (the part of the line Python marks with ~ just before
+ * the ^ under the call's parentheses: len in print(len(x))), and its parentheses with what's in them.
+ * Python leaves the marks out when the call is all there is after "name =" or "return"; then it's the
+ * call there.
+ */
+function failedCall(e: PyError): { callee: string; args: string } | undefined {
+  const f = e.frames[e.frames.length - 1];
+  if (!f?.code) return undefined;
+  if (f.marks) {
+    const r = /^(\s*)(~+)(\^+)/.exec(f.marks);
+    const callee = r && f.code.slice(r[1].length, r[1].length + r[2].length).trim();
+    return r && callee ? { callee, args: f.code.slice(r[1].length + r[2].length, r[0].length) } : undefined;
+  }
+  const r = /^(?:return\s+|\w+\s*=\s*)\(*\s*([\w.]+)\s*(\(.*)$/.exec(f.code);
+  return r ? { callee: r[1], args: r[2] } : undefined;
+}
+
+/**
+ * The learner's code gives `name` a value that the line in `at` can see: with = (or +=), as a for loop's
+ * variable, as a parameter, or after as in a with or an except. A value given in a function counts only on that
+ * function's lines (a function inside it included), and comments and strings don't count. A test's own
+ * code (in a file that isn't the learner's) runs at the top level of the program. An import doesn't
+ * count: what it gives (reduce, sqrt) is nearly always a function or a class, so it's not to blame.
+ */
+function assigns(sources: Source[], name: string, at: Frame | undefined): boolean {
+  const own = sources.find((s) => s.path === at?.file);
+  return own ? assignsIn(own.text, name, at!.line - 1) : sources.some((s) => assignsIn(s.text, name, -1));
+}
+
+/** assigns for one file, seen from its line `line` (from 0; -1 for the top level). */
+function assignsIn(text: string, name: string, line: number): boolean {
+  // Strings and comments blanked out, so the lines stay where they are.
+  const lines = text.replace(/("""|''')[\s\S]*?\1|(["'])(?:\\.|(?!\2)[^\\\n])*\2|#.*/g, (s) => s.replace(/[^\n]/g, " ")).split("\n");
+  const indent = (l: string) => /^[ \t]*/.exec(l)![0].length;
+  // Each def and class: its first line, its last, and whether it says global name (its values for name are then the file's).
+  type Block = { from: number; to: number; def: boolean; global: boolean };
+  const blocks: Block[] = [];
+  lines.forEach((l, i) => {
+    const r = /^([ \t]*)(?:async\s+)?(def|class)\b/.exec(l);
+    if (!r) return;
+    let to = i;
+    for (let j = i + 1; j < lines.length && (!lines[j].trim() || indent(lines[j]) > r[1].length); j++) if (lines[j].trim()) to = j;
+    const global = new RegExp(`^[ \\t]*global\\b.*\\b${name}\\b`, "m").test(lines.slice(i + 1, to + 1).join("\n"));
+    blocks.push({ from: i, to, def: r[2] === "def", global });
+  });
+  const within = (i: number) => blocks.filter((b) => i > b.from && i <= b.to).pop();
+  const here = within(line);
+  // A function's values are seen in it and in the functions inside it; a class's only on its own lines.
+  const sees = (b: Block | undefined) => !b || b === here || (b.def && (b.global || (line > b.from && line <= b.to)));
+  const targets = `\\(?(?:\\w+\\s*,\\s*)*${name}(?:\\s*,\\s*\\w+)*\\)?`;
+  const ways = [
+    new RegExp(`^[ \\t]*(?:\\w+(?:\\s*,\\s*\\w+)*\\s*=(?!=)\\s*)*${targets}\\s*(?::[^=]*)?(?:[-+*/%@&|^]|//|\\*\\*|<<|>>)?=(?!=)`),
+    new RegExp(`^[ \\t]*(?:async\\s+)?for\\s+${targets}\\s+in\\b`),
+    new RegExp(`^[ \\t]*(?:async\\s+)?(?:with|except)\\b.*\\bas\\s+${name}\\b|\\b${name}\\s*:=`),
+  ];
+  const param = new RegExp(`^[ \\t]*(?:async\\s+)?def\\s+\\w+\\s*\\((?:[^)]*,)?\\s*\\*{0,2}${name}\\s*[,:=)]`);
+  return lines.some((l, i) => (ways.some((w) => w.test(l)) && sees(within(i))) || (param.test(l) && sees(blocks.find((b) => b.from === i))));
+}
+
+/** The learner's files give objects an attribute `name`: self.name = ..., or name = ... in a class. */
+function setsAttribute(sources: Source[], name: string): boolean {
+  return sources.some((s) => new RegExp(`\\.${name}\\s*(?:[-+*/%]|//|\\*\\*)?=(?!=)`).test(s.text)) || classBodies(sources).some((c) => new RegExp(`^[ \\t]+${name}\\s*=(?!=)`, "m").test(c));
+}
+
+/** Each class in the learner's files: its class line and the lines under it (indented, blank or comments). */
+function classBodies(sources: Source[]): string[] {
+  return sources.flatMap((s) => [...s.text.matchAll(/^class\b.*(?:\n(?:[ \t]+.*|#.*)?)*/gm)].map((r) => r[0]));
 }
 
 /** "an int", "a str (text)": a type's name with an article, in words a beginner knows. */

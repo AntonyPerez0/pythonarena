@@ -2,11 +2,11 @@ topic: pygame-techniques
 drills:
   - type: choice
     after: title-and-shapes
-    prompt: "What does `pygame.display.set_caption(\"Coin Rain\")` do?"
+    prompt: "What does `pygame.display.set_caption(\"Coin Catcher\")` do?"
     choices:
-      - It writes Coin Rain in the middle of the window
-      - It gives the window the title Coin Rain, in its title bar
-      - It saves the window as a picture named Coin Rain
+      - It writes Coin Catcher in the middle of the window
+      - It gives the window the title Coin Catcher, in its title bar
+      - It saves the window as a picture named Coin Catcher
     answer: 2
     why: "`set_caption` sets the window's title. To write text in the window itself, you render it with a font and blit it."
 

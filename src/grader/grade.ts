@@ -127,30 +127,52 @@ export function selfCallingFunction(sources: SourceFile[]): string | null {
   return null;
 }
 
-/** Why a call test couldn't call the learner's code, in words (the error was in the test's own line). */
-function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): string {
+/** Text that Markdown shows as it is: every ASCII punctuation mark escaped, so __str__ doesn't turn bold and <lambda> isn't read as a tag. */
+const plainMd = (text: string) => text.replace(/[!-/:-@[-`{-~]/g, "\\$&");
+
+/**
+ * Python's message as a sentence of Markdown: the function it starts with (double(), Person.__init__(),
+ * <lambda>()) as code, the rest as plain text, and a full stop unless it ends with one or with a question.
+ */
+function messageMd(message: string): string {
+  const [, func = "", rest] = /^([\w.<>]+\(\))?([\s\S]*)$/.exec(message)!;
+  return (func && `\`${func}\``) + plainMd(/[.?!]$/.test(rest) ? rest : `${rest}.`);
+}
+
+/**
+ * Why a call test couldn't call the learner's code, in words (the error was in the test's own line), and
+ * a key that is the same for tests that failed the same way (so the reason is said once). A hidden test's
+ * call isn't shown. The text is Markdown (code in backticks); what Python said and the notes are plain text in it.
+ */
+function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): { key: string; text: string } {
   const e = parseError(r.stderr);
-  const call = (t.call ?? "").trim();
+  const call = t.hidden ? null : (t.call ?? "").trim();
+  const runs = call ? `The test runs \`${call}\`` : "A hidden test calls your code";
+  const key = e ? `${e.name}: ${e.message}` : r.stderr.trim();
   if (e?.name === "NameError") {
     const name = /^name '(\w+)' is not defined/.exec(e.message)?.[1] ?? "";
     const suggestion = /Did you mean: '(\w+)'\?/.exec(e.message)?.[1];
-    return `The test calls \`${name}\`, but your program doesn't define anything with that name${suggestion ? ` (did you mean to name it \`${name}\`, not \`${suggestion}\`?)` : ""}. Name your function (or class) exactly as the task says, at the top level of the file (not indented inside something else).`;
+    return { key, text: `The test calls \`${name}\`, but your program doesn't define anything with that name${suggestion ? ` (did you mean to name it \`${name}\`, not \`${suggestion}\`?)` : ""}. Name your function (or class) exactly as the task says, at the top level of the file (not indented inside something else).` };
   }
   if (e?.name === "TypeError" && /takes \d+ positional arguments? but \d+ (?:was|were) given|missing \d+ required positional argument/.test(e.message))
-    return `The test runs \`${call}\`, but ${e.message.replace(/^(\w+)\(\)/, "`$1()`")}. Give the def line exactly the parameters the task asks for.`;
-  if (e?.name === "TypeError" && /object is not callable/.test(e.message)) return `The test runs \`${call}\`, but what it calls isn't a function: ${e.message}. Check that your function's name isn't also used for a variable.`;
-  if (e?.name === "AttributeError") return `The test runs \`${call}\`, but ${e.message}. Name your methods and attributes exactly as the task says.`;
-  if (e?.name === "ImportError" || e?.name === "ModuleNotFoundError") return `The test runs \`${call}\`, but ${e.message}. Check your file and function names.`;
+    return { key, text: `${runs}, but ${messageMd(e.message)} Give the def line exactly the parameters the task asks for.` };
+  if (e?.name === "TypeError" && /object is not callable/.test(e.message)) return { key, text: `${runs}, but what it calls isn't a function: ${messageMd(e.message)} Check that your function's name isn't also used for a variable.` };
+  if (e?.name === "AttributeError") return { key, text: `${runs}, but ${messageMd(e.message)} Name your methods and attributes exactly as the task says.` };
+  if (e?.name === "ImportError" || e?.name === "ModuleNotFoundError") return { key, text: `${runs}, but ${messageMd(e.message)} Check your file and function names.` };
   const note = e ? explainError(e, sources) : null;
-  return `The test's own code \`${call}\` stopped with an error: ${e ? `${e.name}: ${e.message}` : r.stderr.trim()}.${note ? ` ${note}` : ""}`;
+  return { key, text: `${call ? `The test's own code \`${call}\`` : "A hidden test's own code"} stopped with an error: ${e ? `${e.name}: ${messageMd(e.message)}` : plainMd(`${r.stderr.trim()}.`)}${note ? ` ${plainMd(note)}` : ""}` };
 }
 
-/** The note for a call that should give a value but gave None: usually a print where a return belongs. */
+/**
+ * The note for a call that should give a value but gave None: usually a print where a return belongs.
+ * Plain text (notes aren't Markdown), and a hidden test's call isn't named.
+ */
 function returnedNone(t: TestCase, got: string): string {
-  const call = (t.call ?? "").trim().split("\n").pop() ?? "";
+  const call = t.hidden ? null : ((t.call ?? "").trim().split("\n").pop() ?? "");
+  const what = call ? `The call ${call}` : "Your function";
   return got
-    ? `\`${call}\` printed something but returned None. The task asks for a function that returns its result: use return instead of print inside the function (the test prints what it returns).`
-    : `\`${call}\` returned None, which means the function has no return line with a value (or never reaches one). Give it a return line that returns the result.`;
+    ? `${what} printed something but returned None. The task asks for a function that returns its result: use return instead of print inside the function (the test prints what it returns).`
+    : `${what} returned None, which means the function has no return line with a value (or never reaches one). Give it a return line that returns the result.`;
 }
 
 /** The files a challenge's tests give the program, as the engine takes them. */
@@ -162,9 +184,12 @@ export function timeLimitFor(ex: Exercise): number {
   return Math.max(DEFAULT_TIME_LIMIT_MS, frames ? 4_000 + frames * 12 : 0);
 }
 
-/** Whether a run's window is the expected one: the same number of frames, and the same drawing in the last. */
+/** Whether two window sizes are the same (no size to compare: the same). */
+const sameSize = (a: [number, number] | null | undefined, b: [number, number] | null | undefined) => !a || !b || (a[0] === b[0] && a[1] === b[1]);
+
+/** Whether a run's window is the expected one: the same size, the same number of frames, and the same drawing in the last. */
 export function sameWindow(want: ExpectedWindow, got: WindowResult | null | undefined): boolean {
-  return !!got && got.frames === want.frames && normalizeOutput(got.log) === normalizeOutput(want.log);
+  return !!got && got.frames === want.frames && sameSize(want.size, got.size) && normalizeOutput(got.log) === normalizeOutput(want.log);
 }
 
 /** Why a window isn't the expected one, in words. */
@@ -174,6 +199,7 @@ export function windowNote(want: ExpectedWindow, got: WindowResult | null | unde
   if (got.frames < want.frames)
     return `Your window showed ${got.frames} ${got.frames === 1 ? "frame" : "frames"} and then the program ended, but it should keep showing frames until the window is closed (${want.frames} in this test). Keep drawing in a loop that ends when the window is closed (pygame.QUIT).`;
   if (got.frames > want.frames) return `Your window showed ${got.frames} frames, but it should show ${want.frames}.`;
+  if (!sameSize(want.size, got.size)) return `Your window is ${got.size![0]} x ${got.size![1]} pixels, but it should be ${want.size![0]} x ${want.size![1]}: check the size you give pygame.display.set_mode (width first, then height).`;
   return "The window's last frame isn't what it should be: compare your window with the expected one, and their drawing as text, below.";
 }
 
@@ -200,7 +226,10 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
   const syntax = first && first.exitCode !== 0 ? syntaxDiagnostic(parseError(first.stderr), own) : null;
   if (syntax) return { ...base, status: "syntax-error", diagnostics: [syntax], errorOutput: first!.stderr, tests: [] };
   // A call test that couldn't call the learner's code at all (no such function, wrong parameters).
-  const callProblems = [...new Set(ex.tests.flatMap((t, i) => (runs[i]?.callError ? [callProblem(t, runs[i], own)] : [])))];
+  // Each reason once, in the words of the first visible test that failed that way.
+  const failedCalls = ex.tests.flatMap((t, i) => (runs[i]?.callError ? [{ t, p: callProblem(t, runs[i], own) }] : [])).sort((a, b) => Number(!!a.t.hidden) - Number(!!b.t.hidden));
+  const seenCalls = new Set<string>();
+  const callProblems = failedCalls.filter(({ p }) => !seenCalls.has(p.key) && seenCalls.add(p.key)).map(({ p }) => p.text);
   if (callProblems.length) return { ...base, status: "call-error", callProblems, tests: [] };
   const tests = ex.tests.map((t, i): TestResult => {
     const r = runs[i];

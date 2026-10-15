@@ -169,15 +169,15 @@ questions:
 - module: tuples
   type: predict
   code: |
-    def low_high(numbers):
-        return min(numbers), max(numbers)
+    def first_and_count(words):
+        return words[0], len(words)
 
 
-    result = low_high([4, 9, 2])
+    result = first_and_count(["fig", "kiwi", "plum"])
     print(result)
-    low, high = result
-    print(high - low)
-  why: The function returns two values as one tuple, `(2, 9)`. Unpacking puts them into `low` and `high`.
+    word, count = result
+    print(f"{word} and {count - 1} more")
+  why: "The function returns two values as one tuple, `('fig', 3)`. Unpacking puts them into `word` and `count`."
 - module: reading-files
   type: predict
   code: |

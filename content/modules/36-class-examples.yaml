@@ -811,83 +811,83 @@ steps:
     slug: searching
     title: A collection you can search
     text: |
-      A larger program often has two kinds of classes: one for a single thing, and one for a collection of those things. Here a `Task` knows its own data and how to show itself, and a `TaskList` keeps the tasks and answers questions about them:
+      A larger program often has two kinds of classes: one for a single thing, and one for a collection of those things. Here a `Hike` knows its own data and how to show itself, and a `Logbook` keeps the hikes someone plans to walk and answers questions about them:
 
       ```python run
-      class Task:
-          def __init__(self, title, hours):
-              self.title = title
-              self.hours = hours
-              self.done = False
+      class Hike:
+          def __init__(self, name, km):
+              self.name = name
+              self.km = km
+              self.walked = False
 
           def __str__(self):
-              status = "done" if self.done else "to do"
-              return f"{self.title} ({self.hours} h, {status})"
+              status = "walked" if self.walked else "not yet"
+              return f"{self.name} ({self.km} km, {status})"
 
 
-      class TaskList:
+      class Logbook:
           def __init__(self):
-              self.tasks = []
+              self.hikes = []
 
-          def add(self, title, hours):
-              self.tasks.append(Task(title, hours))
+          def add(self, name, km):
+              self.hikes.append(Hike(name, km))
 
-          def mark_done(self, title):
-              for task in self.tasks:
-                  if task.title == title:
-                      task.done = True
+          def mark_walked(self, name):
+              for hike in self.hikes:
+                  if hike.name == name:
+                      hike.walked = True
 
           def find(self, word):
               found = []
-              for task in self.tasks:
-                  if word.lower() in task.title.lower():
-                      found.append(task)
+              for hike in self.hikes:
+                  if word.lower() in hike.name.lower():
+                      found.append(hike)
               return found
 
-          def hours_left(self):
+          def km_left(self):
               total = 0
-              for task in self.tasks:
-                  if not task.done:
-                      total += task.hours
+              for hike in self.hikes:
+                  if not hike.walked:
+                      total += hike.km
               return total
 
 
-      chores = TaskList()
-      chores.add("Wash the car", 1)
-      chores.add("Paint the fence", 4)
-      chores.add("Fix the Car radio", 2)
-      chores.mark_done("Wash the car")
+      summer = Logbook()
+      summer.add("Lake Path", 5)
+      summer.add("Ridge Loop", 12)
+      summer.add("Old lake trail", 9)
+      summer.mark_walked("Lake Path")
 
-      for task in chores.find("car"):
-          print(task)
-      print("Hours left:", chores.hours_left())
+      for hike in summer.find("lake"):
+          print(hike)
+      print("Km left:", summer.km_left())
       ```
 
       ```output
-      Wash the car (1 h, done)
-      Fix the Car radio (2 h, to do)
-      Hours left: 6
+      Lake Path (5 km, walked)
+      Old lake trail (9 km, not yet)
+      Km left: 21
       ```
 
       A few things to notice:
 
-      - The client only calls `add` with a title and the hours. `TaskList` makes the `Task` objects itself and keeps them in its list.
-      - `find` is a search: it goes through the list and collects the tasks that match into a new list. It compares in small letters, so `car` also finds `Car`.
-      - `find` returns the `Task` objects themselves, so the client can print them (with their `__str__`) or use their attributes.
-      - `mark_done` changes the attribute of a task that is in the list. The list holds references to the tasks, so the change stays.
+      - The client only calls `add` with a name and a length. `Logbook` makes the `Hike` objects itself and keeps them in its list.
+      - `find` is a search: it goes through the list and collects the hikes that match into a new list. It compares in small letters, so `lake` also finds `Lake`.
+      - `find` returns the `Hike` objects themselves, so the client can print them (with their `__str__`) or use their attributes.
+      - `mark_walked` changes the attribute of a hike that is in the list. The list holds references to the hikes, so the change stays.
 
       ### Searching for the best match
 
       Another common search finds the one item that is best by some measure. Such a method goes through the list once and remembers the best item so far. If the list can be empty, it needs an answer for that too:
 
       ```python fragment
-      def biggest(self):
-          if len(self.tasks) == 0:
+      def longest(self):
+          if len(self.hikes) == 0:
               return None
-          best = self.tasks[0]
-          for task in self.tasks:
-              if task.hours > best.hours:
-                  best = task
+          best = self.hikes[0]
+          for hike in self.hikes:
+              if hike.km > best.km:
+                  best = hike
           return best
       ```
 

@@ -17,7 +17,8 @@
 // Usage: npm run build && node scripts/e2e.mjs [--shots dir]
 // E2E_ONLY=<regular expression> runs only the tests whose names match (while working on something);
 // E2E_SKIP=<regular expression> leaves out the tests whose names match. CI runs the phone pass (the tests
-// named "the phone pass: ...", which need nothing from the others) as a job of its own beside the rest.
+// named "the phone pass: ...", which need nothing from the others) as a job of its own beside the rest
+// (.github/workflows/deploy.yml, the e2e job's two entries).
 import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -64,7 +65,12 @@ const expect = (cond, msg) => {
   if (!cond) throw new Error(msg);
 };
 async function shot(page, name) {
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+  if (!SHOTS) return;
+  // A full-page screenshot scrolls the page; it goes back to where it was, so the tests after it see the
+  // page as they would without --shots.
+  const y = await page.evaluate(() => scrollY);
+  await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+  await page.evaluate((top) => scrollTo(0, top), y);
 }
 async function axe(page, label) {
   // Colour contrast is measured on what's painted: wait for fade-ins (the pass banner's) to end.
@@ -150,6 +156,10 @@ const challengesOf = (mod) => mod.steps.flatMap((step) => [step, ...(step.more ?
 /** Every challenge of the course, in course order. */
 const ALL_CHALLENGES = COURSE_INDEX.modules.flatMap((m) => challengesOf(moduleOf(m.id)));
 const findChallenge = (pred) => ALL_CHALLENGES.find(pred);
+// The drills, the projects and the topics reference, read now too, with the rest of the build's files.
+const DRILLS = JSON.parse(readFileSync(new URL('../src/generated/drills.json', import.meta.url), 'utf8'));
+const PROJECTS = (COURSE_INDEX.projects ?? []).map((p) => JSON.parse(readFileSync(new URL(`../src/generated/projects/${p.id}.json`, import.meta.url), 'utf8')));
+const TOPICS = JSON.parse(readFileSync(new URL('../src/generated/topics.json', import.meta.url), 'utf8'));
 /** Whether every planned module is written (modules are added in batches: the tests don't assume either). */
 const ALL_LIVE = COURSE_INDEX.plan.every((m) => m.live);
 const LIVE_COUNT = COURSE_INDEX.modules.length;
@@ -288,7 +298,7 @@ await test('an unknown address shows "Page not found"', async () => {
   await ctx.close();
 });
 
-await test('extra modules: the plan has none, so no page shows an Extra label or an "Extra modules" section, and nothing points to extra modules', async () => {
+await test('extra modules: the Extra label and the "Extra modules" section show only for extra modules the plan has (it has none), and the end of the course points to none that don\'t exist', async () => {
   const extras = COURSE_INDEX.plan.filter((m) => m.course === 'extra');
   const { ctx, page, errors } = await newPage();
   await page.goto(BASE + 'learn/');
@@ -892,6 +902,7 @@ const lessonSession = await newPage();
 await lessonSession.ctx.close();
 
 // ------------------------------------------------------------------ pygame lessons (parts 13 and 14)
+console.log('pygame lessons');
 // The course's pygame modules come in a later batch: these tests check the first lesson with a window
 // example and the first window challenge, once the build has them, and say so while it doesn't.
 
@@ -904,8 +915,14 @@ const SHOT_STEP = (() => {
   }
   return null;
 })();
-/** A pygame challenge whose task card shows a window: a visible test with frames (and maybe events) and the window it should end with. */
-const WINDOW_CHALLENGE = findChallenge(({ ex }) => ex.kind === 'code' && ex.tests.some((t) => !t.hidden && t.window && t.expectWindow));
+/**
+ * A pygame challenge whose task card shows a window: a visible test with frames (events too, when a
+ * challenge has them) and the window it should end with, and a model solution that fills the window
+ * with a color (so a wrong color makes a wrong window).
+ */
+const FILLS = /\.fill\(\(\d+, \d+, \d+\)\)/;
+const windowChallenge = (events) => findChallenge(({ ex }) => ex.kind === 'code' && FILLS.test(ex.solution) && ex.tests.some((t) => !t.hidden && t.window && t.expectWindow && (!events || t.window.events.length > 0)));
+const WINDOW_CHALLENGE = windowChallenge(true) ?? windowChallenge(false);
 /** The window panel's state: frames it has, the frame shown, the run counter of the page. */
 const panelState = (panel) => panel.evaluate((p) => ({ frames: Number(p.dataset.frames), shown: Number(p.dataset.shown), status: p.querySelector('.pg-status')?.textContent ?? '' }));
 /** Waits until the window panel has at least `frames` frames and shows frame `shown` or later. */
@@ -918,6 +935,46 @@ async function windowText(panel) {
   if ((await d.getAttribute('open')) === null) await d.locator('summary').click();
   return d.locator('pre').textContent();
 }
+
+/** The site's images a step's text shows (```asset blocks): [name, width, height]. */
+const assetBlocks = (step) => [...step.text.matchAll(/^```asset (\S+)\n(\d+)x(\d+)\n```$/gm)].map((m) => [m[1], Number(m[2]), Number(m[3])]);
+const ASSET_STEP = (() => {
+  for (const m of COURSE_INDEX.modules) {
+    const step = moduleOf(m.id).steps.find((s) => assetBlocks(s).length > 0);
+    if (step) return { moduleId: m.id, step };
+  }
+  return null;
+})();
+
+await test('images in lessons: an asset block shows one of the site\'s images, drawn larger with crisp pixels, with its name and size (the pre-rendered page too)', async () => {
+  if (!ASSET_STEP) {
+    console.log('       (skipped: no lesson shows one of the site\'s images yet)');
+    return;
+  }
+  const { moduleId, step } = ASSET_STEP;
+  const blocks = assetBlocks(step);
+  const { ctx, page, errors } = await newPage();
+  await page.goto(BASE + `learn/${moduleId}/${step.slug}/`);
+  await page.locator('.workbench').waitFor({ timeout: ENGINE_TIMEOUT });
+  const figures = page.locator('article.step-text figure.asset-img');
+  expect((await figures.count()) === blocks.length, `${await figures.count()} images drawn for ${blocks.length} asset blocks`);
+  for (const [k, [name, w, h]] of blocks.entries()) {
+    const img = figures.nth(k).locator('img');
+    await img.scrollIntoViewIfNeeded();
+    await page.waitForFunction((e) => e.complete && e.naturalWidth > 0, await img.elementHandle());
+    const shown = await img.evaluate((e) => ({ w: e.naturalWidth, h: e.naturalHeight, alt: e.alt, rendering: getComputedStyle(e).imageRendering, drawn: e.getBoundingClientRect().width }));
+    expect(shown.w === w && shown.h === h && shown.alt === `The image ${name}` && shown.rendering === 'pixelated' && shown.drawn > w, `${name}: ${JSON.stringify(shown)}`);
+    const caption = await figures.nth(k).locator('figcaption').innerText();
+    expect(caption === `${name}, ${w} × ${h} pixels`, `${name}'s caption: ${caption}`);
+    expect((await fetch(BASE + `images/${name}`)).status === 200, `images/${name} isn't served`);
+  }
+  // The pre-rendered page shows the same images.
+  const html = await (await fetch(BASE + `learn/${moduleId}/${step.slug}/`)).text();
+  for (const [name] of blocks) expect(html.includes(`<img src="${BASE_PATH}images/${name}"`), `the pre-rendered page lacks ${name}`);
+  await bothThemes(page, 'a lesson with images');
+  expect(errors.length === 0, errors.join('\n'));
+  await ctx.close();
+});
 
 await test('a pygame lesson: a window example shows its last frame with its title, size and the window as text (the pre-rendered page too); Play runs it in the page to the same last frame; axe in both themes and at 320 px', async () => {
   if (!SHOT_STEP) {
@@ -981,20 +1038,31 @@ await test('a window challenge: the task card says what the test does and shows 
   const cardImg = card.locator('figure.pg-window img');
   expect((await cardImg.getAttribute('src')).endsWith(want.image), 'the task card draws the expected window');
   expect((await card.locator('details.pg-astext pre').textContent()) === (want.log || '(nothing drawn)'), 'the task card\'s window as text');
-  // The starter program fails; when its window differs, both are shown with the lines that differ marked.
+  // The starter program fails.
   await setProgram(page, ex.seed);
-  const out = await check(page);
+  let out = await check(page);
   expect(out.includes('Not yet'), out);
-  const cmp = page.locator('.t-fail', { hasText: shown.name }).first().locator('.pg-compare');
-  if (await cmp.count()) {
-    const sides = cmp.locator('.t-cmp > div');
-    expect((await sides.count()) === 2, 'two windows side by side');
-    const expectedLog = (await sides.nth(0).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '');
-    expect(expectedLog.trim() === (want.log || '(nothing drawn)').trim(), `the expected window as text: ${expectedLog}`);
-    const yours = (await sides.nth(1).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '').split('\n');
-    const marked = (await sides.nth(0).locator('.pg-diff').allTextContents()).map((t) => t.replace(/ \(differs\)\n?$/, ''));
-    expect(marked.every((l) => !yours.includes(l)), `marked lines your window has too: ${marked}`);
-  }
+  // The model solution with the window filled with another color: both windows are shown, with the lines that differ marked.
+  const [, color] = /\.fill\((\(\d+, \d+, \d+\))\)/.exec(ex.solution);
+  const other = color === '(1, 2, 3)' ? '(3, 2, 1)' : '(1, 2, 3)';
+  await setProgram(page, ex.solution.replace(`.fill(${color})`, `.fill(${other})`));
+  out = await check(page);
+  expect(out.includes('Not yet'), out);
+  const failed = page.locator('.t-fail', { hasText: shown.name }).first();
+  const cmp = failed.locator('.pg-compare');
+  expect((await cmp.count()) === 1, `no window comparison: ${out}`);
+  expect((await failed.locator('.t-note').innerText()).includes("The window's last frame isn't what it should be"), await failed.locator('.t-note').innerText());
+  const sides = cmp.locator('.t-cmp > div');
+  expect((await sides.count()) === 2, 'two windows side by side');
+  expect(/the window after \d+ frames? should be/i.test(await sides.nth(0).locator('.lbl').first().innerText()) && /your window after \d+ frames?/i.test(await sides.nth(1).locator('.lbl').first().innerText()), await cmp.innerText());
+  const expectedLog = (await sides.nth(0).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '');
+  expect(expectedLog.trim() === (want.log || '(nothing drawn)').trim(), `the expected window as text: ${expectedLog}`);
+  const yours = (await sides.nth(1).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '').split('\n');
+  const marked = (await sides.nth(0).locator('.pg-diff').allTextContents()).map((t) => t.replace(/ \(differs\)\n?$/, ''));
+  const markedYours = (await sides.nth(1).locator('.pg-diff').allTextContents()).map((t) => t.replace(/ \(differs\)\n?$/, ''));
+  expect(marked.length > 0 && marked.every((l) => !yours.includes(l)) && markedYours.some((l) => l.includes(`fill ${other}`)), `marked in the expected window: ${marked}; in yours: ${markedYours}`);
+  // Both pictures are drawn.
+  await page.waitForFunction((e) => [...e.querySelectorAll('img')].length === 2 && [...e.querySelectorAll('img')].every((i) => i.complete && i.naturalWidth > 0), await cmp.elementHandle());
   // A hidden test never shows the window it expects.
   expect((await page.locator('.t-fail .pg-compare').count()) <= ex.tests.filter((t) => !t.hidden && t.expectWindow).length, 'a hidden test shows its window');
   await bothThemes(page, 'a failed window challenge');
@@ -1080,14 +1148,14 @@ await test('playground: a module in a file of its own; its name is checked; erro
   await setCode(page, 'import helpers\n\nprint(helpers.greet("Ada"))\n');
   const addModule = async (name) => {
     await page.click('text=Add a module');
-    await page.fill('#new-class', name);
+    await page.fill('#new-module', name);
     await page.click('.file-add-form button[type=submit]');
   };
   // Names are checked: a keyword, a module of Python's own, a name that starts with a digit.
   const said = [];
   for (const name of ['class', 'random', '2fast']) {
     await addModule(name);
-    said.push(await page.locator('#new-class-error').innerText());
+    said.push(await page.locator('#new-module-error').innerText());
     await page.click('.file-add-form button:has-text("Cancel")');
   }
   await addModule('helpers');
@@ -1095,7 +1163,7 @@ await test('playground: a module in a file of its own; its name is checked; erro
   expect((await page.locator('.file-tab-on').innerText()).includes('helpers.py'), 'the new file is open');
   expect((await editorText(page)).startsWith('# helpers.py: import it in main.py with: import helpers'), await editorText(page));
   await addModule('helpers');
-  said.push(await page.locator('#new-class-error').innerText());
+  said.push(await page.locator('#new-module-error').innerText());
   await page.click('.file-add-form button:has-text("Cancel")');
   // A mistake in helpers.py: the message names the file, and its tab shows the count.
   await setCode(page, 'def greet(name)\n    return "Hello, " + name + "!"\n');
@@ -1335,7 +1403,6 @@ await test('playground: a pygame program opens its window and its frames play; a
 
 console.log('Practice');
 // The right answers come from the build's own drill file.
-const DRILLS = JSON.parse(readFileSync(new URL('../src/generated/drills.json', import.meta.url), 'utf8'));
 const drillById = new Map([...DRILLS.drills, ...DRILLS.placement].map((d) => [d.id, d]));
 /** Answers the rep on screen, right or wrong. Boss reps are answered right only. */
 async function answerRep(page, right = true) {
@@ -1693,6 +1760,8 @@ await test('placement quiz: one question per written module; the first miss sets
   const { ctx, page, errors } = await newPage();
   expect(DRILLS.placement.length === LIVE_COUNT && DRILLS.placement.every((q, i) => q.module === COURSE_INDEX.modules[i].id), `${DRILLS.placement.length} placement questions for ${LIVE_COUNT} written modules`);
   await page.goto(BASE + 'placement/');
+  // The questions load after the page appears: then the intro says how many there are.
+  await page.locator('text=Start the quiz').waitFor();
   const intro = await page.locator('#main').innerText();
   expect(intro.includes(`Answer ${DRILLS.placement.length} quick questions, one for each module${ALL_LIVE ? '' : ' written so far'}`), intro);
   await page.click('text=Start the quiz');
@@ -2007,8 +2076,6 @@ await test('moving progress: /transfer/ works offline after a visit', async () =
 });
 
 console.log('Projects');
-/** The projects of the build (content/projects), whole, in course order. */
-const PROJECTS = (COURSE_INDEX.projects ?? []).map((p) => JSON.parse(readFileSync(new URL(`../src/generated/projects/${p.id}.json`, import.meta.url), 'utf8')));
 /** A program with a comment line after main.py's code, so the code that passed can be told from the model solution. */
 const markMain = (code, mark) => joinFiles(splitFiles(code).map((f) => (f.path === 'main.py' ? { ...f, text: f.text.replace(/\n*$/, `\n# ${mark}\n`) } : f)));
 /** A program with a milestone's new files after its own (src/lib/projects.ts withFiles). */
@@ -2695,8 +2762,10 @@ await test('offline: after one visit, pages and Python work without a connection
   await lessonReady(page);
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller), 'service worker controls the page');
   await ctx.setOffline(true);
+  // The list of Python's files is asked from the network first, then read from the copy saved with
+  // Python (src/engine/manifest.ts): that one request fails offline by design.
   const failed = [];
-  page.on('requestfailed', (r) => failed.push(r.url()));
+  page.on('requestfailed', (r) => r.url().endsWith('/engine/manifest.json') || failed.push(r.url()));
   await page.reload();
   await lessonReady(page);
   await setCode(page, 'name = input("Name: ")\nprint(f"{name} works offline")\n');
@@ -2921,8 +2990,6 @@ await test('the other Arena sites on a phone: no header button; the menu lists t
 });
 
 console.log('Topics A to Z');
-/** The topics reference as the content build wrote it (content/topics.yaml, checked against the lessons). */
-const TOPICS = JSON.parse(readFileSync(new URL('../src/generated/topics.json', import.meta.url), 'utf8'));
 
 await test('Topics A to Z: pre-rendered with every entry, in the sitemap and saved for offline use; Learn, Deathmatch and the footer link to it', async () => {
   const html = await (await fetch(BASE + 'topics/')).text();
@@ -3082,8 +3149,23 @@ for (const width of [360, 390]) {
     await noOverflow(page, `lesson ${width}`);
     await axe(page, `lesson ${width}`);
     await shot(page, `lesson-phone-${width}`);
+    // From the top of the page: a link scrolled half out of the window under the sticky header's own
+    // links is the header's, whether the menu is open or not, and moves on as the page scrolls. The
+    // menu's own edges are checked below, wherever the page is scrolled.
+    await page.evaluate(() => scrollTo(0, 0));
     await page.click('button[aria-label="Open menu"]');
     await axe(page, `menu open ${width}`);
+    // Wherever the page is scrolled, a page link half under the open menu's top or bottom edge keeps 24 px to
+    // tap: the menu's links stay 24 px from its edges (below the header's own buttons at the top).
+    const bands = await page.evaluate(() => {
+      const nav = document.getElementById('main-nav');
+      const boxes = (els) => els.filter((e) => e.getClientRects().length).map((e) => e.getBoundingClientRect());
+      const controls = [...document.querySelectorAll('header.topbar a, header.topbar button, header.topbar input')];
+      const inMenu = boxes(controls.filter((e) => nav.contains(e)));
+      const inHeader = boxes(controls.filter((e) => !nav.contains(e)));
+      return { top: Math.min(...inMenu.map((r) => r.top)) - Math.max(...inHeader.map((r) => r.bottom)), bottom: nav.getBoundingClientRect().bottom - Math.max(...inMenu.map((r) => r.bottom)) };
+    });
+    expect(bands.top >= 24 && bands.bottom >= 24, `the open menu leaves ${bands.top.toFixed(1)} px above its first link and ${bands.bottom.toFixed(1)} px below its last`);
     // The Playground with a crash and its traceback.
     await page.goto(BASE + 'playground/');
     await lessonReady(page);

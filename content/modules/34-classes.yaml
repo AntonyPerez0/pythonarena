@@ -14,7 +14,7 @@ steps:
 
       This class is empty: `pass` is the statement that does nothing, there because Python needs at least one line in the block. It already works as a blueprint, though.
 
-      Class names are written in **PascalCase** (also called UpperCamelCase): each word starts with a capital letter and the words are joined without underscores, such as `Planet`, `TrainTicket` or `WeatherStation`. Variables and functions keep their small letters and underscores. That way you can tell at a glance that `Planet()` makes an object and `planet_count()` calls a function.
+      Why a capital P? PEP 8 gives the names of new classes a look of their own, so that a reader can tell them apart from everything else. Compare `weather_station`, a variable or a function, with `WeatherStation`, a class: no underscores, and a capital letter at the start of every word. This style is called **PascalCase**. With it, `Planet()` reads as "make a planet", while `planet_count()` is a function call. (As you saw in the previous module, Python's built-in classes such as `int` and `list`, and some library classes such as `date`, have names in small letters. Your own classes should still follow the custom.)
 
       ### Objects and their attributes
 
@@ -42,13 +42,11 @@ steps:
       Mars 2
       ```
 
-      Each object has its own attributes: `home.name` and `red.name` are two different variables. An attribute lives inside its object, so you always reach it through the object: on its own, `name` would be a `NameError`, since there's no variable by that name.
+      Each object has its own attributes: `home.name` and `red.name` are two different variables, one in each object. (As in the code above, PEP 8 asks for two blank lines around a class, as around a function.)
 
-      (As in the code above, PEP 8 asks for two blank lines around a class, as around a function.)
+      ### Always through the object
 
-      ### When an attribute is missing
-
-      Attaching attributes from outside has a problem: nothing makes sure that every object gets all of them. Forget one, and the program stops when it's used:
+      An attribute is stored inside its object, and the way to it goes through the object: the object's name, a dot, then the attribute's name. Leave out the object, and Python looks for an ordinary variable of that name instead:
 
       ```python run crash
       class Planet:
@@ -56,14 +54,9 @@ steps:
 
 
       home = Planet()
-      home.name = "Earth"
       home.moons = 1
-
-      far = Planet()
-      far.name = "Neptune"
-
       print(home.moons)
-      print(far.moons)
+      print(moons)
       ```
 
       ```output
@@ -72,15 +65,15 @@ steps:
 
       ```crash
       Traceback (most recent call last):
-        File "main.py", line 13, in <module>
-          print(far.moons)
-                ^^^^^^^^^
-      AttributeError: 'Planet' object has no attribute 'moons'
+        File "main.py", line 8, in <module>
+          print(moons)
+                ^^^^^
+      NameError: name 'moons' is not defined
       ```
 
-      An `AttributeError` says that the object has no attribute by that name. Here the program forgot to give `far` its moons. A typo in an attribute's name gives the same error.
+      The program has no variable `moons`, only an object `home` with an attribute of that name. And since every `Planet` object can have moons of its own, a plain `moons` couldn't say whose moons you mean anyway.
 
-      Two objects of the same class should look the same: the same attributes, with their own values. The next step shows how a class can make sure of that.
+      The opposite mistake is asking an object for an attribute it doesn't have: one with a typo in its name, or one the program never gave to that object. Then you get the `AttributeError` you met in the previous module. Nothing in an empty class makes sure that every planet gets the same attributes. The next step shows how a class can take care of that itself.
 
       **Your turn:** fill in the blanks, so that the program defines the class `Robot`, makes an object of it and prints:
 
@@ -103,22 +96,59 @@ steps:
       - expect: Bolt 80
     more:
       - task: |
-          What does this program print? Type each line it prints.
-        predict: |
-          class Box:
+          This program should print the owner of each bike and how many gears it has, but it stops with an `AttributeError` after the first line. Cy's bike has a single gear. Fix the program, so that it prints:
+
+          ```
+          Ada 21
+          Ben 7
+          Cy 1
+          ```
+        seed: |
+          class Bike:
               pass
 
 
-          a = Box()
-          b = Box()
-          a.items = 3
-          b.items = 5
-          a.items += b.items
-          print(a.items)
-          print(b.items)
+          road = Bike()
+          road.owner = "Ada"
+          road.gears = 21
+
+          city = Bike()
+          city.owner = "Ben"
+          city.gear = 7
+
+          kids = Bike()
+          kids.owner = "Cy"
+
+          for bike in [road, city, kids]:
+              print(bike.owner, bike.gears)
+        solution: |
+          class Bike:
+              pass
+
+
+          road = Bike()
+          road.owner = "Ada"
+          road.gears = 21
+
+          city = Bike()
+          city.owner = "Ben"
+          city.gears = 7
+
+          kids = Bike()
+          kids.owner = "Cy"
+          kids.gears = 1
+
+          for bike in [road, city, kids]:
+              print(bike.owner, bike.gears)
         hints:
-          - "`a` and `b` are two objects, and each has its own attribute `items`."
-          - "`a.items += b.items` adds 5 to `a`'s items. Only `a` changes."
+          - "Check it and read the error: it names the attribute that one of the bikes doesn't have, and Python even guesses what was meant. The line printed before it shows which bike was fine."
+          - "Ben's bike got its gears under a misspelled name, `gear`. The loop asks every bike for `gears`."
+          - Once that's fixed, the error comes back for the third bike, which never got gears at all. Give it the attribute too.
+        tests:
+          - expect: |
+              Ada 21
+              Ben 7
+              Cy 1
       - task: |
           Write an empty class `Song` and a function `make_song(title, artist, seconds)` that makes a new `Song` object, attaches the attributes `title`, `artist` and `seconds` to it, and returns the object.
 
@@ -207,20 +237,23 @@ steps:
       Neptune 16
       ```
 
-      A function defined inside a class is a method, and `__init__` is the one that Python calls by itself whenever a new object is made. Here is what `Planet("Earth", 1)` does:
-
-      1. Python makes a new, empty `Planet` object.
-      2. It calls `__init__` with the new object as `self`, `"Earth"` as `name` and `1` as `moons`.
-      3. `self.name = name` makes the attribute `name` in the object and stores the argument in it. The same goes for `moons`.
-      4. The finished object is the value of `Planet("Earth", 1)`, and it is stored in `home`.
+      A function defined inside a class is a method, and `__init__` is the one that Python calls by itself whenever a new object is made.
 
       ### self
 
       The first parameter of `__init__` is always `self`: the object being set up. You never pass it yourself, because Python does that. So `__init__` here has three parameters, but you call `Planet` with two arguments.
 
-      `self.name` and `name` are two different variables. `self.name` is the object's attribute, and it stays with the object. `name` is a parameter, which is gone when `__init__` ends. Giving both the same name is the custom, because it makes clear which argument goes where.
+      Follow one call, `Planet("Earth", 1)`, from start to end:
 
-      Forgetting `self.` is a common mistake. Then `name = name` only assigns the parameter to itself, and the object gets nothing:
+      1. Python makes a new, empty `Planet` object.
+      2. It calls `__init__`. Inside the call there are three local variables, the parameters: `self` refers to the new object, `name` is `"Earth"` and `moons` is `1`.
+      3. `self.name = name` reads the local variable `name` and stores its value in the object, under the attribute name `name`. The next line does the same for `moons`.
+      4. `__init__` ends, and its local variables end with it, as in any function. What was stored in the object stays there: the object now has `name` `"Earth"` and `moons` `1`.
+      5. The finished object is the value of `Planet("Earth", 1)`, and it is stored in `home`, so `home.name` is `"Earth"`.
+
+      So in `self.name = name`, the `name` on the right is the parameter and the `name` after `self.` is the attribute. They only share the spelling. A constructor `def __init__(self, planet_name, moons):` with `self.name = planet_name` would make exactly the same objects, though it is more to read.
+
+      Forgetting `self.` is a common mistake. Then `name = name` only assigns the local variable to itself, and the object gets nothing:
 
       ```python run crash
       class Planet:

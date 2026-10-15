@@ -13,7 +13,8 @@ name: Build, verify and deploy to GitHub Pages
 #   content-pyodide  every lesson and project program replayed in Pyodide (the engine the browser
 #                    uses, run in Node) and compared with CPython, in 2 shards side by side.
 #   e2e              the browser tests (Python in the page, accessibility with axe, phone widths,
-#                    offline, mobile data), with screenshots.
+#                    offline, mobile data), with screenshots, in 2 jobs side by side: the phone pass
+#                    and everything else.
 #   pro-track        the Pro Track's projects (pro-track/<id>/) with Python and pytest: each starter
 #                    fails some tests, and with its model solution (pro-track-solutions/<id>/) every
 #                    test passes (scripts/pro-track-check.mjs). Needs nothing from the build.
@@ -137,9 +138,26 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    # Two jobs side by side: the phone pass (every page type at four phone widths in both themes, which
+    # needs nothing from the other tests) and everything else.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tests: everything but the phone pass
+            skip: "^the phone pass"
+            only: ""
+            shots: screenshots
+          - tests: the phone pass
+            skip: ""
+            only: "^the phone pass"
+            shots: screenshots-phone
+    name: e2e (${{ matrix.tests }})
     env:
       BASE_PATH: ${{ needs.build.outputs.base_path }}
       SITE_URL: ${{ needs.build.outputs.site_url }}
+      E2E_SKIP: ${{ matrix.skip }}
+      E2E_ONLY: ${{ matrix.only }}
     steps:
       - uses: actions/checkout@v4
 
@@ -154,7 +172,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots
+          name: ${{ matrix.shots }}
           path: screenshots
           if-no-files-found: ignore
 

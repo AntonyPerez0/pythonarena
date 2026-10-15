@@ -57,8 +57,8 @@ drills:
   - type: predict
     after: expressions-and-types
     code: |
-      print(type(2 * 5 > 9))
-    why: "The arithmetic comes first, then the comparison `10 > 9`. A comparison is an expression of the type `bool`."
+      print(type(12 - 4 < 3 * 3))
+    why: "The arithmetic comes first, on both sides: `8 < 9`. A comparison is an expression of the type `bool`, whether its value is true or false."
 
   - type: predict
     after: expressions-and-types
@@ -138,10 +138,10 @@ drills:
   - type: predict
     after: errors-and-debugging
     code: |
-      price = 20
-      price - 5
-      print("debug, price:", price)
-    why: "The debugging print shows the bug: `price - 5` calculates 15 but stores it nowhere, so `price` is still 20. It should be `price -= 5`."
+      minutes = 150
+      hours = minutes % 60
+      print("debug, hours:", hours)
+    why: "The debugging print shows the bug: `%` gives the remainder, the 30 minutes left over after the full hours. The number of full hours is `minutes // 60`, which is 2."
 
   - type: boss
     after: errors-and-debugging

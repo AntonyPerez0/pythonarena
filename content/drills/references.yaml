@@ -127,10 +127,10 @@ drills:
   - type: predict
     after: list-parameters
     code: |
-      numbers = [1, 2, 3, 4]
-      numbers[1:3] = [0]
+      numbers = [10, 20, 30, 40, 50]
+      numbers[2:4] = [0]
       print(numbers)
-    why: "A slice assignment replaces the items at indexes 1 and 2 with the items of the list on the right, here just one 0."
+    why: "A slice assignment replaces the items at indexes 2 and 3 with the items of the list on the right, here just one 0, so the list gets shorter."
 
   - type: predict
     after: side-effects
@@ -216,49 +216,58 @@ drills:
   - type: boss
     after: side-effects
     prompt: |
-      Write a pure function `doubled(numbers)` that returns a new list with every number doubled. The list it's given must not change.
+      Write a pure function `running_totals(numbers)` that returns a new list in which each item is the sum of the numbers up to and including that place in the list. The list it's given must not change.
 
       ```python fragment
-      numbers = [1, 5, -2]
-      print(doubled(numbers))
+      numbers = [3, 1, 4, 2]
+      print(running_totals(numbers))
       print(numbers)
       ```
 
       ```
-      [2, 10, -4]
-      [1, 5, -2]
+      [3, 4, 8, 10]
+      [3, 1, 4, 2]
       ```
     seed: |
-      def doubled(numbers: list) -> list:
+      def running_totals(numbers: list) -> list:
           pass
 
 
       if __name__ == "__main__":
-          numbers = [1, 5, -2]
-          print(doubled(numbers))
+          numbers = [3, 1, 4, 2]
+          print(running_totals(numbers))
           print(numbers)
     solution: |
-      def doubled(numbers: list) -> list:
+      def running_totals(numbers: list) -> list:
           result = []
+          total = 0
           for number in numbers:
-              result.append(number * 2)
+              total += number
+              result.append(total)
           return result
 
 
       if __name__ == "__main__":
-          numbers = [1, 5, -2]
-          print(doubled(numbers))
+          numbers = [3, 1, 4, 2]
+          print(running_totals(numbers))
           print(numbers)
     hints:
-      - Don't change `numbers`. Make a new empty list instead.
-      - "Append `number * 2` to the new list for each number, then return the new list."
+      - "Don't add up the items inside `numbers` itself, as in `numbers[i] += numbers[i - 1]`: that changes the caller's list. Make a new empty list instead."
+      - Keep the sum so far in a variable. For each number, add it to the sum and append the sum to the new list.
     tests:
       - call: |
-          numbers = [1, 5, -2]
-          print(doubled(numbers))
+          numbers = [3, 1, 4, 2]
+          print(running_totals(numbers))
           print(numbers)
       - call: |
-          numbers = [0, 10]
-          print(doubled(numbers))
+          numbers = [5, -5, 10]
+          print(running_totals(numbers))
           print(numbers)
+        hidden: true
+      - call: |
+          numbers = [7]
+          print(running_totals(numbers))
+          print(numbers)
+        hidden: true
+      - call: running_totals([])
         hidden: true

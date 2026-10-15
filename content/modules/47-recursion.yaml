@@ -69,7 +69,7 @@ steps:
 
       ### Recursion that changes a list
 
-      A recursive function can work on a list. A list is passed to a function as a reference, so every call works on the very same list:
+      A recursive function can also change a list. None of the calls below gets a list of its own: in every call, `numbers` is another name for `powers`, the one list of the main program, because a function gets the list itself and not a copy (part 5). So each call finds the numbers that the calls before it appended:
 
       ```python run
       def keep_doubling(numbers, limit):
@@ -95,7 +95,7 @@ steps:
               numbers.append(numbers[-1] * 2)
       ```
 
-      A solution with a loop is called **iterative**, and one where a function calls itself **recursive**. Every problem can be solved either way, but usually one way fits better. For these first examples, the loop is simpler. The next steps show problems where recursion is the natural fit.
+      A solution that repeats with a loop is called **iterative**, and one where a function calls itself **recursive**. Here the iterative version is shorter and easier to follow, so it's the better choice. Recursion earns its place when a problem breaks into smaller problems of the same kind: the factorial and binary search in the next steps, and the trees of the next module.
 
       **Your turn:** fill in the blanks: the base case's condition, and the argument of the recursive call. The program should print:
 
@@ -141,65 +141,75 @@ steps:
           - Each call prints its `n` and then calls the function with a number two smaller.
           - "The calls stop when `n > 0` is false. Does `n` ever reach 0, or does it skip past it?"
       - task: |
-          Write a recursive function `fill_up(items, size)` that adds the string `"-"` to the end of the list `items` until the list has `size` items. A list that already has `size` items or more stays as it is. The function changes the list it gets and returns nothing. Use recursion, not a loop.
+          A sensor writes its readings into a list, and when it fails, it writes negative numbers. Write a recursive function `trim_end(readings)` that removes the negative numbers from the end of the list, so that the list ends with a number that is 0 or more. Negative numbers earlier in the list stay where they are, and a list of only negative numbers ends up empty. The function changes the list it gets and returns nothing. Use recursion, not a loop.
 
           For example, this program:
 
           ```python fragment
-          items = ["a", "b"]
-          fill_up(items, 5)
-          print(items)
+          readings = [12, -3, 7, 0, -1, -5]
+          trim_end(readings)
+          print(readings)
           ```
 
           prints:
 
           ```
-          ['a', 'b', '-', '-', '-']
+          [12, -3, 7, 0]
           ```
         seed: |
-          def fill_up(items, size):
+          def trim_end(readings):
               pass
 
 
           if __name__ == "__main__":
-              items = ["a", "b"]
-              fill_up(items, 5)
-              print(items)
+              readings = [12, -3, 7, 0, -1, -5]
+              trim_end(readings)
+              print(readings)
         solution: |
-          def fill_up(items, size):
-              if len(items) < size:
-                  items.append("-")
-                  fill_up(items, size)
+          def trim_end(readings):
+              if len(readings) > 0 and readings[-1] < 0:
+                  readings.pop()
+                  trim_end(readings)
 
 
           if __name__ == "__main__":
-              items = ["a", "b"]
-              fill_up(items, 5)
-              print(items)
+              readings = [12, -3, 7, 0, -1, -5]
+              trim_end(readings)
+              print(readings)
         hints:
-          - "The list is too short when `len(items) < size`. Only then is there something to do."
-          - Add one `"-"` with `append`, and let the function call itself to add the rest.
-          - "When the list is long enough, the function does nothing: that's the base case, and it needs no code of its own."
+          - "There's something to do only when the last number, `readings[-1]`, is negative. `pop()` removes the last item of a list."
+          - "An empty list has no last item, so check `len(readings) > 0` first and join the two conditions with `and`: then `readings[-1]` is only looked at when the list has items."
+          - "After removing one number, let the function call itself to deal with the new last number. When the last number isn't negative, or the list is empty, the function does nothing: that's the base case."
         require:
-          - pattern: def fill_up\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bfill_up\s*\(
-            message: Make `fill_up` call itself inside its own body.
+          - pattern: def trim_end\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\btrim_end\s*\(
+            message: Make `trim_end` call itself inside its own body.
         forbid:
           - pattern: \b(?:while|for)\b
             message: Use recursion instead of a loop.
         tests:
           - call: |
-              items = ["a", "b"]
-              fill_up(items, 5)
-              print(items)
+              readings = [12, -3, 7, 0, -1, -5]
+              trim_end(readings)
+              print(readings)
           - call: |
-              items = []
-              fill_up(items, 2)
-              print(items)
+              readings = [-2, -4]
+              trim_end(readings)
+              print(readings)
             hidden: true
           - call: |
-              items = [1, 2, 3]
-              fill_up(items, 2)
-              print(items)
+              readings = []
+              trim_end(readings)
+              print(readings)
+            hidden: true
+          - call: |
+              readings = [3, -1, 4]
+              trim_end(readings)
+              print(readings)
+            hidden: true
+          - call: |
+              readings = [5, 0, -2]
+              trim_end(readings)
+              print(readings)
             hidden: true
 
   - id: recursion-return-values
@@ -769,7 +779,7 @@ steps:
           - call: find([2, 4, 6, 8, 10], 11, 0, 4)
             hidden: true
       - task: |
-          Write a recursive function `find_name(names, name, low, high)` that searches a list of names in alphabetical order with binary search. It returns the index of `name` in the list, or -1 if the name isn't there. Don't use loops, `in` or `index`.
+          Write a recursive function `find_name(names, name, low, high)` that searches a list of names in alphabetical order with binary search. It returns the index of `name` in the list, or -1 if the name isn't there. Don't use loops, `in` or `index`. A search that steps through the names one at a time won't do either: the tests also search a list of 3000 names, and a call for each name ends in a `RecursionError`.
 
           For example, this program:
 
@@ -834,4 +844,8 @@ steps:
           - call: find_name(["Kai", "Lea", "Max", "Noa"], "Zoe", 0, 3)
             hidden: true
           - call: find_name([], "Ann", 0, -1)
+            hidden: true
+          - call: |
+              names = [f"name{i:04d}" for i in range(3000)]
+              print(find_name(names, "name2999", 0, 2999), find_name(names, "name0000", 0, 2999), find_name(names, "zzz", 0, 2999))
             hidden: true

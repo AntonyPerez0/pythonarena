@@ -9,6 +9,7 @@ import { HighlightStyle, indentUnit, syntaxHighlighting } from "@codemirror/lang
 import { tags as t } from "@lezer/highlight";
 import { linter, lintGutter, type Diagnostic as CmDiagnostic } from "@codemirror/lint";
 import type { FriendlyDiagnostic } from "../grader/grade";
+import { columnOffset } from "../engine/friendly";
 import { useResolvedTheme } from "../lib/appearance";
 import { lightEditorTheme } from "./lightTheme";
 
@@ -69,7 +70,7 @@ export default function CodeEditor({ value, onChange, onRun, diagnostics = [], m
             .filter((d) => d.line <= view.state.doc.lines)
             .map((d) => {
               const line = view.state.doc.line(d.line);
-              const from = Math.min(line.from + Math.max(d.column - 1, 0), line.to);
+              const from = Math.min(line.from + columnOffset(line.text, d.column), line.to);
               return { from, to: Math.max(from, line.to), severity: "error", message: d.friendly ? `${d.message}\n\n${d.friendly}` : d.message };
             }),
         { delay: 0 },

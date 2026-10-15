@@ -41,17 +41,17 @@ steps:
 
       ### A loop that never ends
 
-      If no `break` can ever run, the loop goes on forever. This is called an **infinite loop**. Here the number is read before the loop, so its value never changes inside it:
+      If no `break` can ever run, the loop goes on forever. This is called an **infinite loop**. This one should stop when the user types 0, but it never does:
 
       ```python fragment
-      number = int(input("Type a number, 0 to quit: "))
       while True:
-          if number == 0:
+          answer = input("Play another round? (1 = yes, 0 = no) ")
+          if answer == 0:
               break
-          print(number * 2)
+          print("Here we go again!")
       ```
 
-      With any number other than 0, this prints the same result again and again, without end. (On this site, a program that runs for more than a few seconds is stopped.) The fix is to move the `input` line inside the loop, so that each iteration reads a new number. Every `while True` loop needs a `break` that will run sooner or later.
+      `input` returns a string, so when the user types 0, `answer` is the string `"0"`, not the number `0`, and `"0" == 0` is false. The condition can never be true, so whatever the user types, the loop asks again, forever. The fix is to compare with a string, `answer == "0"`, or to convert the answer with `int` first. Every `while True` loop needs a `break` that will run sooner or later. (A loop that doesn't wait for input and never reaches its `break` keeps running as fast as it can; on this site, a program that runs for more than a few seconds is stopped.)
 
       ### Asking until the answer is acceptable
 
@@ -423,39 +423,43 @@ steps:
 
       ### Remembering how the loop ended
 
-      A loop can have more than one `break`. A helper variable can remember which one ended it, so that the code after the loop knows what happened:
+      A loop can have more than one `break`. A helper variable can remember which one ended it, so that the code after the loop knows what happened. This minibus has 3 seats. It leaves when every seat is taken, or earlier, when nobody else is waiting:
 
       ```python run
-      guesses = 0
+      seats = 3
+      on_board = 0
       while True:
-          guess = int(input("Guess the number: "))
-          guesses += 1
-          if guess == 7:
-              found = True
+          name = input("Passenger (end when nobody is left): ")
+          if name == "end":
+              full = False
               break
-          if guesses == 3:
-              found = False
+          on_board += 1
+          print(f"Welcome aboard, {name}!")
+          if on_board == seats:
+              full = True
               break
-          print("Wrong, try again.")
-      if found:
-          print(f"Right! It took you {guesses} guesses.")
+      if full:
+          print("The bus is full. Next stop!")
       else:
-          print("Out of guesses. The number was 7.")
+          print(f"The bus leaves with {on_board} passengers.")
       ```
 
       ```input
-      4
-      7
+      Ada
+      Ben
+      end
       ```
 
       ```output
-      Guess the number: 4
-      Wrong, try again.
-      Guess the number: 7
-      Right! It took you 2 guesses.
+      Passenger (end when nobody is left): Ada
+      Welcome aboard, Ada!
+      Passenger (end when nobody is left): Ben
+      Welcome aboard, Ben!
+      Passenger (end when nobody is left): end
+      The bus leaves with 2 passengers.
       ```
 
-      `found` holds `True` or `False`, so it can be the condition of an `if` all by itself.
+      With a third name instead of `end`, the second `break` would end the loop, with `full` set to `True`. `full` holds `True` or `False`, so it can be the condition of an `if` all by itself.
 
       **Your turn:** fill in the blanks, so the program adds up the minutes of exercise the user types:
 
@@ -656,65 +660,78 @@ steps:
 
       The values are right during the loop, but after it `count` is 3: the 0 that ends the input was counted too, because `count += 1` comes before the check. Moving that line below the `if` fixes the program. Then the debugging prints can go.
 
-      ### The order of the checks
+      ### What a break skips
 
-      Another common source of bugs in loops is the order of the `if` statements that `break`. On each iteration Python checks them from top to bottom, and the first `break` that runs ends the loop, so the checks below it never get a say. Suppose a loop checks "was that the last allowed attempt?" before it checks "was the answer right?". Then a right answer on the last attempt counts as a failure. Printing each condition with a label, such as `print("right answer:", answer == "Rome")`, shows which check ended the loop.
+      A `break` ends the loop right where it stands, so on the last iteration the lines below it never run. Often that's just what you want: in the fixed program above, the 0 that ends the input must not be counted. But a check that comes too early makes the loop lose its last value. Suppose a loop should stop after the fifth score, but its `if count == 5:` with the `break` comes before the line that adds the score to the total. Then the fifth score is read and counted, but never added. A debugging print after the loop shows that the total is one value short, and following the last iteration line by line shows which line it never reached.
 
       When you debug a loop, keep the number of iterations small at first: two or three are usually enough to see the problem, and the printed lines are still easy to read.
 
-      **Your turn:** the user has three attempts to answer the quiz, but a right answer on the third attempt says `No more attempts.` Find the bug (debugging prints help) and fix it:
+      **Your turn:** a hike has at most 4 stages. This program reads the length of each stage until the user types 0 or all 4 stages are in, and then prints the number of stages and the distance. With four stages, the distance comes out too short. Find the bug (debugging prints help) and fix it:
 
       ```
-      What is the capital of Italy? Milan
-      Try again.
-      What is the capital of Italy? Naples
-      Try again.
-      What is the capital of Italy? Rome
-      Correct!
+      Stage length in km (0 to stop): 3
+      Stage length in km (0 to stop): 5
+      Stage length in km (0 to stop): 2
+      Stage length in km (0 to stop): 4
+      Stages: 4, distance: 14 km
       ```
     seed: |
-      attempts = 0
+      stages = 0
+      total = 0
       while True:
-          answer = input("What is the capital of Italy? ")
-          attempts += 1
-          if attempts == 3:
-              print("No more attempts.")
+          km = int(input("Stage length in km (0 to stop): "))
+          if km == 0:
               break
-          if answer == "Rome":
-              print("Correct!")
+          stages += 1
+          if stages == 4:
               break
-          print("Try again.")
+          total += km
+      print(f"Stages: {stages}, distance: {total} km")
     solution: |
-      attempts = 0
+      stages = 0
+      total = 0
       while True:
-          answer = input("What is the capital of Italy? ")
-          attempts += 1
-          if answer == "Rome":
-              print("Correct!")
+          km = int(input("Stage length in km (0 to stop): "))
+          if km == 0:
               break
-          if attempts == 3:
-              print("No more attempts.")
+          stages += 1
+          total += km
+          if stages == 4:
               break
-          print("Try again.")
+      print(f"Stages: {stages}, distance: {total} km")
     hints:
-      - "Add `print(\"attempts:\", attempts, \"right:\", answer == \"Rome\")` after `attempts += 1` and run the example. What happens on the third iteration?"
-      - On the third attempt both conditions are true, and the one that comes first wins.
-      - Check the answer first and the number of attempts after it. Swap the two `if` statements, each with its own block.
+      - "Add `print(\"stages:\", stages, \"total:\", total)` as the last line of the loop's block and run the example. Which stage never shows up in the total?"
+      - "On the fourth stage, `if stages == 4:` ends the loop before `total += km` runs, so that stage is counted but never added."
+      - Every stage must be added before the loop can end. Move the line that adds it above the check.
     tests:
       - stdin: |
-          Milan
-          Naples
-          Rome
-      - stdin: Rome
+          3
+          5
+          2
+          4
+      - stdin: |
+          7
+          0
+        hidden: true
+      - stdin: "0"
         hidden: true
       - stdin: |
-          Turin
-          Venice
-          Florence
+          1
+          1
+          1
+          1
         hidden: true
       - stdin: |
-          Pisa
-          Rome
+          10
+          20
+          0
+        hidden: true
+      - stdin: |
+          2
+          2
+          2
+          2
+          9
         hidden: true
     more:
       - task: |
@@ -815,7 +832,7 @@ steps:
           name = input("Guest (done to finish): ")
           if name == "done":
               break
-          guests += name + ", "
+          guests += name
       print("Guests: " + guests)
       ```
 
@@ -831,10 +848,10 @@ steps:
       Guest (done to finish): Alan
       Guest (done to finish): Grace
       Guest (done to finish): done
-      Guests: Ada, Alan, Grace,
+      Guests: AdaAlanGrace
       ```
 
-      Almost: the list ends with a comma (and a space you can't see). One way to avoid it is to put the separator before each name instead of after it, except for the first name:
+      Almost: `+=` joins the strings exactly as they are, so the names run together. They need a comma and a space between them, but not before the first name, and not after the last one either. So add the separator in front of each name, except the first:
 
       ```python run
       guests = ""

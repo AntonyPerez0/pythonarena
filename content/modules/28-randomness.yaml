@@ -1,5 +1,5 @@
 id: randomness
-summary: Random numbers with the random module. Rolling dice with randint, picking and shuffling with choice and shuffle, drawing raffle winners without repeats with sample, and the seeds that random numbers grow from.
+summary: Random numbers with the random module. Rolling dice with randint, picking and shuffling with choice and shuffle, drawing items without repeats with sample, and the seeds that random numbers grow from.
 steps:
   - id: randomness-randint
     slug: randint
@@ -422,60 +422,76 @@ steps:
     slug: drawing-and-seeds
     title: Drawing without repeats, and seeds
     text: |
-      A school fair sells 60 raffle tickets, numbered 1 to 60, and draws 8 winners. A ticket can't win twice. Calling `randint` eight times doesn't promise that:
+      A teacher picks three students to present their projects today, and nobody should present twice. Picking with `choice` three times looks like it should work, but nothing stops it from picking the same student again:
 
       ```python run
       import random
 
-      random.seed(2)
-      for i in range(8):
-          print(random.randint(1, 60), end=" ")
-      print()
+      random.seed(3)
+      students = ["Ada", "Ben", "Cy", "Di", "Eve", "Finn"]
+      for i in range(3):
+          print(random.choice(students))
       ```
 
       ```output
-      56 55 4 6 6 24 54 11
+      Ben
+      Eve
+      Eve
       ```
 
-      Ticket 6 came up twice. Every call of `randint` is independent: it doesn't know which numbers came before.
-
-      ### Draw until there are enough
-
-      One fix is to keep drawing, and keep only the numbers that aren't in the list yet:
-
-      ```python run
-      import random
-
-      random.seed(2)
-      winners = []
-      while len(winners) < 8:
-          ticket = random.randint(1, 60)
-          if ticket not in winners:
-              winners.append(ticket)
-      print(sorted(winners))
-      ```
-
-      ```output
-      [4, 6, 11, 24, 48, 54, 55, 56]
-      ```
+      Eve has to present twice. Every call of `choice` is independent: it doesn't know which students it picked before, so each pick can land on anyone. The same goes for `randint`.
 
       ### sample
 
-      The `random` module has a function for exactly this. `random.sample(items, count)` picks `count` different items and returns them in a new list. Here the items are the ticket numbers 1 to 60, from `range(1, 61)`:
+      What the teacher needs is like drawing names out of a hat: a name that has been drawn isn't in the hat anymore. That's what `random.sample(items, count)` does. It picks `count` different items of `items` and returns them in a new list:
 
       ```python run
       import random
 
-      random.seed(5)
-      winners = random.sample(range(1, 61), 8)
-      print(sorted(winners))
+      random.seed(7)
+      students = ["Ada", "Ben", "Cy", "Di", "Eve", "Finn"]
+      presenters = random.sample(students, 3)
+      print("Presenting today:", presenters)
+      print("The class:", students)
       ```
 
       ```output
-      [17, 23, 40, 45, 48, 51, 54, 58]
+      Presenting today: ['Cy', 'Ben', 'Di']
+      The class: ['Ada', 'Ben', 'Cy', 'Di', 'Eve', 'Finn']
       ```
 
-      `sample` never picks the same item twice, so if the items have no repeats, neither does the result. Asking for more items than there are is a `ValueError: Sample larger than population or is negative` (the **population** is what the items are called).
+      Unlike `shuffle`, `sample` leaves the list it was given as it was. It never picks the same item of the list twice, so if the list has no repeated values, neither does the sample.
+
+      The items can be a range too. A puzzle game hides 4 mines on a board whose squares are numbered 1 to 25, and two mines can't share a square:
+
+      ```python run
+      import random
+
+      random.seed(7)
+      mines = random.sample(range(1, 26), 4)
+      print("Mines on squares:", sorted(mines))
+      ```
+
+      ```output
+      Mines on squares: [5, 11, 13, 21]
+      ```
+
+      The sample comes in the order it was drawn; `sorted` only makes it easier to read. There must be enough items to pick from. Asking for 5 different students out of 3 is an error, and the error message calls the items the **population**:
+
+      ```python run crash
+      import random
+
+      students = ["Ada", "Ben", "Cy"]
+      print(random.sample(students, 5))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print(random.sample(students, 5))
+                ~~~~~~~~~~~~~^^^^^^^^^^^^^
+      ValueError: Sample larger than population or is negative
+      ```
 
       ### Where random numbers come from
 
@@ -514,49 +530,72 @@ steps:
       - "`sorted` puts them in order, so the order the sample picked them in doesn't matter."
     more:
       - task: |
-          A bingo card has columns of 5 different numbers. Write a function `bingo_column(lowest, highest)` that returns a list of 5 different random numbers from `lowest` to `highest` (both included), sorted from smallest to largest.
+          A quiz app asks a few questions from its list in each round, and never the same one twice in a round. Write a function `pick_questions(questions, count)` that returns a list of `count` different questions picked at random from the list `questions` with `random.sample`. When `count` is larger than the number of questions, it returns all the questions, in a random order. The list `questions` must stay as it was.
 
-          `bingo_column(1, 5)` can only return `[1, 2, 3, 4, 5]`. `bingo_column(1, 15)` returns something like `[2, 7, 8, 11, 15]`.
+          The checks set the seed themselves before they call the function.
         seed: |
           import random
 
 
-          def bingo_column(lowest, highest):
+          def pick_questions(questions, count):
               pass
 
 
           if __name__ == "__main__":
-              print(bingo_column(1, 15))
-              print(bingo_column(16, 30))
+              questions = ["What is 7 * 8?", "Who wrote Hamlet?", "What color is a ruby?"]
+              print(pick_questions(questions, 2))
+              print(pick_questions(questions, 10))
         solution: |
           import random
 
 
-          def bingo_column(lowest, highest):
-              numbers = random.sample(range(lowest, highest + 1), 5)
-              return sorted(numbers)
+          def pick_questions(questions, count):
+              if count > len(questions):
+                  count = len(questions)
+              return random.sample(questions, count)
 
 
           if __name__ == "__main__":
-              print(bingo_column(1, 15))
-              print(bingo_column(16, 30))
+              questions = ["What is 7 * 8?", "Who wrote Hamlet?", "What color is a ruby?"]
+              print(pick_questions(questions, 2))
+              print(pick_questions(questions, 10))
         hints:
-          - "`random.sample` picks different items. The numbers to pick from are `range(lowest, highest + 1)`: a range stops before its end, so add one."
-          - "Return the sample sorted: `sorted(numbers)`."
+          - "`random.sample(questions, count)` picks `count` different questions and returns them in a new list, without changing `questions`."
+          - "`sample` can't pick more items than there are. Before sampling, check whether `count` is larger than `len(questions)`, and if it is, set `count` to `len(questions)`."
+        require:
+          - pattern: \bsample\s*\(
+            message: Pick the questions with `random.sample`.
         tests:
-          - call: bingo_column(1, 5)
           - call: |
-              column = bingo_column(16, 30)
-              print(len(column) == 5)  # five numbers
-              print(column == sorted(column))  # in order
-              print(len(set(column)) == 5)  # all different
-              print(min(column) >= 16 and max(column) <= 30)  # all in range
-            hidden: true
-          - call: bingo_column(46, 50)
+              import random
+              random.seed(3)
+              quiz = [
+                  "What is 7 * 8?",
+                  "Who wrote Hamlet?",
+                  "What color is a ruby?",
+                  "How many legs does a spider have?",
+                  "Which planet is the largest?",
+              ]
+              for question in pick_questions(quiz, 3):
+                  print(question)
+          - call: |
+              import random
+              random.seed(11)
+              quiz = ["2 + 3?", "4 * 5?", "9 - 7?", "8 / 2?", "3 ** 2?", "10 // 3?"]
+              print(pick_questions(quiz, 2))
             hidden: true
           - call: |
-              column = bingo_column(1, 1000)
-              print(len(set(column)) == 5, column == sorted(column))
+              import random
+              random.seed(5)
+              print(pick_questions(["Q1", "Q2", "Q3"], 5))
+            hidden: true
+          - call: |
+              quiz = ["Q1", "Q2", "Q3", "Q4"]
+              picked = pick_questions(quiz, 2)
+              print(len(picked), len(set(picked)))
+              print(quiz)
+            hidden: true
+          - call: pick_questions(["Q1", "Q2"], 0)
             hidden: true
       - task: |
           Write a program that splits players into two random teams. It first asks for a seed and passes it to `random.seed`, then reads player names until an empty line. It shuffles the names with `random.shuffle` and prints the first half as team 1 and the rest as team 2. With an odd number of players, team 2 gets the extra player (`len(names) // 2` names go to team 1). For example:

@@ -60,7 +60,7 @@ drills:
     after: why-tuples
     code: |
       board = {}
-      board[[[(0, 2)]]] = "X"
+      board[[[(0, 2)‖0, 2]]] = "X"
       print(board)
     expect: |
       {(0, 2): 'X'}
@@ -90,15 +90,15 @@ drills:
   - type: predict
     after: without-parentheses
     code: |
-      def low_high(numbers):
-          return min(numbers), max(numbers)
+      def ends(numbers):
+          return numbers[0], numbers[-1]
 
 
-      result = low_high([4, 9, 2])
+      result = ends([4, 9, 2])
       print(result)
-      low, high = result
-      print(high - low)
-    why: "The function returns two values as one tuple, `(2, 9)`. Unpacking puts them into `low` and `high`."
+      first, last = result
+      print(first - last)
+    why: "The function returns two values as one tuple, `(4, 2)`. Unpacking puts them into `first` and `last`."
 
   - type: bug
     after: without-parentheses
@@ -125,7 +125,7 @@ drills:
     code: |
       a = "left"
       b = "right"
-      a, b = [[b, a]]
+      a, b = [[b, a‖(b, a)]]
       print(a, b)
     why: "`a, b = b, a` makes a tuple of the old values first, then unpacks it, so the two values swap."
 

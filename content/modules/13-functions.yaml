@@ -571,53 +571,57 @@ steps:
     slug: global-variables
     title: Parameters, not outside variables
     text: |
-      A function can read the variables of the main program too. Variables that are made in the main program, outside every function, are called **global variables**. Reading them in a function works, but it's a habit to avoid, because it makes bugs that are hard to see.
+      So far, everything a function used came in through its parameters. But a function can also see the variables of the main program, the ones made outside every function. These are called **global variables**. Python lets a function use them, but it's a habit to avoid: it leads to bugs that hide well.
 
-      Here a function uses a global variable by mistake, where it should use its parameter:
+      Here is one. This program first worked with a single temperature, kept in the variable `temperature`. Then the conversion from Celsius to Fahrenheit was moved into a function, but one name inside it was left as it was:
 
       ```python run
-      name = "Ada"
+      temperature = 25
 
 
-      def greet(person):
-          print(f"Hello, {name}!")
+      def to_fahrenheit(celsius):
+          fahrenheit = temperature * 9 / 5 + 32
+          print(f"{celsius} C is {fahrenheit} F")
 
 
-      greet("Linus")
-      greet("Grace")
+      to_fahrenheit(0)
+      to_fahrenheit(100)
+      to_fahrenheit(25)
       ```
 
       ```output
-      Hello, Ada!
-      Hello, Ada!
+      0 C is 77.0 F
+      100 C is 77.0 F
+      25 C is 77.0 F
       ```
 
-      Whatever the argument, the function greets Ada, because it prints the global `name` and never uses its parameter `person`. If the program had called only `greet("Ada")`, the mistake would have gone unnoticed: the output would look right, for the wrong reason.
+      Water doesn't freeze at 77 degrees Fahrenheit, and it doesn't boil there either. The parameter `celsius` only makes it into the text: the calculation still uses `temperature`, the global variable, so every call converts 25 degrees. The last line is correct, but only by luck, because its argument happens to be the value of the global variable. Had the function been tried only with 25, it would have seemed to work.
 
       ### Why it goes wrong
 
       A function that uses only its parameters does the same work wherever it's called from: everything it needs comes in through the call. A function that reads a global variable depends on something outside it. When that variable changes, or doesn't exist, the function behaves differently, though nobody changed the function. Here is the same function in a program without the global variable:
 
       ```python run crash
-      def greet(person):
-          print(f"Hello, {name}!")
+      def to_fahrenheit(celsius):
+          fahrenheit = temperature * 9 / 5 + 32
+          print(f"{celsius} C is {fahrenheit} F")
 
 
-      greet("Linus")
+      to_fahrenheit(100)
       ```
 
       ```crash
       Traceback (most recent call last):
-        File "main.py", line 5, in <module>
-          greet("Linus")
-          ~~~~~^^^^^^^^^
-        File "main.py", line 2, in greet
-          print(f"Hello, {name}!")
-                          ^^^^
-      NameError: name 'name' is not defined
+        File "main.py", line 6, in <module>
+          to_fahrenheit(100)
+          ~~~~~~~~~~~~~^^^^^
+        File "main.py", line 2, in to_fahrenheit
+          fahrenheit = temperature * 9 / 5 + 32
+                       ^^^^^^^^^^^
+      NameError: name 'temperature' is not defined
       ```
 
-      This traceback has two parts: first the call on line 5, then line 2 inside `greet`, where the error happened. Read it from the bottom: the last lines show where the program stopped.
+      This traceback has two parts: first the call on line 6, then line 2 inside `to_fahrenheit`, where the error happened. Read it from the bottom: the last lines show where the program stopped.
 
       The checks on this site work like that second program. They load your program and call your function on its own, with their own arguments. If your function relies on a global variable, that variable may not exist when the checks call it, or it may hold a value that has nothing to do with their arguments.
 

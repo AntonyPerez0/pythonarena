@@ -5,7 +5,7 @@ steps:
     slug: object-in-object
     title: An object as an attribute
     text: |
-      You have already given objects lists as attributes. An attribute can just as well refer to an object of a class you wrote yourself. That's how a program models things that belong together: a book has an author, an order has a customer, a car has an engine.
+      Things are often made of other things, or belong to them: a book has an author, an order has a customer, a car has an engine. A program models that with an attribute whose value is another object, made from a class of your own:
 
       ```python run
       class Author:
@@ -35,11 +35,12 @@ steps:
       Sweden
       ```
 
-      Read `novel.author.name` from left to right, one dot at a time:
+      `novel.author.name` takes two hops. `novel.author` gives the `Author` object stored in the book, and `.name` then reads that author's name. It means the same as these two lines, with a variable in between:
 
-      - `novel` is a `Book` object;
-      - `novel.author` is that book's attribute `author`, which is an `Author` object;
-      - `novel.author.name` is the author's attribute `name`, a string.
+      ```python fragment
+      who = novel.author
+      print(who.name)
+      ```
 
       The attribute holds a reference, as every variable does. Both books refer to the same `Author` object, so if the author changed her name with `writer.name = "Ana Berg"`, both books would show the new name at once.
 
@@ -335,53 +336,53 @@ steps:
       **Your turn:** the program below has everything in one file, but it stops with a `ModuleNotFoundError`. Fix it so that it prints:
 
       ```
-      Hulk the hamster lives with Ben
+      Hamlet: row 7, seat 15
       ```
     seed: |
-      from pet import Pet
+      from seat import Seat
 
 
-      class Pet:
-          def __init__(self, name, species):
-              self.name = name
-              self.species = species
+      class Seat:
+          def __init__(self, row, number):
+              self.row = row
+              self.number = number
 
 
-      class Owner:
-          def __init__(self, name, pet):
-              self.name = name
-              self.pet = pet
+      class Ticket:
+          def __init__(self, show, seat):
+              self.show = show
+              self.seat = seat
 
           def __str__(self):
-              return f"{self.pet.name} the {self.pet.species} lives with {self.name}"
+              return f"{self.show}: row {self.seat.row}, seat {self.seat.number}"
 
 
-      print(Owner("Ben", Pet("Hulk", "hamster")))
+      print(Ticket("Hamlet", Seat(7, 15)))
     solution: |
-      class Pet:
-          def __init__(self, name, species):
-              self.name = name
-              self.species = species
+      class Seat:
+          def __init__(self, row, number):
+              self.row = row
+              self.number = number
 
 
-      class Owner:
-          def __init__(self, name, pet):
-              self.name = name
-              self.pet = pet
+      class Ticket:
+          def __init__(self, show, seat):
+              self.show = show
+              self.seat = seat
 
           def __str__(self):
-              return f"{self.pet.name} the {self.pet.species} lives with {self.name}"
+              return f"{self.show}: row {self.seat.row}, seat {self.seat.number}"
 
 
-      print(Owner("Ben", Pet("Hulk", "hamster")))
+      print(Ticket("Hamlet", Seat(7, 15)))
     hints:
       - Read the error message. Which line does it point at, and which file is Python looking for?
-      - The class `Pet` is in this same file, so the program doesn't need to import it. Delete the `import` line.
+      - The class `Seat` is in this same file, so the program doesn't need to import it. Delete the `import` line.
     forbid:
       - pattern: \bimport\b
         message: Everything is in this one file, so the program needs no `import`.
     tests:
-      - expect: Hulk the hamster lives with Ben
+      - expect: "Hamlet: row 7, seat 15"
     more:
       - task: |
           This program has two files. The classes are in `garden.py`, and `main.py` uses them, but `main.py` stops with a `NameError`. Add what `main.py` is missing (and don't change `garden.py`), so the program prints:

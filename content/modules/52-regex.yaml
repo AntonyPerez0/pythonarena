@@ -186,7 +186,7 @@ steps:
 
       ### Character classes
 
-      Square brackets make a **character class**, which matches **one** character: any of those listed. `r"[aeiou]"` matches one vowel. A dash gives a range: `[0-9]` is any digit, `[a-z]` any small letter and `[A-Za-z]` any letter. A `^` right after the opening bracket turns the class around: `[^0-9]` is any character that is *not* a digit. Classes in a row match characters in a row, so `r"[0-2][0-9]"` matches two digits, the first of them 0, 1 or 2:
+      Square brackets make a **character class**, which matches **one** character: any of those listed. `r"[aeiou]"` matches one vowel. A dash between two characters gives a range: `[0-9]` is any digit, `[a-z]` any small letter and `[A-Za-z]` any letter. A dash first or last in the brackets has nothing to make a range with, so it's an ordinary dash: `[a-z-]` is a small letter or a dash. A `^` right after the opening bracket turns the class around: `[^0-9]` is any character that is *not* a digit. Classes in a row match characters in a row, so `r"[0-2][0-9]"` matches two digits, the first of them 0, 1 or 2:
 
       ```python repl
       >>> import re
@@ -591,6 +591,8 @@ steps:
       5550100199
       None
       ```
+
+      The class `[ ()-]` lists a space, two round brackets and a dash. Inside square brackets, round brackets are ordinary characters, and the dash is an ordinary dash because it comes last. In the middle of the class, as in `[ -)]`, it would make a range from the space to `)`, which takes in `!` and `#` too, and the dash itself would no longer be in the class.
 
       **Your turn:** the program asks for a username until it gets one that is 3 to 12 characters long and has only small letters and digits. Fill in the two blanks: the `re` function that checks the whole text, and the quantifier. An example run:
 

@@ -37,7 +37,7 @@ export function DiagnosticList({ diagnostics, raw, multiFile }: { diagnostics: F
             )}
           </div>
           <code className="diag-msg">{d.message}</code>
-          {/* Plain text, not Markdown: notes quote code such as Comparable<Person> and "\\+". */}
+          {/* Plain text, not Markdown: notes quote code such as __init__, whose underscores Markdown would read as bold. */}
           {d.friendly && <p className="diag-friendly">{d.friendly}</p>}
         </div>
       ))}

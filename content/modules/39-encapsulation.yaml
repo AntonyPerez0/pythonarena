@@ -35,7 +35,7 @@ steps:
 
       ### Two underscores make it private
 
-      An attribute whose name starts with two underscores, such as `__target`, is **private**: only the class's own methods can use it by that name. Code outside the class gets an error. To let the client see the value, the class offers a method that returns it:
+      An attribute whose name starts with two underscores, such as `__target`, is **private**: only the class's own methods can use it by that name. Code outside the class that tries to read it gets an error. To let the client see the value, the class offers a method that returns it:
 
       ```python run crash
       class Thermostat:
@@ -70,11 +70,37 @@ steps:
 
       Inside the class, `self.__target` works as usual. Outside it, the attribute can't be reached by that name (Python even suggests the public method to use instead), so the only way to change the target is `set_target`, which checks the value.
 
-      Hiding an object's attributes and offering methods to use them is called **encapsulation**: the data is enclosed in a capsule, and the methods are the only way in. A nice side effect is that the class can later store its data differently (in a list instead of separate attributes, say) without breaking any client, as long as the methods stay the same.
+      Hiding an object's attributes and offering methods to use them is called **encapsulation**. The client tells the object what to do, and the object's own methods decide how. That also leaves the class free to change: if `Thermostat` later kept its target in tenths of a degree, only its methods would need rewriting, and every program that calls `set_target` and `get_target` would go on working.
 
       ### Private, not secret
 
-      Python doesn't really lock the attribute away: it only stores it under a changed name, and there are ways around that you may find online. That's on purpose. Python trusts programmers to respect the two underscores and leave private attributes alone, and you should. In some other languages, such as Java, private attributes really can't be reached from outside.
+      One thing outside code can do without an error is assign to the private name. But that doesn't reach the private attribute:
+
+      ```python run
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          def get_target(self):
+              return self.__target
+
+
+      heater = Thermostat()
+      heater.__target = 45
+      print(heater.__target)
+      print(heater.get_target())
+      print(heater._Thermostat__target)
+      ```
+
+      ```output
+      45
+      20
+      20
+      ```
+
+      `heater.__target = 45` gave the object a new, unrelated attribute that happens to be called `__target`, and the thermostat's real setting stayed at 20. The last line shows why: inside a class, Python quietly renames every private name, putting an underscore and the class's name in front. So the real attribute is `_Thermostat__target`, and only code inside the class uses it by its short name.
+
+      That renaming is all "private" means in Python. Anyone who writes out the long name can still reach the attribute, so the two underscores aren't a lock but a label: this belongs to the class, use its methods. Treat it that way, and never write a name like `_Thermostat__target` in your own programs.
 
       The two underscores go only at the start of the name. A name with two underscores at both ends, like `__init__` or `__str__`, is one of Python's special methods, and it isn't private.
 
@@ -677,7 +703,7 @@ steps:
           Write the class `Book`. Its constructor takes a title and a rating:
 
           - The title is read-only: a property `title` with a getter only.
-          - The rating is a property `rating` with a getter and a setter. A rating must be a whole number from 1 to 5; for any other value the setter raises `ValueError("The rating must be from 1 to 5")`.
+          - The rating is a property `rating` with a getter and a setter. A rating must be a number from 1 to 5; for any other value the setter raises `ValueError("The rating must be from 1 to 5")`.
           - The constructor must check the rating too, so it should use the setter.
 
           For example, this code:
@@ -902,60 +928,56 @@ steps:
     slug: private-methods
     title: Private methods
     text: |
-      Methods can be private too, with the same two underscores at the start of the name. The idea is a bit different from private attributes, though. A private method is a **helper**: it does part of the class's own work, and the client has no reason to call it.
+      Two underscores at the start work for method names too. A private method is a **helper**: a piece of the class's own work that got a name of its own, to keep the other methods short or to save writing the same lines twice. The client never needs to call it.
 
-      Here a private method checks whether a username is acceptable. Both the setter and, through the setter, the constructor use it, so the rule is written only once:
+      A taxi works out a fare in two places: when a customer asks what a ride would cost, and when the ride is driven. The formula is written once, in a private method:
 
       ```python run crash
-      class User:
-          def __init__(self, username):
-              self.username = username
+      class Taxi:
+          def __init__(self):
+              self.__earned = 0
 
-          def __valid(self, name):
-              return 3 <= len(name) <= 12 and " " not in name
+          def __fare(self, km):
+              return 4 + 2 * km
 
-          @property
-          def username(self):
-              return self.__username
+          def quote(self, km):
+              print(f"A {km} km ride costs {self.__fare(km)}")
 
-          @username.setter
-          def username(self, name):
-              if not self.__valid(name):
-                  raise ValueError(f"Not a valid username: {name}")
-              self.__username = name
+          def drive(self, km):
+              self.__earned += self.__fare(km)
+
+          def earned(self):
+              return self.__earned
 
 
-      user = User("pixel_cat")
-      user.username = "pixelcat2"
-      print(user.username)
-      user.username = "my cat"
+      taxi = Taxi()
+      taxi.quote(10)
+      taxi.drive(10)
+      taxi.drive(3)
+      print(taxi.earned())
+      print(taxi.__fare(5))
       ```
 
       ```output
-      pixelcat2
+      A 10 km ride costs 24
+      34
       ```
 
       ```crash
       Traceback (most recent call last):
-        File "main.py", line 22, in <module>
-          user.username = "my cat"
-          ^^^^^^^^^^^^^
-        File "main.py", line 15, in username
-          raise ValueError(f"Not a valid username: {name}")
-      ValueError: Not a valid username: my cat
+        File "main.py", line 23, in <module>
+          print(taxi.__fare(5))
+                ^^^^^^^^^^^
+      AttributeError: 'Taxi' object has no attribute '__fare'
       ```
 
-      Inside the class the private method is called like any other method, with `self.` in front: `self.__valid(name)`. From outside, `user.__valid("abc")` stops with `AttributeError: 'User' object has no attribute '__valid'`, just as a private attribute would.
+      Inside the class, the helper is called like any other method, with `self.` in front: `self.__fare(km)`. Outside it, the name can't be reached, just as with a private attribute. If the price per kilometer changes, there is one line to fix, and no client has to change.
 
-      ### Do I need a private method?
+      ### Public or private?
 
-      Private methods are less common than private attributes. A few rules of thumb:
+      Ask who the method is for. If it's something a client would want to do with the object, such as `quote`, `drive` or `earned`, make it public. If it only exists so that the class's own code is shorter or clearer, make it private. That keeps the class simple to use (the client sees only what it needs), and you can rename or rewrite a private helper later without breaking anyone's program.
 
-      - A helper that several methods need, such as the check above, saves you from writing the same code twice.
-      - A long method reads better when parts of it move into helpers with good names.
-      - Make a method private when the client has no need to call it, and especially when calling it at the wrong moment could break the object's state.
-
-      Here the scores are set up by a private method. The constructor uses it, and so does `new_game`, which first prints the final scores. If `__reset` were public, a client could wipe the scores in the middle of a game:
+      Some helpers are also unsafe in the client's hands, because they only make sense at certain moments. Here the scores are set up by a private method. The constructor uses it, and so does `new_game`, which first prints the final scores. If `__reset` were public, a client could wipe the scores in the middle of a game:
 
       ```python run
       class Scoreboard:
@@ -991,7 +1013,7 @@ steps:
 
       ### Who sees what
 
-      Each part of a program sees its own set of names. A method sees its own local variables, and every attribute and method of its class, private ones included. The client sees only the public attributes and methods. And a method's local variables are invisible to the other methods, so two methods can both have a variable called `total` without getting in each other's way.
+      Look at the `Scoreboard` above from three places. Inside `score`, the names in reach are its parameters `player` and `points`, plus everything the object has: `self.__points`, `self.__players`, and `self.__reset()` too. The code at the bottom of the program can call `score` and `new_game`, but none of the names with two underscores. And the parameter `points` exists only while `score` runs. `new_game` can't see it, so any other method could have a variable called `points` of its own without a clash. (It has nothing to do with the attribute `self.__points` either: an attribute always comes with `self.` in front.)
 
       **Your turn:** a door lock opens with a four-digit code. Fill in the blanks: the private method that checks a code is called `__correct`, and `open` uses it. The program should print:
 

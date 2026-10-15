@@ -8,23 +8,29 @@ parts of pygame that need a screen, a keyboard, a mouse or a clock:
 - pygame.display.set_mode gives an ordinary Surface, the window. Each display.flip() or
   display.update() shows a frame: its picture (a PNG, made the same way on every platform) and its
   text, the drawing that made it ("the window as text": every fill, blit and pygame.draw call on the
-  window since the last time the whole window was filled).
+  window since the last time the whole window was filled). display.update(rect) shows a part of the
+  window: in a program that goes on between frames (asks for events or ticks its clock), the parts it
+  updates one after another make one frame, shown when it goes on; else each update is a frame.
 - The program sees the events a test (or the learner, in the window panel) gives, each at the frame
   it happens: key presses and releases, mouse moves and clicks, and closing the window. A run shows
   at most `frames` frames: then the window is closed (a QUIT event), as a learner would close it,
   and a program that keeps drawing after that is stopped.
 - A program that draws once and then only waits for events (as the MOOC's first examples do) still
   sees time go by: while it asks for events without showing a frame and nothing happens, its window
-  keeps showing the same picture, frame after frame ("held" frames), until the next event comes or the
-  window is closed. So it shows as many frames as a program that draws every frame.
+  keeps showing the same picture, frame after frame ("held" frames, a frame's time apart), until the
+  next event comes, a timer (time.set_timer) comes due or the window is closed. So it shows as many
+  frames as a program that draws every frame. event.wait(timeout) waits at most that long: the frames
+  that come in that time go by, then it gets NOEVENT.
 - Time is counted, not waited for: Clock.tick(60) moves the clock on by a 60th of a second at once,
-  so an animation runs as fast as the computer can draw it, the same on every run.
+  so an animation runs as fast as the computer can draw it, the same on every run. tick() without a
+  frame rate moves it on by a frame of a screen at 60 frames a second.
 - Sound is silent, and pygame.init() starts only the parts that work without a screen (fonts).
 
 The pictures are for showing. Tests compare the text: text is drawn with FreeType, whose version
 (and so the exact pixels of letters) differs between the two platforms, but the text is the same.
 """
 
+import operator
 import os
 import random
 import struct
@@ -40,9 +46,18 @@ DEFAULT_SIZE = (640, 480)
 MAX_SIDE = 1600
 # The most lines one frame's text keeps (the newest); a program that draws thousands of shapes gets a count of the rest.
 LOG_LIMIT = 300
-# A program that asks for events this many times in a row without showing a frame, while nothing happens, is waiting:
-# its window keeps showing the same picture, and the frames go by until the next event (or the window is closed).
+# A program that asks for events this many times without showing a frame, while nothing happens and none of the events
+# it asks for are there, is waiting: its window keeps showing the same picture, and the frames go by until the next event
+# (or the window is closed). Looking at the keys or the mouse (key.get_pressed, mouse.get_pos) isn't asking for events.
 IDLE_POLLS = 20
+# A frame's time when the program gives no frame rate (clock.tick() without one, or frames held while it waits without
+# a clock): a 60th of a second, as a screen shows them.
+FRAME_MS = 1000 / 60
+# After this many display.update(rect) calls without asking for events or ticking its clock, a program no longer counts
+# as one that goes on between frames: the parts so far make a frame, and each update after that is one. It's far above
+# what one round of a game updates (a tile map may update each of its tiles), so only a program that went on once and
+# then never again gets here; its 10,000 updates before that first frame take a moment.
+PART_UPDATES = 10_000
 
 
 class WindowClosed(BaseException):
@@ -272,11 +287,19 @@ class Window:
         self.pending = [e for _, e in self.pending]
         self.queue = []
         self.surface = None
+        self.size = None
         self.title = "pygame window"
         self.shown = 0
-        # The last frame the program drew itself (later frames may be held ones that repeat it), and a copy of its picture.
+        # The last frame the program drew itself (later frames may be held ones that repeat it), its time and a copy of
+        # its picture; and a frame's time at the program's frame rate (clock.tick(30): a 30th of a second).
         self.drawn = 0
+        self.drawn_ms = 0.0
+        self.frame_ms = FRAME_MS
         self.last_surface = None
+        # How many times display.update(rect) showed parts of the window since the last frame (together they make the
+        # next one), and whether the program went on since that frame (asked for events, ticked its clock or waited).
+        self.parts = 0
+        self.going = False
         self.idle = 0
         self.log = []
         self.dropped = 0
@@ -291,6 +314,9 @@ class Window:
         self.ended = "program"
         self.now = 0.0
         self.timers = []
+        # key.set_repeat's (delay, interval), and the key that comes again while it's held: {"event", "key", "due"}.
+        self.repeat = (0, 0)
+        self.repeating = None
 
     # ---------------------------------------------------------------- the text
 
@@ -335,7 +361,10 @@ class Window:
             raise WindowClosed()
         self.shown += 1
         self.drawn = self.shown
+        self.drawn_ms = self.now
         self.idle = 0
+        self.parts = 0
+        self.going = False
         text = self.text()
         self.last_log = text
         picture = None
@@ -345,22 +374,88 @@ class Window:
             self.last_surface = self.surface.copy()
         self.emit({"index": self.shown, "log": text, "png": picture, "title": self.title, "ms": int(self.now)})
 
+    def flush(self):
+        """The program goes on (asks for events, ticks its clock or waits): the parts of the window it updated make a frame."""
+        if self.parts:
+            self.show()
+        self.going = True
+
+    def update(self, *args):
+        """display.update(): the whole window, a frame. With a rectangle, or a list of them, only those parts: in a
+        program that goes on between frames, they make a frame with the parts it updates after them, shown when it goes
+        on (a loop that erases a sprite, updates its old place, draws it and updates its new place, makes one frame a
+        round). In one that doesn't, each update is a frame."""
+        if not self.video or self.surface is None:
+            raise _video_error()
+        if not args:
+            return self.show()
+        if args[0] is None:
+            # pygame updates nothing then (its old behaviour, kept).
+            return None
+        try:
+            rects = [pygame.Rect(args)]
+        except (TypeError, ValueError):
+            if len(args) != 1 or not hasattr(args[0], "__iter__"):
+                raise ValueError("update requires a rectstyle or an iterable of rectstyles") from None
+            rects = []
+            for r in args[0]:
+                if r is None:
+                    continue
+                try:
+                    rects.append(pygame.Rect(r))
+                except (TypeError, ValueError):
+                    raise ValueError("update_rects requires a single list of rects") from None
+        # Only what is inside the window changes on the screen.
+        window = self.surface.get_rect()
+        rects = [r.clip(window) for r in rects]
+        rects = [r for r in rects if r.w and r.h]
+        if not rects:
+            return None
+        self.parts += 1
+        if not self.going or self.parts >= PART_UPDATES:
+            # It doesn't go on between frames (or has stopped): the parts are on the screen now, as flip shows the window.
+            self.show()
+        return None
+
+    def _time_of(self, frame):
+        """When a frame still to come shows while the program waits: at the program's frame rate from the last frame it
+        drew, or now if it moved its clock on further while it waited (ticked it, or waited for events with a timeout)."""
+        return round(max(self.now, self.drawn_ms + (frame - self.drawn) * self.frame_ms), 6)
+
     def hold(self, until):
-        """Frames go by with the window as it is (the program is waiting): each repeats the last picture."""
+        """Frames go by with the window as it is (the program is waiting): each repeats the last picture, a frame's time
+        after the one before, until the frame `until`, or until a timer comes due (its event is then in the queue)."""
         until = min(until, self.budget)
         while self.shown < until:
+            at = self._time_of(self.shown + 1)
+            due = self._next_due()
+            if due is not None and due <= at:
+                self.now = max(self.now, due)
+                self._timers()
+                break
             self.shown += 1
+            self.now = at
+            if self.shown == 1 and self.surface is not None:
+                # It waits before drawing anything: the new window shows as it is (black), a picture of its own that
+                # the held frames after it repeat.
+                picture = _png(self.surface) if self.png_mode == "all" and self.png_from <= 1 else None
+                self.emit({"index": 1, "log": "", "png": picture, "title": self.title, "ms": int(self.now)})
+                continue
             self.emit({"index": self.shown, "log": self.last_log, "png": None, "title": self.title, "ms": int(self.now), "same": True})
         self.idle = 0
 
     def finish(self):
         """What the window ended as; the last frame gets its picture now if it didn't have one."""
+        if self.parts and self.shown < self.budget:
+            # The program ended right after updating parts of the window: they were on the screen.
+            self.show()
         held_tail = self.shown > self.drawn
         if self.last_surface is not None and (self.png_mode == "last" or (self.png_mode == "all" and held_tail)):
             self.emit({"index": self.shown, "log": self.last_log, "png": _png(self.last_surface), "title": self.title, "ms": int(self.now), "again": True})
         if self.ended == "program" and self.quit_sent:
             self.ended = "closed"
-        size = list(self.surface.get_size()) if self.surface is not None else None
+        # The size it was opened with: pygame.quit() at the end closes the window, but it was that size.
+        size = list(self.size) if self.size is not None else None
         return {"frames": self.shown, "budget": self.budget, "size": size, "title": self.title, "ended": self.ended, "log": self.last_log}
 
     # ---------------------------------------------------------------- events
@@ -388,7 +483,13 @@ class Window:
             attrs = {"key": key, "mod": mods, "scancode": 0, "unicode": uni if kind == "keydown" else ""}
             if kind == "keyup":
                 del attrs["unicode"]
-            return pygame.event.Event(pygame.KEYDOWN if kind == "keydown" else pygame.KEYUP, attrs)
+            ev = pygame.event.Event(pygame.KEYDOWN if kind == "keydown" else pygame.KEYUP, attrs)
+            if kind == "keydown" and self.repeat[0] > 0:
+                # Key repeat is on: the key pressed last comes again while it's held, as in pygame.
+                self.repeating = {"event": ev, "key": key, "due": self.now + self.repeat[0]}
+            elif kind == "keyup" and self.repeating is not None and self.repeating["key"] == key:
+                self.repeating = None
+            return ev
         if kind in ("mousedown", "mouseup", "mousemove"):
             pos = tuple(int(v) for v in (e.get("pos") or self.mouse))
             rel = (pos[0] - self.mouse[0], pos[1] - self.mouse[1])
@@ -425,22 +526,48 @@ class Window:
     def _next_at(self):
         return int(self.pending[0].get("at") or 0) if self.pending else self.budget
 
-    def pump(self):
+    def _timers(self):
+        """Puts the events of the timers (and of a key held with key repeat on) that are due by now in the queue; returns how many."""
+        n = 0
+        for t in self.timers:
+            while t["due"] <= self.now and t["loops"] != 0:
+                self.queue.append(t["event"])
+                n += 1
+                t["due"] += t["every"]
+                if t["loops"] > 0:
+                    t["loops"] -= 1
+        self.timers = [t for t in self.timers if t["loops"] != 0]
+        r = self.repeating
+        while r is not None and r["due"] <= self.now:
+            self.queue.append(pygame.event.Event(r["event"].type, r["event"].dict))
+            n += 1
+            if self.repeat[1] > 0:
+                r["due"] += self.repeat[1]
+            else:
+                # Key repeat was turned off while the key repeated: this was its last time, as in pygame.
+                self.repeating = r = None
+        return n
+
+    def _next_due(self):
+        """When the next timer (or a held key's repeat) comes due; None if none will."""
+        times = [t["due"] for t in self.timers]
+        if self.repeating is not None:
+            times.append(self.repeating["due"])
+        return min(times, default=None)
+
+    def pump(self, wanted=None):
+        """Takes in what has happened by now. wanted(event) says which events the caller takes (None: any); a call that
+        finds none of them, while nothing new happens, is the program waiting."""
         if not self.video:
             raise _video_error()
-        if not self._deliver() and not self.queue and self.shown < self.budget:
+        self.flush()
+        new = self._deliver() + self._timers()
+        if not new and self.shown < self.budget and not any(wanted is None or wanted(e) for e in self.queue):
             # Nothing happened: a program that keeps asking without drawing is waiting for something to happen.
             self.idle += 1
             if self.idle >= IDLE_POLLS:
                 self.hold(self._next_at())
                 self._deliver()
-        for t in self.timers:
-            while t["due"] <= self.now and t["loops"] != 0:
-                self.queue.append(t["event"])
-                t["due"] += t["every"]
-                if t["loops"] > 0:
-                    t["loops"] -= 1
-        self.timers = [t for t in self.timers if t["loops"] != 0]
         # Every frame the window may show has been shown: the learner closes it.
         if self.shown >= self.budget and not self.quit_sent:
             self.quit_sent = True
@@ -454,15 +581,26 @@ class Window:
             return {eventtype}
         return set(eventtype)
 
-    def get(self, eventtype=None, pump=True, exclude=None):
-        if pump:
-            self.pump()
-        elif not self.video:
+    def sense(self):
+        """Brings the keys and the mouse up to the frames shown, for key.get_pressed, mouse.get_pos...: looking at them
+        isn't asking for events, so a program that looks often between two frames isn't taken for one that waits."""
+        if not self.video:
             raise _video_error()
+        self._deliver()
+
+    def get(self, eventtype=None, pump=True, exclude=None):
         want = self._types(eventtype)
         skip = self._types(exclude) or set()
-        taken = [e for e in self.queue if (want is None or e.type in want) and e.type not in skip]
-        self.queue = [e for e in self.queue if not ((want is None or e.type in want) and e.type not in skip)]
+
+        def takes(e):
+            return (want is None or e.type in want) and e.type not in skip
+
+        if pump:
+            self.pump(takes)
+        elif not self.video:
+            raise _video_error()
+        taken = [e for e in self.queue if takes(e)]
+        self.queue = [e for e in self.queue if not takes(e)]
         return taken
 
     def poll(self):
@@ -471,31 +609,47 @@ class Window:
 
     def wait(self, timeout=0):
         self.pump()
+        end = round(self.now + timeout, 6)
         if not self.queue and self.shown < self.budget:
-            # Nothing happens until the next event: the window waits for it, frame after frame, then it comes.
-            self.hold(self._next_at())
+            # The window waits for the next event, frame after frame (a timer may come first; the window closes after its
+            # last frame). Waiting at most `timeout` ms, only the frames that come before the time is up go by (then the
+            # program gets NOEVENT, and may draw the next one). So what the program does at a frame never depends on how
+            # many frames the run has or on events still to come: the window panel runs it again with more frames, or
+            # with a key at a later frame, and keeps the frames it has.
+            until = min(self._next_at(), self.budget)
+            if timeout > 0:
+                frame = self.shown
+                while frame < until and self._time_of(frame + 1) < end:
+                    frame += 1
+                until = frame
+            self.hold(until)
             self.pump()
-        if not self.queue:
-            if timeout:
-                self.now += timeout
+        if not self.queue and timeout > 0:
+            # Nothing came in time: a timer that comes due before `timeout` ms are up ends the wait, else nothing comes.
+            due = self._next_due()
+            if due is None or due > end:
+                self.now = max(self.now, end)
                 return pygame.event.Event(pygame.NOEVENT)
+            self.now = max(self.now, due)
+            self._timers()
+        if not self.queue:
             # No more events will come: the learner closes the window.
             self.quit_sent = True
             return pygame.event.Event(pygame.QUIT)
         return self.queue.pop(0)
 
     def peek(self, eventtype=None, pump=True):
-        if pump:
-            self.pump()
         want = self._types(eventtype)
+        if pump:
+            self.pump(None if want is None else lambda e: e.type in want)
         if want is None:
             return self.queue[0] if self.queue else pygame.event.Event(pygame.NOEVENT)
         return any(e.type in want for e in self.queue)
 
     def clear(self, eventtype=None, pump=True):
-        if pump:
-            self.pump()
         want = self._types(eventtype)
+        if pump:
+            self.pump(None if want is None else lambda e: e.type in want)
         self.queue = [e for e in self.queue if want is not None and e.type not in want]
 
     def post(self, event):
@@ -511,6 +665,21 @@ class Window:
         if millis > 0:
             self.timers.append({"event": event, "every": millis, "due": self.now + millis, "loops": loops if loops > 0 else -1})
 
+    def set_repeat(self, delay=0, interval=0, /):
+        delay, interval = operator.index(delay), operator.index(interval)
+        if not self.video:
+            raise _video_error()
+        if delay and not interval:
+            interval = delay
+        if delay < 0 or interval < 0:
+            raise ValueError("delay and interval must equal at least 0")
+        self.repeat = (delay, interval)
+
+    def get_repeat(self):
+        if not self.video:
+            raise _video_error()
+        return self.repeat
+
     # ---------------------------------------------------------------- the display
 
     def set_mode(self, size=(0, 0), flags=0, depth=0, display=0, vsync=0):
@@ -524,6 +693,7 @@ class Window:
         if w == 0 or h == 0:
             w, h = DEFAULT_SIZE
         w, h = min(w, MAX_SIDE), min(h, MAX_SIDE)
+        self.size = (w, h)
         self.surface = ArenaSurface((w, h))
         self.surface._arena_label = "the window"
         self.log = []
@@ -540,6 +710,10 @@ class Window:
         return (self.title, self.title)
 
     def quit_display(self):
+        if self.parts and self.shown < self.budget:
+            # The parts of the window updated last were on the screen before it closed.
+            self.show()
+        self.parts = 0
         self.video = False
         self.surface = None
 
@@ -564,12 +738,10 @@ def _install(win):
     def flip():
         win.show()
 
-    def update(*args, **kwargs):
-        win.show()
-
     class Info:
         def __init__(self):
-            self.current_w, self.current_h = win.surface.get_size() if win.surface is not None else (-1, -1)
+            # Before set_mode, the screen's: the size a window of size (0, 0) gets.
+            self.current_w, self.current_h = win.surface.get_size() if win.surface is not None else DEFAULT_SIZE
             self.hw = False
             self.wm = True
             self.bitsize = 32
@@ -582,7 +754,7 @@ def _install(win):
         "set_mode": win.set_mode,
         "get_surface": win.get_surface,
         "flip": flip,
-        "update": update,
+        "update": win.update,
         "set_caption": win.set_caption,
         "get_caption": win.get_caption,
         "init": display_init,
@@ -594,8 +766,8 @@ def _install(win):
         "iconify": lambda: False,
         "toggle_fullscreen": lambda: 0,
         "get_window_size": lambda: win.surface.get_size() if win.surface is not None else (0, 0),
-        "get_desktop_sizes": lambda: [(1920, 1080)],
-        "list_modes": lambda *a, **k: [(1920, 1080)],
+        "get_desktop_sizes": lambda: [DEFAULT_SIZE],
+        "list_modes": lambda *a, **k: [DEFAULT_SIZE],
         "mode_ok": lambda *a, **k: 32,
         "get_driver": lambda: "arena",
         "get_wm_info": lambda: {},
@@ -611,7 +783,8 @@ def _install(win):
         "peek": win.peek,
         "clear": win.clear,
         "post": win.post,
-        "pump": win.pump,
+        # event.pump() takes no events: whenever nothing new happens, the program is waiting.
+        "pump": lambda: win.pump(lambda e: False),
         "set_allowed": lambda *a: None,
         "set_blocked": lambda *a: None,
         "get_blocked": lambda *a: False,
@@ -623,15 +796,15 @@ def _install(win):
         _set(ev, name, value)
 
     def get_pressed():
-        win.pump()
+        win.sense()
         return _Pressed(win.held)
 
     for name, value in {
         "get_pressed": get_pressed,
         "get_mods": win._mods,
         "set_mods": lambda m: None,
-        "set_repeat": lambda *a: None,
-        "get_repeat": lambda: (0, 0),
+        "set_repeat": win.set_repeat,
+        "get_repeat": win.get_repeat,
         "get_focused": lambda: win.video,
         "start_text_input": lambda: None,
         "stop_text_input": lambda: None,
@@ -640,16 +813,16 @@ def _install(win):
         _set(key, name, value)
 
     def get_pos():
-        win.pump()
+        win.sense()
         return win.mouse
 
     def get_rel():
-        win.pump()
+        win.sense()
         rel, win.mouse_rel = win.mouse_rel, (0, 0)
         return rel
 
     def get_mouse_pressed(num_buttons=3):
-        win.pump()
+        win.sense()
         return tuple(win.buttons[:5 if num_buttons == 5 else 3])
 
     def set_pos(*pos):
@@ -684,9 +857,14 @@ def _install(win):
             self._times = []
 
         def tick(self, framerate=0):
+            win.flush()
             if framerate and framerate > 0:
+                win.frame_ms = 1000 / framerate
                 # Rounded, so that twelve 60ths of a second make 200 ms, not 199.99999.
-                win.now = round(max(win.now, self._last + 1000 / framerate), 6)
+                win.now = round(max(win.now, self._last + win.frame_ms), 6)
+            else:
+                # No frame rate: the loop goes round as fast as a screen shows frames.
+                win.now = round(max(win.now, self._last + FRAME_MS), 6)
             elapsed = win.now - self._last
             self._last = win.now
             self._time = int(elapsed)
@@ -706,6 +884,7 @@ def _install(win):
             return 1000 * len(self._times) / total if total else 0.0
 
     def wait(ms):
+        win.flush()
         win.now += max(0, int(ms))
         return max(0, int(ms))
 

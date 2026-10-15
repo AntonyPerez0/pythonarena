@@ -180,13 +180,13 @@ steps:
 
       ### Naming variables
 
-      Python is strict about the names it accepts:
+      You pick a variable's name yourself, within a few rules:
 
-      - A name is made of letters, digits and underscores `_`. It can't contain spaces, and it can't start with a digit.
-      - Capitals matter: `name`, `Name` and `NAME` are three different variables.
-      - Python programmers write variable names in small letters and join words with underscores: `first_name`, `home_town`. This style is called **snake case**.
+      - Use letters, digits and the underscore `_`, with no spaces, and don't begin with a digit. `room2` is a good name; `2rooms` and `my room` are not names at all.
+      - Python tells capital and small letters apart, so `score`, `Score` and `SCORE` would be three separate variables. Use the wrong one, and Python stops with the `NameError` explained below.
+      - By convention, Python names are all small letters, with an underscore where a space would go: `pet_name`, `home_town`. This style is called **snake case**.
 
-      Choose names that say what the value is. To Python, `x` works just as well as `city`, but people reading your code (you included, a week later) understand `city` at once. It's common to name variables in English.
+      A good name tells the reader what the value is. Python is just as happy with `x`, but `city` explains itself to anyone who reads the code later, including you a week from now.
 
       ### A name Python doesn't know
 

@@ -1012,6 +1012,14 @@ steps:
               ]
               print(oldest_title(books))
             hidden: true
+          - call: |
+              books = [
+                  {"title": "River Lights", "author": "Ana Ruiz", "year": 1990},
+                  {"title": "Old Maps", "author": "Leo Grant", "year": 1950},
+                  {"title": "Winter Bells", "author": "Bo Lind", "year": 1970},
+              ]
+              print(oldest_title(books))
+            hidden: true
           - call: 'oldest_title([{"title": "Alone", "author": "Bo Lind", "year": 2020}])'
             hidden: true
       - task: |

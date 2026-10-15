@@ -318,6 +318,9 @@ function Arena({ drills }: { drills: Drill[] }) {
 }
 
 // ---------------------------------------------------------------- lobby
+/** What has its own use for Enter: controls, and anything in the tab order (the runs table scrolls). */
+const LOBBY_CONTROLS = "a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])";
+
 type LobbyProps = { drills: Drill[]; pool: Drill[]; quickCount: number; interviewCount: number; unlocked: string[]; selected: string[]; dueCount: number; canRun: boolean; canStart: (m: DmMode) => boolean; onStart: (m: DmMode) => void };
 
 function Lobby({ drills, pool, quickCount, interviewCount, unlocked, selected, dueCount, canRun, canStart, onStart }: LobbyProps) {
@@ -342,8 +345,9 @@ function Lobby({ drills, pool, quickCount, interviewCount, unlocked, selected, d
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       // Only when nothing in particular has focus: Enter on a control or the runs table does its own thing.
+      // The heading or the main area, where the focus lands after a link to this page, counts as nothing.
       const t = e.target as HTMLElement | null;
-      if (e.key !== "Enter" || e.repeat || (t && t !== document.body && t !== document.documentElement)) return;
+      if (e.key !== "Enter" || e.repeat || t?.isContentEditable || t?.closest?.(LOBBY_CONTROLS)) return;
       if (canStart("deathmatch")) onStart("deathmatch");
     };
     window.addEventListener("keydown", h);
@@ -354,7 +358,7 @@ function Lobby({ drills, pool, quickCount, interviewCount, unlocked, selected, d
     <div className="lobby practice-page">
       <div className="page-head">
         <h1>Deathmatch</h1>
-        <p className="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it compile, pick one. Every {BOSS_EVERY}th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p>
+        <p className="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, pick one. Every {BOSS_EVERY}th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p>
         <p className="muted small">
           Stuck on a keyword or a method? <Link to="/topics/">Topics A to Z</Link> says what it is in one line and links to the step that teaches it.
         </p>

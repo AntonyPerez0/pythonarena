@@ -467,12 +467,12 @@ steps:
       ZeroDivisionError: division by zero
       ```
 
-      - **ValueError**: a value of the right type, but with contents that don't work, such as `int("3.5")` or `float("1,5")`.
-      - **TypeError**: a value of the wrong type, such as adding a number to a string, or `len(42)`.
+      - **ValueError**: a value of the right type, but with contents that don't work. `int("3.5")` gets a string, as it should, but not one that's a whole number; `float("twelve")` fails the same way.
+      - **TypeError**: a value of the wrong type for what the code does with it, such as adding a number to a string, or repeating a string by a string, `"ab" * "3"`.
       - **IndexError**: an index that a list or a string doesn't have.
       - **KeyError**: a key that a dictionary doesn't have.
-      - **ZeroDivisionError**: dividing by zero, as in the average of an empty list, `sum(numbers) / len(numbers)`.
-      - **FileNotFoundError**: opening a file that doesn't exist. (Its cousin **PermissionError** means the program isn't allowed to open the file.)
+      - **ZeroDivisionError**: dividing by zero, with `/`, `//` or `%`. The zero usually comes from data: a number the user typed, or one read from a file.
+      - **FileNotFoundError**: opening a file that doesn't exist. (Its cousin **PermissionError** comes when the file is there but the program may not use it, such as a file that belongs to another user of the computer.)
 
       ### Several except blocks
 
@@ -514,24 +514,54 @@ steps:
 
       ### A bare except hides mistakes
 
-      `except:` without a name catches every exception there is. That's tempting, but it also catches the mistakes in your own code:
+      `except:` without a name catches every exception there is. That's tempting, but it can't tell the user's mistakes from the program's own. This program has a bug: the days are numbered from 1, but list indexes start at 0, so it should look up `days[number - 1]`:
 
       ```python run
-      numbers = [4, 8, 15]
+      days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
       try:
-          total = 0
-          for number in numbers:
-              totl += number
-          print("Average:", total / len(numbers))
+          number = int(input("Day number (1-7): "))
+          print("That's", days[number])
       except:
-          print("Something went wrong with the numbers.")
+          print("Please type a number from 1 to 7.")
+      ```
+
+      ```input
+      7
       ```
 
       ```output
-      Something went wrong with the numbers.
+      Day number (1-7): 7
+      Please type a number from 1 to 7.
       ```
 
-      The numbers are fine. The real problem is the misspelled `totl`, a `NameError`, and the message hides it. Without the `try`, Python would have pointed straight at the line. So name the exceptions you expect, and let real bugs show their traceback.
+      The user did type a number from 1 to 7. `days[7]` raised an `IndexError`, and the bare `except` turned the program's bug into a message that blames the user. Name the exception you expect from the user instead, here `ValueError`, and the bug shows itself:
+
+      ```python run crash
+      days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      try:
+          number = int(input("Day number (1-7): "))
+          print("That's", days[number])
+      except ValueError:
+          print("Please type a number from 1 to 7.")
+      ```
+
+      ```input
+      7
+      ```
+
+      ```output
+      Day number (1-7): 7
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print("That's", days[number])
+                          ~~~~^^^^^^^^
+      IndexError: list index out of range
+      ```
+
+      The traceback names the line with the wrong index. So catch only the exceptions you expect, and let real bugs show their traceback.
 
       **Your turn:** what does this program print? Type each line it prints.
     predict: |

@@ -104,8 +104,9 @@ drills:
     code: |
       import re
 
-      print(re.fullmatch(r"\d[[{3}]]", "123") is not None)
-    why: "`{3}` repeats the part before it exactly three times."
+      for text in ["12", "123", "1234"]:
+          print(text, re.fullmatch(r"\d[[{3}‖{3,3}]]", text) is not None)
+    why: "`{3}` repeats the part before it exactly three times, so only `123` is a whole match. With `+` all three texts would match, since `+` takes one digit or more."
 
   - type: predict
     after: repetition-and-groups

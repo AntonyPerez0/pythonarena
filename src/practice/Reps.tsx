@@ -166,7 +166,8 @@ function ChoiceRep({ drill, onAnswer }: { drill: Drill; onAnswer: Answer }) {
 /** A line of a bug drill: on a phone a long one wraps under its own start, as drill code does (see .bugline in styles.css). */
 const BugCode = ({ line, deep }: { line: string; deep: number }) => <code style={{ "--indent": indentOf(line), "--deep": deep } as CSSProperties}>{lineNodes(codePieces(line))}</code>;
 
-const pickableLine = (l: string) => l.trim() !== "" && !/^\/\/ inside (main|start):$/.test(l.trim()) && !/^[{}]\s*;?$/.test(l.trim());
+/** Any line but a blank one can be picked (a closing bracket too: a bracket that doesn't match can be the bug). */
+const pickableLine = (l: string) => l.trim() !== "";
 
 function BugRep({ drill, onAnswer }: { drill: Drill; onAnswer: Answer }) {
   const lines = drill.display.split("\n");
@@ -326,7 +327,7 @@ export function Death({ drill, given, title, sub, cleared = false, children }: {
           </>
         ) : drill.type === "bug" ? (
           <>
-            <CodeView wrap code={drill.display.split("\n").map((l, i) => (String(i + 1) === drill.answer ? `${l}   // <- the bug` : l)).join("\n")} label="The code, with the bug marked" />
+            <CodeView wrap code={drill.display.split("\n").map((l, i) => (String(i + 1) === drill.answer ? `${l}   # <- the bug` : l)).join("\n")} label="The code, with the bug marked" />
             <p className="answer-cmp">
               {given ? (
                 <>

@@ -159,7 +159,7 @@ steps:
     slug: why-tuples
     title: What tuples are for
     text: |
-      If a list can do everything a tuple can, and more, why have tuples at all? Because a tuple says something about the data.
+      A list can do almost everything a tuple can, and more. So why have tuples at all? Because a tuple says something about the data.
 
       A list is a collection that may grow and shrink, usually of things of the same kind: the guests, the scores, the words. A tuple is a fixed group of values that belong together and only make sense together: the x and y of a point, the red, green and blue of a color, the year, month and day of a date. A point always has exactly two coordinates. Nobody should append a third one to it, and with a tuple, nobody can.
 
