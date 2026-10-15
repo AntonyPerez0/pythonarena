@@ -1,0 +1,549 @@
+# The course plan: every module in order, with the MOOC sections it follows.
+# Modules that have a file in content/modules/ are live; the rest are listed as not written yet.
+# Made from the section front matter of the MOOC source (github.com/rage/programming-26, data/part-*/*.md).
+# "steps" is the planned count of steps.
+# MOOC section titles: Python Programming MOOC 2026 by the University of Helsinki, CC BY-NC-SA 4.0.
+moocUrl: https://programming-26.mooc.fi
+modules:
+  - id: printing
+    title: "Printing and comments"
+    course: I
+    steps: 5
+    part: 1
+    mooc:
+      - section: "1.1"
+        title: "Getting started"
+        path: /part-1/1-getting-started
+  - id: input
+    title: "Information from the user"
+    course: I
+    steps: 4
+    part: 1
+    mooc:
+      - section: "1.2"
+        title: "Information from the user"
+        path: /part-1/2-information-from-the-user
+  - id: variables
+    title: "Variables and f-strings"
+    course: I
+    steps: 5
+    part: 1
+    mooc:
+      - section: "1.3"
+        title: "More about variables"
+        path: /part-1/3-more-about-variables
+  - id: arithmetic
+    title: "Arithmetic operations"
+    course: I
+    steps: 5
+    part: 1
+    mooc:
+      - section: "1.4"
+        title: "Arithmetic operations"
+        path: /part-1/4-arithmetic-operations
+  - id: conditionals
+    title: "Conditional statements"
+    course: I
+    steps: 5
+    part: 1
+    mooc:
+      - section: "1.5"
+        title: "Conditional statements"
+        path: /part-1/5-conditional-statements
+  - id: terminology
+    title: "Programming terminology"
+    course: I
+    steps: 4
+    part: 2
+    mooc:
+      - section: "2.1"
+        title: "Programming terminology"
+        path: /part-2/1-programming-terminology
+  - id: elif
+    title: "More conditionals"
+    course: I
+    steps: 4
+    part: 2
+    mooc:
+      - section: "2.2"
+        title: "More conditionals"
+        path: /part-2/2-else-elif
+  - id: logic
+    title: "Combining conditions"
+    course: I
+    steps: 5
+    part: 2
+    mooc:
+      - section: "2.3"
+        title: "Combining conditions"
+        path: /part-2/3-combining-conditions
+  - id: simple-loops
+    title: "Simple loops"
+    course: I
+    steps: 5
+    part: 2
+    mooc:
+      - section: "2.4"
+        title: "Simple loops"
+        path: /part-2/4-simple-loops
+  - id: loop-conditions
+    title: "Loops with conditions"
+    course: I
+    steps: 4
+    part: 3
+    mooc:
+      - section: "3.1"
+        title: "Loops with conditions"
+        path: /part-3/1-loops-with-conditions
+  - id: strings
+    title: "Working with strings"
+    course: I
+    steps: 6
+    part: 3
+    mooc:
+      - section: "3.2"
+        title: "Working with strings"
+        path: /part-3/2-working-with-strings
+  - id: more-loops
+    title: "More loops"
+    course: I
+    steps: 4
+    part: 3
+    mooc:
+      - section: "3.3"
+        title: "More loops"
+        path: /part-3/3-more-loops
+  - id: functions
+    title: "Defining functions"
+    course: I
+    steps: 5
+    part: 3
+    mooc:
+      - section: "3.4"
+        title: "Defining functions"
+        path: /part-3/4-defining-functions
+  - id: return-values
+    title: "More functions"
+    course: I
+    steps: 6
+    part: 4
+    mooc:
+      - section: "4.1"
+        title: "The Visual Studio Code editor, Python interpreter and built-in debugging tool"
+        path: /part-4/1-vscode
+        portion: "the interactive interpreter and debugging; installing an editor is left out"
+      - section: "4.2"
+        title: "More functions"
+        path: /part-4/2-more-functions
+  - id: lists
+    title: "Lists"
+    course: I
+    steps: 6
+    part: 4
+    mooc:
+      - section: "4.3"
+        title: "Lists"
+        path: /part-4/3-lists
+  - id: for-loops
+    title: "Definite iteration"
+    course: I
+    steps: 5
+    part: 4
+    mooc:
+      - section: "4.4"
+        title: "Definite iteration"
+        path: /part-4/4-definite-iteration
+  - id: formatting
+    title: "Print statement formatting"
+    course: I
+    steps: 3
+    part: 4
+    mooc:
+      - section: "4.5"
+        title: "Print statement formatting"
+        path: /part-4/5-print-statement-formatting
+  - id: strings-and-lists
+    title: "More strings and lists"
+    course: I
+    steps: 5
+    part: 4
+    mooc:
+      - section: "4.6"
+        title: "More strings and lists"
+        path: /part-4/6-strings-and-lists
+  - id: more-lists
+    title: "More lists"
+    course: I
+    steps: 5
+    part: 5
+    mooc:
+      - section: "5.1"
+        title: "More lists"
+        path: /part-5/1-more-lists
+  - id: references
+    title: "References"
+    course: I
+    steps: 4
+    part: 5
+    mooc:
+      - section: "5.2"
+        title: "References"
+        path: /part-5/2-references
+  - id: dictionaries
+    title: "Dictionary"
+    course: I
+    steps: 6
+    part: 5
+    mooc:
+      - section: "5.3"
+        title: "Dictionary"
+        path: /part-5/3-dictionary
+  - id: tuples
+    title: "Tuple"
+    course: I
+    steps: 3
+    part: 5
+    mooc:
+      - section: "5.4"
+        title: "Tuple"
+        path: /part-5/4-tuple
+  - id: reading-files
+    title: "Reading files"
+    course: I
+    steps: 5
+    part: 6
+    mooc:
+      - section: "6.1"
+        title: "Reading files"
+        path: /part-6/1-reading-files
+  - id: writing-files
+    title: "Writing files"
+    course: I
+    steps: 4
+    part: 6
+    mooc:
+      - section: "6.2"
+        title: "Writing files"
+        path: /part-6/2-writing-files
+  - id: errors
+    title: "Handling errors"
+    course: I
+    steps: 5
+    part: 6
+    mooc:
+      - section: "6.3"
+        title: "Handling errors"
+        path: /part-6/3-errors
+  - id: scope
+    title: "Local and global variables"
+    course: I
+    steps: 3
+    part: 6
+    mooc:
+      - section: "6.4"
+        title: "Local and global variables"
+        path: /part-6/4-scope-of-variables
+  - id: modules
+    title: "Modules"
+    course: I
+    steps: 3
+    part: 7
+    mooc:
+      - section: "7.1"
+        title: "Modules"
+        path: /part-7/1-modules
+  - id: randomness
+    title: "Randomness"
+    course: I
+    steps: 3
+    part: 7
+    mooc:
+      - section: "7.2"
+        title: "Randomness"
+        path: /part-7/2-randomness
+  - id: dates
+    title: "Times and dates"
+    course: I
+    steps: 3
+    part: 7
+    mooc:
+      - section: "7.3"
+        title: "Times and dates"
+        path: /part-7/3-times-and-dates
+  - id: data-processing
+    title: "Data processing"
+    course: I
+    steps: 3
+    part: 7
+    mooc:
+      - section: "7.4"
+        title: "Data processing"
+        path: /part-7/4-data-processing
+        portion: "CSV and JSON files; downloading files from the internet is left out"
+  - id: own-modules
+    title: "Creating your own modules"
+    course: I
+    steps: 3
+    part: 7
+    mooc:
+      - section: "7.5"
+        title: "Creating your own modules"
+        path: /part-7/5-creating-modules
+  - id: more-features
+    title: "More Python features"
+    course: I
+    steps: 4
+    part: 7
+    mooc:
+      - section: "7.6"
+        title: "More Python features"
+        path: /part-7/6-more-features
+  - id: objects
+    title: "Objects and methods"
+    course: II
+    steps: 4
+    part: 8
+    mooc:
+      - section: "8.1"
+        title: "Objects and methods"
+        path: /part-8/1-objects-and-methods
+      - section: "8.2"
+        title: "Classes and objects"
+        path: /part-8/2-classes-and-objects
+  - id: classes
+    title: "Defining classes"
+    course: II
+    steps: 4
+    part: 8
+    mooc:
+      - section: "8.3"
+        title: "Defining classes"
+        path: /part-8/3-defining-classes
+  - id: methods
+    title: "Defining methods"
+    course: II
+    steps: 4
+    part: 8
+    mooc:
+      - section: "8.4"
+        title: "Defining methods"
+        path: /part-8/4-defining-methods
+  - id: class-examples
+    title: "More examples of classes"
+    course: II
+    steps: 4
+    part: 8
+    mooc:
+      - section: "8.5"
+        title: "More examples of classes"
+        path: /part-8/5-more-examples-of-classes
+  - id: object-references
+    title: "Objects and references"
+    course: II
+    steps: 4
+    part: 9
+    mooc:
+      - section: "9.1"
+        title: "Objects and references"
+        path: /part-9/1-objects-and-references
+  - id: objects-as-attributes
+    title: "Objects as attributes"
+    course: II
+    steps: 4
+    part: 9
+    mooc:
+      - section: "9.2"
+        title: "Objects as attributes"
+        path: /part-9/2-objects-as-attributes
+  - id: encapsulation
+    title: "Encapsulation"
+    course: II
+    steps: 4
+    part: 9
+    mooc:
+      - section: "9.3"
+        title: "Encapsulation"
+        path: /part-9/3-encapsulation
+      - section: "9.4"
+        title: "Scope of methods"
+        path: /part-9/4-scope-of-methods
+  - id: class-attributes
+    title: "Class attributes"
+    course: II
+    steps: 4
+    part: 9
+    mooc:
+      - section: "9.5"
+        title: "Class attributes"
+        path: /part-9/5-class-attributes
+      - section: "9.6"
+        title: "More examples with classes"
+        path: /part-9/6-more-examples-with-classes
+  - id: inheritance
+    title: "Class hierarchies"
+    course: II
+    steps: 4
+    part: 10
+    mooc:
+      - section: "10.1"
+        title: "Class hierarchies"
+        path: /part-10/1-class-hierarchies
+  - id: access-modifiers
+    title: "Access modifiers"
+    course: II
+    steps: 3
+    part: 10
+    mooc:
+      - section: "10.2"
+        title: "Access modifiers"
+        path: /part-10/2-access-modifiers
+  - id: oop-techniques
+    title: "Object oriented programming techniques"
+    course: II
+    steps: 5
+    part: 10
+    mooc:
+      - section: "10.3"
+        title: "Object oriented programming techniques"
+        path: /part-10/3-oo-programming-techniques
+  - id: larger-application
+    title: "Developing a larger application"
+    course: II
+    steps: 4
+    part: 10
+    mooc:
+      - section: "10.4"
+        title: "Developing a larger application"
+        path: /part-10/4-application-development
+  - id: comprehensions
+    title: "List comprehensions"
+    course: II
+    steps: 4
+    part: 11
+    mooc:
+      - section: "11.1"
+        title: "List comprehensions"
+        path: /part-11/1-list-comprehensions
+  - id: more-comprehensions
+    title: "More comprehensions"
+    course: II
+    steps: 3
+    part: 11
+    mooc:
+      - section: "11.2"
+        title: "More comprehensions"
+        path: /part-11/2-more-comprehensions
+  - id: recursion
+    title: "Recursion"
+    course: II
+    steps: 4
+    part: 11
+    mooc:
+      - section: "11.3"
+        title: "Recursion"
+        path: /part-11/3-recursion
+  - id: recursion-examples
+    title: "More recursion examples"
+    course: II
+    steps: 4
+    part: 11
+    mooc:
+      - section: "11.4"
+        title: "More recursion examples"
+        path: /part-11/4-more-recursion-examples
+  - id: functions-as-arguments
+    title: "Functions as arguments"
+    course: II
+    steps: 4
+    part: 12
+    mooc:
+      - section: "12.1"
+        title: "Functions as arguments"
+        path: /part-12/1-functions-as-arguments
+  - id: generators
+    title: "Generators"
+    course: II
+    steps: 3
+    part: 12
+    mooc:
+      - section: "12.2"
+        title: "Generators"
+        path: /part-12/2-generators
+  - id: functional
+    title: "Functional programming"
+    course: II
+    steps: 3
+    part: 12
+    mooc:
+      - section: "12.3"
+        title: "Functional programming"
+        path: /part-12/3-functional-programming
+  - id: regex
+    title: "Regular expressions"
+    course: II
+    steps: 4
+    part: 12
+    mooc:
+      - section: "12.4"
+        title: "Regular expressions"
+        path: /part-12/4-regular-expressions
+  - id: pygame
+    title: "Pygame"
+    course: II
+    steps: 3
+    part: 13
+    mooc:
+      - section: "13.1"
+        title: "Pygame"
+        path: /part-13/1-pygame
+  - id: animation
+    title: "Animation"
+    course: II
+    steps: 3
+    part: 13
+    mooc:
+      - section: "13.2"
+        title: "Animation"
+        path: /part-13/2-animation
+  - id: events
+    title: "Events"
+    course: II
+    steps: 3
+    part: 13
+    mooc:
+      - section: "13.3"
+        title: "Events"
+        path: /part-13/3-events
+  - id: pygame-techniques
+    title: "More pygame techniques"
+    course: II
+    steps: 3
+    part: 13
+    mooc:
+      - section: "13.4"
+        title: "More pygame techniques"
+        path: /part-13/4-more-pygame-techniques
+  - id: game-project
+    title: "Game project"
+    course: II
+    steps: 4
+    part: 14
+    mooc:
+      - section: "14.1"
+        title: "Game project"
+        path: /part-14/1-game-project
+      - section: "14.2"
+        title: "Robot and boxes"
+        path: /part-14/2-robot-and-boxes
+      - section: "14.3"
+        title: "Finishing the game"
+        path: /part-14/3-finishing-the-game
+  - id: own-game
+    title: "Your own game"
+    course: II
+    steps: 2
+    part: 14
+    mooc:
+      - section: "14.4"
+        title: "Your own game"
+        path: /part-14/4-your-own-game

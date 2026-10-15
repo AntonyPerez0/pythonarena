@@ -1,0 +1,6 @@
+# The Pro Track (/pro/): projects for the learner's own computer, with Python 3.14 and pytest.
+# Each project is a folder pro-track/<id>/ (its model solution in pro-track-solutions/<id>/); this
+# file lists them in the order the site shows them, with what the site needs besides the project's
+# README.md (its title, summary and sections come from there). pro-track/README.md, "For
+# contributors", says what each key means.
+projects: []

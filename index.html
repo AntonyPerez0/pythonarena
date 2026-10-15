@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#09090b" />
+    <script>
+      // Apply the saved theme and text size before anything paints.
+      (function () {
+        var t = "system", z = 1;
+        try {
+          var s = JSON.parse(localStorage.getItem("python-arena-v1") || "{}").settings || {};
+          t = s.theme || "system";
+          z = s.textScale || 1;
+        } catch (e) {}
+        if (t === "system") t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        var r = document.documentElement;
+        r.setAttribute("data-theme", t);
+        r.style.setProperty("--scale", String(z));
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Python Arena: learn Python in your browser</title>
+    <meta name="description" content="A free, non-commercial site for learning Python with real CPython running in your browser. Follows the University of Helsinki's Python Programming MOOC, with its own lessons and exercises." />
+    <!--head-->
+  </head>
+  <body>
+    <div id="root"><!--app--></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
