@@ -375,50 +375,50 @@ steps:
     text: |
       `map` and `filter` turn a series into another series. **`reduce`** turns a whole series into a single value, such as a total. It isn't a built-in function: it lives in the module **`functools`**, so you import it first.
 
-      `reduce(function, series, start)` works like a loop with a running result. The result begins as `start`. For each item, `reduce` calls the function with two arguments, the result so far and the item, and what the function returns becomes the new result. After the last item, `reduce` returns that result. A named function with a print shows each round:
+      `reduce(function, series, start)` works like a loop with a running result. The result begins as `start`. For each item, `reduce` calls the function with two arguments, the result so far and the item, and what the function returns becomes the new result. After the last item, `reduce` returns that result. Here the result is a string that collects the first letter of each color:
 
       ```python run
       from functools import reduce
 
-
-      def add(total, item):
-          print(f"total {total}, item {item}")
-          return total + item
-
-
-      result = reduce(add, [4, 8, 3], 0)
-      print("Result:", result)
+      colors = ["red", "green", "blue"]
+      code = reduce(lambda letters, color: letters + color[0], colors, "")
+      print(code)
       ```
 
       ```output
-      total 0, item 4
-      total 4, item 8
-      total 12, item 3
-      Result: 15
+      rgb
       ```
 
-      For a sum you'd use `sum`, of course, but `reduce` can combine items in any way you write. Lambdas keep it short:
+      Round by round, the lambda gets the result so far and the next color, and what it returns is the result for the next round:
+
+      | Round | `letters` | `color` | The lambda returns |
+      |:-:|---|---|---|
+      | 1 | `""` (the start) | `"red"` | `"r"` |
+      | 2 | `"r"` | `"green"` | `"rg"` |
+      | 3 | `"rg"` | `"blue"` | `"rgb"` |
+
+      There are no more colors after round 3, so `reduce` returns `"rgb"`.
+
+      The function can combine the result and the item in any way you write, and the result doesn't have to be the same kind of value as the items. Both of these go through a list of words. The first keeps the longest word, and the second counts the letters of all the words:
 
       ```python run
       from functools import reduce
-
-      numbers = [2, 5, 3, 4]
-      print(reduce(lambda product, n: product * n, numbers, 1))
 
       words = ["map", "filter", "reduce", "lambda"]
       print(reduce(lambda longest, word: word if len(word) > len(longest) else longest, words, ""))
+      print(reduce(lambda total, word: total + len(word), words, 0))
       ```
 
       ```output
-      120
       filter
+      21
       ```
 
-      The start value matters. A product starts from 1, since a product that starts from 0 stays 0. The longest word starts from the empty string, which any word is longer than.
+      The start value is where the result begins, so choose one that fits the job. The longest word starts from the empty string, which any word is longer than, and a count of letters starts from 0. The start value is also what `reduce` returns for an empty list.
 
       ### Without a start value
 
-      You can leave the start value out. Then `reduce` takes the first item as the starting result and goes on from the second one, so `reduce(lambda a, b: a + b, [4, 8, 3])` is 15 too. But with an empty list there's nothing to start from, and `reduce` stops with `TypeError: reduce() of empty iterable with no initial value`.
+      You can leave the start value out. Then `reduce` takes the first item as the starting result and goes on from the second one, so `reduce(lambda a, b: a + b, [4, 8, 3])` starts from 4 and gives 15. But with an empty list there's nothing to start from, and `reduce` stops with `TypeError: reduce() of empty iterable with no initial value`.
 
       ### reduce and your own objects
 
@@ -587,7 +587,7 @@ steps:
               print(cart_total(cart))
           - call: cart_total([CartItem("melon", 2.5, 2)])
             hidden: true
-          - call: cart_total([])
+          - call: print(cart_total([]) == 0)
             hidden: true
-          - call: cart_total([CartItem("cup", 4, 3), CartItem("plate", 6, 2), CartItem("fork", 1, 10)])
+          - call: print(cart_total([CartItem("cup", 4, 3), CartItem("plate", 6, 2), CartItem("fork", 1, 10)]) == 34)
             hidden: true
