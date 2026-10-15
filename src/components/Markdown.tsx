@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { marked } from "marked";
+import { Play } from "lucide-react";
 import { codeLinesHtml } from "./code-lines";
 import { highlightHtml } from "./highlight";
 import { readOnlyBlockHtml } from "./code-blocks";
+import { assetHtml, parseShot, windowShotHtml, type WindowShot } from "./window-blocks";
 import { MAIN_FILE, splitFiles } from "../grader/files.js";
+
+// The window panel (and the engine's client) load only when a lesson's window is played.
+const WindowPanel = lazy(() => import("./WindowPanel"));
+const BASE = import.meta.env.BASE_URL;
 
 const LABELS: Record<string, string> = { output: "Output", input: "Input", crash: "Python stops with" };
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -28,6 +34,9 @@ marked.setOptions({ gfm: true, breaks: false });
 // (a boss rep's "The test runs" and "and expects") wrap on a phone like the drill's own code (see
 // CodeView's `wrap`).
 let wrapCode = false;
+// Set while a lesson's Markdown is parsed for the page: its window examples, each drawn as a placeholder
+// that the Markdown component replaces with a window that can play.
+let shots: WindowShot[] | null = null;
 marked.use({
   renderer: {
     code({ text, lang }) {
@@ -41,6 +50,17 @@ marked.use({
         return py(text) + "\n";
       }
       if (lang === "pycon") return `<figure class="io io-repl"><figcaption>In the Python interpreter</figcaption><pre class="code-py"><code>${replHtml(text)}</code></pre></figure>\n`;
+      const asset = lang ? /^asset\s+(\S+)$/.exec(lang) : null;
+      if (asset) return assetHtml(asset[1], text, BASE);
+      if (lang === "window-shot") {
+        const shot = parseShot(text);
+        if (!shot) return "";
+        if (shots) {
+          shots.push(shot);
+          return `<div data-window-shot="${shots.length - 1}"></div>\n`;
+        }
+        return windowShotHtml(shot, BASE);
+      }
       const file = lang ? /^file\s+(\S+)$/.exec(lang) : null;
       if (file) return `<figure class="io io-file"><figcaption>The file ${esc(file[1])}</figcaption><pre><code>${esc(text)}</code></pre></figure>\n`;
       const label = lang ? LABELS[lang] : undefined;
@@ -87,8 +107,44 @@ export function markdownHtml(text: string, top?: number, wrap = false): string {
 
 /** Markdown; with `wrapCode` (drills), its code blocks wrap on a phone instead of scrolling sideways. */
 export default function Markdown({ text, className = "", top, wrapCode = false }: { text: string; className?: string; top?: number; wrapCode?: boolean }) {
-  const html = useMemo(() => markdownHtml(text, top, wrapCode), [text, top, wrapCode]);
-  return <div className={"md " + className} dangerouslySetInnerHTML={{ __html: html }} />;
+  const { html, found } = useMemo(() => {
+    shots = [];
+    try {
+      return { html: markdownHtml(text, top, wrapCode), found: shots };
+    } finally {
+      shots = null;
+    }
+  }, [text, top, wrapCode]);
+  if (!found.length) return <div className={"md " + className} dangerouslySetInnerHTML={{ __html: html }} />;
+  // A lesson with pygame windows: the text between them as HTML, each window a component of its own.
+  const parts = html.split(/<div data-window-shot="(\d+)"><\/div>\n?/);
+  return (
+    <div className={"md " + className}>
+      {parts.map((part, i) => (i % 2 ? <ShotFigure key={i} shot={found[Number(part)]} /> : <div key={i} className="md-part" dangerouslySetInnerHTML={{ __html: part }} />))}
+    </div>
+  );
+}
+
+/** A lesson's window example: the picture of its last frame, then, after Play, the program running in the browser. */
+function ShotFigure({ shot }: { shot: WindowShot }) {
+  const [playing, setPlaying] = useState(false);
+  const files = useMemo(() => splitFiles(shot.code) as { path: string; text: string }[], [shot.code]);
+  if (playing)
+    return (
+      <div className="pg-shot">
+        <Suspense fallback={<div dangerouslySetInnerHTML={{ __html: windowShotHtml(shot, BASE) }} />}>
+          <WindowPanel files={files} assets={shot.assets} given={shot.files} start={shot.window} autoStart live={false} label="The example's window" />
+        </Suspense>
+      </div>
+    );
+  return (
+    <div className="pg-shot">
+      <div dangerouslySetInnerHTML={{ __html: windowShotHtml(shot, BASE) }} />
+      <button type="button" className="btn pg-play" onClick={() => setPlaying(true)}>
+        <Play className="icon" aria-hidden="true" /> Play this example
+      </button>
+    </div>
+  );
 }
 
 export function InlineMd({ text }: { text: string }) {

@@ -166,6 +166,44 @@ A name may have folders in front of it (`data/scores.txt`). The expected text of
 
 A test that runs the program can give it command-line arguments, `args: [--title=Scores, extra]`, which it finds in `sys.argv[1:]`. Rarely needed: the MOOC doesn't use them.
 
+### pygame programs (parts 13 and 14)
+
+A program that imports pygame runs with a window that has no screen (`src/engine/arena_pygame.py`): `pygame.display.set_mode` gives an ordinary Surface, and each `pygame.display.flip()` (or `update()`) shows a **frame**. The frame has a picture and a text, **the window as text**: every `fill`, `blit` and `pygame.draw` call on the window since the window was last filled completely, one per line:
+
+```text
+fill (0, 0, 0)
+blit robot.png at (100, 50)
+circle (255, 0, 0) at (160, 50) radius 12
+blit text "Score: 3" at (5, 5)
+```
+
+What a learner can rely on, and the lessons should teach:
+
+- **Events come from the test.** `pygame.event.get()` gives the key presses, mouse clicks and moves that the test (or the learner, in the window panel) makes, each after a number of frames. `pygame.key.get_pressed()` and `pygame.mouse.get_pos()` follow them. After its last frame the window is **closed**: the next `pygame.event.get()` gives `pygame.QUIT`. A program that handles `QUIT` with `exit()` ends there; one that keeps drawing is stopped at its next frame (that's fine too).
+- **The clock is counted, not waited for.** `clock.tick(60)` moves the program's clock on by a 60th of a second at once, and `pygame.time.get_ticks()` is that clock. So a run of 120 frames takes a moment, and is the same every time.
+- **Images**: the site's own pixel-art images, `content/assets/*.png` (robot.png 40x40, coin.png 24x24, ball.png 28x28, monster.png 40x40, and the 40x40 tiles floor.png, wall.png, box.png, target.png, box-done.png), drawn by `scripts/make-sprites.mjs`. Don't use the MOOC's images. `pygame.image.load("robot.png")` loads one when the challenge lists it in `assets`, or a lesson example follows an ` ```asset robot.png ` block. `convert()` and `convert_alpha()` work (they give a copy).
+- **Text**: `pygame.font.SysFont(name, size)` always gives pygame's own font (freesansbold), whatever the name, as `pygame.font.Font(None, size)` does. Text's exact pixels differ a little between computers, so tests compare the window as text, not the pictures.
+- **Sound** is silent (`pygame.mixer` does nothing), and there's no full screen.
+- `random` is seeded the same way on every run of a window, so random positions are the same in the build, in the check and in the learner's window. Still, write tests that don't depend on the learner calling `random` exactly as the model solution does.
+- The last frame shown must be the same for the learner's program as for the model's, and so must the number of frames shown: a program that draws once and ends shows 1 frame; one that keeps drawing until the window is closed shows all of them.
+
+A **window test** gives the frames and events: `window: {frames: 30, events: [...]}`. An event is `{at: 10, type: keydown, key: K_RIGHT}` (pygame's names: `K_LEFT`, `K_a`, `K_SPACE`, `K_RETURN`), `{at: 10, type: keyup, key: K_RIGHT}`, `{at: 5, type: mousedown, pos: [120, 80], button: 1}`, `mouseup`, `mousemove` (with `pos`) or `{at: 50, type: quit}`. `at` is how many frames the window has shown when it happens (0: before the first). The build runs the solution and records its last frame: the test passes when the learner's window shows as many frames and its last frame's text is the same (and what it prints is the same, if it prints). The task card shows what happens in words and the window the program should end with, so the task text needn't repeat them. A challenge's images: `assets: [robot.png, coin.png]` on the challenge (or on the step, for all its challenges). Name each window test (`name: Holding the right arrow`) when there are several.
+
+```yaml
+      - task: |
+          Move the robot 2 pixels right on every frame while the right arrow is held down.
+        assets: [robot.png]
+        seed: ...
+        solution: ...
+        tests:
+          - name: Holding the right arrow
+            window: {frames: 30, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}]}
+          - window: {frames: 40, events: [{at: 1, type: keydown, key: K_RIGHT}, {at: 39, type: keyup, key: K_RIGHT}]}
+            hidden: true
+```
+
+In lesson text, a ` ```python window ` example is a pygame program; an optional ` ```window ` block right after it gives its frames and events (`{frames: 90, events: [...]}`, YAML; 60 frames and nothing happening without one), and an ` ```output ` block after that what it prints, if it prints. The build runs it and shows its last frame under the code; the learner can play it in the page. Programs that use pygame run in Pyodide at build time (the browser's own interpreter), so the pictures are what the page shows.
+
 ## Code blocks in lesson text
 
 Every Python block says what it is:
@@ -191,6 +229,8 @@ Every Python block says what it is:
 
   Every statement runs in one session and what it prints must be exactly what's shown under it (the page shows it as "In the Python interpreter", with the prompts dimmed).
 - ` ```python fragment ` code that isn't a whole program (a function on its own, a few lines of a longer program); shown only, but it must still be valid Python. ` ```python fragment partial ` for something that isn't even a whole statement (an `if` line on its own, a half-written expression).
+- ` ```python window ` a pygame program, with an optional ` ```window ` block of its frames and events after it (see "pygame programs" above).
+- ` ```asset robot.png ` one of the site's images, shown with its name and size; the examples after it can load it. Leave its body empty.
 - ` ```file data.txt ` a file the next ` ```python run ` example reads (see above).
 - ` ```input `, ` ```output `, ` ```crash ` as above; ` ```text ` text shown as it is; ` ```shell ` commands for your own computer; a block with no kind is plain text.
 

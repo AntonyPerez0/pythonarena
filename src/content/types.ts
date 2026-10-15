@@ -118,6 +118,8 @@ export type CourseIndex = {
   modules: ModuleSummary[];
   interviewDrills: number;
   placementQuestions: number;
+  /** The images (content/assets) a pygame program can load, published at images/. */
+  images: string[];
   /** The projects, in course order. */
   projects: ProjectSummary[];
 };

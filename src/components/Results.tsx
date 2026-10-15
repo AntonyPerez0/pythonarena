@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, CircleCheck, CircleX, X } from "lucide-react";
-import type { FriendlyDiagnostic, GradeResult, WrittenFile } from "../grader/grade";
+import type { FriendlyDiagnostic, GradeResult, TestResult, WrittenFile } from "../grader/grade";
+import { describeEvents, windowRunText } from "./window-blocks";
 import { InlineMd } from "./Markdown";
 import InputText from "./InputText";
 import { notesShown } from "../grader/notes";
@@ -114,6 +115,79 @@ export function WrittenFiles({ files }: { files?: WrittenFile[] }) {
   );
 }
 
+/** A picture's bytes as an address an <img> can show, for as long as the component is there. */
+function useObjectUrl(bytes: Uint8Array | null | undefined): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!bytes) return setUrl(null);
+    const u = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "image/png" }));
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [bytes]);
+  return url;
+}
+
+/** One window of a comparison: its picture and its drawing as text, the lines that the other window doesn't have marked. */
+function WindowSide({ label, src, title, size, log, other, alt }: { label: string; src: string | null; title: string; size: [number, number] | null; log: string; other: string; alt: string }) {
+  const theirs = new Set(other.split("\n"));
+  const lines = log ? log.split("\n") : [];
+  return (
+    <div>
+      <span className="lbl">{label}</span>
+      <figure className="pg-window" style={size ? ({ "--w": size[0], "--h": size[1] } as React.CSSProperties) : undefined}>
+        <div className="pg-titlebar">
+          <span className="pg-title">{title}</span>
+          {size && (
+            <span className="pg-size">
+              {size[0]} × {size[1]}
+            </span>
+          )}
+        </div>
+        <div className="pg-screen">{src ? <img src={src} alt={alt} width={size?.[0]} height={size?.[1]} /> : <p className="pg-none muted small">(no window)</p>}</div>
+      </figure>
+      <pre tabIndex={0} className="console tiny pg-log" aria-label={`${label}, as text`}>
+        {lines.length
+          ? lines.map((l, i) => (
+              <span key={i} className={theirs.has(l) ? undefined : "pg-diff"}>
+                {l}
+                {theirs.has(l) ? "" : <span className="visually-hidden"> (differs)</span>}
+                {"\n"}
+              </span>
+            ))
+          : "(nothing drawn)"}
+      </pre>
+    </div>
+  );
+}
+
+/** A window test that failed: what happened in the window, and the expected window beside the learner's. */
+function WindowCompare({ t }: { t: TestResult }) {
+  const w = t.window!;
+  const mine = useObjectUrl(w.got?.png);
+  const want = w.expected;
+  return (
+    <div className="pg-compare">
+      {t.window && (
+        <p className="small">
+          {windowRunText(want.frames, [])} {describeEvents(t.windowEvents ?? []).join(" ")}
+        </p>
+      )}
+      <div className="t-cmp">
+        <WindowSide label={`the window after ${want.frames} frames should be`} src={import.meta.env.BASE_URL + want.image} title={want.title} size={want.size} log={want.log} other={w.got?.log ?? ""} alt="The expected window" />
+        <WindowSide
+          label={w.got?.frames ? `your window after ${w.got.frames} ${w.got.frames === 1 ? "frame" : "frames"}` : "your program"}
+          src={mine}
+          title={w.got?.title ?? ""}
+          size={w.got?.size ?? null}
+          log={w.got?.log ?? ""}
+          other={want.log}
+          alt="Your program's window"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Results({ result }: { result: GradeResult }) {
   // The same crash under several tests is explained once, under the first; the others get a short line.
   const notes = notesShown(result.tests);
@@ -222,8 +296,9 @@ export default function Results({ result }: { result: GradeResult }) {
                         </pre>
                       </div>
                     ))}
-                    {/* When only a written file is wrong, the output (which is right) isn't compared again. */}
-                    {!(t.writes?.some((f) => !f.pass) && t.got === t.expected) && (
+                    {t.window && !t.window.pass && <WindowCompare t={t} />}
+                    {/* When only a written file or the window is wrong, the output (which is right) isn't compared again. */}
+                    {!((t.writes?.some((f) => !f.pass) || (t.window && !t.window.pass)) && t.got === t.expected) && (
                       <div className="t-cmp">
                         <div>
                           <span className="lbl">expected</span>

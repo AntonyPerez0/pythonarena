@@ -1,6 +1,6 @@
 // Checks a learner's program: run every test with Python in the browser (Pyodide), and compare with
 // the expected output (which came from the reference CPython at build time, through the same harness).
-import { runPython, DEFAULT_TIME_LIMIT_MS, type RunResult, type SourceFile, type WindowResult } from "../engine/client";
+import { runPython, DEFAULT_TIME_LIMIT_MS, type RunResult, type SourceFile, type WindowEvent, type WindowResult } from "../engine/client";
 import { describeError, explainError, parseError, type PyError } from "../engine/friendly";
 import type { ExpectedWindow, Exercise, TestCase } from "../content/types";
 import { assetFiles } from "./assets";
@@ -43,6 +43,8 @@ export type TestResult = {
   loadOutput?: string;
   /** A pygame test: the window the model solution ended with, and the learner's (null: it showed none). */
   window?: { expected: ExpectedWindow; got: WindowResult | null; pass: boolean };
+  /** A pygame test: what happened in the window. */
+  windowEvents?: WindowEvent[];
   /**
    * When the run stopped with an error: the sentence as it is in `note`, a key that is the same for
    * tests that stopped the same way, and a short line that stands for it under a later test (see notesShown).
@@ -226,7 +228,7 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
       ...(crash && note?.includes(crash.text) ? { crash } : {}),
       stderr: !pass && r?.stderr ? r.stderr : undefined,
       ...(loadOutput ? { loadOutput } : {}),
-      ...(window ? { window } : {}),
+      ...(window ? { window, windowEvents: t.window?.events ?? [] } : {}),
     };
   });
   const allPass = tests.every((t) => t.pass) && ruleProblems.length === 0;

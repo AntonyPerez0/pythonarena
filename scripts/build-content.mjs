@@ -334,7 +334,15 @@ async function checkExamples(where, text) {
     const asset = /^asset\s+(\S+)$/.exec(info);
     if (asset) {
       if (blocks[i][2].trim()) errors.push(`${where}, example ${i + 1}: an asset block shows the image it names; leave its body empty`);
-      shown.push(...checkAssets(`${where}, example ${i + 1}`, [asset[1]]));
+      const ok = checkAssets(`${where}, example ${i + 1}`, [asset[1]]);
+      shown.push(...ok);
+      // The page shows the image's size under it: the build writes it into the block.
+      if (ok.length) {
+        const png = Buffer.from(assetData(ok[0]).base64, "base64");
+        const body = `${png.readUInt32BE(16)}x${png.readUInt32BE(20)}\n`;
+        const start = blocks[i].index + blocks[i][0].indexOf("\n") + 1;
+        edits.push({ start, end: start + blocks[i][2].length, text: body });
+      }
       continue;
     }
     if (info === "window" && !/^python\s+window\b/.test(blocks[i - 1]?.[1].trim() ?? "")) errors.push(`${where}, example ${i + 1}: a window block (the frames and events of a window) comes right after a python window example`);
@@ -1106,6 +1114,7 @@ const index = {
   modules: modules.map(({ steps, ...m }) => ({ ...m, drills: drills.filter((d) => d.topic === m.id).length, steps: steps.map((s) => ({ id: s.id, slug: s.slug, title: s.title, hash: lessonHash(s), challenges: 1 + s.more.length, drills: drills.filter((d) => d.after === s.id).length })) })),
   interviewDrills: drills.filter((d) => d.topic === "interview").length,
   placementQuestions: placement.length,
+  images: assetNames(),
   projects: projects.map((x) => ({ id: x.id, title: x.title, summary: x.summary, after: x.after, hash: projectHash(x), milestones: x.milestones.map((m) => ({ id: m.id, title: m.title })) })),
 };
 // The lesson files first and the index after them, so a running dev server never sees an index

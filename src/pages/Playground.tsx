@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Link2, Play, RotateCcw } from "lucide-react";
 import FilesEditor from "../components/FilesEditor";
@@ -10,6 +10,12 @@ import { runOnly, type FreeRun } from "../grader/grade";
 import { decodeShare, encodeShare } from "../lib/share";
 import { useTitle } from "../lib/title";
 import { PLAYGROUND_KEY as KEY } from "../state/store";
+import { course } from "../content";
+import { splitFiles } from "../grader/files.js";
+
+// A pygame program's window (loaded only for one).
+const WindowPanel = lazy(() => import("../components/WindowPanel"));
+const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 
 const EXAMPLE = `name = input("What is your name? ")
 print(f"Hello, {name}!")
@@ -75,6 +81,11 @@ export default function Playground() {
   sharedRef.current = shared;
   // Each run's number: a result that arrives after another program was put in the editor is dropped.
   const generation = useRef(0);
+  // A pygame program runs in a window: each Run starts a new one.
+  const pygame = PYGAME.test(code);
+  const [windowRun, setWindowRun] = useState(0);
+  const [windowCode, setWindowCode] = useState("");
+  const windowFiles = useMemo(() => splitFiles(windowCode) as { path: string; text: string }[], [windowCode]);
 
   const showOwn = useCallback(() => {
     const s = loadSaved();
@@ -125,6 +136,14 @@ export default function Playground() {
   };
 
   const run = useCallback(async () => {
+    if (PYGAME.test(code)) {
+      setResult(null);
+      setWindowCode(code);
+      setWindowRun((n) => n + 1);
+      setLive("Running your program in its window.");
+      return;
+    }
+    setWindowRun(0);
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
@@ -258,6 +277,21 @@ export default function Playground() {
           {live}
         </p>
         {status && <p className="small muted">{status}</p>}
+        {pygame && !windowRun && (
+          <p className="small muted">
+            A pygame program runs in a window here, without sound. It can load the site's images: {course.images.map((n, i) => (
+              <span key={n}>
+                {i ? ", " : ""}
+                <code>{n}</code>
+              </span>
+            ))}.
+          </p>
+        )}
+        {windowRun > 0 && (
+          <Suspense fallback={<p className="muted">Loading the window…</p>}>
+            <WindowPanel key={windowRun} files={windowFiles} assets={course.images} stdin={stdin} autoStart onRun={() => setRuns((n) => n + 1)} label="Your program's window" />
+          </Suspense>
+        )}
         {result && (
           <div className="results">
             {result.status === "internal-error" ? (

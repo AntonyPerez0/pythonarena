@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import type { Exercise } from "../content/types";
 import { grade, runOnly, type FreeRun, type GradeResult } from "../grader/grade";
@@ -13,6 +13,11 @@ import SymbolBar from "./SymbolBar";
 import HintsPanel from "./HintsPanel";
 import { DownloadCard, EngineErrorCard, UnsupportedCard, useEngineAutoload, useEngineStatus } from "./Engine";
 import { engineSupported } from "../engine/client";
+import { splitFiles } from "../grader/files.js";
+
+// A pygame challenge's window (loaded only for those challenges).
+const WindowPanel = lazy(() => import("./WindowPanel"));
+const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 
 type Props = {
   ex: Exercise;
@@ -75,6 +80,11 @@ export default function Workbench({ ex, progress, onChange, onPass, report }: Pr
   // A challenge whose tests call functions: "Run with my input" runs the program as it is, which runs
   // the code under if __name__ == "__main__": too.
   const callsOnly = ex.tests.length > 0 && ex.tests.every((t) => t.call != null);
+  // A pygame challenge: "Run with my input" opens its window, with what the first test does in it.
+  const windowTest = ex.tests.find((t) => !t.hidden && t.window) ?? ex.tests.find((t) => t.window);
+  const pygame = !!windowTest || PYGAME.test(source);
+  const windowFiles = useMemo(() => (pygame && showConsole ? (splitFiles(source) as { path: string; text: string }[]) : []), [pygame, showConsole, source]);
+  const [windowRun, setWindowRun] = useState(0);
 
   const check = useCallback(async () => {
     if (busyRef.current) return;
@@ -165,7 +175,7 @@ export default function Workbench({ ex, progress, onChange, onPass, report }: Pr
         </button>
         {!isFill && (
           <button type="button" className="btn" aria-expanded={showConsole} onClick={() => setShowConsole(!showConsole)} disabled={unsupported}>
-            {showConsole ? "Hide my input" : "Run with my input"}
+            {showConsole ? (pygame ? "Hide the window" : "Hide my input") : pygame ? "Run the window" : "Run with my input"}
           </button>
         )}
         <button type="button" className="btn btn-ghost" onClick={reset}>
@@ -173,7 +183,28 @@ export default function Workbench({ ex, progress, onChange, onPass, report }: Pr
         </button>
       </div>
 
-      {showConsole && (
+      {showConsole && pygame && (
+        <div className="freerun" data-window-runs={windowRun}>
+          <Suspense fallback={<p className="muted">Loading the window…</p>}>
+            <WindowPanel
+              key={windowRun}
+              files={windowFiles}
+              assets={ex.assets}
+              given={windowTest?.files}
+              stdin={stdin}
+              start={windowTest?.window}
+              autoStart
+              onRun={() => setChecks((n) => n + 1)}
+              label="Your program's window"
+            />
+          </Suspense>
+          <p className="muted small">
+            {windowTest?.window?.events.length ? "It starts with what the task's test does in the window. " : ""}Changed your code? <button type="button" className="btn-link" onClick={() => setWindowRun((n) => n + 1)}>Run it again</button>.
+          </p>
+        </div>
+      )}
+
+      {showConsole && !pygame && (
         <div className="freerun">
           <label className="lbl" htmlFor="stdin">
             Input (the lines input() reads, one per line)

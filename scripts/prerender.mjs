@@ -9,6 +9,7 @@ import path from "node:path";
 import { marked } from "marked";
 import { FILE_MARK, splitFiles } from "../src/grader/files.js";
 import { readOnlyBlockHtml } from "../src/components/code-blocks.ts";
+import { assetHtml, parseShot, windowShotHtml } from "../src/components/window-blocks.ts";
 import { RECORD_NOTICE } from "../src/lib/record.ts";
 import { PRO_GUIDE_HTML, PRO_HONEST, PRO_LEAD } from "../src/lib/pro-guide.ts";
 import { readProTrack } from "./pro-track/site.mjs";
@@ -53,6 +54,13 @@ const replHtml = (text) =>
 marked.use({
   renderer: {
     code({ text, lang }) {
+      // pygame lessons: an image of the site's, and a window example's last frame (the page can play it).
+      const asset = lang ? /^asset\s+(\S+)$/.exec(lang) : null;
+      if (asset) return assetHtml(asset[1], text, BASE);
+      if (lang === "window-shot") {
+        const shot = parseShot(text);
+        return shot ? windowShotHtml(shot, BASE) : "";
+      }
       const file = lang ? /^file\s+(\S+)$/.exec(lang) : null;
       if (file) return `<figure class="io io-file"><figcaption>The file ${esc(file[1])}</figcaption><pre><code>${esc(text)}</code></pre></figure>\n`;
       if (lang === "pycon") return `<figure class="io io-repl"><figcaption>In the Python interpreter</figcaption><pre class="code-py"><code>${replHtml(text)}</code></pre></figure>\n`;

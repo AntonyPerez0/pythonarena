@@ -187,7 +187,11 @@ def _adopt(surface, label):
     if isinstance(surface, ArenaSurface):
         new = surface
     else:
-        new = ArenaSurface(surface.get_size(), surface.get_flags() & pygame.SRCALPHA, surface)
+        # The same pixel format, masks included (a PNG's channels are in another order than pygame's own surfaces').
+        if surface.get_bitsize() == 8:
+            new = ArenaSurface(surface.get_size(), 0, 8)
+        else:
+            new = ArenaSurface(surface.get_size(), surface.get_flags() & pygame.SRCALPHA, surface.get_bitsize(), surface.get_masks())
         if surface.get_bitsize() == 8:
             new.set_palette(surface.get_palette())
         raw = surface.get_buffer().raw

@@ -4,6 +4,7 @@ import type { Exercise } from "../content/types";
 import Markdown from "./Markdown";
 import InputText from "./InputText";
 import { FileName } from "./Results";
+import { describeEvents, windowFigureHtml, windowRunText } from "./window-blocks";
 
 /**
  * What the challenge asks for, set apart from the lesson so it's obvious: the task, then the exact
@@ -12,7 +13,8 @@ import { FileName } from "./Results";
 export default function TaskCard({ ex, task, index, total, label = "Challenge" }: { ex: Exercise; task: string; index: number; total: number; label?: string }) {
   // A "What does it print?" challenge must not show its answer. A challenge whose program writes files
   // shows the first visible test that checks them (scripts/build-content.mjs checkTaskOutput picks the same).
-  const shown = ex.kind === "predict" ? undefined : (ex.tests.find((t) => !t.hidden && t.writes) ?? ex.tests.find((t) => !t.hidden && t.expect));
+  const windowTest = ex.kind === "predict" ? undefined : ex.tests.find((t) => !t.hidden && t.expectWindow);
+  const shown = ex.kind === "predict" ? undefined : (windowTest ?? ex.tests.find((t) => !t.hidden && t.writes) ?? ex.tests.find((t) => !t.hidden && t.expect));
   const others = ex.tests.filter((t) => t !== shown);
   const moreTests = others.length;
   const hiddenCount = others.filter((t) => t.hidden).length;
@@ -35,7 +37,47 @@ export default function TaskCard({ ex, task, index, total, label = "Challenge" }
       <Markdown text={text} className="task-body" />
       {ex.kind === "fill" && <p className="task-note">Type your answers into the highlighted blanks in the code below.</p>}
       {ex.kind === "predict" && <p className="task-note">Read the program below and type each line it prints. The answers are what Python really prints for it.</p>}
-      {shown && (
+      {windowTest?.expectWindow && windowTest.window && (
+        <div className="task-expect task-window">
+          <div className="lbl">The test</div>
+          <p className="small">{windowRunText(windowTest.window.frames, windowTest.window.events)}</p>
+          {windowTest.window.events.length > 0 && (
+            <ul className="small pg-events">
+              {describeEvents(windowTest.window.events).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
+          <div className="lbl">Your window should end like this</div>
+          <div
+            dangerouslySetInnerHTML={{
+              __html: windowFigureHtml({
+                src: import.meta.env.BASE_URL + windowTest.expectWindow.image,
+                title: windowTest.expectWindow.title,
+                size: windowTest.expectWindow.size,
+                log: windowTest.expectWindow.log,
+                alt: `The window the program should show after ${windowTest.expectWindow.frames} frames`,
+              }),
+            }}
+          />
+          {windowTest.expect && (
+            <>
+              <div className="lbl">Expected output</div>
+              <pre className="console task-output" tabIndex={0}>
+                {windowTest.expect}
+              </pre>
+            </>
+          )}
+          {moreTests > 0 && (
+            <p className="task-note">
+              {hiddenCount === moreTests
+                ? `${moreTests} more hidden ${moreTests === 1 ? "test does" : "tests do"} other things in the window, so the answer can't be drawn in directly.`
+                : `${moreTests} more ${moreTests === 1 ? "test does" : "tests do"} other things in the window${hiddenCount ? ", some of them hidden" : ""}.`}
+            </p>
+          )}
+        </div>
+      )}
+      {shown && !windowTest && (
         <div className="task-expect">
           <div className={"task-io" + (shown.stdin || shown.call || shown.files || shown.args ? " two" : "")}>
             {shown.call ? (

@@ -1306,3 +1306,44 @@ mark.fx-differs { background: color-mix(in srgb, var(--bad) 20%, transparent); c
 .topic-links li { padding: 0.2rem 0; min-height: 1.5rem; }
 /* Each link is a tap target of at least 24 px high (WCAG 2.2, 2.5.8), not just its line of text. */
 .topic-links a { display: inline-block; padding: 3px 0; min-width: 24px; }
+
+/* ------------------------------------------------------------------ pygame windows and images
+   A window (src/components/WindowPanel.tsx, window-blocks.ts): a title bar, the picture (frames on a canvas, or
+   a frame's image), and its drawing as text. A small window shows twice its size, with square pixels, as the
+   pixel-art images are drawn; a wide one shrinks to the column. */
+.pg-window { margin: 0.7rem 0; max-width: min(100%, calc(var(--w, 320) * 2px + 2px)); }
+.pg-titlebar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; padding: 0.3rem 0.65rem; background: var(--tint); border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; font-size: 0.78rem; }
+.pg-title { font-weight: 600; overflow-wrap: anywhere; }
+.pg-size { color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+.pg-screen { border: 1px solid var(--line); border-radius: 0 0 10px 10px; background: #000; overflow: hidden; line-height: 0; }
+.pg-screen img, .pg-screen canvas { display: block; width: 100%; height: auto; aspect-ratio: var(--w, 4) / var(--h, 3); image-rendering: pixelated; }
+.pg-screen canvas.pg-empty { background: #000; }
+.pg-screen canvas:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+.pg-idle { display: grid; place-items: center; min-height: 10rem; padding: 1rem; background: var(--code-bg); line-height: 1.4; }
+.pg-none { padding: 1.5rem 1rem; line-height: 1.4; background: var(--code-bg); margin: 0; }
+.pg-astext { margin-top: 0.35rem; font-size: 0.85rem; }
+.pg-astext summary { cursor: pointer; color: var(--muted); min-height: 24px; }
+.pg-astext pre { margin: 0.3rem 0 0; font-size: 0.78rem; max-height: 14rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pg-window figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.35rem; }
+.pg-shot { margin: 0.9rem 0; }
+.pg-shot .pg-window { margin-bottom: 0.4rem; }
+.pg-panel { display: grid; gap: 0.5rem; }
+.pg-panel .pg-window { margin: 0; width: 100%; }
+.pg-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.pg-scrub { flex: 1 1 8rem; display: flex; align-items: center; min-height: 24px; }
+.pg-scrub input { width: 100%; }
+.pg-keys { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pg-key { min-width: 2.75rem; justify-content: center; font-family: var(--mono); touch-action: none; user-select: none; -webkit-user-select: none; }
+.pg-status { margin: 0; }
+.pg-events { margin: 0.2rem 0 0.6rem; padding-left: 1.2rem; }
+.pg-log .pg-diff { background: var(--fail-bg, rgb(248 113 113 / 0.16)); }
+.pg-compare { margin-bottom: 0.4rem; }
+.pg-compare .pg-window { margin: 0.2rem 0 0.4rem; }
+.task-window .pg-window { max-width: min(100%, calc(var(--w, 320) * 1.5px + 2px)); }
+.md-part { display: contents; }
+.btn-link { background: none; border: 0; padding: 0; font: inherit; color: var(--accent2); text-decoration: underline; cursor: pointer; min-height: 24px; }
+
+/* An image of content/assets in a lesson: shown larger, with square pixels, on a checkered background (it may be partly transparent). */
+.md figure.asset-img { margin: 0.7rem 0; }
+.asset-img img { display: block; width: calc(var(--w, 40) * 2px); max-width: 100%; height: auto; image-rendering: pixelated; padding: 0.5rem; border: 1px solid var(--line); border-radius: 10px; background-color: var(--code-bg); background-image: linear-gradient(45deg, var(--tint) 25%, transparent 25%, transparent 75%, var(--tint) 75%), linear-gradient(45deg, var(--tint) 25%, transparent 25%, transparent 75%, var(--tint) 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+.asset-img figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.3rem; }
