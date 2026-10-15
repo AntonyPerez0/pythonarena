@@ -1,6 +1,6 @@
 # The first steps of every check job in .github/workflows/deploy.yml (after actions/checkout): Node
 # with the npm cache, npm ci, Chromium (cached, with its system libraries) if asked, and the build
-# job's output (the site-build artifact: dist, src/generated, public/lessons and fidelity/out, which
+# job's output (the site-build artifact: dist, src/generated, public/lessons, public/images and fidelity/out, which
 # holds the content check list) put back where the build left it.
 name: Set up a check job
 description: Node, npm ci, Chromium if asked, and the build job's output.

@@ -103,6 +103,7 @@ jobs:
             dist
             src/generated
             public/lessons
+            public/images
             fidelity/out
           if-no-files-found: error
           retention-days: 7
