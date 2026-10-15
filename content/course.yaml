@@ -547,3 +547,34 @@ modules:
       - section: "14.4"
         title: "Your own game"
         path: /part-14/4-your-own-game
+  # Data structures and algorithms: Python Arena's own modules after the MOOC (course: extra), the
+  # algorithms and data structures that coding interviews ask about, with tests big enough that a slow
+  # solution runs out of time.
+  - id: dsa-complexity
+    title: "Complexity and searching"
+    course: extra
+    steps: 6
+  - id: dsa-sorting
+    title: "Sorting algorithms"
+    course: extra
+    steps: 6
+  - id: dsa-hash
+    title: "Hash tables"
+    course: extra
+    steps: 5
+  - id: dsa-trees
+    title: "Trees and heaps"
+    course: extra
+    steps: 6
+  - id: dsa-graphs
+    title: "Graphs"
+    course: extra
+    steps: 6
+  - id: dsa-backtracking
+    title: "Recursion and backtracking"
+    course: extra
+    steps: 6
+  - id: dsa-dp
+    title: "Dynamic programming"
+    course: extra
+    steps: 6
