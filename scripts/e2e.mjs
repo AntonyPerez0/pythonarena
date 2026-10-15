@@ -3145,6 +3145,17 @@ for (const width of [360, 390]) {
     await shot(page, `lesson-phone-${width}`);
     await page.click('button[aria-label="Open menu"]');
     await axe(page, `menu open ${width}`);
+    // Wherever the page is scrolled, a page link half under the open menu's top or bottom edge keeps 24 px to
+    // tap: the menu's links stay 24 px from its edges (below the header's own buttons at the top).
+    const bands = await page.evaluate(() => {
+      const nav = document.getElementById('main-nav');
+      const boxes = (els) => els.filter((e) => e.getClientRects().length).map((e) => e.getBoundingClientRect());
+      const controls = [...document.querySelectorAll('header.topbar a, header.topbar button, header.topbar input')];
+      const inMenu = boxes(controls.filter((e) => nav.contains(e)));
+      const inHeader = boxes(controls.filter((e) => !nav.contains(e)));
+      return { top: Math.min(...inMenu.map((r) => r.top)) - Math.max(...inHeader.map((r) => r.bottom)), bottom: nav.getBoundingClientRect().bottom - Math.max(...inMenu.map((r) => r.bottom)) };
+    });
+    expect(bands.top >= 24 && bands.bottom >= 24, `the open menu leaves ${bands.top.toFixed(1)} px above its first link and ${bands.bottom.toFixed(1)} px below its last`);
     // The Playground with a crash and its traceback.
     await page.goto(BASE + 'playground/');
     await lessonReady(page);

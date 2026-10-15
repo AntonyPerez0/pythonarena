@@ -597,7 +597,10 @@ select, input[type="text"], input[type="url"], input[type="password"], input[typ
   .topbar { gap: 0.75rem; padding: 0 1rem; }
   .topbar .menu-btn { display: inline-grid; }
   .topbar-cta { display: none; }
-  .nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0.15rem; padding: 0.75rem 1rem 1.25rem; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-lg); max-height: calc(100vh - var(--header-h)); overflow-y: auto; }
+  /* The open menu covers the page. Its padding keeps its links at least 24 px from its top and bottom
+     edges (with the header's own space above), so a page link half under an edge still has 24 px
+     left to tap: what WCAG 2.5.8's target size asks, wherever the page is scrolled. */
+  .nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: 0.15rem; padding: 16px 1rem 28px; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-lg); max-height: calc(100vh - var(--header-h)); overflow-y: auto; }
   .nav.nav-open { display: flex; }
   .nav a { font-size: 1.05rem; padding: 0.75rem 0.85rem; border-radius: 10px; }
   .nav-extra { display: block; border-top: 1px solid var(--line); margin-top: 0.5rem; padding-top: 0.5rem; }

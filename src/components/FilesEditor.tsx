@@ -25,7 +25,7 @@ type Props = {
 function newModule(input: string, files: SourceFile[]): SourceFile | string {
   const name = input.trim().replace(/\.py$/, "");
   const path = `${name}.py`;
-  if (!/^[A-Za-z_]\w*$/.test(name)) return "A module's name is letters, digits and _, and doesn't start with a digit, like helpers or game_map.";
+  if (!/^[A-Za-z_]\w*$/.test(name)) return "A module's name is letters, digits and _, not starting with a digit, like helpers or game_map.";
   const problem = sourceNameProblem(path);
   if (problem) return `${path} ${problem}: choose another name, like helpers.`;
   if (path === MAIN_FILE || files.some((f) => f.path === path)) return `There is already a ${path}.`;
