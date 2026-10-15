@@ -67,7 +67,8 @@ drills:
   - type: predict
     after: range
     code: |
-      print(list(range(1, 10, 3)))
+      for i in range(1, 10, 3):
+          print(i)
     why: "The range starts at 1 and goes up in steps of 3: 1, 4 and 7. The next one, 10, is the end, which is left out."
 
   - type: choice
@@ -94,7 +95,7 @@ drills:
     code: |
       print(range(3))
       print(list(range(3)))
-    why: "A range isn't a list, and printing it shows only its description. `list` turns it into a list of its numbers."
+    why: "A range isn't a list: printing it shows the call that made it, not its numbers. `list` turns it into a list of its numbers."
 
   - type: predict
     after: building-lists

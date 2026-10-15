@@ -360,35 +360,47 @@ steps:
 
       ### Make sure the loop ends
 
-      Before you trust a loop, check that its condition really becomes false, whatever the input. This loop is meant to count up to 10 in steps of 2:
+      Before you trust a loop, check that its condition really becomes false, whatever the input. In this game, every hit takes 3 points from a dragon's health, and the dragon falls when its health is gone:
 
-      ```python fragment
-      number = int(input("Start: "))
-      while number != 10:
-          print(number)
-          number += 2
+      ```python run
+      health = int(input("Dragon's health: "))
+      hits = 0
+      while health != 0:
+          health -= 3
+          hits += 1
+      print(f"The dragon falls after {hits} hits")
       ```
 
-      With 4 as the start, it prints 4, 6 and 8 and stops. But with 3 it prints 3, 5, 7, 9, 11, 13 and goes on forever: the number jumps over 10 and is never equal to it. With 12 it starts above 10 and only gets bigger. Writing `number < 10` instead fixes both: when you count up, a condition with `<` or `<=` ends the loop even when the number jumps past the limit.
+      ```input
+      9
+      ```
+
+      ```output
+      Dragon's health: 9
+      The dragon falls after 3 hits
+      ```
+
+      With 9 health points, the health goes 6, 3, 0, and then `health != 0` is false. But with 10 it goes 7, 4, 1, -2, -5 and on: it steps over 0 and is never equal to it. The loop never ends, and the program seems to freeze without printing anything. The condition says "until the health is exactly 0", but what you mean is "while there is health left": `while health > 0:`. That one becomes false whether the health lands on 0 or drops below it, and with 10 health points the dragon falls after 4 hits. In the same way, when you count up, `<` or `<=` stops a loop that jumps past its limit, where `!=` might not.
 
       ### Debugging a loop
 
-      Mistakes in loops often hide in the condition: the loop runs one round too many or too few, or goes wrong only for some inputs. Two habits help you find them:
+      When a loop misbehaves, look at its condition first. A `<` that should have been `<=` loses the last round, and a `!=` that the variable can step over, like the dragon's, never lets the loop go. Two habits help you see what's going on:
 
-      - **Write the input into the code while you test.** A program that asks for input makes you type it on every run. For now, write the value straight into the code and keep the `input` call in a comment, so you can switch back easily: `limit = 30  # int(input("Limit: "))`. When the checks say your program fails with some input, put that input in the same way and run it until you see why.
+      - **Fix the input while you test.** Typing an answer to `input` on every test run gets tedious fast. Turn the `input` line into a comment for now, and give the variable a value of your own on the line below it; to have the program ask again, swap the two over. If a check fails with some input, make that input your fixed value: then every run shows the failing case, and you can watch it go wrong.
       - **Print the values in every round.** A debugging `print` in the body shows what the variables are in each round. Remove it once the program works, since the extra lines would fail the checks.
 
-      This program adds up 1 * 1, 2 * 2, 3 * 3 and so on until the total reaches a limit. Both habits are in use:
+      This program counts how many squares (1 * 1, 2 * 2, 3 * 3 and so on) it takes to add up to a goal. Both habits are in use:
 
       ```python run
-      limit = 30  # int(input("Limit: "))
+      # goal = int(input("Goal: "))
+      goal = 30
       total = 0
       count = 0
-      while total < limit:
+      while total < goal:
           count += 1
           total += count * count
           print("debug:", count, total)
-      print(f"{count} squares add up to at least {limit}")
+      print(f"{count} squares add up to at least {goal}")
       ```
 
       ```output

@@ -5,20 +5,20 @@ steps:
     slug: same-list
     title: Two names for one list
     text: |
-      So far you could think of a variable as a box that holds a value. For lists, that picture leads you astray. A variable doesn't hold the list itself: it holds a **reference** to it, which tells Python where the list is in the computer's memory. Think of the list as a house, and of the reference as the house's address written on a note.
+      Up to now it has been fine to say that `scores = [7, 9]` puts a list in the variable `scores`. For lists, that way of thinking leads you astray. A variable doesn't hold the list itself: it holds a **reference** to it, which tells Python where the list is in the computer's memory. Think of the list as a house, and of the reference as the house's address written on a note.
 
       Most of the time the difference doesn't matter. It matters as soon as two variables refer to the same list:
 
       ```python repl
-      >>> a = [1, 2, 3]
-      >>> b = a
-      >>> b.append(4)
-      >>> b[0] = 10
-      >>> a
-      [10, 2, 3, 4]
+      >>> todo = ["wash", "cook"]
+      >>> today = todo
+      >>> today.append("shop")
+      >>> today[0] = "rest"
+      >>> todo
+      ['rest', 'cook', 'shop']
       ```
 
-      `b = a` doesn't copy the list. It copies the reference, the address, so `a` and `b` are now two names for one and the same list. A change made through either name changes that one list, and both names see it. In a program this can be a surprise:
+      `today = todo` doesn't copy the list. It copies the reference, the address, so `todo` and `today` are now two names for one and the same list. A change made through either name changes that one list, and both names see it. In a program this can be a surprise:
 
       ```python run
       weekday_songs = ["Intro", "Rain", "Comets"]
@@ -53,14 +53,14 @@ steps:
       Giving a variable a new value is different from changing the list it refers to:
 
       ```python repl
-      >>> a = [1, 2, 3]
-      >>> b = a
-      >>> b = [7, 8]
-      >>> a
-      [1, 2, 3]
+      >>> todo = ["wash", "cook"]
+      >>> today = todo
+      >>> today = ["sleep"]
+      >>> todo
+      ['wash', 'cook']
       ```
 
-      `b = [7, 8]` points `b` at a new list. The old list doesn't change, and `a` still refers to it.
+      `today = ["sleep"]` points `today` at a new list. The old list doesn't change, and `todo` still refers to it.
 
       ### References inside lists
 
@@ -328,7 +328,7 @@ steps:
     slug: list-parameters
     title: Lists as parameters
     text: |
-      A function call works like `b = a`: the parameter gets a reference to the list you give as the argument, not a copy of it. The function and the code that calls it share one list, so a function can change a list it's given:
+      A function call works like `today = todo`: the parameter gets a reference to the list you give as the argument, not a copy of it. The function and the code that calls it share one list, so a function can change a list it's given:
 
       ```python run
       def add_bonus(scores: list):
@@ -372,40 +372,37 @@ steps:
 
       ### Assigning to the parameter changes nothing outside
 
-      Here is a common mistake. The function builds a new list and then assigns it to the parameter:
+      Here is a common mistake. This function should cut the list it's given down to its first `count` names. It takes them with a slice and assigns the slice to the parameter:
 
       ```python run
-      def double_all(numbers: list):
-          doubled = []
-          for number in numbers:
-              doubled.append(number * 2)
-          numbers = doubled
+      def keep_first(names: list, count: int):
+          names = names[:count]
 
 
-      values = [1, 2, 3]
-      double_all(values)
-      print(values)
+      queue = ["Ada", "Ben", "Cleo", "Dev", "Eli"]
+      keep_first(queue, 3)
+      print(queue)
       ```
 
       ```output
-      [1, 2, 3]
+      ['Ada', 'Ben', 'Cleo', 'Dev', 'Eli']
       ```
 
-      `numbers = doubled` points the parameter `numbers` at the new list. That's a new value for one variable inside the function, just like `b = [7, 8]` in the first step of this module. The list that `values` refers to is never touched, and the new list is lost when the function ends.
+      A slice is a new list, and `names = names[:count]` points the parameter `names` at it. That's a new value for one variable inside the function, just like `today = ["sleep"]` in the first step of this module. The list that `queue` refers to is never touched, and the new list is lost when the function ends.
 
-      To change the caller's list, change the list itself: assign to its indexes, as `add_bonus` does, or replace its items with a **slice assignment**. A slice on the left side of `=` replaces those items with the items of the list on the right:
+      To change the caller's list, change the list itself: assign to its indexes, as `add_bonus` does, or replace its items with a **slice assignment**. A slice on the left side of `=` replaces those items with the items of the list on the right. There can be fewer or more of them, so the list can get shorter or longer:
 
       ```python repl
-      >>> numbers = [1, 2, 3, 4]
-      >>> numbers[1:3] = [20, 30]
-      >>> numbers
-      [1, 20, 30, 4]
-      >>> numbers[:] = [9, 9]
-      >>> numbers
-      [9, 9]
+      >>> letters = ["a", "b", "c", "d", "e"]
+      >>> letters[1:4] = ["X"]
+      >>> letters
+      ['a', 'X', 'e']
+      >>> letters[:] = ["p", "q", "r", "s"]
+      >>> letters
+      ['p', 'q', 'r', 's']
       ```
 
-      `numbers[:] = doubled` replaces every item of the list, so it's the fix for `double_all`: the last line of the function becomes `numbers[:] = doubled`.
+      `[:]` is the whole list, so `letters[:] = ...` replaces every item. That's the fix for `keep_first`: its line becomes `names[:] = names[:count]`. Python works out the right side first, the slice with the first `count` names, and then puts its items into the caller's list in place of the old ones.
 
       **Your turn:** write a function `cap_scores(scores, limit)` that changes the list it's given: every score greater than `limit` becomes `limit`. The function returns nothing.
 
@@ -570,41 +567,42 @@ steps:
     text: |
       A function that changes something outside itself, besides returning a value, has a **side effect**. When that is its job, as with `add_bonus` in the previous step, the side effect is what you want. When it happens by accident, it's a bug, and a sneaky one: the function returns the right answer, and the damage shows up somewhere else in the program.
 
-      This function finds the median of a list of numbers, the number in the middle when they are in order:
+      This function works out what an order costs, with the delivery fee added:
 
       ```python run
-      def median(numbers: list) -> int:
-          numbers.sort()
-          return numbers[len(numbers) // 2]
+      def order_total(prices: list, delivery: int) -> int:
+          prices.append(delivery)
+          return sum(prices)
 
 
-      temperatures = [21, 17, 25, 19, 23]
-      print("Median:", median(temperatures))
-      print("By day:", temperatures)
+      basket = [12, 30, 8]
+      print("To pay:", order_total(basket, 5))
+      print("Basket:", basket)
       ```
 
       ```output
-      Median: 21
-      By day: [17, 19, 21, 23, 25]
+      To pay: 55
+      Basket: [12, 30, 8, 5]
       ```
 
-      The median is right, but `sort` sorted the caller's list too, and now the temperatures are no longer in the order of the days. The fix is to work on a sorted copy, which `sorted` gives:
+      The total is right, but `append` added the fee to the caller's list, and now the basket holds a 5 that the customer never chose. The function doesn't need to change the list at all to find its answer:
 
       ```python run
-      def median(numbers: list) -> int:
-          in_order = sorted(numbers)
-          return in_order[len(in_order) // 2]
+      def order_total(prices: list, delivery: int) -> int:
+          return sum(prices) + delivery
 
 
-      temperatures = [21, 17, 25, 19, 23]
-      print("Median:", median(temperatures))
-      print("By day:", temperatures)
+      basket = [12, 30, 8]
+      print("To pay:", order_total(basket, 5))
+      print("Basket:", basket)
       ```
 
       ```output
-      Median: 21
-      By day: [21, 17, 25, 19, 23]
+      To pay: 55
+      Basket: [12, 30, 8]
       ```
+
+      When a function does need to change the items to find its answer, to sort them or to take some out, it should change a copy, not the list it was given.
 
       ### The same call, a different answer
 
@@ -637,55 +635,65 @@ steps:
 
       The methods that change a list are the ones to watch in a function that computes an answer: `append`, `insert`, `remove`, `pop`, `sort`, and assigning to an index or a slice.
 
-      **Your turn:** `second_largest(numbers)` returns the right number, but it also sorts the caller's list. Fix it so it doesn't change the list it's given.
+      **Your turn:** in a diving contest, the judges' scores for a dive are in a list. The highest and the lowest score are dropped, and the dive gets the mean of the rest. `dive_score(scores)` returns the right score, but it also removes two scores from the caller's list. Fix it so it doesn't change the list it's given.
 
       ```python fragment
-      numbers = [4, 9, 1, 7]
-      print(second_largest(numbers))
-      print(numbers)
+      scores = [7, 9, 8, 5, 9]
+      print(dive_score(scores))
+      print(scores)
       ```
 
       ```
-      7
-      [4, 9, 1, 7]
+      8.0
+      [7, 9, 8, 5, 9]
       ```
     seed: |
-      def second_largest(numbers: list) -> int:
-          numbers.sort()
-          return numbers[-2]
+      def dive_score(scores: list) -> float:
+          scores.remove(max(scores))
+          scores.remove(min(scores))
+          return sum(scores) / len(scores)
 
 
       if __name__ == "__main__":
-          numbers = [4, 9, 1, 7]
-          print(second_largest(numbers))
-          print(numbers)
+          scores = [7, 9, 8, 5, 9]
+          print(dive_score(scores))
+          print(scores)
     solution: |
-      def second_largest(numbers: list) -> int:
-          in_order = sorted(numbers)
-          return in_order[-2]
+      def dive_score(scores: list) -> float:
+          kept = scores.copy()
+          kept.remove(max(kept))
+          kept.remove(min(kept))
+          return sum(kept) / len(kept)
 
 
       if __name__ == "__main__":
-          numbers = [4, 9, 1, 7]
-          print(second_largest(numbers))
-          print(numbers)
+          scores = [7, 9, 8, 5, 9]
+          print(dive_score(scores))
+          print(scores)
     hints:
-      - "`numbers.sort()` sorts the very list the caller gave the function."
-      - "`sorted(numbers)` gives a new, sorted list. Store it in a variable of its own and take the second last item of that."
+      - "`remove` takes the item out of the very list the caller gave the function."
+      - "Make a copy first, `kept = scores.copy()`, and remove the highest and the lowest score from the copy."
+      - Then compute the mean from the copy, and leave `scores` alone.
     tests:
       - call: |
-          numbers = [4, 9, 1, 7]
-          print(second_largest(numbers))
-          print(numbers)
+          scores = [7, 9, 8, 5, 9]
+          print(dive_score(scores))
+          print(scores)
       - call: |
-          numbers = [10, 30, 20]
-          print(second_largest(numbers))
-          print(numbers)
+          scores = [6, 10, 6, 2]
+          print(dive_score(scores))
+          print(scores)
         hidden: true
       - call: |
-          numbers = [5, 5, 2, 8, 6]
-          print(second_largest(numbers))
-          print(numbers)
+          scores = [4, 8, 6]
+          print(dive_score(scores))
+          print(dive_score(scores))
+          print(scores)
+        hidden: true
+      - call: |
+          scores = [9.5, 7.0, 8.5, 8.0]
+          print(dive_score(scores))
+          print(scores)
         hidden: true
     more:
       - task: |

@@ -54,10 +54,10 @@ drills:
   - type: bug
     after: count-and-replace
     code: |
-      text = "I love Java"
-      text.replace("Java", "Python")  # BUG
+      text = "Meet at 9"
+      text.replace("9", "10")  # BUG
       print(text)
-    fix: text = text.replace("Java", "Python")
+    fix: text = text.replace("9", "10")
     why: "`replace` returns a new string and leaves `text` as it was. Without storing the result, the program prints the old text."
 
   - type: predict

@@ -277,7 +277,7 @@ steps:
 
       (In the f-string, `:02` writes a number with at least two digits, padding it with a zero.)
 
-      - `Time.valid(25, 0)` checks a time without creating any object. A program reading times from the user could check each one before creating a `Time`, and the constructor uses the same check, also through the class's name.
+      - `Time.valid(25, 0)` looks only at the two numbers it gets, so it needs no `Time` object to work on. Any code can ask it whether a time makes sense, and `__init__` asks it first thing, before it stores anything.
       - `from_text` and `midnight` create new objects: `cls(...)` calls the class, exactly as `Time(...)` would. Class methods like these are a handy way to offer more than one way to create an object.
 
       ### Which one to choose
@@ -286,7 +286,7 @@ steps:
 
       - an ordinary method gets the object (`self`), and is called on an object;
       - a class method gets the class (`cls`), so it can create objects with `cls(...)` and use class variables as `cls.name`;
-      - a static method gets neither, so it can only use its own parameters.
+      - a static method gets neither: it works with the arguments you give it. Like any other code, it can still reach the class by its name, for example to read a class variable such as `Ticket.sold` below, but it has no `self` and no `cls`.
 
       A class method that works with a class variable:
 
@@ -348,89 +348,75 @@ steps:
           9
     more:
       - task: |
-          A product code looks like `ABC-1234`: three capital letters, a dash and four digits. Write the class `Product`:
+          A music player shows a song's length as minutes and seconds, such as `3:05`, with the seconds always written with two digits. Write the class `Song`:
 
-          - a static method `valid_code(code)` that returns `True` if the code has exactly that shape, and `False` otherwise;
-          - a constructor that takes a code and a name, and raises `ValueError("Invalid code")` if the code isn't valid (use the static method). It stores them in the attributes `code` and `name`.
+          - a static method `format_length(seconds)` that returns a length given in seconds as such a string, for example `"3:05"` for 185 seconds;
+          - a constructor that takes a title and a length in seconds, and stores them in the attributes `title` and `seconds`;
+          - `__str__`, which returns a string such as `Slow River (5:02)`. Let it use the static method.
 
           For example, this code:
 
           ```python fragment
-          print(Product.valid_code("ABC-1234"))
-          print(Product.valid_code("AB-12345"))
-          lamp = Product("LMP-0042", "Desk lamp")
-          print(lamp.name)
+          print(Song.format_length(185))
+          print(Song.format_length(59))
+          print(Song("Slow River", 302))
           ```
 
           prints:
 
           ```
-          True
-          False
-          Desk lamp
+          3:05
+          0:59
+          Slow River (5:02)
           ```
         seed: |
-          class Product:
+          class Song:
               pass
 
 
           if __name__ == "__main__":
-              print(Product.valid_code("ABC-1234"))
-              print(Product.valid_code("AB-12345"))
-              lamp = Product("LMP-0042", "Desk lamp")
-              print(lamp.name)
+              print(Song.format_length(185))
+              print(Song.format_length(59))
+              print(Song("Slow River", 302))
         solution: |
-          class Product:
-              def __init__(self, code, name):
-                  if not Product.valid_code(code):
-                      raise ValueError("Invalid code")
-                  self.code = code
-                  self.name = name
+          class Song:
+              def __init__(self, title, seconds):
+                  self.title = title
+                  self.seconds = seconds
 
               @staticmethod
-              def valid_code(code):
-                  if len(code) != 8 or code[3] != "-":
-                      return False
-                  for char in code[:3]:
-                      if char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-                          return False
-                  for char in code[4:]:
-                      if char not in "0123456789":
-                          return False
-                  return True
+              def format_length(seconds):
+                  return f"{seconds // 60}:{seconds % 60:02}"
+
+              def __str__(self):
+                  return f"{self.title} ({Song.format_length(self.seconds)})"
 
 
           if __name__ == "__main__":
-              print(Product.valid_code("ABC-1234"))
-              print(Product.valid_code("AB-12345"))
-              lamp = Product("LMP-0042", "Desk lamp")
-              print(lamp.name)
+              print(Song.format_length(185))
+              print(Song.format_length(59))
+              print(Song("Slow River", 302))
         hints:
-          - "A valid code is 8 characters long and has a dash at index 3. Check that first and return `False` if not."
-          - "Then check the first three characters (`code[:3]`) one by one: each must be in `\"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"`. Do the same for the last four (`code[4:]`) with the digits."
-          - "The constructor calls the check through the class, `Product.valid_code(code)`, and raises the error when it gives `False`."
+          - "`//` and `%` split the seconds: `seconds // 60` is the whole minutes, and `seconds % 60` the seconds left over."
+          - "Write the seconds with `:02` in the f-string, as the `Time` example does, so that 5 seconds shows as `05`."
+          - "`__str__` calls the static method through the class's name: `Song.format_length(self.seconds)`."
         require:
           - pattern: '@staticmethod'
             raw: true
-            message: Make `valid_code` a static method, with `@staticmethod` above it.
+            message: Make `format_length` a static method, with `@staticmethod` above it.
         tests:
           - call: |
-              print(Product.valid_code("ABC-1234"))
-              print(Product.valid_code("AB-12345"))
-              lamp = Product("LMP-0042", "Desk lamp")
-              print(lamp.name)
+              print(Song.format_length(185))
+              print(Song.format_length(59))
+              print(Song("Slow River", 302))
           - call: |
-              for code in ["XYZ-0000", "xyz-0000", "XYZ-00a0", "XYZ_0000", "XYZ-00000", "XY1-0000", ""]:
-                  print(code, Product.valid_code(code))
+              for seconds in [0, 60, 61, 600, 3599]:
+                  print(Song.format_length(seconds))
             hidden: true
           - call: |
-              try:
-                  Product("toy-1", "Yo-yo")
-                  print("created")
-              except ValueError as error:
-                  print(error)
-              item = Product("TOY-0001", "Yo-yo")
-              print(item.code, item.name)
+              song = Song("Neon Rain", 187)
+              print(song.title, song.seconds)
+              print(song)
             hidden: true
       - task: |
           Write the class `Order`. Each new order gets the next number from the class variable `next_number`, which starts at 1: the first order is number 1, the next number 2, and so on. The class has:
@@ -641,7 +627,7 @@ steps:
           Planning: 60 min
     more:
       - task: |
-          Two teams are created without any players, and then a player joins one of them, but she shows up in both teams. Fix the class so that every team gets a list of its own, while `Team("Blues", ["Kim"])` still starts with the players given. The program should print:
+          Two teams are created without any players, and then a player joins one of them, but she shows up in both teams. Fix the class so that every team gets a list of its own, while `Team("Greens", ["Kim"])` still starts with the players given. The program should print:
 
           ```
           Reds: Ada

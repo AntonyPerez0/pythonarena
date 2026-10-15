@@ -1,5 +1,5 @@
 id: logic
-summary: "Conditions made of several parts: and, or and not, which of them Python evaluates first, the short way to check a range with a chained comparison, and conditional statements nested inside each other."
+summary: "Conditions made of several parts: and, or and not, how Python groups them when they're mixed, the short way to check a range with a chained comparison, and conditional statements nested inside each other."
 steps:
   - id: logic-and
     slug: and
@@ -149,57 +149,68 @@ steps:
               hood123
             hidden: true
       - task: |
-          Write a program that asks for three whole numbers and prints the largest of them.
+          A climbing course ends with three tests, each scored from 0 to 10 points. A climber gets the certificate only if every test has at least 5 points and the three scores add up to at least 20. Write a program that asks for the three scores and prints `Certificate earned!` or `No certificate this time.`
 
           ```
-          First: 4
-          Second: 9
-          Third: 2
-          The largest is 9
+          Test 1: 8
+          Test 2: 5
+          Test 3: 9
+          Certificate earned!
           ```
         seed: |
-          first = int(input("First: "))
-          second = int(input("Second: "))
-          third = int(input("Third: "))
+          first = int(input("Test 1: "))
+          second = int(input("Test 2: "))
+          third = int(input("Test 3: "))
         solution: |
-          first = int(input("First: "))
-          second = int(input("Second: "))
-          third = int(input("Third: "))
-          if first >= second and first >= third:
-              largest = first
-          elif second >= third:
-              largest = second
+          first = int(input("Test 1: "))
+          second = int(input("Test 2: "))
+          third = int(input("Test 3: "))
+          total = first + second + third
+          if first >= 5 and second >= 5 and third >= 5 and total >= 20:
+              print("Certificate earned!")
           else:
-              largest = third
-          print(f"The largest is {largest}")
+              print("No certificate this time.")
         hints:
-          - The first number is the largest when it is at least as big as the second and at least as big as the third.
-          - "If it isn't, the largest is the second or the third: an `elif second >= third:` decides between them."
-          - Use `>=` rather than `>`, so equal numbers work too. Store the answer in a variable and print it once at the end.
+          - "The certificate needs four things at once: three scores of at least 5 each, and a total of at least 20."
+          - "Work out the total first and store it: `total = first + second + third`."
+          - "Join the four comparisons with `and`, starting `first >= 5 and second >= 5 and ...`. Every other case goes to the `else`."
+        require:
+          - pattern: \band\b
+            message: Join the conditions with `and`.
         tests:
           - stdin: |
-              4
+              8
+              5
               9
-              2
           - stdin: |
-              1
-              2
-              3
-            hidden: true
-          - stdin: |
-              7
-              3
-              7
+              10
+              10
+              4
             hidden: true
           - stdin: |
               5
               5
-              1
+              9
             hidden: true
           - stdin: |
-              -2
-              -8
-              -5
+              5
+              5
+              10
+            hidden: true
+          - stdin: |
+              4
+              8
+              8
+            hidden: true
+          - stdin: |
+              7
+              7
+              6
+            hidden: true
+          - stdin: |
+              9
+              3
+              10
             hidden: true
 
   - id: logic-or
@@ -380,19 +391,19 @@ steps:
       True
       ```
 
-      Python works out the comparison before `not`, so `not 3 > 5` means `not (3 > 5)`. Often `not` is handy in front of a combined condition in parentheses. A number is outside the range 1 to 10 exactly when it is not inside it:
+      Python works out the comparison before `not`, so `not 3 > 5` means `not (3 > 5)`. Often `not` is handy in front of a combined condition in parentheses. In the step about `or`, `day == "Saturday" or day == "Sunday"` checked for the weekend. With `not` in front, the same condition checks for a weekday:
 
       ```python run
-      number = 15
-      if not (number >= 1 and number <= 10):
-          print("Out of range")
+      day = "Tuesday"
+      if not (day == "Saturday" or day == "Sunday"):
+          print("The library opens at 8 today.")
       ```
 
       ```output
-      Out of range
+      The library opens at 8 today.
       ```
 
-      The parentheses matter here: without them, the `not` would turn around only the first comparison.
+      The parentheses matter here: without them, the `not` would turn around only the first comparison, and the condition would be true on Sundays too.
 
       ### Truth values in variables
 
@@ -420,7 +431,7 @@ steps:
 
       ### Which goes first
 
-      When a condition mixes the operators, Python evaluates the comparisons first, then `not`, then `and`, and `or` last. So `a or b and c` means `a or (b and c)`, which can surprise you. Children under 12 and seniors 65 or older should get a discount, but not on Sundays:
+      When a condition mixes the operators, Python groups it as if there were parentheses around each comparison first, then around each `not`, then around each `and`, with `or` last. So `a or b and c` means `a or (b and c)`, which can surprise you. (The grouping only decides which parts belong together. Python still reads the condition from left to right.) Children under 12 and seniors 65 or older should get a discount, but not on Sundays:
 
       ```python run
       age = 8
@@ -435,7 +446,7 @@ steps:
       Discount price
       ```
 
-      Because `and` goes before `or`, Python reads the condition as `age < 12 or (age >= 65 and day != "Sunday")`, and a child gets the discount every day. Parentheses say what is meant: `(age < 12 or age >= 65) and day != "Sunday"`. When a condition mixes `and` and `or`, add parentheses even where they aren't needed. They make the condition easier to read.
+      Because `and` is grouped before `or`, Python reads the condition as `age < 12 or (age >= 65 and day != "Sunday")`, and a child gets the discount every day. Parentheses say what is meant: `(age < 12 or age >= 65) and day != "Sunday"`. When a condition mixes `and` and `or`, add parentheses even where they aren't needed. They make the condition easier to read.
 
       **Your turn:** drum practice is allowed from 8 to 21 o'clock. Fill in the blank so the program asks for quiet at every other hour:
 
@@ -559,34 +570,37 @@ steps:
       True
       ```
 
-      Most other programming languages don't have chained comparisons, so you will see the longer version with `and` in a lot of Python code too. Both mean the same.
+      The two ways mean exactly the same, and you'll meet both in Python code. The chained one is shorter, and it shows the variable between its two limits, the way you'd write it in a math class.
 
       ### Longer conditions
 
-      A condition can combine as many parts as it needs, and conditions with `and` and `or` work in an `elif` like anywhere else. This program checks whether a number divides evenly by 3, by 5 or by both:
+      A condition can combine as many parts as it needs, and conditions with `and` and `or` work in an `elif` like anywhere else. In this quiz game, a player who scores at least 90 points within 60 seconds wins gold, a player who manages one of the two wins silver, and 50 points are enough for bronze:
 
       ```python run
-      number = int(input("Number: "))
-      if number % 3 == 0 and number % 5 == 0:
-          print("Divisible by 3 and by 5")
-      elif number % 3 == 0:
-          print("Divisible by 3")
-      elif number % 5 == 0:
-          print("Divisible by 5")
+      points = int(input("Points: "))
+      seconds = int(input("Time in seconds: "))
+      if points >= 90 and seconds <= 60:
+          print("Gold medal")
+      elif points >= 90 or seconds <= 60:
+          print("Silver medal")
+      elif points >= 50:
+          print("Bronze medal")
       else:
-          print("Divisible by neither")
+          print("No medal this time")
       ```
 
       ```input
-      30
+      95
+      75
       ```
 
       ```output
-      Number: 30
-      Divisible by 3 and by 5
+      Points: 95
+      Time in seconds: 75
+      Silver medal
       ```
 
-      Notice the order. The combined condition comes first, because it is the strictest one. If `number % 3 == 0` were checked first, 30 would stop there, and the message about both numbers would never be printed. The order of conditions matters just as much with `and` and `or` as without them.
+      Notice the order. The `and` condition comes first, because it is the strictest one: it needs both parts. A result that has both parts also has at least one of them, so if the `or` condition came first, it would catch every gold result too, and nobody would ever win gold. The order of conditions matters just as much with `and` and `or` as without them.
 
       **Your turn:** fill in the blank with a chained comparison, so the program accepts the days of a month, 1 to 31:
 
@@ -788,22 +802,23 @@ steps:
       Purchase approved.
       ```
 
-      Neither way is always better. Nesting is often clearer when a second question only makes sense after the first one, for example when the program asks for more input in only one branch. A combined condition keeps short checks flat and easy to scan.
+      Pick whichever version is easier to follow. Nesting fits well when a second question only makes sense after the first one, for example when the program asks for more input in only one branch. A combined condition keeps short checks flat and easy to scan.
 
       **Your turn:** what does this program print? Type each line it prints.
     predict: |
-      x = 7
-      if x > 5:
-          if x % 2 == 0:
-              print("big and even")
+      weight = 3
+      destination = "home"
+      if destination == "home":
+          if weight <= 2:
+              print("Small parcel: 5 euros")
           else:
-              print("big and odd")
+              print("Large parcel: 9 euros")
       else:
-          print("small")
-      print("done")
+          print("Abroad: 15 euros")
+      print("Label printed")
     hints:
-      - The outer condition `x > 5` is true, so Python goes into its block and checks the inner `if`.
-      - "7 is odd, so the inner `else` runs. The outer `else` is skipped, and the last line is in the main block."
+      - The outer condition `destination == "home"` is true, so Python goes into its block and checks the inner `if`.
+      - "3 is more than 2, so the inner `else` runs. The outer `else` is skipped, and the last line is in the main block."
     more:
       - task: |
           The program should say `Take an umbrella.` when it's warm (15 degrees or more) and raining, and `Enjoy the sunshine!` when it's warm and not raining. When it's colder, it should say `Stay inside and read a book.`, rain or not. One `else` is in the wrong place, and one branch is missing. Fix the program.

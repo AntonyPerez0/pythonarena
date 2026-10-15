@@ -504,9 +504,15 @@ steps:
           - stdin: "8"
           - stdin: "0"
             hidden: true
+          - stdin: "1"
+            hidden: true
           - stdin: "5"
             hidden: true
           - stdin: "6"
+            hidden: true
+          - stdin: "10"
+            hidden: true
+          - stdin: "11"
             hidden: true
           - stdin: "17"
             hidden: true
@@ -596,44 +602,39 @@ steps:
       - "`\"pen\"` runs out first, so it comes first. And `\"7\"` and `\"10\"` are strings: their first characters `7` and `1` decide."
     more:
       - task: |
-          Write a program that asks for two words, written in small letters, and prints them in alphabetical order. If the words are the same, it prints `You typed the same word twice.`
+          In a word-guessing game, the secret word is `maple`, and the game gives hints by alphabetical order. Write a program that asks for a guess (in small letters). If the guess comes before the secret word, it prints `My word comes later.`, if it comes after it, `My word comes earlier.`, and if it's the secret word, `You found it!`
 
           ```
-          First word: melon
-          Second word: grape
-          In order: grape, melon
+          Your guess: tiger
+          My word comes earlier.
           ```
         seed: |
-          first = input("First word: ")
-          second = input("Second word: ")
+          secret = "maple"
+          guess = input("Your guess: ")
         solution: |
-          first = input("First word: ")
-          second = input("Second word: ")
-          if first < second:
-              print(f"In order: {first}, {second}")
-          elif first > second:
-              print(f"In order: {second}, {first}")
+          secret = "maple"
+          guess = input("Your guess: ")
+          if guess < secret:
+              print("My word comes later.")
+          elif guess > secret:
+              print("My word comes earlier.")
           else:
-              print("You typed the same word twice.")
+              print("You found it!")
         hints:
-          - "`first < second` is true when the first word comes earlier in alphabetical order."
-          - "When `first > second`, the second word goes first in the line you print."
-          - Equal words are the case left over, so they go in the `else`.
+          - "`guess < secret` is true when the guess comes earlier in alphabetical order than the secret word."
+          - "If the guess comes first, the secret word comes later. Check the other direction with `elif guess > secret:`."
+          - The only case left over is the secret word itself, so it goes in the `else`.
         tests:
-          - stdin: |
-              melon
-              grape
-          - stdin: |
-              apple
-              banana
+          - stdin: tiger
+          - stdin: apple
             hidden: true
-          - stdin: |
-              kiwi
-              kiwi
+          - stdin: maple
             hidden: true
-          - stdin: |
-              car
-              cart
+          - stdin: map
+            hidden: true
+          - stdin: maples
+            hidden: true
+          - stdin: melon
             hidden: true
       - task: |
           A library shelves its books by the author's last name, in small letters. Names that come before `h` in alphabetical order go on shelf A, names from `h` up to (but not including) `p` on shelf B, and the rest on shelf C. Write a program that asks for the name and prints the shelf.

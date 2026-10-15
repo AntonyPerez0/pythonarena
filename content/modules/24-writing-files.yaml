@@ -215,7 +215,7 @@ steps:
       LOG: Program ended
       ```
 
-      If you ran this program again on your own computer, the file would get three more lines below these. That's the difference from `"w"`, which would leave only the newest three. (On this site, every run starts in a fresh folder with only the files the task gives.)
+      If you ran this program again on your own computer, the file would get three more lines below these. (On this site, every run starts in a fresh folder with only the files the task gives.) With `"w"` in `log` instead, every call would empty the file before writing its line, so even a single run would leave only the last message, `Program ended`.
 
       Appending is handy, but it can only add to the end. A program that needs to change something in the middle of a file, or remove a line from it, reads the whole file, changes the data and writes all of it again with `"w"`. The last step of this module shows how.
 
@@ -392,69 +392,84 @@ steps:
 
       ### Lines with many values
 
-      When a record has many values, such as a list of ten numbers, writing out every one in an f-string gets long. A loop can build the line instead: add each value with a separator after it, then cut off the last separator with the slice `[:-1]`, which is everything except the last character:
-
-      ```python repl
-      >>> row = [3, 1, 4, 1, 5]
-      >>> line = ""
-      >>> for value in row:
-      ...     line += f"{value};"
-      ...
-      >>> line
-      '3;1;4;1;5;'
-      >>> line[:-1]
-      '3;1;4;1;5'
-      ```
-
-      ### Read, process, write
-
-      A very common shape for a program is to read data from one file, work something out and write the results to another file. Dividing it into functions keeps each part simple: one function reads, one calculates, one writes. Here the input has the sales of each seller, and the program writes a report with each seller's total and bonus:
-
-      ```file sales.csv
-      Ana;300;450;600
-      Bo;200;150
-      Cy;900;400
-      ```
+      Some records hold a whole list of values, such as a day's temperature readings, and the lists can be of different lengths. An f-string needs a `{...}` for every value, so it can't write a list whose length it doesn't know. The string method `join`, from the module on strings and lists, can: it puts the separator between the strings of a list, and never after the last one. `join` only accepts strings, so the loop below turns each number into one with `str` first:
 
       ```python run
-      def read_sales(filename):
-          sales = {}
-          with open(filename) as file:
-              for line in file:
-                  parts = line.strip().split(";")
-                  sales[parts[0]] = []
-                  for amount in parts[1:]:
-                      sales[parts[0]].append(int(amount))
-          return sales
+      readings = {
+          "Mon": [12, 15, 9, 11],
+          "Tue": [14, 16],
+      }
 
+      with open("readings.csv", "w") as file:
+          for day, values in readings.items():
+              fields = [day]
+              for value in values:
+                  fields.append(str(value))
+              file.write(";".join(fields) + "\n")
 
-      def bonus(total):
-          if total >= 1000:
-              return total // 10
-          return 0
-
-
-      def write_report(filename, sales):
-          with open(filename, "w") as file:
-              for name, amounts in sales.items():
-                  total = sum(amounts)
-                  file.write(f"{name};{total};{bonus(total)}\n")
-
-
-      sales = read_sales("sales.csv")
-      write_report("report.csv", sales)
-
-      with open("report.csv") as file:
+      with open("readings.csv") as file:
           print(file.read())
       ```
 
       ```output
-      Ana;1350;135
-      Bo;350;0
-      Cy;1300;130
+      Mon;12;15;9;11
+      Tue;14;16
       ```
 
-      Each function has one job, and the file names come in as arguments. That makes each function easy to check on its own, and easy to change: if the bonus rules change, only `bonus` changes, and everything that uses it follows.
+      The list `fields` starts with the day, and every reading is added after it as a string. Leave out the `str`, and `join` stops at the first number with `TypeError: sequence item 1: expected str instance, int found`.
+
+      ### Read, process, write
+
+      Many programs read data from one file, work something out and write the results to another file. Such a program is easiest to write, and to fix, in pieces: a function for each part. Here a shop keeps its prices in `prices.csv`, and for a sale it wants a second file with the old and the new price of every item:
+
+      ```file prices.csv
+      item;price
+      coffee;3.20
+      bagel;2.50
+      juice;4.00
+      ```
+
+      ```python run
+      def read_prices(filename):
+          prices = {}
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "item":
+                      continue
+                  prices[parts[0]] = float(parts[1])
+          return prices
+
+
+      def sale_lines(prices, percent):
+          lines = ["item;price;sale price"]
+          for item, price in prices.items():
+              sale = price * (100 - percent) / 100
+              lines.append(f"{item};{price:.2f};{sale:.2f}")
+          return lines
+
+
+      def write_lines(filename, lines):
+          with open(filename, "w") as file:
+              for line in lines:
+                  file.write(line + "\n")
+
+
+      prices = read_prices("prices.csv")
+      write_lines("sale.csv", sale_lines(prices, 20))
+
+      with open("sale.csv") as file:
+          print(file.read())
+      ```
+
+      ```output
+      item;price;sale price
+      coffee;3.20;2.56
+      bagel;2.50;2.00
+      juice;4.00;3.20
+      ```
+
+      Look at what each function needs to know. `read_prices` is the only one that knows what the input file looks like, header line and all. `sale_lines` never touches a file: it gets a dictionary and returns a list of strings, so you can try it out with `print(sale_lines({"tea": 2.0}, 50))` before any file exists. And `write_lines` knows nothing about prices: it writes any list of lines into any file, so your next program can use it just as it is. For a sale of 30 percent, only the number in the call changes.
 
       **Your turn:** fill in the blanks so the program writes the scores in the dictionary to `scores.csv`, one `name;score` line per player. The file should hold:
 

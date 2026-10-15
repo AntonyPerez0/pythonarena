@@ -200,34 +200,34 @@ steps:
       `print` can show the result of a calculation as well as text. Write the calculation without quotes:
 
       ```python run
-      print(2 + 5)
-      print(3 * 3)
-      print(2 + 2 * 10)
+      print(4 + 9)
+      print(6 * 7)
+      print(1 + 3 * 5)
       ```
 
       ```output
-      7
-      9
-      22
+      13
+      42
+      16
       ```
 
-      Python uses `+` to add, `-` to subtract, `*` to multiply and `/` to divide. As in mathematics, multiplication and division come before addition and subtraction, so `2 + 2 * 10` is 22, not 40. Parentheses change the order: `(2 + 2) * 10` is 40.
+      Python uses `+` to add, `-` to subtract, `*` to multiply and `/` to divide. As in mathematics, multiplication and division come before addition and subtraction, so `1 + 3 * 5` is 16, not 20. Parentheses change the order: `(1 + 3) * 5` is 20.
 
       ### Quotes or no quotes
 
       Quotes make all the difference. Without quotes, Python calculates. With quotes, the calculation is just text, printed exactly as it is written:
 
       ```python run
-      print(2 + 2 * 10)
-      print("2 + 2 * 10")
+      print(1 + 3 * 5)
+      print("1 + 3 * 5")
       ```
 
       ```output
-      22
-      2 + 2 * 10
+      16
+      1 + 3 * 5
       ```
 
-      Letting Python do the arithmetic is safer than doing it in your head and typing the answer: `print(365 * 24)` is easy to read and easy to check, and Python never makes a slip.
+      Letting Python do the arithmetic is safer than doing it in your head and typing the answer: `print(52 * 7)` is easy to read and easy to check, and Python never makes a slip.
 
       **Your turn:** fill in the blank with a calculation, so the program prints the number of seconds in an hour (60 seconds in a minute, 60 minutes in an hour).
     fill: |
@@ -303,14 +303,14 @@ steps:
       A line that starts with `#` is a **comment**. Python skips it completely: comments are notes for the people who read the code. A comment can also come after the code on a line; everything from the `#` to the end of that line is skipped:
 
       ```python run
-      # The number of hours in a year
-      print("Hours in a year:")
-      print(365 * 24)  # 365 days with 24 hours each
+      # How many eggs the bakery needs this week
+      print("Eggs needed:")
+      print(12 * 6)  # 12 cakes with 6 eggs each
       ```
 
       ```output
-      Hours in a year:
-      8760
+      Eggs needed:
+      72
       ```
 
       Programmers also use `#` to switch a line off for a moment without deleting it. This is called **commenting out** a line.
@@ -318,35 +318,35 @@ steps:
       **Your turn:** the program should print the line below, double quotes included. Change the program so it works.
 
       ```
-      "Code is like humor", a programmer once said.
+      The sign said "Keep out" in red letters.
       ```
     seed: |
-      print(""Code is like humor", a programmer once said.")
+      print("The sign said "Keep out" in red letters.")
     solution: |
-      print('"Code is like humor", a programmer once said.')
+      print('The sign said "Keep out" in red letters.')
     hints:
-      - As it is, the second `"` ends the string right away, and Python can't read the rest.
+      - As it is, the `"` before `Keep` ends the string, and Python can't read the rest of the line.
       - Put the whole text in single quotes `'` instead, so the double quotes inside it are just characters.
     tests:
       - expect: |
-          "Code is like humor", a programmer once said.
+          The sign said "Keep out" in red letters.
     more:
       - task: |
-          Write a program that prints this line of Python code, exactly as it is:
+          Write a program that prints this tip for new programmers, exactly as it is:
 
           ```
-          print("Hello there!")
+          To greet, type print("Hi") and press Run.
           ```
         seed: |
-          # Print the line of code shown in the task.
+          # Print the tip shown in the task.
         solution: |
-          # Print the line of code shown in the task.
-          print('print("Hello there!")')
+          # Print the tip shown in the task.
+          print('To greet, type print("Hi") and press Run.')
         hints:
-          - The text to print contains double quotes, so put it in single quotes.
-          - "The whole line becomes `print('print(\"Hello there!\")')`: the outer `print` runs, the inner one is just text."
+          - The text to print contains double quotes, so put the whole text in single quotes.
+          - "The program is one `print` whose string starts and ends with `'`: `print('To greet, ...')`. Only the outer `print` runs; the `print(\"Hi\")` inside the quotes is just text."
         tests:
-          - expect: print("Hello there!")
+          - expect: To greet, type print("Hi") and press Run.
       - task: |
           The program prints a test message that shouldn't be there any more. **Comment out** that line (don't delete it), so the program prints only:
 
@@ -385,13 +385,13 @@ steps:
       **Syntax** is the set of rules for how code must be written, like grammar for a language. Here the text is missing its quotes:
 
       ```python run crash
-      print(Hello there!)
+      print(Good morning)
       ```
 
       ```crash
         File "main.py", line 1
-          print(Hello there!)
-                ^^^^^^^^^^^
+          print(Good morning)
+                ^^^^^^^^^^^^
       SyntaxError: invalid syntax. Perhaps you forgot a comma?
       ```
 
@@ -464,7 +464,7 @@ steps:
           print("one for each print,")
           print("all in order.")
         hints:
-          - Check it and read where Python points. Sometimes the mistake is at the end of the line before the one it names.
+          - "Check it and read the message: Python names the line and says which parenthesis was never closed."
           - Every opening parenthesis `(` needs a closing one `)`. Count them on line 2.
         tests:
           - expect: |

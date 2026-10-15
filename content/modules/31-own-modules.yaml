@@ -266,14 +266,14 @@ steps:
 
       **Your turn:** add type hints to the function: its parameter is a list of floats, and it returns a float.
     fill: |
-      def average(numbers: [[list[float]]]) -> [[float]]:
+      def average(numbers: [[list]][[[float]]]) -> [[float]]:
           return sum(numbers) / len(numbers)
 
 
       print(average([2.5, 3.5, 4.0]))
     hints:
-      - "A hint for a list of floats is written `list[float]`: the type of the container, and in square brackets the type of its items."
-      - "The return type goes after the arrow `->`. The average is a float."
+      - "A hint for a list names two types: first the type of the container, then in square brackets the type of its items, as in `list[int]`."
+      - "Here the container is a `list` and its items are floats. The return type goes after the arrow `->`: the type of the average."
     require:
       - pattern: numbers:\s*list\[float\]
         message: "The parameter's hint should say a list of floats: `list[float]`."

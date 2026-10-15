@@ -112,6 +112,8 @@ steps:
     more:
       - task: |
           Write a whole pygame program yourself. It opens a window 400 pixels wide and 300 pixels high and fills it with orange, `(255, 140, 0)`, on every frame. Handle `pygame.QUIT` in the main loop, so that closing the window ends the program.
+
+          The window as text doesn't include the window's size, so the check looks for the size in your code: the numbers 400 and 300, with the width first if you write them as one tuple.
         seed: |
           # A 400 x 300 window, orange, until it's closed.
           import pygame
@@ -134,16 +136,19 @@ steps:
           - "The main loop is `while True:`. In it, a `for` loop goes through `pygame.event.get()` and calls `exit()` when an event's `type` is `pygame.QUIT`."
           - After the event loop, still inside `while True:`, fill the window with the color and call `pygame.display.flip()`.
         require:
-          - pattern: set_mode\(\s*\(\s*400\s*,\s*300\s*\)\s*\)
-            message: "Open the window with `pygame.display.set_mode((400, 300))`: 400 wide, 300 high."
+          - pattern: \b400\b[\s\S]*\b300\b|\b300\b[\s\S]*\b400\b
+            message: "Make the window 400 pixels wide and 300 high: `pygame.display.set_mode((400, 300))`."
           - pattern: pygame\.QUIT
             message: "Handle the `pygame.QUIT` event, so that closing the window ends the program."
+        forbid:
+          - pattern: '[(\[]\s*300\s*,\s*400\s*[)\]]'
+            message: "The size is (width, height), so the width comes first: a window 400 wide and 300 high is `(400, 300)`."
         tests:
           - window: {frames: 20}
           - window: {frames: 7}
             hidden: true
       - task: |
-          This program should fill a 320 x 240 window with white, but it stops with an error. Run it and read the message, fix that line, and then fix the next error the same way.
+          This program should fill a 320 x 240 window with white, but it stops with an error. Run it and read the message, fix that line, and then fix the next error the same way. Keep the window's size: the check finds it in your code, as in the challenge before.
         seed: |
           import pygame
 
@@ -174,6 +179,12 @@ steps:
           - "The first message is `TypeError: size must be two numbers`. `set_mode` takes the size as one value, a tuple, but here it gets two separate numbers."
           - "Put the size in its own parentheses: `set_mode((320, 240))`."
           - "`fill` has the same problem. Given three numbers, it reads the second one as a rectangle to fill (`invalid rectstyle object`). The color is one tuple too."
+        require:
+          - pattern: \b320\b[\s\S]*\b240\b|\b240\b[\s\S]*\b320\b
+            message: "Keep the window 320 pixels wide and 240 high: `pygame.display.set_mode((320, 240))`. Without a size, pygame opens a window of its own default size."
+        forbid:
+          - pattern: '[(\[]\s*240\s*,\s*320\s*[)\]]'
+            message: "The size is (width, height), so the width comes first: a window 320 wide and 240 high is `(320, 240)`."
         tests:
           - window: {frames: 12}
           - window: {frames: 5}
@@ -188,9 +199,9 @@ steps:
       ```asset robot.png
       ```
 
-      `pygame.image.load("robot.png")` reads an image file and returns it as a **surface**, the same kind of object as the window: a rectangle of pixels. The file has to be in the same folder as your program. On this site, the images that an example or a challenge uses are there already. Load each image once, before the main loop: reading a file takes time, and the image stays the same.
+      `pygame.image.load("robot.png")` reads an image file and returns it as a **surface**, the same kind of object as the window: a rectangle of pixels. pygame looks for the file next to your program, so on your own computer you keep the two together. On this site, the images that an example or a challenge uses are there already. Load each image once, before the main loop: reading a file takes time, and the image stays the same.
 
-      `window.blit(robot, (100, 50))` draws the image in the window with its top-left corner at the point (100, 50). (**Blit** is old graphics slang for copying a block of pixels onto another.)
+      To draw an image, you give the window's `blit` method the image and a point: `window.blit(robot, (60, 90))` puts the robot so that its top-left corner is at (60, 90). (**Blit** is old graphics slang for copying a block of pixels onto another.)
 
       ```python window
       import pygame
@@ -205,7 +216,7 @@ steps:
                   exit()
 
           window.fill((0, 0, 0))
-          window.blit(robot, (100, 50))
+          window.blit(robot, (60, 90))
           pygame.display.flip()
       ```
 
@@ -217,14 +228,14 @@ steps:
 
       ```text
       fill (0, 0, 0)
-      blit robot.png at (100, 50)
+      blit robot.png at (60, 90)
       ```
 
       ### Coordinates
 
-      A point in the window is a pair (x, y). The point (0, 0) is the window's **top-left corner**. x grows to the right, as in math, but y grows **downward**: (100, 50) is 100 pixels from the left edge and 50 pixels down from the top. Computer graphics almost always count this way, so it's worth getting used to.
+      A point in the window is a pair (x, y) of pixel counts, measured from the window's **top-left corner**, which is (0, 0). x says how far right of the left edge the point is, and y how far below the top edge: (60, 90) is 60 pixels in from the left and 90 pixels down. On a graph in math class, y grows upward, but in a window it grows **downward**: a bigger y is lower in the window. Most graphics libraries count this way, so you'll meet it again.
 
-      The robot is 40 by 40 pixels, so at (100, 50) it covers x from 100 to 139 and y from 50 to 89. To put it in the window's bottom-right corner, its top-left corner goes to (320 - 40, 240 - 40), which is (280, 200). At (320, 240) it would be just outside the window, and you wouldn't see it at all.
+      The robot is 40 by 40 pixels, so at (60, 90) it covers x from 60 to 99 and y from 90 to 129. To put it in the window's bottom-right corner, its top-left corner goes to (320 - 40, 240 - 40), which is (280, 200). At (320, 240) it would be just outside the window, and you wouldn't see it at all.
 
       An image you've loaded can be drawn as many times as you like. Here is the robot between two coins, which are 24 by 24 pixels:
 
@@ -271,7 +282,7 @@ steps:
               if event.type == pygame.QUIT:
                   exit()
 
-          window.blit(robot, (100, 50))
+          window.blit(robot, (60, 90))
           window.fill((0, 0, 0))
           pygame.display.flip()
       ```
@@ -539,7 +550,7 @@ steps:
 
       The site starts `random` the same way in every run of a window, so here the coins land in the same places each time you press Play. On your own computer they'd land somewhere new in every run. That's also why no challenge here asks for random places: the checks couldn't know where your coins went.
 
-      **Your turn:** the window is 400 x 300. Fill in the blanks so the program draws the monster exactly in the center of the window, whatever the sizes of the window and the image.
+      **Your turn:** the window is 400 x 300. Fill in the blanks so the program draws the monster exactly in the center of the window, whatever the sizes of the window and the image. The monster happens to be square, so its width and height are the same number; the check also looks at which of them you used for x and which for y.
     assets: [monster.png]
     fill: |
       import pygame
@@ -561,7 +572,12 @@ steps:
           pygame.display.flip()
     hints:
       - The space left over next to the monster is the window's width minus the monster's width. Half of it goes on each side.
-      - "The image has the same methods as the window: `monster.get_width()` and `monster.get_height()`."
+      - "The image has the same methods as the window: `monster.get_width()` and `monster.get_height()`. Widths go with x, heights with y."
+    require:
+      - pattern: get_width\(\)\s*-\s*monster\.get_width\(\)
+        message: "x goes across the window, so it uses widths: the window's width minus the monster's width, `monster.get_width()`."
+      - pattern: get_height\(\)\s*-\s*monster\.get_height\(\)
+        message: "y goes down the window, so it uses heights: the window's height minus the monster's height, `monster.get_height()`."
     tests:
       - window: {frames: 10}
       - window: {frames: 4}
@@ -582,7 +598,7 @@ steps:
           - "The points come row by row: first the three of row 0, with y = 0, then the three of row 1, with y = 40."
           - "`places[2]` is the last point of the first row, and `places[3]` the first point of the second row."
       - task: |
-          Draw a room in a 320 x 240 window, which is 8 tiles wide and 6 tiles high (each tile is 40 x 40). The tiles along the four edges of the window are walls, and all the others are floor. Draw the tiles row by row from the top, each row from left to right, with two loops. Then draw the robot in the room at (120, 80).
+          Draw a room in a 320 x 240 window, which is 8 tiles wide and 6 tiles high (each tile is 40 x 40). The tiles along the four edges of the window are walls, and all the others are floor. Draw the tiles row by row from the top, each row from left to right, with two loops, one inside the other (`for` or `while`). Then draw the robot in the room at (120, 80).
         assets: [wall.png, floor.png, robot.png]
         seed: |
           import pygame
@@ -629,9 +645,9 @@ steps:
           - "A tile is on an edge when its row is the first or the last one (0 or 5), or its column is the first or the last one (0 or 7)."
           - "In the inner loop, an `if` with that condition draws `wall`, and its `else` draws `floor`."
         require:
-          - pattern: \bfor\b
-            min: 2
-            message: Draw the tiles with two loops, one inside the other.
+          - pattern: \b(?:for|while)\b
+            min: 4
+            message: "Draw the tiles with two loops, one inside the other: an outer loop over the rows, and in it an inner loop over the columns. (With the main loop and its event loop, the program then has four loops.)"
         tests:
           - window: {frames: 10}
           - window: {frames: 2}

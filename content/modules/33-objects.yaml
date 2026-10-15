@@ -451,9 +451,7 @@ steps:
     slug: classes-and-objects
     title: Classes are blueprints
     text: |
-      Lists, strings, dictionaries and tuples have their own way of being written in code: `[1, 2]`, `"hi"`, `{"a": 1}`, `(1, 2)`. Every other kind of object is made by calling a **constructor**: the name of its class with parentheses, like a function call. You did this in part 7 when you created a `datetime` from a year, a month and a day.
-
-      Python's `fractions` module has a class called `Fraction` for exact fractions. Floating point numbers can be slightly off, as you have seen; fractions never are:
+      Floating point numbers can be slightly off, as you have seen: `0.1 + 0.2` isn't quite `0.3`. When a program needs exact answers, for a recipe scaled to three people or a share of a bill, Python's `fractions` module can help. It has a kind of object called `Fraction`, a number that is kept as a numerator and a denominator and is never off:
 
       ```python run
       from fractions import Fraction
@@ -475,15 +473,19 @@ steps:
       2/5
       ```
 
-      `Fraction(3, 4)` creates a new `Fraction` object with the numerator 3 and the denominator 4. The constructor also reduces a fraction to its simplest form, so `Fraction(4, 10)` is `2/5`. Fractions can be added, multiplied and compared like numbers.
+      `Fraction(3, 4)` creates a new `Fraction` object with the numerator 3 and the denominator 4, and it reduces the fraction to its simplest form on the way, so `Fraction(4, 10)` is `2/5`. Fractions can be added, multiplied and compared like numbers.
 
-      Class names such as `Fraction` start with a capital letter, and function names don't. So a call like `Fraction(1, 2)` tells you at a glance that it makes a new object.
+      ### Where objects come from
 
-      ### A class is the blueprint of objects
+      You made objects this way before. In part 7, `datetime(2026, 7, 20)` gave you a new `datetime` object and `timedelta(days=3)` a new time difference. A call like these, the name of a kind of object followed by the values the new object needs in parentheses, is a **constructor** call: it builds a new object and gives it to you.
 
-      A **class** describes one kind of object: what data each object of that kind holds and which methods it has. Think of the blueprint of a house: from one blueprint you can build as many houses as you like, and each house has its own address and its own paint. An object made from a class is called an **instance** of the class, and the variables that each object has are its **attributes**.
+      Some objects need no constructor call, because Python lets you write them straight into your code: numbers such as `42` and `3.5`, `True`, `False` and `None`, strings, lists, dictionaries and tuples. Most other kinds of objects, such as fractions and dates, have no such shorthand, and a constructor call is how you get one.
 
-      A `Fraction` has the attributes `numerator` and `denominator`, and every `Fraction` object has its own values for them. You read an attribute with the object, a dot and the attribute's name:
+      ### One class, many objects
+
+      The kind of an object is its class, as `type` showed in the first step. A **class** describes one kind of object: what data each object of that kind holds and which methods it has. Think of the blueprint of a house: from one blueprint you can build as many houses as you like, and each house has its own address and its own paint. An object made from a class is called an **instance** of the class, and the variables that each object has are its **attributes**.
+
+      Every `Fraction` object has its own values for the attributes `numerator` and `denominator`. You read an attribute with the object, a dot and the attribute's name:
 
       ```python run
       from fractions import Fraction
@@ -502,37 +504,27 @@ steps:
 
       (`3/12` was reduced to `1/4` when the object was made.)
 
-      The `date` class of the `datetime` module works the same way: each `date` object has its own `year`, `month` and `day`.
-
-      ```python run
-      from datetime import date
-
-      launch = date(2026, 7, 20)
-      deadline = date(2026, 12, 31)
-
-      print(launch)
-      print(launch.month, deadline.month)
-      print(deadline.day)
-      ```
-
-      ```output
-      2026-07-20
-      7 12
-      31
-      ```
-
-      The `type` function shows the class of each object:
+      You have read attributes before: `meeting.year` and `meeting.hour` in part 7 were attributes of a `datetime` object. The `datetime` module also has a smaller class, `date`, for a day without a time of day. Its objects have just the attributes `year`, `month` and `day`:
 
       ```python repl
+      >>> from datetime import date
+      >>> launch = date(2026, 7, 20)
+      >>> print(launch)
+      2026-07-20
+      >>> launch.year
+      2026
+      >>> launch.month
+      7
+      >>> type(launch)
+      <class 'datetime.date'>
       >>> from fractions import Fraction
       >>> type(Fraction(1, 2))
       <class 'fractions.Fraction'>
-      >>> from datetime import date
-      >>> type(date(2026, 7, 20))
-      <class 'datetime.date'>
       ```
 
-      Programming built around classes and the objects made from them is what **object-oriented programming** means. In the next module you'll write classes of your own. First, a closer look at the objects of classes that Python already has.
+      `type` names the module a class comes from, then the class. Notice that `Fraction` starts with a capital letter and `date` doesn't. A capital letter is the custom for the classes you write yourself (PEP 8 asks for it, as the next module shows), and many library classes, such as `Fraction`, follow it. It's a habit, though, not a rule: Python's own classes `int`, `str` and `list` have small letters, and so do some library classes, such as `date` and `datetime`.
+
+      Writing programs out of classes and the objects made from them is called **object-oriented programming**. In the next module you'll write classes of your own. First, a closer look at the objects of classes that Python already has.
 
       **Your turn:** fill in the blanks, so that the program imports the class, then prints the fraction and its denominator:
 
@@ -653,30 +645,46 @@ steps:
       - `start.year` is an **attribute**: a value stored in the object. There are no parentheses after it.
       - `start.weekday()` is a **method call**: the method works something out from the object's data. The parentheses are what call it, even when there are no arguments.
 
-      Mixing these up is a common mistake. Without the parentheses, Python doesn't call the method: you get the method itself, and printing it shows something like the line below (the number at the end changes from run to run):
+      How do you know which is which? The documentation of a class lists its attributes and its methods. For `date`, `year`, `month` and `day` are attributes, and `weekday()` is a method. For `Fraction`, `numerator` and `denominator` are attributes.
 
-      ```text
-      <built-in method weekday of datetime.date object at 0x7f3a2c1b9e30>
-      ```
+      ### A missing pair of parentheses
 
-      With parentheses after an attribute, Python tries to call the number stored in it:
+      Mixing the two up is a common mistake, and one way round it doesn't even stop the program. This program is meant to spot Saturdays, and October 17, 2026 is one:
 
-      ```python run crash
+      ```python run
       from datetime import date
 
-      start = date(2026, 10, 17)
-      print(start.month())
+      day = date(2026, 10, 17)
+      if day.weekday == 5:
+          print("Saturday!")
+      else:
+          print("Not a Saturday")
+      ```
+
+      ```output
+      Not a Saturday
+      ```
+
+      Without parentheses, `day.weekday` isn't the 5 that the method would work out: it is the method itself. A method is never equal to a number, so the condition is always `False`, and Python finds nothing wrong to report. Write `day.weekday() == 5`.
+
+      The other way round, parentheses after an attribute, does stop the program. A fraction's denominator is a number stored in the object, and Python can't call a number:
+
+      ```python run crash
+      from fractions import Fraction
+
+      half = Fraction(1, 2)
+      print(half.denominator())
       ```
 
       ```crash
       Traceback (most recent call last):
         File "main.py", line 4, in <module>
-          print(start.month())
-                ~~~~~~~~~~~^^
+          print(half.denominator())
+                ~~~~~~~~~~~~~~~~^^
       TypeError: 'int' object is not callable
       ```
 
-      "Not callable" means there are parentheses after something that isn't a function or a method. How do you know which is which? The documentation of a class lists its attributes and its methods. For `date`, `year`, `month` and `day` are attributes, and `weekday()` is a method.
+      "Not callable" means there are parentheses after something that isn't a function or a method: here the `int` 2.
 
       ### Functions that take objects
 
@@ -735,6 +743,7 @@ steps:
       print("Year:", holiday.year)
     hints:
       - Check the program and read the error. Which name has parentheses after it that it shouldn't have?
+      - "Once that runs, look at the weekday line. Something like `<built-in method weekday of datetime.date object at 0x...>` is what Python prints for a method that was never called: the method itself, not its result."
       - "`month` is an attribute, so it has no parentheses. `weekday` is a method, so it needs them: `holiday.weekday()`."
     tests:
       - expect: |

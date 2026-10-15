@@ -5,7 +5,7 @@ steps:
     slug: interpreter
     title: The interactive interpreter
     text: |
-      So far you have written whole programs: Python reads the file and runs it from top to bottom. Python has a second way of working too, the **interactive interpreter**. You type one line, press Enter, and Python runs it right away and shows the result. Programmers keep one open all the time to try out small things: what an expression gives, what a method does, whether a name exists at all.
+      So far you have written whole programs: Python reads the file and runs it from top to bottom. Python has a second way of working too, the **interactive interpreter**. You type one line, press Enter, and Python runs it right away and shows the result. Programmers keep one open all the time, to try out a line or two before it goes into a real program.
 
       On your own computer you start it by typing `python3` (on Windows, `python`) in a terminal. It shows a `>>>` prompt, which means "type a line of Python". This site has no interpreter window, but lessons show sessions like this one, with the prompts dimmed:
 
@@ -52,13 +52,13 @@ steps:
       'ada'
       >>> name
       'ADA'
-      >>> name.lowercase()
+      >>> name.lowr()
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      AttributeError: 'str' object has no attribute 'lowercase'
+      AttributeError: 'str' object has no attribute 'lowr'. Did you mean: 'lower'?
       ```
 
-      A method gives you a new string: `name` itself is still `'ADA'`. When a method doesn't exist, Python says so with an `AttributeError`. If you can almost remember a method's name, `dir("")` lists every method that strings have (ignore the names with underscores).
+      A method gives you a new string: `name` itself is still `'ADA'`. A typo in a method's name gives an `AttributeError`, and when the name is close to a real one, Python even suggests the right spelling. To see the names of all string methods, try `dir("")` in the interpreter. Python uses the names with two underscores at each end behind the scenes; the plain ones, such as `upper`, `lower` and `find`, are the ones you call yourself.
 
       A common use of `lower` is comparing what the user typed without caring about capital letters:
 
@@ -395,95 +395,102 @@ steps:
 
       When a function is called, the value of each argument is assigned to the parameter in the same position, for that call only. An argument can be a variable or a calculation: only its value is passed on, so the variable `guest` becomes the parameter `name`, and `2 + 1` becomes `row`.
 
-      Since only the positions count, arguments in the wrong order go to the wrong parameters, and Python doesn't notice: `seat(12, 4, "Ada")` happily prints `12: row 4, seat Ada`. Python complains only about a wrong number of arguments, with a `TypeError` that names the parameter that got no value. Check the order of the arguments yourself.
+      Since only the positions count, arguments in the wrong order go to the wrong parameters, and Python doesn't notice: `seat(12, 4, "Ada")` happily prints `12: row 4, seat Ada`. Python complains only about a wrong number of arguments, with a `TypeError`: with too few, it names the parameter that got no value; with too many, it says how many arguments the function takes and how many it was given. Check the order of the arguments yourself.
 
-      ### Small functions, bigger shapes
+      ### Small functions inside bigger ones
 
-      In the last module you saw that a function can call another one. That's the key to writing larger programs: write a small function, try it until it works, and then build a bigger one on top of it. Here `row` draws one line, and `rectangle` calls it as many times as it needs:
+      In the last module you saw that a function can call another one. That's the key to writing larger programs: write a small function, try it until it works, and then build a bigger one on top of it. Here `price_line` writes one line of a receipt, and `receipt` calls it for every line it needs:
 
       ```python run
-      def row(width, char):
-          print(char * width)
+      def price_line(item, price):
+          print(f"{item}: {price} euros")
 
 
-      def rectangle(width, height, char):
-          count = 0
-          while count < height:
-              row(width, char)
-              count += 1
+      def receipt(first, first_price, second, second_price):
+          print("RECEIPT")
+          price_line(first, first_price)
+          price_line(second, second_price)
+          price_line("Total", first_price + second_price)
 
 
-      rectangle(6, 2, "#")
+      receipt("Coffee", 3, "Bun", 2)
       print()
-      rectangle(3, 3, "o")
+      receipt("Tea", 2, "Soup", 7)
       ```
 
       ```output
-      ######
-      ######
+      RECEIPT
+      Coffee: 3 euros
+      Bun: 2 euros
+      Total: 5 euros
 
-      ooo
-      ooo
-      ooo
+      RECEIPT
+      Tea: 2 euros
+      Soup: 7 euros
+      Total: 9 euros
       ```
 
-      `rectangle` doesn't need to know how a row is drawn: it only decides how many rows there are. The arguments it passes on don't have to be its own parameters, either. Here the width of each row comes from a counter, so every call of `row` draws a longer line:
+      `receipt` doesn't need to know how a line looks: it only decides which lines there are. To write `EUR` instead of `euros`, you would change one line in `price_line`, and every receipt would follow. Look at what `receipt` passes on, too: its own parameters, a string of its own (`"Total"`) and a calculation.
+
+      An argument doesn't have to come from the caller's parameters at all. Here `bar` draws one progress bar, and `loading` calls it in a loop, with the number of filled cells taken from a counter:
 
       ```python run
-      def row(width, char):
-          print(char * width)
+      def bar(filled, size):
+          print("[" + "#" * filled + "-" * (size - filled) + "]")
 
 
-      def triangle(height, char):
-          width = 1
-          while width <= height:
-              row(width, char)
-              width += 1
+      def loading(size):
+          done = 0
+          while done <= size:
+              bar(done, size)
+              done += 1
 
 
-      triangle(4, "*")
+      loading(4)
       ```
 
       ```output
-      *
-      **
-      ***
-      ****
+      [----]
+      [#---]
+      [##--]
+      [###-]
+      [####]
       ```
 
-      Each piece stays short and easy to check, and once `row` works, every shape built on it gets its rows right. When a bigger function goes wrong, try the smaller ones on their own in the main block first: that tells you which piece has the bug.
+      Each piece stays short and easy to check, and once `bar` works, every function built on it draws its bars right. When a bigger function goes wrong, try the smaller ones on their own in the main block first: that tells you which piece has the bug.
 
-      A good habit for any task bigger than a few lines: don't try to solve it all at once. Get one small part working, run it, and only then add the next part.
+      The same idea helps when a task looks too big to start: look for the small function hidden inside it. Write that one first and run it with a call or two. Only when it prints what you expect, write the function that uses it.
 
-      **Your turn:** fill in the blanks so that `square(size, char)` draws a square by calling `row`. `square(3, "#")` prints:
+      **Your turn:** fill in the blanks so that `battery_drain(size)` shows a battery running empty: it calls `bar` with all `size` cells filled first, then one fewer each time, down to none. `battery_drain(3)` prints:
 
       ```
-      ###
-      ###
-      ###
+      [###]
+      [##-]
+      [#--]
+      [---]
       ```
     fill: |
-      def row(width, char):
-          print(char * width)
+      def bar(filled, size):
+          print("[" + "#" * filled + "-" * (size - filled) + "]")
 
 
-      def square(size, char):
-          count = 0
-          while count < size:
-              row([[size]], [[char]])
-              count += 1
+      def battery_drain(size):
+          left = size
+          while left >= 0:
+              bar([[left]], [[size]])
+              left -= 1
 
 
       if __name__ == "__main__":
-          square(3, "#")
+          battery_drain(3)
     hints:
-      - "A square is as wide as it is tall: each row is `size` characters wide."
-      - "Pass `square`'s own parameters on to `row`: the width is `size` and the character is `char`."
+      - "`bar` needs two things: how many cells are filled right now, and how many cells there are in all."
+      - "The filled cells are the counter `left`, which goes down in the loop. The size of the battery doesn't change: it's `battery_drain`'s own parameter `size`."
     tests:
-      - call: square(3, "#")
-      - call: square(2, "o")
+      - call: battery_drain(3)
+      - call: battery_drain(1)
         hidden: true
-      - call: square(4, "+")
+      - call: battery_drain(5)
         hidden: true
     more:
       - task: |
@@ -934,66 +941,69 @@ steps:
       Every value has a type. These are the ones you know so far:
 
       ```python repl
-      >>> type(23)
+      >>> type(2026)
       <class 'int'>
-      >>> type(-0.5)
+      >>> type(9.81)
       <class 'float'>
-      >>> type("Ada")
+      >>> type("hello")
       <class 'str'>
-      >>> type(3 > 2)
+      >>> type(5 == 5)
       <class 'bool'>
       ```
 
       `int` is a whole number, `float` a number with a decimal point, `str` a string and `bool` one of `True` and `False`.
 
-      A function works only when its arguments are of a type it can handle. This one expects a string and a whole number:
+      A function works only when its arguments are of a type it can handle. This one multiplies a price by an amount, so it needs two numbers. The second call gets its amount straight from `input`:
 
       ```python run crash
-      def repeat_word(word, times):
-          while times > 0:
-              print(word)
-              times -= 1
+      def total_price(price, amount):
+          print("Total:", price * amount)
 
 
-      repeat_word("echo", 2)
-      repeat_word("echo", "2")
+      total_price(2.5, 4)
+      amount = input("How many? ")
+      total_price(2.5, amount)
+      ```
+
+      ```input
+      3
       ```
 
       ```output
-      echo
-      echo
+      Total: 10.0
+      How many? 3
       ```
 
       ```crash
       Traceback (most recent call last):
-        File "main.py", line 8, in <module>
-          repeat_word("echo", "2")
+        File "main.py", line 7, in <module>
+          total_price(2.5, amount)
           ~~~~~~~~~~~^^^^^^^^^^^^^
-        File "main.py", line 2, in repeat_word
-          while times > 0:
-                ^^^^^^^^^
-      TypeError: '>' not supported between instances of 'str' and 'int'
+        File "main.py", line 2, in total_price
+          print("Total:", price * amount)
+                          ~~~~~~^~~~~~~~
+      TypeError: can't multiply sequence by non-int of type 'float'
       ```
 
-      The second call gives `times` the string `"2"`, and a string can't be compared with the number 0. The error shows up inside the function, but the mistake is in the call. This happens most often with `input`, which always returns a string: a number the user types must go through `int` before it's passed on.
+      `input` always returns a string, so in the second call `amount` is `"3"`, not 3. Inside the function, `price * amount` becomes `2.5 * "3"`. A string can only be repeated a whole number of times, and 2.5 isn't one, so Python stops. The error shows up inside the function, but the mistake is in the call: a number the user types must go through `int` (or `float`) before it's passed on. With a whole-number price it would be even sneakier: `2 * "3"` is the string `"33"`, and the program would print a wrong total without any error at all.
 
       ### Type hints
 
       To tell the people who use your function which types it expects, you can add **type hints**. A hint goes after a parameter, with a colon, and the type of the return value goes after an arrow `->` before the final colon:
 
       ```python run
-      def repeat_text(word: str, times: int) -> str:
-          return word * times
+      def shout(text: str, marks: int) -> str:
+          return text.upper() + "!" * marks
 
 
-      print(repeat_text("ab", 3))
+      print(shout("hello", 3))
       ```
 
       ```output
-      ababab
+      HELLO!!!
       ```
 
-      This says: `word` should be a string, `times` a whole number, and the function returns a string. Hints make a function easier to use correctly, and code editors use them to warn about mistakes.
+      This says: `text` should be a string, `marks` a whole number, and the function returns a string. Hints make a function easier to use correctly, and code editors use them to warn about mistakes.
 
       Python itself doesn't check them, though. A hint is only a hint: a call with other types still runs, and the function does whatever its code does with those values:
 
@@ -1015,49 +1025,43 @@ steps:
 
       From now on, the starter code of many tasks has type hints. They tell you what the checks will give your function and what they expect back.
 
-      **Your turn:** the program asks for a word and a number, and prints the word that many times with `repeat_word`. It crashes, because the number is passed on as a string. Fix the program so it works:
+      **Your turn:** the program asks for a price and an amount, and prints the total that `total_price` returns. It crashes, because the amount is passed on as a string. Fix the program so it works:
 
       ```
-      Word: hello
-      Times: 3
-      hello
-      hello
-      hello
+      Price: 2.5
+      Amount: 4
+      Total: 10.0
       ```
     seed: |
-      def repeat_word(word: str, times: int):
-          while times > 0:
-              print(word)
-              times -= 1
+      def total_price(price: float, amount: int) -> float:
+          return price * amount
 
 
-      word = input("Word: ")
-      times = input("Times: ")
-      repeat_word(word, times)
+      price = float(input("Price: "))
+      amount = input("Amount: ")
+      print("Total:", total_price(price, amount))
     solution: |
-      def repeat_word(word: str, times: int):
-          while times > 0:
-              print(word)
-              times -= 1
+      def total_price(price: float, amount: int) -> float:
+          return price * amount
 
 
-      word = input("Word: ")
-      times = int(input("Times: "))
-      repeat_word(word, times)
+      price = float(input("Price: "))
+      amount = int(input("Amount: "))
+      print("Total:", total_price(price, amount))
     hints:
-      - "`input` always returns a string, but `times` should be an `int`, as its type hint says."
-      - "Convert the number with `int(...)` before passing it to the function: `int(input(\"Times: \"))`."
+      - "`input` always returns a string, but `amount` should be an `int`, as its type hint says."
+      - "Wrap the `input(...)` that reads the amount in `int(...)`, the same way the price goes through `float(...)`."
     tests:
       - stdin: |
-          hello
-          3
+          2.5
+          4
       - stdin: |
-          bye
-          1
+          0.75
+          8
         hidden: true
       - stdin: |
-          ok
-          5
+          3.75
+          2
         hidden: true
     more:
       - task: |

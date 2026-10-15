@@ -8,7 +8,7 @@ steps:
       A window's title bar says "pygame window" until the program gives it a name of its own with `pygame.display.set_caption`. Call it once, after opening the window:
 
       ```python fragment
-      pygame.display.set_caption("Coin Rain")
+      pygame.display.set_caption("Coin Catcher")
       ```
 
       The page shows the title in the window's title bar. (The checks compare the drawing, not the title.)
@@ -392,6 +392,9 @@ steps:
             hidden: true
           - window: {frames: 25, events: [{at: 2, type: mousedown, pos: [10, 10], button: 1}, {at: 3, type: mouseup, pos: [10, 10], button: 1}, {at: 5, type: mousedown, pos: [10, 10], button: 1}, {at: 6, type: mouseup, pos: [10, 10], button: 1}, {at: 8, type: mousedown, pos: [300, 230], button: 1}, {at: 9, type: mouseup, pos: [300, 230], button: 1}, {at: 11, type: mousedown, pos: [160, 120], button: 2}, {at: 12, type: mouseup, pos: [160, 120], button: 2}, {at: 15, type: mousedown, pos: [10, 200], button: 1}, {at: 16, type: mouseup, pos: [10, 200], button: 1}]}
             hidden: true
+          - name: A button held down
+            window: {frames: 20, events: [{at: 3, type: mousedown, pos: [100, 100], button: 1}, {at: 8, type: mouseup, pos: [100, 100], button: 1}, {at: 17, type: mousedown, pos: [60, 60], button: 3}]}
+            hidden: true
       - task: |
           Make a countdown from 10 seconds. The window shows `Time left: 10` at first, and the number is 10 minus the whole seconds since `pygame.init()` (use `pygame.time.get_ticks()`). When no time is left (the number would be 0 or less), it shows `Time's up!` instead. Use the starter code's font, and center the text across the window with its top at y = 100: its x is `(320 - text.get_width()) // 2`. Use a clock at 60 frames per second.
         seed: |
@@ -446,6 +449,12 @@ steps:
             hidden: true
           - name: After 700 frames
             window: {frames: 700}
+            hidden: true
+          - name: In the tenth second
+            window: {frames: 640}
+            hidden: true
+          - name: After 100 frames
+            window: {frames: 100}
             hidden: true
 
   - id: pygame-techniques-game
@@ -505,7 +514,7 @@ steps:
 
       ### Putting it together
 
-      Here is a whole game. Coins fall, one at a time, and the player moves the robot with the arrow keys to catch them. Each catch is a point, and the next coin starts falling from the top. When a coin falls to the bottom without being caught, the game is over: nothing moves any more, and the window says so until it's closed. A real game would choose each coin's place with `random`; this one takes them in turn from a list.
+      Here is a whole game. Coins fly in from the left edge of the window, one at a time, and the player moves the robot up and down with the arrow keys to catch them. Each catch is a point, and the next coin starts from the left. A coin that gets past the robot, all the way out of the window on the right, costs one of the player's three lives, and then the next coin comes. When the last life is gone, the game is over: nothing moves any more, and the window says so until it's closed. A real game would choose each coin's height with `random`; this one takes them in turn from a list.
 
       ```asset robot.png
       ```
@@ -518,70 +527,78 @@ steps:
 
       pygame.init()
       window = pygame.display.set_mode((320, 240))
-      pygame.display.set_caption("Coin Rain")
+      pygame.display.set_caption("Coin Catcher")
       robot_image = pygame.image.load("robot.png")
       coin_image = pygame.image.load("coin.png")
       font = pygame.font.SysFont("Arial", 24)
 
-      robot = robot_image.get_rect(topleft=(140, 200))
-      coin_xs = [60, 220, 150, 30, 260]
-      next_x = 0
-      coin = coin_image.get_rect(topleft=(coin_xs[0], 0))
+      robot = robot_image.get_rect(topleft=(270, 100))
+      coin_ys = [60, 170, 110, 40, 200]
+      next_y = 0
+      coin = coin_image.get_rect(topleft=(0, coin_ys[0]))
       score = 0
+      lives = 3
       game_over = False
-      going_left = False
-      going_right = False
+      going_up = False
+      going_down = False
       clock = pygame.time.Clock()
 
       while True:
           for event in pygame.event.get():
               if event.type == pygame.KEYDOWN:
-                  if event.key == pygame.K_LEFT:
-                      going_left = True
-                  if event.key == pygame.K_RIGHT:
-                      going_right = True
+                  if event.key == pygame.K_UP:
+                      going_up = True
+                  if event.key == pygame.K_DOWN:
+                      going_down = True
               if event.type == pygame.KEYUP:
-                  if event.key == pygame.K_LEFT:
-                      going_left = False
-                  if event.key == pygame.K_RIGHT:
-                      going_right = False
+                  if event.key == pygame.K_UP:
+                      going_up = False
+                  if event.key == pygame.K_DOWN:
+                      going_down = False
               if event.type == pygame.QUIT:
                   exit()
 
           if not game_over:
-              if going_left and robot.x > 0:
-                  robot.x -= 4
-              if going_right and robot.right < 320:
-                  robot.x += 4
-              coin.y += 3
+              if going_up and robot.top > 0:
+                  robot.y -= 4
+              if going_down and robot.bottom < 240:
+                  robot.y += 4
+              coin.x += 5
               if robot.colliderect(coin):
                   score += 1
-                  next_x = (next_x + 1) % len(coin_xs)
-                  coin.topleft = (coin_xs[next_x], 0)
-              elif coin.top >= 240:
-                  game_over = True
+                  next_y = (next_y + 1) % len(coin_ys)
+                  coin.topleft = (0, coin_ys[next_y])
+              elif coin.left >= 320:
+                  lives -= 1
+                  if lives == 0:
+                      game_over = True
+                  else:
+                      next_y = (next_y + 1) % len(coin_ys)
+                      coin.topleft = (0, coin_ys[next_y])
 
           window.fill((0, 0, 0))
           window.blit(robot_image, robot)
           window.blit(coin_image, coin)
           score_text = font.render(f"Score: {score}", True, (255, 255, 255))
           window.blit(score_text, (10, 10))
+          lives_text = font.render(f"Lives: {lives}", True, (255, 255, 255))
+          window.blit(lives_text, (130, 10))
           if game_over:
-              text = font.render("Game over", True, (255, 80, 80))
+              text = font.render("Game over!", True, (255, 80, 80))
               window.blit(text, ((320 - text.get_width()) // 2, 100))
           pygame.display.flip()
           clock.tick(60)
       ```
 
       ```window
-      {frames: 220, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 25, type: keyup, key: K_LEFT}, {at: 70, type: keydown, key: K_RIGHT}, {at: 105, type: keyup, key: K_RIGHT}]}
+      {frames: 360, events: [{at: 10, type: keydown, key: K_UP}, {at: 18, type: keyup, key: K_UP}, {at: 60, type: keydown, key: K_DOWN}, {at: 85, type: keyup, key: K_DOWN}]}
       ```
 
       The game is the same main loop as before, with its three parts:
 
-      1. **Events** only change variables: the arrow keys set `going_left` and `going_right`.
-      2. **Updating** applies the game's rules to its **state**, the variables that describe the game: the robot moves (but not out of the window), the coin falls, a catch adds a point and starts the next coin, and a missed coin sets `game_over`. When `game_over` is `True`, this part does nothing, so everything stays where it was.
-      3. **Drawing** shows the state as it is now, including the score and, at the end, the words "Game over".
+      1. **Events** only change variables: the arrow keys set `going_up` and `going_down`.
+      2. **Updating** applies the game's rules to its **state**, the variables that describe the game: the robot moves (but not out of the window), the coin flies on, a catch adds a point and starts the next coin, and a missed coin takes a life. It then starts the next coin, or, when that was the last life, sets `game_over`. When `game_over` is `True`, this part does nothing, so everything stays where it was.
+      3. **Drawing** shows the state as it is now, including the score, the lives and, at the end, the words "Game over!".
 
       Keeping the parts apart makes a game much easier to change. A new rule goes in the updating part, and the drawing part draws whatever the state is.
 
@@ -643,9 +660,9 @@ steps:
 
           The monster starts at the top (y = 0) and falls 5 pixels per frame. Its x comes from the list `[40, 200, 120, 260, 0]`: the first monster falls at x = 40, the next one at 200, and so on, back to the start of the list after the last one. When a monster's y reaches 240 or more, it has been dodged: the count of dodged monsters grows by one, and the next monster starts at the top.
 
-          When the robot and the monster touch (their rectangles overlap), the game is over: from then on nothing moves, and the window shows `Game over` too, until it's closed.
+          When the robot and the monster touch (their rectangles overlap), the game is over: from then on nothing moves, and the window shows `Game over!` too, until it's closed.
 
-          In each frame: handle the events, then (unless the game is over) move the robot, move the monster, check for a dodged monster and check for touching. Then draw: fill the window black, draw the robot, the monster, the text `Dodged: 2` (with the real count) at (10, 10), and, when the game is over, the text `Game over` centered across the window with its top at y = 100. Use the starter code's font for both texts.
+          In each frame: handle the events, then (unless the game is over) move the robot, move the monster, check for a dodged monster and check for touching. Then draw: fill the window black, draw the robot, the monster, the text `Dodged: 2` (with the real count) at (10, 10), and, when the game is over, the text `Game over!` centered across the window with its top at y = 100. Use the starter code's font for both texts.
         assets: [robot.png, monster.png]
         seed: |
           import pygame
@@ -728,14 +745,14 @@ steps:
               text = font.render(f"Dodged: {dodged}", True, (255, 255, 255))
               window.blit(text, (10, 10))
               if game_over:
-                  over = font.render("Game over", True, (255, 80, 80))
+                  over = font.render("Game over!", True, (255, 80, 80))
                   window.blit(over, ((320 - over.get_width()) // 2, 100))
               pygame.display.flip()
               clock.tick(60)
         hints:
-          - "Start from the lesson's game: the same arrow-key variables, a `pygame.Rect` for the monster made with `monster_image.get_rect(topleft=(monster_xs[0], 0))`, a count and `game_over = False`."
+          - "Start from the lesson's game: variables for the arrow keys (here left and right), a `pygame.Rect` for the monster made with `monster_image.get_rect(topleft=(monster_xs[0], 0))`, a count and `game_over = False`."
           - "In the updating part, under `if not game_over:`, move and clamp the robot, then `monster.y += 5`. When `monster.y >= 240`, count it and set `monster.topleft` to the next x of the list and y 0."
-          - "Then `if robot.colliderect(monster):` ends the game. Draw the `Game over` text only when `game_over` is `True`, centered with its own `get_width()`."
+          - "Then `if robot.colliderect(monster):` ends the game. Draw the `Game over!` text only when `game_over` is `True`, centered with its own `get_width()` or with a rectangle: `over.get_rect(midtop=(160, 100))`."
         require:
           - pattern: \.colliderect\s*\(
             message: "Check for touching with `colliderect`."
@@ -753,4 +770,10 @@ steps:
             hidden: true
           - name: Into the wall
             window: {frames: 60, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 55, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - name: Into the left wall
+            window: {frames: 100, events: [{at: 50, type: keydown, key: K_LEFT}, {at: 95, type: keyup, key: K_LEFT}]}
+            hidden: true
+          - name: Keys after the game is over
+            window: {frames: 150, events: [{at: 135, type: keydown, key: K_RIGHT}, {at: 145, type: keyup, key: K_RIGHT}]}
             hidden: true

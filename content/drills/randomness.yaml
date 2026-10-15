@@ -101,9 +101,9 @@ drills:
     code: |
       import random
 
-      numbers = random.sample(range(1, 41), 7)
+      numbers = random.sample(range(1, 31), 5)
       print(len(numbers))
-    why: "`sample(items, 7)` returns a list of 7 different items, whichever they are."
+    why: "`sample(items, 5)` returns a list of 5 different items, whichever they are."
 
   - type: runs
     after: drawing-and-seeds

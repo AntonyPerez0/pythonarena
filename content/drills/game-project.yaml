@@ -27,8 +27,8 @@ drills:
     code: |
       SIZE = 40
       for x, y in [(0, 0), (3, 1)]:
-          print(x * SIZE, [[y * SIZE‖SIZE * y]])
-    why: "Square (x, y) is drawn x tiles from the left and y tiles from the top, so its point in the window is `(x * SIZE, y * SIZE)`."
+          print(x * SIZE, [[y * SIZE‖SIZE * y‖y * 40‖40 * y]])
+    why: "Square (x, y) is drawn x tiles from the left and y tiles from the top, so its point in the window is `(x * SIZE, y * SIZE)`. `y * 40` prints the same here, but `SIZE` says what the number is."
 
   - type: predict
     after: robot
@@ -92,7 +92,7 @@ drills:
       row = "#..X"
       x = 0
       print(row[x - 1])
-    why: "`row[-1]` is the last character of the row, with no error at all. A robot that stepped left from column 0 would quietly land on the other side."
+    why: "`row[-1]` is the last character of the row, with no error at all. A robot that stepped left from column 0 would have the square on the other side checked, and if that isn't a wall, it would walk out of the window."
 
   - type: choice
     after: robot

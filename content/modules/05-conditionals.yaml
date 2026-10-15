@@ -5,7 +5,7 @@ steps:
     slug: if-statement
     title: The if statement
     text: |
-      So far, every line of a program has run every time, from top to bottom. Often a program should do something only in some situations: warn when it's hot, congratulate the winner, ask for a password only from a new user. A **conditional statement** runs a group of lines only when a **condition** is true.
+      The programs you've written so far follow one straight path: Python runs every line, top to bottom, whatever the user types. Real programs choose: they warn when it's hot, congratulate the winner, ask a new user to pick a password. A **conditional statement** runs a group of lines only when a **condition** is true.
 
       ```python run
       temperature = int(input("Temperature: "))
@@ -293,7 +293,7 @@ steps:
     slug: indentation
     title: Indentation and blocks
     text: |
-      Python decides which lines belong to an `if` by their **indentation**: the spaces at the start of each line. All the lines of a block must be indented by the same amount, and four spaces is the standard. In the editor on this site, the Tab key indents a line by four spaces, and after a line that ends with a colon, Enter indents the next line for you. To end the block, go back to the left edge with Backspace.
+      Python decides which lines belong to an `if` by their **indentation**: the spaces at the start of each line. All the lines of a block must be indented by the same amount, and four spaces is the standard. You rarely count the spaces yourself: the editor on this site starts the line after a colon already indented, and the Tab key adds four spaces to a line.
 
       Indentation isn't just for looks. These two programs have the same lines, but the last line is indented differently:
 
@@ -496,49 +496,49 @@ steps:
 
       ### When one block changes what the next one checks
 
-      The `if` statements run in order, and a later condition sees the variables as the earlier blocks left them. That can catch you out. In this game, players with fewer than 100 coins should get 10 more, and players with 100 or more should get 50:
+      The `if` statements run in order, and a later condition sees the variables as the earlier blocks left them. That can catch you out. At this café, an order of 8 or more gets 2 off, and an order of 10 or more also comes with a free cookie. The program looks right, but try it with an order of 11:
 
       ```python run
-      coins = int(input("Coins: "))
-      if coins < 100:
-          coins = coins + 10
-      if coins >= 100:
-          coins = coins + 50
-      print(f"You now have {coins} coins.")
+      total = int(input("Order total: "))
+      if total >= 8:
+          total = total - 2
+      if total >= 10:
+          print("A free cookie comes with your order.")
+      print(f"To pay: {total}")
       ```
 
       ```input
-      95
+      11
       ```
 
       ```output
-      Coins: 95
-      You now have 155 coins.
+      Order total: 11
+      To pay: 9
       ```
 
-      The player started with 95, so the first block adds 10. But that makes 105, and now the second condition is true as well, so the player gets both bonuses. One fix is to work out the bonus in a variable of its own, so both conditions check the original number of coins:
+      The order was 11, so the customer should get the cookie. But the first block has already lowered `total` to 9, and the second condition checks that new value. One fix is to keep the price after the discount in a variable of its own, so every condition checks the order as the customer made it:
 
       ```python run
-      coins = int(input("Coins: "))
-      bonus = 0
-      if coins < 100:
-          bonus = 10
-      if coins >= 100:
-          bonus = 50
-      coins = coins + bonus
-      print(f"You now have {coins} coins.")
+      total = int(input("Order total: "))
+      to_pay = total
+      if total >= 8:
+          to_pay = total - 2
+      if total >= 10:
+          print("A free cookie comes with your order.")
+      print(f"To pay: {to_pay}")
       ```
 
       ```input
-      95
+      11
       ```
 
       ```output
-      Coins: 95
-      You now have 105 coins.
+      Order total: 11
+      A free cookie comes with your order.
+      To pay: 9
       ```
 
-      Part 2 of the course adds `else`, which makes either-or choices like this one simpler.
+      Swapping the two `if` statements would fix this program too. The variable of its own is the safer habit: every check later in the program still sees the order the customer made.
 
       **Your turn:** orders of 50 or more get 5 off. Fill in the blank so the program takes the discount off the total. If the user types `60`, the run looks like this:
 
@@ -594,39 +594,45 @@ steps:
           - stdin: "5000"
             hidden: true
       - task: |
-          At the coffee shop, a customer with fewer than 10 stamps on their card gets 1 stamp per coffee, and a customer with 10 or more gets 2. But a customer with 9 stamps gets 3. Fix the program, so that a run looks like this:
+          In this game, a player with 100 points or more goes up a level, and the 100 points are used up. A player with 150 points or more also finds a bonus chest. But a player with 160 points goes up a level and finds no chest. Fix the program, so that a run looks like this:
 
           ```
-          Stamps on your card: 9
-          You now have 10 stamps.
+          Points: 160
+          You found a bonus chest!
+          Level 2 with 60 points left
           ```
         seed: |
-          stamps = int(input("Stamps on your card: "))
-          if stamps < 10:
-              stamps = stamps + 1
-          if stamps >= 10:
-              stamps = stamps + 2
-          print(f"You now have {stamps} stamps.")
+          points = int(input("Points: "))
+          level = 1
+          if points >= 100:
+              level = level + 1
+              points = points - 100
+          if points >= 150:
+              print("You found a bonus chest!")
+          print(f"Level {level} with {points} points left")
         solution: |
-          stamps = int(input("Stamps on your card: "))
-          extra = 0
-          if stamps < 10:
-              extra = 1
-          if stamps >= 10:
-              extra = 2
-          stamps = stamps + extra
-          print(f"You now have {stamps} stamps.")
+          points = int(input("Points: "))
+          level = 1
+          start = points
+          if points >= 100:
+              level = level + 1
+              points = points - 100
+          if start >= 150:
+              print("You found a bonus chest!")
+          print(f"Level {level} with {points} points left")
         hints:
-          - With 9 stamps, the first block makes it 10. What does the second condition see then?
-          - Work out the new stamps in a variable of its own, such as `extra`, and add it to `stamps` only after both `if` statements.
-          - Another fix is to swap the two `if` statements, so the one for 10 or more is checked first. Try both with 9 and with 10.
+          - With 160 points, the first block leaves 60 in `points`. What does the second condition see then?
+          - Keep the points the player started with in a variable of their own, such as `start = points`, before the first `if`, and check that one for the chest.
+          - Another fix is to move the chest's `if` statement above the level's. Try your program with 160, with 150 and with 120.
         tests:
-          - stdin: "9"
-          - stdin: "4"
+          - stdin: "160"
+          - stdin: "120"
             hidden: true
-          - stdin: "10"
+          - stdin: "150"
             hidden: true
-          - stdin: "15"
+          - stdin: "90"
+            hidden: true
+          - stdin: "260"
             hidden: true
 
   - id: conditionals-booleans
@@ -644,7 +650,7 @@ steps:
       <class 'bool'>
       ```
 
-      Any piece of code whose value is `True` or `False` is a **Boolean expression**. The condition of an `if` is always one: the block runs when the condition's value is `True`, and is skipped when it's `False`.
+      Code whose value is `True` or `False`, such as a comparison, is called a **Boolean expression**. Every condition you've written so far is one: the `if` runs its block when the value is `True` and skips it when it's `False`.
 
       ### A condition in a variable
 

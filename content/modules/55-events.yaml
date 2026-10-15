@@ -158,9 +158,12 @@ steps:
         window: {frames: 20, events: [{at: 3, type: keydown, key: K_UP}, {at: 4, type: keyup, key: K_UP}, {at: 8, type: keydown, key: K_UP}, {at: 9, type: keyup, key: K_UP}, {at: 13, type: keydown, key: K_DOWN}, {at: 14, type: keyup, key: K_DOWN}]}
       - window: {frames: 25, events: [{at: 2, type: keydown, key: K_UP}, {at: 3, type: keyup, key: K_UP}, {at: 6, type: keydown, key: K_UP}, {at: 7, type: keyup, key: K_UP}, {at: 10, type: keydown, key: K_UP}, {at: 11, type: keyup, key: K_UP}]}
         hidden: true
+      - name: Held down, and still down at the end
+        window: {frames: 20, events: [{at: 3, type: keydown, key: K_UP}, {at: 9, type: keyup, key: K_UP}, {at: 14, type: keydown, key: K_UP}]}
+        hidden: true
     more:
       - task: |
-          Write a program that counts jumps. Each press of the space bar prints `Jump!`. When the window is closed, the program prints how many jumps there were, then ends. Other keys do nothing. With three presses of the space bar, it prints:
+          Write a program that counts jumps. Each press of the space bar prints `Jump!`, and other keys do nothing. When the window is closed, the program prints how many jumps there were and ends: in the `pygame.QUIT` branch, print the count and then call `exit()`. (Do it there, not after the main loop. Here a closed window can't show another frame, so a program that draws again after `pygame.QUIT` is stopped at its next `pygame.display.flip()`, and code after its loop never runs.) With three presses of the space bar, it prints:
 
           ```
           Jump!
@@ -214,7 +217,7 @@ steps:
             window: {frames: 8}
             hidden: true
       - task: |
-          The robot moves on a grid of 40-pixel tiles. It starts at (140, 100), and each press of an arrow key moves it one tile, 40 pixels, in the arrow's direction: left, right, up or down.
+          The robot moves on a grid of 40-pixel tiles. It starts at (140, 100), and each press of an arrow key moves it one tile, 40 pixels, in the arrow's direction: left, right, up or down. It moves when the key goes down, and only once, however long the key is held.
         assets: [robot.png]
         seed: |
           import pygame
@@ -269,6 +272,9 @@ steps:
           - name: Right, right, down, left
             window: {frames: 25, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 4, type: keyup, key: K_RIGHT}, {at: 7, type: keydown, key: K_RIGHT}, {at: 8, type: keyup, key: K_RIGHT}, {at: 11, type: keydown, key: K_DOWN}, {at: 12, type: keyup, key: K_DOWN}, {at: 15, type: keydown, key: K_LEFT}, {at: 16, type: keyup, key: K_LEFT}]}
           - window: {frames: 30, events: [{at: 2, type: keydown, key: K_UP}, {at: 3, type: keyup, key: K_UP}, {at: 5, type: keydown, key: K_UP}, {at: 6, type: keyup, key: K_UP}, {at: 9, type: keydown, key: K_LEFT}, {at: 10, type: keyup, key: K_LEFT}, {at: 13, type: keydown, key: K_LEFT}, {at: 14, type: keyup, key: K_LEFT}, {at: 17, type: keydown, key: K_LEFT}, {at: 18, type: keyup, key: K_LEFT}]}
+            hidden: true
+          - name: Keys held down
+            window: {frames: 20, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_UP}]}
             hidden: true
 
   - id: events-holding
@@ -688,6 +694,9 @@ steps:
         window: {frames: 20, events: [{at: 3, type: mousedown, pos: [40, 50], button: 1}, {at: 4, type: mouseup, pos: [40, 50], button: 1}, {at: 8, type: mousedown, pos: [160, 120], button: 1}, {at: 9, type: mouseup, pos: [160, 120], button: 1}, {at: 13, type: mousedown, pos: [280, 200], button: 1}, {at: 14, type: mouseup, pos: [280, 200], button: 1}]}
       - window: {frames: 15, events: [{at: 2, type: mousedown, pos: [100, 30], button: 1}, {at: 3, type: mouseup, pos: [100, 30], button: 1}, {at: 6, type: mousedown, pos: [60, 180], button: 1}, {at: 7, type: mouseup, pos: [60, 180], button: 1}]}
         hidden: true
+      - name: Still pressed at the end
+        window: {frames: 15, events: [{at: 2, type: mousedown, pos: [200, 40], button: 1}, {at: 2, type: mouseup, pos: [200, 40], button: 1}, {at: 9, type: mousedown, pos: [120, 160], button: 1}]}
+        hidden: true
     more:
       - task: |
           The robot walks toward the mouse pointer. It starts at (0, 0) and heads for the point that puts its center at the pointer: (pointer's x - 20, pointer's y - 20). In each frame it moves 2 pixels closer across (if it isn't there yet) and 2 pixels closer up or down (if it isn't there yet). Until the mouse moves, it heads for (0, 0), so it stays put. Use a clock at 60 frames per second, and handle the events, move and draw in that order. (The tests move the mouse only to points with even numbers, so the robot always ends exactly there.)
@@ -766,7 +775,9 @@ steps:
           places = [(40, 40), (240, 160), (140, 100), (240, 40)]
           ```
 
-          When the player clicks with the left button (button 1) on the monster, that's a hit, and the monster jumps to the next place in the list; after the last place it goes back to the first. A click that misses the monster, or a click with another button, does nothing. When the window is closed, the program prints the number of hits as `Hits: 2`, then ends. The monster is 40 x 40, and a click hits it when it's inside the monster's rectangle, as in the lesson.
+          When the player clicks with the left button (button 1) on the monster, that's a hit, and the monster jumps to the next place in the list; after the last place it goes back to the first. A click that misses the monster, or a click with another button, does nothing. The monster is 40 x 40, and a click hits it when it's inside the monster's rectangle, as in the lesson: a click on the pixel just past its right or bottom edge misses.
+
+          When the window is closed, the program prints the number of hits as `Hits: 2` and ends: in the `pygame.QUIT` branch, print the hits and then call `exit()`. (Do it there, not after the main loop. Here a closed window can't show another frame, so a program that draws again after `pygame.QUIT` is stopped at its next `pygame.display.flip()`, and code after its loop never runs.)
         assets: [monster.png]
         seed: |
           import pygame
@@ -819,8 +830,11 @@ steps:
           - name: Two hits and a miss
             window: {frames: 30, events: [{at: 3, type: mousedown, pos: [50, 50], button: 1}, {at: 4, type: mouseup, pos: [50, 50], button: 1}, {at: 8, type: mousedown, pos: [100, 100], button: 1}, {at: 9, type: mouseup, pos: [100, 100], button: 1}, {at: 13, type: mousedown, pos: [270, 190], button: 1}, {at: 14, type: mouseup, pos: [270, 190], button: 1}]}
           - name: All the way round
-            window: {frames: 40, events: [{at: 2, type: mousedown, pos: [40, 40], button: 1}, {at: 3, type: mouseup, pos: [40, 40], button: 1}, {at: 6, type: mousedown, pos: [279, 199], button: 1}, {at: 7, type: mouseup, pos: [279, 199], button: 1}, {at: 10, type: mousedown, pos: [160, 120], button: 1}, {at: 11, type: mouseup, pos: [160, 120], button: 1}, {at: 14, type: mousedown, pos: [250, 50], button: 1}, {at: 15, type: mouseup, pos: [250, 50], button: 1}, {at: 18, type: mousedown, pos: [79, 79], button: 1}, {at: 19, type: mouseup, pos: [79, 79], button: 1}]}
+            window: {frames: 40, events: [{at: 2, type: mousedown, pos: [40, 40], button: 1}, {at: 3, type: mouseup, pos: [40, 40], button: 1}, {at: 6, type: mousedown, pos: [279, 199], button: 1}, {at: 7, type: mouseup, pos: [279, 199], button: 1}, {at: 10, type: mousedown, pos: [160, 120], button: 1}, {at: 11, type: mouseup, pos: [160, 120], button: 1}, {at: 14, type: mousedown, pos: [250, 50], button: 1}, {at: 15, type: mouseup, pos: [250, 50], button: 1}, {at: 18, type: mousedown, pos: [79, 79], button: 1}]}
             hidden: true
-          - name: Edges and the right button
-            window: {frames: 30, events: [{at: 2, type: mousedown, pos: [80, 60], button: 1}, {at: 3, type: mouseup, pos: [80, 60], button: 1}, {at: 6, type: mousedown, pos: [60, 60], button: 3}, {at: 7, type: mouseup, pos: [60, 60], button: 3}, {at: 10, type: mousedown, pos: [39, 60], button: 1}, {at: 11, type: mouseup, pos: [39, 60], button: 1}, {at: 14, type: mousedown, pos: [60, 79], button: 1}, {at: 15, type: mouseup, pos: [60, 79], button: 1}]}
+          - name: The right button
+            window: {frames: 15, events: [{at: 3, type: mousedown, pos: [60, 60], button: 3}, {at: 3, type: mouseup, pos: [60, 60], button: 3}, {at: 8, type: mousedown, pos: [260, 180], button: 1}, {at: 8, type: mouseup, pos: [260, 180], button: 1}]}
+            hidden: true
+          - name: Just outside the edges
+            window: {frames: 20, events: [{at: 2, type: mousedown, pos: [80, 60], button: 1}, {at: 2, type: mouseup, pos: [80, 60], button: 1}, {at: 6, type: mousedown, pos: [60, 80], button: 1}, {at: 6, type: mouseup, pos: [60, 80], button: 1}, {at: 10, type: mousedown, pos: [39, 60], button: 1}, {at: 10, type: mouseup, pos: [39, 60], button: 1}, {at: 14, type: mousedown, pos: [60, 39], button: 1}, {at: 14, type: mouseup, pos: [60, 39], button: 1}]}
             hidden: true

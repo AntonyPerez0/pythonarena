@@ -5,40 +5,43 @@ steps:
     slug: sep-and-end
     title: "Joining values in print: sep and end"
     text: |
-      You know three ways to put text and values together for `print`. With `+`, every piece must be a string, so a number needs `str` first. With commas, `print` puts a space between the values, and they can be of any type. And an f-string puts the values inside the text:
+      A date is three numbers: day 15, month 3, year 2026. How do you print them as `15.3.2026`? Here are the tools you have so far:
 
       ```python run
-      name = "Ada"
-      age = 36
-      print("Hi " + name + ", you are " + str(age))
-      print("Hi", name, "you are", age)
-      print(f"Hi {name}, you are {age}")
+      day = 15
+      month = 3
+      year = 2026
+      print(str(day) + "." + str(month) + "." + str(year))
+      print(day, ".", month, ".", year)
+      print(f"{day}.{month}.{year}")
       ```
 
       ```output
-      Hi Ada, you are 36
-      Hi Ada you are 36
-      Hi Ada, you are 36
+      15.3.2026
+      15 . 3 . 2026
+      15.3.2026
       ```
 
-      Forgetting the `str` in the first way is a classic:
+      Joining with `+` works, but only strings can be joined, so every number needs its own `str`. The commas version needs no `str`, but `print` puts a space between the values, and here the spaces are wrong. The f-string gets it right.
+
+      The `+` way has a trap: leave out one `str`, and the program stops.
 
       ```python run crash
-      age = 36
-      print("Age: " + age)
+      day = 15
+      print("Day " + day)
       ```
 
       ```crash
       Traceback (most recent call last):
         File "main.py", line 2, in <module>
-          print("Age: " + age)
-                ~~~~~~~~^~~~~
+          print("Day " + day)
+                ~~~~~~~^~~~~
       TypeError: can only concatenate str (not "int") to str
       ```
 
       ### The separator: sep
 
-      When you give `print` several values with commas, it puts a space between them. You can choose another separator with the **`sep`** argument, written after the values as `sep=` and a string:
+      When you give `print` several values with commas, it puts a space between them. That space isn't fixed: you can choose another separator with the **`sep`** argument, written after the values as `sep=` and a string. The first line here solves the date problem:
 
       ```python run
       print(15, 3, 2026, sep=".")
@@ -387,7 +390,7 @@ steps:
           Grace      105
     more:
       - task: |
-          Write the function `print_scores(names: list, scores: list)`, which prints a table of names and scores. Each name is in a column of 10 characters, aligned to the left, and each score is in a column of 6, aligned to the right, with one decimal. The lists are equally long, and the score at an index belongs to the name at the same index. For example, `print_scores(["Mia", "Noah"], [9.25, 10])` prints:
+          Write the function `print_scores(names: list, scores: list)`, which prints a table of names and scores. Each name is in a column of 10 characters, aligned to the left, and each score is in a column of 6, aligned to the right, with one decimal. The lists are equally long, and the score at an index belongs to the name at the same index. For example, `print_scores(["Mia", "Noah"], [9.24, 10])` prints:
 
           ```
           Mia          9.2
@@ -399,7 +402,7 @@ steps:
 
 
           if __name__ == "__main__":
-              print_scores(["Mia", "Noah"], [9.25, 10])
+              print_scores(["Mia", "Noah"], [9.24, 10])
         solution: |
           def print_scores(names: list, scores: list):
               for i in range(len(names)):
@@ -407,14 +410,14 @@ steps:
 
 
           if __name__ == "__main__":
-              print_scores(["Mia", "Noah"], [9.25, 10])
+              print_scores(["Mia", "Noah"], [9.24, 10])
         hints:
           - "Go through the indexes with `range(len(names))`, so you can use `names[i]` and `scores[i]` together."
           - "The name is `{names[i]:<10}`. The score needs a width and decimals: `{scores[i]:6.1f}`."
           - "Don't put a space between the two columns: the widths already give the spacing."
         tests:
-          - call: print_scores(["Mia", "Noah"], [9.25, 10])
-          - call: print_scores(["Olivia", "Liam", "Emma"], [8.5, 7.75, 9.95])
+          - call: print_scores(["Mia", "Noah"], [9.24, 10])
+          - call: print_scores(["Olivia", "Liam", "Emma"], [8.5, 7.66, 9.96])
             hidden: true
           - call: print_scores(["Sam"], [100])
             hidden: true

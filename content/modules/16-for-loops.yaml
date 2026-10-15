@@ -1,27 +1,11 @@
 id: for-loops
-summary: The for loop, which goes through the items of a list or the characters of a string one by one. Counting with range, turning a range into a list, building new lists in a loop, and finding the best or the worst item of a list.
+summary: The for loop, which goes through the items of a list or the characters of a string one by one. Counting with range, turning a range into a list, building new lists in a loop, and searching a list for its best item by hand.
 steps:
   - id: for-loops-lists
     slug: for-lists
     title: Going through a list with for
     text: |
-      You can go through a list with a `while` loop and an index, the way you went through strings:
-
-      ```python run
-      prices = [12, 5, 30]
-      index = 0
-      while index < len(prices):
-          print(prices[index])
-          index += 1
-      ```
-
-      ```output
-      12
-      5
-      30
-      ```
-
-      It works, but the index is only there to keep track of where you are, and getting its start, its condition or its `+= 1` wrong is easy. Python has a loop made for exactly this job, the **`for`** loop:
+      Lists are made to be gone through: print every price, add up every score, check every name. Python has a loop made for exactly this job, the **`for`** loop:
 
       ```python run
       prices = [12, 5, 30]
@@ -35,9 +19,20 @@ steps:
       30
       ```
 
-      Read it as "for each price in prices". The loop takes the items of the list one at a time, from the first to the last. Each time, it assigns the item to the variable after `for` (here `price`) and runs the indented block. When the items run out, the program goes on after the loop. There's no index to manage and no condition to get wrong.
+      Read it as "for each price in prices". In the first round, the variable after `for` (here `price`) is the first item, 12, and the indented block runs with it. In the next round `price` is 5, and in the last one 30. After the last item, the loop is over and the program goes on with the line after it.
 
       The variable can have any name. Choose one that says what an item is: `for price in prices`, `for name in names`.
+
+      With only `while`, the same job takes a counter of your own:
+
+      ```python fragment
+      index = 0
+      while index < len(prices):
+          print(prices[index])
+          index += 1
+      ```
+
+      That's four lines instead of two, and three chances to slip: start the counter at the wrong number, write `<=` where `<` belongs, or forget `index += 1` and loop forever. A `for` loop has no counter, so none of those mistakes can happen.
 
       ### Definite and indefinite loops
 
@@ -316,7 +311,7 @@ steps:
       3
       ```
 
-      That's 4 numbers, starting from 0. The end is left out, just as in a string slice. So `for i in range(4):` repeats its block 4 times, which is often all you need.
+      That's 4 numbers, starting from 0: `range(4)` stops just before 4. So `for i in range(4):` repeats its block 4 times, which is often all you need.
 
       ### Start, end and step
 
@@ -477,18 +472,18 @@ steps:
     slug: building-lists
     title: Ranges, lists and new lists
     text: |
-      `range` doesn't give a list. It gives a range, which produces its numbers when a loop asks for them. Printing one shows only its description:
+      `range` doesn't make a list. A range hands out its numbers one at a time, whenever a loop asks for the next one, so it never needs to hold them all. That's why printing a range shows just the call that made it, not its numbers:
 
       ```python run
-      numbers = range(2, 7)
-      print(numbers)
-      print(list(numbers))
+      hours = range(8, 13)
+      print(hours)
+      print(list(hours))
       print(list(range(10, 0, -3)))
       ```
 
       ```output
-      range(2, 7)
-      [2, 3, 4, 5, 6]
+      range(8, 13)
+      [8, 9, 10, 11, 12]
       [10, 7, 4, 1]
       ```
 
@@ -646,9 +641,9 @@ steps:
 
   - id: for-loops-best-item
     slug: best-item
-    title: Finding the best or the worst item
+    title: The best item so far
     text: |
-      `max` and `min` find the greatest and the smallest number in a list. But often "best" means something else: the longest word, the day with the most rain, the cheapest product. Then you need a loop and a helper variable that remembers **the best item so far**:
+      `max` and `min` know only one kind of best: the greatest or the smallest value. Often you want another kind: the longest word, the day with the most rain, the number closest to a target. Then you write the search yourself. The trick is one variable, set before the loop, that holds **the best item so far**. Every item is compared with it, and the winner of each comparison stays:
 
       ```python run
       def longest(words: list) -> str:
@@ -666,11 +661,11 @@ steps:
       banana
       ```
 
-      The helper variable starts as the first word. The loop compares each word with the best one so far, and when a word is better, it becomes the new best. After the loop, `best` holds the best word of all. `cherry` is as long as `banana`, but not longer, so the first of the two stays.
+      `best` starts as the first word, so there's always a real word to compare with. In each round, a word that is longer than `best` takes its place. When the loop ends, every word has had its turn, so `best` is the longest of all. `cherry` is as long as `banana`, but not longer, so the first of the two stays.
 
       ### Where to start
 
-      Start the helper variable from an item of the list, not from a number you made up. A start of 0 looks harmless, but it breaks for lists where every item is smaller than 0:
+      Start the helper variable from an item of the list, not from a number you made up. A start of 0 looks harmless, but it breaks whenever no item can beat it: for the warmest, a list where every item is below 0; for the coldest, a list where every item is above 0:
 
       ```python run
       def coldest(temperatures: list) -> int:
@@ -690,16 +685,19 @@ steps:
 
 
       winter = [-8, -3, -12, -5]
+      summer = [21, 18, 25]
       print(coldest(winter))
       print(warmest(winter))
+      print(coldest(summer))
       ```
 
       ```output
       -12
       0
+      0
       ```
 
-      The warmest temperature isn't 0: it's -3. No temperature beat the start value 0, so 0 was returned, though it isn't even in the list. With `best = temperatures[0]`, both functions are right for any list.
+      The warmest winter temperature isn't 0: it's -3. The coldest summer temperature isn't 0 either: it's 18. In both wrong answers no temperature beat the start value 0, so 0 was returned, though it isn't even in the list. With `best = temperatures[0]`, both functions are right for any list.
 
       ### Remembering where the best item is
 
@@ -724,26 +722,28 @@ steps:
 
       Here `best` is an index, so starting it from 0 is right: it means the first day. The function returns `best + 1` because people count days from 1.
 
-      **Your turn:** fill in the blanks so that `shortest(words)` returns the shortest word of the list. For example, `shortest(["melon", "fig", "apple"])` returns `'fig'`.
+      **Your turn:** fill in the blanks so that `first_in_dictionary(words)` returns the word that comes first in alphabetical order when capital letters don't matter, as in a dictionary. (`min` won't do here: it puts every word that starts with a capital letter before the words in small letters.) For example, `first_in_dictionary(["melon", "Cherry", "apple"])` returns `'apple'`.
     fill: |
-      def shortest(words: list) -> str:
+      def first_in_dictionary(words: list) -> str:
           best = words[0]
           for word in words:
-              if len(word) < len([[best]]):
+              if word.lower() < [[best.lower()]]:
                   best = [[word]]
           return best
 
 
       if __name__ == "__main__":
-          print(shortest(["melon", "fig", "apple"]))
+          print(first_in_dictionary(["melon", "Cherry", "apple"]))
     hints:
-      - Compare each word's length with the length of the shortest word so far.
-      - "When the word is shorter than `best`, it becomes the new `best`: `best = word`."
+      - "Compare both words in small letters, so that capital letters don't change the order: the word in the loop is already written as `word.lower()`."
+      - "The other side of `<` is the best word so far, in small letters too. When the word comes earlier, it becomes the new `best` (the word itself, as it was written)."
     tests:
-      - call: shortest(["melon", "fig", "apple"])
-      - call: shortest(["one"])
+      - call: first_in_dictionary(["melon", "Cherry", "apple"])
+      - call: first_in_dictionary(["one"])
         hidden: true
-      - call: shortest(["grape", "kiwi", "pear", "plum"])
+      - call: first_in_dictionary(["kiwi", "Banana", "berry", "Apricot"])
+        hidden: true
+      - call: first_in_dictionary(["Zebra", "yak", "Walrus"])
         hidden: true
     more:
       - task: |

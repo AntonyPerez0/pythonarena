@@ -192,9 +192,19 @@ drills:
       - stdin: "4"
       - stdin: "1"
         hidden: true
+      - stdin: "2"
+        hidden: true
+      - stdin: "3"
+        hidden: true
+      - stdin: "5"
+        hidden: true
+      - stdin: "6"
+        hidden: true
       - stdin: "8"
         hidden: true
       - stdin: "9"
+        hidden: true
+      - stdin: "11"
         hidden: true
       - stdin: "12"
         hidden: true

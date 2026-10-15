@@ -9,7 +9,7 @@ steps:
 
       ### Statements
 
-      A **statement** is one complete instruction in a program: it tells Python to do something. `print("Hi")` is a statement that prints a line, and `score = 10` is a statement that stores a value in a variable. Most statements fit on one line.
+      A **statement** is one complete instruction in a program, something Python carries out. Every line of your programs in part 1 was a statement: `name = input("Your name: ")` asks a question and keeps the answer in a variable, and `print(f"Hi, {name}!")` greets the user by that name. Python carries out the statements one at a time, from the top down. Most statements fit on one line.
 
       A statement can also contain other statements. An `if` statement is a single statement made of its first line, with the condition, and the lines that belong to it:
 
@@ -33,9 +33,9 @@ steps:
 
       ### Blocks
 
-      You have used blocks since the `if` statement in part 1. A **block** is a group of statements that come one after another at the same level of indentation. The two indented `print` lines above form the block of the `if` statement: they run only when the condition is true. The block ends where the indentation ends, so the last `print` isn't part of it and runs every time. Which block a statement belongs to is decided by its indentation alone, so moving a line four spaces to the left or right can change what the program does.
+      You have used blocks since the `if` statement in part 1. A **block** is a run of statements that Python handles as one unit, and in Python you mark it with indentation: all the lines of a block are indented by the same amount. Above, the two indented `print` lines make up the block of the `if`. When the condition is true Python runs the whole block, and when it's false Python skips the whole block. Where the indentation stops, the block stops too, which is why the last `print` runs every time. Which block a statement belongs to is decided by its indentation alone, so moving a line four spaces to the left or right can change what the program does.
 
-      The lines that aren't inside anything form the program's **main block**. It starts at the left edge of the file, so even one space too many at the start of a line is an error:
+      Everything that isn't indented belongs to the program's **main block**, the outermost one. Its lines have no indentation at all, so even one space before a line of the main block is an error:
 
       ```python run crash
       print("Line one")
@@ -142,17 +142,17 @@ steps:
       Python's **interactive interpreter** shows this well. It runs one line at a time, and when you type an expression after its `>>>` prompt, it shows the expression's value. Here is what it prints for a few expressions:
 
       ```python repl
-      >>> 2 + 4 + 3
-      9
-      >>> 11 / 2
-      5.5
+      >>> 7 + 8 * 2
+      23
+      >>> 9 / 4
+      2.25
       >>> "rain" + "bow"
       'rainbow'
-      >>> 2 * 5 > 9
-      True
+      >>> 20 - 6 < 10
+      False
       ```
 
-      The interpreter shows a string in quotes, so you can see that `'rainbow'` is text. The last expression is a comparison, and its value is `True`.
+      The interpreter shows a string in quotes, so you can see that `'rainbow'` is text. The last expression is a comparison, and its value is `False`.
 
       ### Step by step
 
@@ -208,7 +208,7 @@ steps:
       print(str(a) + str(b))
       print(type(a > b))
     hints:
-      - "Multiplication comes first: `b * 3` is 6, in both the second and the third line."
+      - "Multiplication comes first: `b * 3` is 6, in both the first and the second `print`."
       - "`a > b * 3` is the comparison `7 > 6`, so its value is a Boolean. `str(a) + str(b)` joins two strings."
       - "A comparison has the type `bool`, printed as `<class 'bool'>`."
     more:
@@ -285,28 +285,29 @@ steps:
     text: |
       A **function** is a named piece of functionality that a program can use. You have used several already: `print`, `input`, `int`, `float`, `str` and `type`. Using a function is called **calling** it: you write its name followed by parentheses.
 
-      The values inside the parentheses are the function's **arguments**, the data it works on. In `print("Score:", score)` the two arguments are `"Score:"` and the value of `score`. Some functions can be called with no arguments at all (`print()` prints an empty line), and some take several, separated by commas. You may also hear arguments called **parameters**. There is a small difference between the two words, which matters once you write functions of your own. For now, both mean the data given to a function.
+      The values inside the parentheses are the function's **arguments**, the data it works on. In `print("Score:", score)` the two arguments are `"Score:"` and the value of `score`. Some functions can be called with no arguments at all (`print()` prints an empty line), and some take several, separated by commas. In everyday talk, programmers often say **parameter** when they mean an argument. Strictly, a parameter is the name inside a function that receives an argument, a difference you'll see once you write functions of your own later in the course.
 
       ### Return values
 
       Many functions also give back a value, called their **return value**. When the call runs, Python puts the return value in its place, so a function call is an expression. `input` returns what the user typed, as a string, which is why you usually store it in a variable.
 
-      A new function shows this well. `len` returns the length of a string, the number of characters in it, spaces and punctuation included:
+      A new function shows this well. `len` returns the length of a string: the number of characters in it, with spaces and punctuation included.
 
       ```python run
-      word = "banana"
-      print(len(word))
-      print(len("Hi there!"))
-      print(len(""))
+      sentence = input("Type a sentence: ")
+      print(f"That's {len(sentence)} characters.")
+      ```
+
+      ```input
+      I like tea.
       ```
 
       ```output
-      6
-      9
-      0
+      Type a sentence: I like tea.
+      That's 11 characters.
       ```
 
-      `""` is the **empty string**, a string with no characters at all, so its length is 0. Since `len(...)` gives an `int`, you can store it, calculate with it or compare it, like any other number:
+      The letters make up 8 of the 11 characters; the two spaces and the period are the other 3. If the user presses Enter without typing anything, `input` returns the **empty string** `""`, a string with no characters at all, and its length is 0. Since `len(...)` gives an `int`, you can store it, calculate with it or compare it, like any other number:
 
       ```python run
       name = input("Choose a username: ")
@@ -463,41 +464,41 @@ steps:
 
       ### Bugs and debugging
 
-      The trickiest mistakes cause no error at all: the program runs, but its result is wrong. A mistake like that is a **bug**, and finding and fixing bugs is called **debugging**. This program should take 5 euros off for members, but it doesn't:
+      The trickiest mistakes cause no error at all: the program runs, but its result is wrong. A mistake like that is a **bug**, and finding and fixing bugs is called **debugging**. In this game, every full 1000 points earn a bonus life, and 3 bonus lives or more earn a medal. A player with 3000 points should get the medal, but doesn't:
 
       ```python run
-      price = 20
-      member = "yes"
-      if member == "Yes":
-          price - 5
-      print(f"You pay {price} euros.")
+      points = 3000
+      lives = points % 1000
+      if lives > 3:
+          print("Medal earned!")
+      print("Game over.")
       ```
 
       ```output
-      You pay 20 euros.
+      Game over.
       ```
 
-      A simple and very effective way to debug is to add **debugging prints**: extra `print` lines that show the values of variables and conditions while the program runs.
+      A simple and very effective way to debug is to add **debugging prints**: extra `print` lines that show the values of variables and conditions while the program runs. Here the program never shows how many lives it worked out, or what it decided about the medal, so print both, each with a label:
 
       ```python run
-      price = 20
-      member = "yes"
-      print("condition:", member == "Yes")
-      if member == "Yes":
-          print("price before:", price)
-          price - 5
-          print("price after:", price)
-      print(f"You pay {price} euros.")
+      points = 3000
+      lives = points % 1000
+      print("lives:", lives)
+      print("medal condition:", lives > 3)
+      if lives > 3:
+          print("Medal earned!")
+      print("Game over.")
       ```
 
       ```output
-      condition: False
-      You pay 20 euros.
+      lives: 0
+      medal condition: False
+      Game over.
       ```
 
-      The prints inside the block don't appear at all, and the condition is `False`: `"yes"` and `"Yes"` are different strings. After fixing the condition, the prints show `price before: 20` and `price after: 20`. That points at the second bug: `price - 5` calculates a value but doesn't store it anywhere. It should be `price = price - 5`, or `price -= 5` for short.
+      Now you can check each value against what you expected. 3000 points are three full thousands, but `lives` is 0, so the line that calculates it is wrong: `%` gives the remainder, what's left over after the full thousands. The number of full thousands is `points // 1000`. With that fixed, the prints say `lives: 3` but still `medal condition: False`. The value is right now, so the condition must be wrong: "3 or more" is `lives >= 3`, and `lives > 3` leaves out exactly 3.
 
-      Two more tips. While you debug a program that reads input, you can comment out the `input` line and give the variable a fixed value, so you don't have to type it on every run. And when the bug is fixed, remove the debugging prints, or the checks on this site will see them in the output.
+      Notice that 3000 was a good number to try. Bugs like `>` instead of `>=` only show up right at a limit, so test with the limits themselves as well as with ordinary values. And when the bug is fixed, remove the debugging prints, or the checks on this site will see them in the output.
 
       **Your turn:** this program has four syntax errors. Fix them one at a time (Python reports one error at a time), so the program works like this:
 
@@ -522,7 +523,7 @@ steps:
       print("Total: " + str(price) + " euros")
     hints:
       - Press Check and read the message. It names a line, and the `^` mark shows where Python got stuck. Fix that one, then check again.
-      - "The first message is about the last line: its last string has no closing quote. Line 1 has three `(` but only two `)`."
+      - "The first message is about the last line: its last string has no closing quote. Line 1 opens two parentheses, `int(` and `input(`, but closes only one."
       - The `if` line must end with a colon, and both lines in its block need the same indentation, four spaces.
     tests:
       - stdin: "6"

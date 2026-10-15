@@ -111,7 +111,7 @@ drills:
 
           @classmethod
           def unit():  # BUG
-              return Square(1)
+              return cls(1)
 
 
       print(Square.unit().side)

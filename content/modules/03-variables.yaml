@@ -1,5 +1,5 @@
 id: variables
-summary: More about variables. Changing a variable's value, integers and floating point numbers next to strings, combining text and numbers when printing, and f-strings, the simplest way to put values into text.
+summary: More about variables. Changing a variable's value, integers and floating point numbers next to strings, combining text and numbers when printing, and f-strings, which put values right into a piece of text.
 steps:
   - id: variables-changing
     slug: changing-values
@@ -8,17 +8,17 @@ steps:
       A variable is created the first time a value is stored in it, with `name = value`. In the last module most values came from `input`. A value written straight into the code works the same way, and a new value can be built from other variables:
 
       ```python run
-      first = "Ada"
-      last = "Lovelace"
-      full_name = first + " " + last
-      print(full_name)
+      greeting = "Good morning"
+      city = "Lisbon"
+      message = greeting + ", " + city + "!"
+      print(message)
       ```
 
       ```output
-      Ada Lovelace
+      Good morning, Lisbon!
       ```
 
-      A value written into the code is the same on every run. Programmers call this **hard-coding** the value.
+      Nothing here comes from the user, so the program greets Lisbon on every run until someone edits the code. Values fixed in the code like this are called **hard-coded**.
 
       ### A variable can vary
 
@@ -44,24 +44,24 @@ steps:
       The new value can be built from the old value of the same variable:
 
       ```python run
-      message = input("Message: ")
-      message = message + "!!!"
-      print(message)
-      message = ">> " + message
-      print(message)
+      title = input("Title: ")
+      title = "* " + title + " *"
+      print(title)
+      title = title + " (draft)"
+      print(title)
       ```
 
       ```input
-      Hello
+      Summer plans
       ```
 
       ```output
-      Message: Hello
-      Hello!!!
-      >> Hello!!!
+      Title: Summer plans
+      * Summer plans *
+      * Summer plans * (draft)
       ```
 
-      `message = message + "!!!"` would be nonsense in mathematics, but remember that `=` is an instruction, not a claim. Python first works out the right side with the value `message` has right now, `"Hello" + "!!!"`, and only then stores the result back in `message`.
+      `title = "* " + title + " *"` would be nonsense in mathematics, but remember that `=` is an instruction, not a claim. Python first works out the right side with the value `title` has right now, `"* " + "Summer plans" + " *"`, and only then stores the result back in `title`.
 
       ### Each line uses the value of that moment
 
@@ -147,7 +147,7 @@ steps:
     slug: integers
     title: Numbers and strings
     text: |
-      Variables can hold numbers as well as strings. A whole number, such as `-15`, `0` or `2026`, is called an **integer**. You write it without quotes:
+      Variables can hold numbers as well as strings. A whole number, such as `7`, `-40` or `1000000`, is called an **integer**. You write it without quotes:
 
       ```python run
       year = 2026
@@ -160,24 +160,24 @@ steps:
       2027
       ```
 
-      ### "100" is not 100
+      ### "25" is not 25
 
-      With quotes, `"100"` is a string: three characters that happen to be digits. Printed, the two look the same, but Python treats them differently:
+      With quotes, `"25"` is a string: two characters that happen to be digits. A locker number and a door code may look alike when printed, but Python treats them differently:
 
       ```python run
-      number = 100
-      text = "100"
-      print(number)
-      print(text)
-      print(number + number)
-      print(text + text)
+      lockers = 25
+      door_code = "25"
+      print(lockers)
+      print(door_code)
+      print(lockers + lockers)
+      print(door_code + door_code)
       ```
 
       ```output
-      100
-      100
-      200
-      100100
+      25
+      25
+      50
+      2525
       ```
 
       For numbers, `+` adds. For strings, it joins. What an operator does depends on the **type** of the values it works on: whether they are integers, strings or something else. Python's short name for the integer type is `int`, and for the string type it's `str`.
@@ -195,22 +195,22 @@ steps:
 
       ### Not every operation works for every type
 
-      Dividing a string by a number makes no sense, and Python says so:
+      Taking a number away from a string makes no sense, and Python says so:
 
       ```python run crash
-      price = "100"
-      print(price / 2)
+      width = "12"
+      print(width - 2)
       ```
 
       ```crash
       Traceback (most recent call last):
         File "main.py", line 2, in <module>
-          print(price / 2)
+          print(width - 2)
                 ~~~~~~^~~
-      TypeError: unsupported operand type(s) for /: 'str' and 'int'
+      TypeError: unsupported operand type(s) for -: 'str' and 'int'
       ```
 
-      A `TypeError` means that an operation got values of a type it can't work with. The last line says that `/` doesn't work on a `str` and an `int` (the values an operator works on are its **operands**). The `~` and `^` marks show the calculation that failed. The fix here is to drop the quotes, so that `price` holds a number.
+      A `TypeError` means that an operation got values of a type it can't work with. The last line says that `-` doesn't work on a `str` and an `int` (the values an operator works on are its **operands**). The `~` and `^` marks show the calculation that failed. The fix here is to drop the quotes, so that `width` holds a number.
 
       Keep in mind that what `input` gives you is always a string, even when the user types digits. The next module shows how to turn it into a number.
 
@@ -422,7 +422,7 @@ steps:
     slug: f-strings
     title: F-strings
     text: |
-      Joining with `+` and `str` works, but long lines get clumsy, and commas add spaces you don't always want. An **f-string** is often the simplest way to put values into text. Write `f` right before the opening quote, and put a variable's name in curly brackets `{ }` inside the string. Python puts the variable's value in its place:
+      Joining with `+` and `str` works, but long lines get clumsy, and commas add spaces you don't always want. An **f-string** lets you write a line the way it should look and mark the places where values go. Write `f` right before the opening quote, and put a variable's name in curly brackets `{ }` inside the string. Python puts the variable's value in its place:
 
       ```python run
       item = "pencils"
@@ -455,7 +455,7 @@ steps:
 
       ### Compared with commas
 
-      Here is the first example with commas instead. The automatic spaces put a space before the full stop, and there's no simple way to get rid of it:
+      Here is the first example with commas instead. The automatic spaces put a space before the full stop:
 
       ```python run
       item = "pencils"
@@ -466,6 +466,8 @@ steps:
       ```output
       You ordered 12 pencils .
       ```
+
+      To get rid of that space, you'd have to mix the two ways: commas for the words and `+` for the full stop, `print("You ordered", count, item + ".")`. It works, but you have to think about every gap. The f-string says the whole line in one piece, exactly as it's printed.
 
       Commas are fine for a quick look at some values. When the output has to look exactly right, an f-string is usually the easiest choice.
 
@@ -578,21 +580,21 @@ steps:
     text: |
       Whole numbers aren't enough for prices, measurements or averages. A number with a decimal point, such as `2.5`, `-0.75` or `3.0`, is a **floating point number**, or a **float** for short. Python's name for the type is `float`.
 
-      Floats work in calculations just like integers do. This program calculates the mean of three temperatures:
+      Floats work in calculations just like integers do. This program works out the size of a rug, in meters:
 
       ```python run
-      monday = 12.5
-      tuesday = 14.0
-      wednesday = 9.25
-      mean = (monday + tuesday + wednesday) / 3
-      print(f"Mean temperature: {mean}")
+      length = 2.5
+      width = 1.25
+      print(f"Area: {length * width} square meters")
+      print(f"Edge all around: {2 * (length + width)} meters")
       ```
 
       ```output
-      Mean temperature: 11.916666666666666
+      Area: 3.125 square meters
+      Edge all around: 7.5 meters
       ```
 
-      The parentheses matter. Division comes before addition, so without them Python would divide only `wednesday` by 3 and add that to the other two.
+      The parentheses matter. Multiplication comes before addition, so without them Python would work out `2 * length` first and then add `width` to it, once instead of twice.
 
       ### Division gives a float
 

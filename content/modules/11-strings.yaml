@@ -192,21 +192,26 @@ steps:
 
       ### Lining up text
 
-      The length is also what you need to line text up. To make a line exactly 20 characters wide, put `20 - len(word)` spaces in front of the word:
+      The length is also what you need to line text up. When you add numbers on paper, you write them in a column lined up on the right, ones under ones and tens under tens. A program can do the same: to put a number at the right edge of a column 6 characters wide, print `6 - len(number)` spaces in front of it. Here the numbers are strings, since `len` counts characters; `int` turns them into numbers for the sum, and `str` turns the sum back into a string:
 
       ```python run
-      word = "apple"
-      print(" " * (20 - len(word)) + word)
-      word = "watermelon"
-      print(" " * (20 - len(word)) + word)
+      first = "385"
+      second = "1250"
+      total = str(int(first) + int(second))
+      print(" " * (6 - len(first)) + first)
+      print(" " * (6 - len(second)) + second)
+      print("-" * 6)
+      print(" " * (6 - len(total)) + total)
       ```
 
       ```output
-                     apple
-                watermelon
+         385
+        1250
+      ------
+        1635
       ```
 
-      The parentheses matter. Without them, `" " * 20 - len(word)` would first make a string of 20 spaces and then try to subtract a number from it, which is an error.
+      The parentheses matter. Without them, `" " * 6 - len(first)` would first make a string of 6 spaces and then try to subtract a number from it, which is an error.
 
       ### Numbers have no length
 
@@ -342,22 +347,28 @@ steps:
 
       ### The last character
 
-      A string of 6 characters has the indexes 0 to 5: the last index is always one less than the length. So for a string of any length, the last character is at `len(text) - 1`:
+      A string of 6 characters has the indexes 0 to 5: the last index is always one less than the length. So for a string of any length, the last character is at `len(text) - 1`.
+
+      In a word chain game, each word must start with the letter the previous word ended with. This program checks one link of the chain, comparing the first character of the new word with the last character of the old one:
 
       ```python run
-      city = input("City: ")
-      print("First letter: " + city[0])
-      print("Last letter: " + city[len(city) - 1])
+      old = input("Previous word: ")
+      new = input("Your word: ")
+      if new[0] == old[len(old) - 1]:
+          print("Good link!")
+      else:
+          print("Your word should start with " + old[len(old) - 1])
       ```
 
       ```input
-      Helsinki
+      python
+      apple
       ```
 
       ```output
-      City: Helsinki
-      First letter: H
-      Last letter: i
+      Previous word: python
+      Your word: apple
+      Your word should start with n
       ```
 
       ### IndexError
@@ -514,9 +525,14 @@ steps:
 
       When the user just presses Enter, `input` gives the empty string. It has no characters, so it has no first or last character, and every index is out of range:
 
+      This program makes an English noun plural in a simple way: a word that ends in `s`, such as `bus`, gets `es`, and any other word gets `s`. Pressing Enter without a word stops it:
+
       ```python run crash
-      text = input("Text: ")
-      print("Last character: " + text[-1])
+      word = input("Word: ")
+      if word[-1] == "s":
+          print(word + "es")
+      else:
+          print(word + "s")
       ```
 
       ```input
@@ -526,19 +542,21 @@ steps:
       ```crash
       Traceback (most recent call last):
         File "main.py", line 2, in <module>
-          print("Last character: " + text[-1])
-                                     ~~~~^^^^
+          if word[-1] == "s":
+             ~~~~^^^^
       IndexError: string index out of range
       ```
 
-      When a program can get an empty string, check the length before you use an index:
+      When a program can get an empty string, check the length before you use an index. Here the check comes first, so by the time Python gets to `word[-1]`, the word has at least one character:
 
       ```python run
-      text = input("Text: ")
-      if len(text) > 0:
-          print("Last character: " + text[-1])
+      word = input("Word: ")
+      if len(word) == 0:
+          print("No word, no plural")
+      elif word[-1] == "s":
+          print(word + "es")
       else:
-          print("The text is empty")
+          print(word + "s")
       ```
 
       ```input
@@ -546,8 +564,8 @@ steps:
       ```
 
       ```output
-      Text:
-      The text is empty
+      Word:
+      No word, no plural
       ```
 
       ### Backwards through a string

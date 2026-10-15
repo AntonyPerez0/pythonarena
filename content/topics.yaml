@@ -2292,12 +2292,12 @@
   drills: pygame
 - term: Surface.blit
   kind: method
-  about: Draws an image on another surface with its top-left corner at the given point, as in `window.blit(robot, (100, 50))`.
+  about: Draws an image on another surface with its top-left corner at the given point, as in `window.blit(robot, (60, 90))`.
   aliases:
   - blit
   - draw an image
   check:
-  - window.blit(robot, (100, 50))
+  - window.blit(robot, (60, 90))
   steps:
   - pygame-images
   drills: pygame
@@ -2542,7 +2542,7 @@
   - keep inside
   check:
   - max(0
-  - min(
+  - min(self.robot_x, WIDTH - 40)
   steps:
   - own-game-plan
   - own-game-complete

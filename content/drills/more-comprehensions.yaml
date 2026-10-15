@@ -4,7 +4,7 @@ drills:
     after: strings-and-objects
     code: |
       print("".join([c.upper() for c in "abc"]))
-    why: "The comprehension makes the list `['A', 'B', 'C']`, and `join` glues it into one string with nothing between the letters."
+    why: "The comprehension makes the list `['A', 'B', 'C']`, and `join` makes one string of it, with nothing between the letters."
 
   - type: predict
     after: strings-and-objects
@@ -22,7 +22,7 @@ drills:
     after: strings-and-objects
     code: |
       print([[" "‖' ']].join(["to", "be"]))
-    why: "`join` is called on the glue, the string that goes between the pieces. Here it's a space."
+    why: "`join` is called on the string that goes between the pieces. Here it's a space."
 
   - type: bug
     after: strings-and-objects
@@ -162,36 +162,38 @@ drills:
   - type: boss
     after: dictionaries
     prompt: |
-      Write a function `letter_counts(word)` that returns a dictionary with each different letter of `word` as a key and the number of times it appears as the value, in the order the letters first appear. Use a dictionary comprehension.
+      Write a function `positions(items)` that returns a dictionary with each item of the list as a key and its index in the list as the value. When an item is in the list more than once, its value is the index where it comes last. Use a dictionary comprehension.
 
-      For example, `letter_counts("hello")` returns:
+      For example, `positions(["red", "green", "blue", "green"])` returns:
 
       ```
-      {'h': 1, 'e': 1, 'l': 2, 'o': 1}
+      {'red': 0, 'green': 3, 'blue': 2}
       ```
     seed: |
-      def letter_counts(word):
+      def positions(items):
           pass
 
 
       if __name__ == "__main__":
-          print(letter_counts("hello"))
+          print(positions(["red", "green", "blue", "green"]))
     solution: |
-      def letter_counts(word):
-          return {c: word.count(c) for c in word}
+      def positions(items):
+          return {items[i]: i for i in range(len(items))}
 
 
       if __name__ == "__main__":
-          print(letter_counts("hello"))
+          print(positions(["red", "green", "blue", "green"]))
     hints:
-      - "Go through the letters of the word. Each letter is a key, so a repeated letter is in the dictionary only once."
-      - "The string method `count` tells how many times a letter appears: `word.count(c)`."
+      - "Go through the indexes with `for i in range(len(items))`. The key is the item at that index, `items[i]`, and the value is `i`."
+      - "A key is in a dictionary only once. When an item comes again, its later index replaces the earlier one, so the last index is what's left without any extra work."
     require:
       - pattern: \{[^\n]*\bfor\b
         message: Build the dictionary with a dictionary comprehension.
     tests:
-      - call: letter_counts("hello")
-      - call: letter_counts("banana")
+      - call: 'positions(["red", "green", "blue", "green"])'
+      - call: positions([5, 6, 7])
         hidden: true
-      - call: letter_counts("")
+      - call: 'positions(["x", "x", "x"])'
+        hidden: true
+      - call: positions([])
         hidden: true

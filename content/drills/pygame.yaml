@@ -80,7 +80,7 @@ drills:
 
   - type: choice
     after: images
-    prompt: The robot is drawn at (100, 50) in one frame and at (100, 80) in the next. Where did it move?
+    prompt: The robot is drawn at (60, 90) in one frame and at (60, 120) in the next. Where did it move?
     choices:
       - Down
       - Up
@@ -99,7 +99,7 @@ drills:
 
   - type: choice
     after: images
-    prompt: "A frame draws `window.blit(robot, (100, 50))`, then `window.fill((0, 0, 0))`, then calls `pygame.display.flip()`. What does the window show?"
+    prompt: "A frame draws `window.blit(robot, (60, 90))`, then `window.fill((0, 0, 0))`, then calls `pygame.display.flip()`. What does the window show?"
     choices:
       - The robot on a black background
       - Only black

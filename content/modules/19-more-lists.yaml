@@ -57,10 +57,10 @@ steps:
 
       ### Mixing types
 
-      One list can even hold values of different types, such as a name, an age and a height: `["Maya", 34, 1.68]`. That's allowed, but some things stop working. To sort a list, Python compares its items with each other, and it can't say whether a number is smaller than a string:
+      One list can even hold values of different types, such as a product's name, the number in stock and the price: `["lamp", 3, 19.99]`. That's allowed, but some things stop working. To sort a list, Python compares its items with each other, and it can't say whether a number is smaller than a string:
 
       ```python run crash
-      mixed = [34, "Maya", 1.68]
+      mixed = [3, "lamp", 19.99]
       mixed.sort()
       ```
 
@@ -813,6 +813,12 @@ steps:
       - call: column_winner([[".", "O"], [".", "O"], [".", "O"], [".", "O"]], 0)
         hidden: true
       - call: column_winner([[".", "O"], [".", "O"], [".", "O"], [".", "O"]], 1)
+        hidden: true
+      - call: column_winner([["X", "."], ["X", "O"], ["X", "O"], ["O", "O"]], 0)
+        hidden: true
+      - call: column_winner([["O", "X"], ["O", "X"], ["O", "X"], ["O", "X"], ["O", "."]], 0)
+        hidden: true
+      - call: column_winner([["O", "X"], ["O", "X"], ["O", "X"], ["O", "X"], ["O", "."]], 1)
         hidden: true
     more:
       - task: |

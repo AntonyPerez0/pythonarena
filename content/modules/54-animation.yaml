@@ -216,6 +216,9 @@ steps:
           - Each moving thing needs a variable for the part of its position that changes, such as `robot_x` and `coin_y`.
           - "Draw both at their variables' positions, and after `flip` change both: `robot_x += 2` and `coin_y += 3`."
           - Then add the clock, as in the lesson.
+        require:
+          - pattern: \.tick\s*\(
+            message: "Keep the speed steady with a clock: `clock.tick(60)` in every round."
         tests:
           - window: {frames: 45}
           - window: {frames: 70}
@@ -338,7 +341,7 @@ steps:
       window = pygame.display.set_mode((320, 240))
       robot = pygame.image.load("robot.png")
 
-      x = 0
+      x = 1
       speed = 2
       clock = pygame.time.Clock()
 
@@ -356,10 +359,13 @@ steps:
               speed = -speed
           clock.tick(60)
     hints:
-      - The robot's right edge is its x plus its width. It turns around at the left edge when x is 0 or less.
-      - "The image's width is `robot.get_width()`, and \"0 or less\" is `x <= 0`."
+      - The robot's right edge is its x plus its width (its height doesn't matter here). It turns around at the left edge when x is 0 or less.
+      - "The image's width is `robot.get_width()`, and \"0 or less\" is `x <= 0`. The robot starts at x = 1 and moves 2 pixels at a time, so x is never exactly 0: `x == 0` would let it walk out of the window."
+    require:
+      - pattern: \.get_width\s*\(
+        message: "The robot's right edge is its x plus its width: `robot.get_width()`."
     tests:
-      - window: {frames: 200}
+      - window: {frames: 300}
       - window: {frames: 333}
         hidden: true
     more:
@@ -377,7 +383,7 @@ steps:
           - "x grows by 40 until it reaches 120. Then the speed turns into -40."
           - "From 120, x goes back down by 40 each time, and at 0 the speed turns around again."
       - task: |
-          The monster patrols between two boxes. The boxes stand at (0, 100) and (280, 100), and the monster walks between them along y = 100, 4 pixels per frame. On the first frame it's at (120, 100), heading right. When its right edge reaches the right box's left edge (x = 280) or goes past it, it turns around, and when its left edge reaches the left box's right edge (x = 40) or goes past it, it turns around again. Draw the boxes first, then the monster. As in the lesson, move the monster after each frame is shown, then check for turning.
+          The monster patrols between two boxes. The boxes stand at (0, 100) and (280, 100), and the monster walks between them along y = 100, 4 pixels per frame. On the first frame it's at (122, 100), heading right. When its right edge reaches the right box's left edge (x = 280) or goes past it, it turns around, and when its left edge reaches the left box's right edge (x = 40) or goes past it, it turns around again. Only its speed turns: as the robot in the lesson sticks out past the edge for a frame, the monster steps 2 pixels into a box for a frame and isn't moved back. Draw the left box, then the right box, then the monster. As in the lesson, move the monster after each frame is shown, then check for turning.
         assets: [box.png, monster.png]
         seed: |
           import pygame
@@ -397,7 +403,7 @@ steps:
               window.fill((0, 0, 0))
               window.blit(box, (0, 100))
               window.blit(box, (280, 100))
-              window.blit(monster, (120, 100))
+              window.blit(monster, (122, 100))
               pygame.display.flip()
 
               clock.tick(60)
@@ -409,7 +415,7 @@ steps:
           box = pygame.image.load("box.png")
           monster = pygame.image.load("monster.png")
 
-          x = 120
+          x = 122
           speed = 4
           clock = pygame.time.Clock()
 
@@ -430,7 +436,7 @@ steps:
               clock.tick(60)
         hints:
           - Keep the monster's x and its speed in variables, as the lesson keeps the robot's.
-          - "The walls are the boxes now, not the window's edges. The monster's right edge is `x + monster.get_width()`, and it turns when that is 280 or more."
+          - "The walls are the boxes now, not the window's edges. The monster's right edge is `x + monster.get_width()`, and it turns when that is 280 or more. It's never exactly 280 (x goes 122, 126, ..., 238, 242), so `==` would never turn it."
           - "On the left it turns when `x <= 40`, since the left box covers x from 0 to 39."
         tests:
           - window: {frames: 100}
@@ -581,7 +587,7 @@ steps:
         hidden: true
     more:
       - task: |
-          A coin goes round the robot. The robot stays at (140, 100), so its center is the window's center (160, 120). The coin's center goes round that point on a circle of radius 60: the angle is 0 on the first frame and grows by 0.1 after each frame. The coin is 24 x 24, so its top-left corner is 12 pixels left of and above its center. Draw the robot first, then the coin.
+          A coin goes round the robot. The robot stays at (140, 100), so its center is the window's center (160, 120). The coin's center goes round that point on a circle of radius 60: the angle is 0 on the first frame and grows by 0.1 after each frame. The coin is 24 x 24, so its top-left corner is 12 pixels left of and above its center. Draw the robot first, then the coin. Give `blit` the coin's position as it comes out, floats and all: as in the lesson, `blit` drops the fractions, and the window is checked at the whole-number positions it draws at. Don't round the position yourself, since rounding sometimes gives the next pixel.
         assets: [robot.png, coin.png]
         seed: |
           import math
@@ -634,7 +640,7 @@ steps:
         hints:
           - "Keep the angle in a variable that starts at 0, and add 0.1 to it after each frame."
           - "The coin's center is at `160 + math.cos(angle) * 60` across and `120 + math.sin(angle) * 60` down."
-          - Subtract 12 from both to get the coin's top-left corner, and draw the coin there after the robot.
+          - Subtract 12 from both to get the coin's top-left corner, and draw the coin there after the robot, without rounding.
         tests:
           - window: {frames: 40}
           - window: {frames: 77}

@@ -1,11 +1,11 @@
 id: object-references
-summary: Your own objects work like any other value. Keeping them in lists and dictionaries, two names for one object, `is` and `==`, objects as arguments to functions and methods, and methods that compare two objects of the same class.
+summary: Objects of your own classes in lists and dictionaries, two names for one object, `is` and `==`, objects as arguments to functions and methods, and methods that compare two objects of the same class.
 steps:
   - id: object-references-lists
     slug: lists-of-objects
     title: Objects in lists and dictionaries
     text: |
-      Every value in Python is an **object**: a number, a string, a list, and also every object you create from a class of your own. Your own objects work like any other value. You have already kept them in variables and lists and given them to functions. This part of the course looks more closely at how that works, starting with lists and dictionaries of objects.
+      An object of a class you wrote can go anywhere a number or a string can: into a variable, a list, a dictionary or a function call. To Python, your classes are types just like the ones it has built in. `5` is an `int`, `"hi"` is a `str`, `Song("Slow River", 302)` is a `Song`, and all of them are **objects**. You have already kept your own objects in variables and lists and given them to functions. This part of the course looks at what really happens when you do, starting with lists and dictionaries of objects.
 
       ### A list of objects
 
@@ -268,9 +268,9 @@ steps:
 
       There is only one plant here, with two names. Only a call to `Plant(...)` creates a new object; an assignment never does.
 
-      ### The same object twice in a list
+      ### One object in two places
 
-      A list holds references too, so the same object can be in a list more than once. Changing it through one item changes what you see through the other:
+      A list item and a dictionary value are references too, so one object can be in several places at once (even twice in the same list). Here each plant is in the list `garden`, and also in the dictionary `spots`, which tells where it stands:
 
       ```python run
       class Plant:
@@ -282,41 +282,48 @@ steps:
               return f"{self.name}, {self.height} cm"
 
 
-      sunflower = Plant("Sunflower")
-      row = [sunflower, sunflower, Plant("Sunflower")]
-      row[0].height = 40
+      basil = Plant("Basil")
+      mint = Plant("Mint")
+      garden = [basil, mint]
+      spots = {"kitchen": basil, "balcony": mint}
 
-      for plant in row:
+      spots["kitchen"].height = 18
+
+      for plant in garden:
           print(plant)
       ```
 
       ```output
-      Sunflower, 40 cm
-      Sunflower, 40 cm
-      Sunflower, 10 cm
+      Basil, 18 cm
+      Mint, 10 cm
       ```
 
-      Items 0 and 1 refer to the same object. Item 2 is a different object that happens to have the same name, and changing one doesn't touch the other.
+      The basil grew through the dictionary, and the list shows it: `spots["kitchen"]`, `garden[0]` and `basil` are three ways to reach one plant. However many places refer to them, the program has exactly two plants, because it calls `Plant(...)` twice.
 
       ### `is` or `==`
 
       Python has two ways to ask whether two things are "the same". `==` asks whether two values are **equal**: do they have the same contents? The operator **`is`** asks whether they are **the very same object**, and `is not` is its opposite:
 
       ```python repl
-      >>> first = [1, 2, 3]
-      >>> second = [1, 2, 3]
-      >>> third = first
-      >>> first == second
+      >>> watering = {"basil": 2, "mint": 3}
+      >>> schedule = {"basil": 2, "mint": 3}
+      >>> plan = watering
+      >>> watering == schedule
       True
-      >>> first is second
+      >>> watering is schedule
       False
-      >>> first is third
+      >>> watering is plan
       True
-      >>> first is not second
+      >>> watering is not schedule
       True
+      >>> plan["mint"] = 4
+      >>> watering
+      {'basil': 2, 'mint': 4}
+      >>> watering == schedule
+      False
       ```
 
-      `first` and `second` are two lists with equal contents. `third` is just another name for `first`.
+      `watering` and `schedule` are two dictionaries that started out with the same keys and values. `plan` is not a third dictionary, only another name for `watering`, so the change made through `plan` shows up in `watering`, and the two dictionaries stop being equal.
 
       For objects of your own classes, `==` doesn't look at the attributes. Python can't know which attributes make two plants "equal", so unless the class says how (a later module shows how), two objects are equal only when they are the same object. Compare the attributes you care about instead:
 

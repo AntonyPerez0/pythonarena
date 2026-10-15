@@ -158,21 +158,16 @@ drills:
 
   - type: predict
     after: debugging-loops
-    stdin: |
-      000
-      123
     code: |
-      tries = 0
+      count = 0
+      total = 0
       while True:
-          code = input("Code: ")
-          tries += 1
-          if tries == 2:
-              print("Locked")
+          count += 1
+          if count == 4:
               break
-          if code == "123":
-              print("Open")
-              break
-    why: "On the second try both conditions are true, but the attempt limit is checked first, so the right code is never noticed. The order of the checks matters."
+          total += count
+      print("count:", count, "total:", total)
+    why: "On the fourth iteration, `break` ends the loop before `total += count`, so 4 is counted but never added: the total is 1 + 2 + 3. A check that comes too early skips the last update."
 
   - type: predict
     after: building-strings

@@ -157,18 +157,18 @@ steps:
     slug: immutable
     title: Strings can't be changed
     text: |
-      Strings and lists have a lot in common: indexes, slices, `len`, `in` and `for` work on both. There's one big difference, though. A list can be changed after it's made, but a string can't. Strings are **immutable**:
+      Many of your tools work on lists and on strings alike: indexes, slices, `len`, `in` and `for`. So it seems natural to change a character of a string the way you change an item of a list. Try it:
 
       ```python run crash
-      numbers = [1, 2, 3]
-      numbers[0] = 10
-      print(numbers)
+      scores = [7, 4, 9]
+      scores[1] = 8
+      print(scores)
       word = "cat"
       word[0] = "b"
       ```
 
       ```output
-      [10, 2, 3]
+      [7, 8, 9]
       ```
 
       ```crash
@@ -179,11 +179,11 @@ steps:
       TypeError: 'str' object does not support item assignment
       ```
 
-      The list accepts the new item, but the string refuses. For the same reason, strings have no `sort` method: `"cab".sort()` is an `AttributeError`. The function `sorted` works, though, because it doesn't change anything: for a string it returns a new list of the characters in order.
+      The list takes the new item, but the string refuses. Once a string exists, nothing can change it: not a character, not its length, not its order. Strings are **immutable**. Even sorting works differently: the function `sorted` leaves the string alone and gives you a new list of its characters in order.
 
       ### New strings instead
 
-      The variable is a different matter. A variable can always be given a new value, and that new value can be a new string made from the old one:
+      What you can do is build a new string from pieces of the old one, and store it in the same variable:
 
       ```python run
       word = "cat"
@@ -200,9 +200,9 @@ steps:
       ['a', 'b', 'c']
       ```
 
-      `word[1:]` is `"at"`, so `"b" + word[1:]` is a new string, `"bat"`, and the variable `word` now refers to it. The old string `"cat"` was never changed: the variable simply moved on to another string.
+      `word[1:]` is `"at"`, so `"b" + word[1:]` is a new string, `"bat"`, and `word` now refers to it. Nothing happened to the string `"cat"` itself: `word` was simply given a different string.
 
-      That's why every string method you know returns a new string instead of changing the old one. `upper` gives a new string in capital letters, and the original stays as it was. To keep the result, store it, often in the same variable:
+      That's why no string method changes the string it's called on. Methods like `upper` and `lower` return a new string instead, and the original stays as it was. To keep the result, store it, often in the same variable:
 
       ```python run
       name = "ada"
@@ -292,22 +292,22 @@ steps:
       Strings and lists have more methods worth knowing. **`count`** tells how many times something appears. It works on strings, where it counts a piece of text, and on lists, where it counts an item:
 
       ```python run
-      text = "she sells sea shells"
+      text = "this list has six items"
       print(text.count("s"))
-      print(text.count("ell"))
+      print(text.count("is"))
       numbers = [3, 1, 3, 3, 2]
       print(numbers.count(3))
-      print("aaaa".count("aa"))
+      print("banana".count("ana"))
       ```
 
       ```output
-      6
+      5
       2
       3
-      2
+      1
       ```
 
-      The last line shows that `count` doesn't count overlapping pieces: after it finds `aa` at the start, it goes on from the third `a`, so it finds two, not three.
+      The last line needs a closer look. `ana` starts at index 1 of `banana` and again at index 3, but the two share the `a` in the middle. `count` doesn't count pieces that overlap: once it has found one, it goes on looking only after its end, so it finds just one.
 
       ### Where is it?
 
@@ -619,7 +619,7 @@ steps:
     slug: larger-programs
     title: Passing data between functions
     text: |
-      The programs you write are getting longer. The first rule for a larger program: don't write it all at once. Build it from small functions, and try each one out before you write the next. A function that works on its own can be trusted when the rest of the program uses it.
+      Your programs are getting longer. You already know how to grow one: a small function at a time, each one run and checked before another function relies on it. (The step counter at the end of this step is meant to be written that way too.) This step is about what connects those functions: the data they share.
 
       In a program made of functions, each function gets the data it needs as **arguments**, and gives the data it produces back with **`return`**. A `main` function ties them together. Here's a small program that reads exam points and reports on them:
 
@@ -675,68 +675,83 @@ steps:
 
       ### A trap: variables from outside
 
-      You saw in the module on functions that a function should work with its parameters, not with variables from outside it. The mistake is easy to miss when the outside variable happens to hold the right list:
+      A function can read a variable that was made outside it, at the top level of the program. It works, which is exactly what makes it a trap. Here the tax rate isn't a parameter, so the function uses whatever value `tax_rate` has when it's called:
 
       ```python run
-      def total_length(words: list) -> int:
-          total = 0
-          for word in word_list:
-              total += len(word)
-          return total
+      def with_tax(price: float) -> float:
+          return price * (1 + tax_rate)
 
 
-      word_list = ["sun", "moon"]
-      print(total_length(word_list))
-      print(total_length(["planet"]))
+      tax_rate = 0.5
+      print(with_tax(10))
+      tax_rate = 0.25
+      print(with_tax(10))
       ```
 
       ```output
-      7
-      7
+      15.0
+      12.5
       ```
 
-      The loop uses `word_list` instead of the parameter `words`. The first call happens to give the right answer, because the argument is that same list. The second call shows the bug: whatever list you give, the function counts `word_list`.
+      The same call, `with_tax(10)`, gives two different answers, and nothing in the call shows why. In a long program, finding the line that changed `tax_rate` can take a long time. A loop that goes through an outside list instead of the list parameter goes wrong the same way.
 
-      In a function task, this bug is even worse. If `word_list` is made in the main block, it doesn't exist at all when the checks load your program and call the function, so every check stops with a `NameError`. Inside a function, use only its parameters and its own variables.
+      In a function task, it's worse. The checks don't run the main block, so a variable set there has no value when they call your function. Calling the function before the variable is set shows what they see:
 
-      **Your turn:** `total_length` in the starter code uses a variable from the main block. It works when you run the program, but the checks fail with a `NameError`. Fix the function so it uses its parameter. For example, `total_length(["sun", "moon"])` returns `7`.
+      ```python run crash
+      def with_tax(price: float) -> float:
+          return price * (1 + tax_rate)
+
+
+      print(with_tax(10))
+      tax_rate = 0.5
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          print(with_tax(10))
+                ~~~~~~~~^^^^
+        File "main.py", line 2, in with_tax
+          return price * (1 + tax_rate)
+                              ^^^^^^^^
+      NameError: name 'tax_rate' is not defined
+      ```
+
+      The cure is to give a function everything it needs as parameters: `def with_tax(price: float, tax_rate: float) -> float:`. Then every call shows all the data its answer depends on.
+
+      **Your turn:** `discounted` in the starter code uses the variable `discount` from the main block. It works when you run the program, but the checks fail with a `NameError`. Give the function a second parameter, `discount: int` (the discount in percent), and change the call in the main block to match. For example, `discounted(50, 20)` returns `40.0`.
     seed: |
-      def total_length(words: list) -> int:
-          total = 0
-          for word in word_list:
-              total += len(word)
-          return total
+      def discounted(price: float) -> float:
+          return price * (100 - discount) / 100
 
 
       if __name__ == "__main__":
-          word_list = ["sun", "moon"]
-          print(total_length(word_list))
+          discount = 20
+          print(discounted(50))
     solution: |
-      def total_length(words: list) -> int:
-          total = 0
-          for word in words:
-              total += len(word)
-          return total
+      def discounted(price: float, discount: int) -> float:
+          return price * (100 - discount) / 100
 
 
       if __name__ == "__main__":
-          word_list = ["sun", "moon"]
-          print(total_length(word_list))
+          print(discounted(50, 20))
     hints:
-      - "The list the function should count is its parameter. Which name does the `for` loop use instead?"
-      - "Change `for word in word_list:` to `for word in words:`."
+      - "The checks call `discounted(50, 20)`: the percentage comes as the second argument, so the function needs a second parameter to receive it."
+      - "Add `discount: int` after `price: float` in the first line. The body can stay as it is, because `discount` is now the parameter. Then give the call in the main block the percentage as its second argument."
     tests:
-      - call: total_length(["sun", "moon"])
-      - call: total_length(["planet"])
+      - call: discounted(50, 20)
+      - call: discounted(80, 25)
         hidden: true
-      - call: total_length([])
+      - call: discounted(9.5, 0)
+        hidden: true
+      - call: discounted(30, 50)
         hidden: true
     more:
       - task: |
           Finish a step counter program. It reads daily step counts until an empty line, prints a chart with one `#` for each full thousand steps, and then the total, the average and the best day. The `main` function is ready; write the three functions it uses:
 
           - `read_steps()` reads the counts until an empty line and returns them in a list.
-          - `print_chart(steps)` prints a line for each day: `Day`, the day's number from 1, a colon, the steps in a column of 6 characters, a space and the `#` characters.
+          - `print_chart(steps)` prints a line for each day: `Day` and the day's number from 1, a colon and a space, the steps in a column of 6 characters, a space and the `#` characters.
           - `best_day(steps)` returns the number of the day with the most steps (the first one if several are equal).
 
           ```
@@ -821,16 +836,16 @@ steps:
       - task: |
           What does this program print? Type each line it prints.
         predict: |
-          def show_total(prices):
-              print(sum(costs))
+          def scaled(value):
+              return value * factor
 
 
-          costs = [1, 2, 3]
-          show_total([10, 20])
-          costs = [5]
-          show_total(costs)
-          show_total([])
+          factor = 2
+          print(scaled(5))
+          factor = 10
+          print(scaled(5))
+          print(scaled(factor))
         hints:
-          - "Look closely at which list the function sums: its parameter is `prices`, but it uses `costs`."
-          - "Whatever list the call gives, the function sums the list that `costs` refers to at that moment."
-          - "After `costs = [5]`, the sum is 5 for every call."
+          - "`factor` isn't a parameter of `scaled`: the function uses the value the outside variable has at the moment of the call."
+          - "The first call happens while `factor` is 2. Before the second call, `factor` becomes 10."
+          - "In the last call, `factor` is both the argument (10) and the multiplier (10)."

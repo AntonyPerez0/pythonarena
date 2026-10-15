@@ -175,14 +175,14 @@ drills:
 
           @level.setter
           def level(self):  # BUG
-              self.__level = 0
+              self.__level = level
 
 
       radio = Volume()
       radio.level = 8
       print(radio.level)
     fix: "def level(self, level):"
-    why: "A setter gets the new value as a parameter. Without one, `radio.level = 8` stops with a `TypeError`, because Python passes the 8 to a method that can't take it. The fixed method still has to store `level`, though: here it stores 0."
+    why: "A setter gets the new value as a parameter. Without one, `radio.level = 8` stops with a `TypeError`, because Python passes the 8 to a method that can't take it."
 
   - type: predict
     after: setters
@@ -197,7 +197,9 @@ drills:
 
           @years.setter
           def years(self, years):
-              self.__years = max(0, years)
+              if years < 0:
+                  years = 0
+              self.__years = years
 
 
       print(Age(-3).years)
