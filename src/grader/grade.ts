@@ -127,30 +127,40 @@ export function selfCallingFunction(sources: SourceFile[]): string | null {
   return null;
 }
 
-/** Why a call test couldn't call the learner's code, in words (the error was in the test's own line). */
-function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): string {
+/**
+ * Why a call test couldn't call the learner's code, in words (the error was in the test's own line), and
+ * a key that is the same for tests that failed the same way (so the reason is said once). A hidden test's
+ * call isn't shown.
+ */
+function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): { key: string; text: string } {
   const e = parseError(r.stderr);
-  const call = (t.call ?? "").trim();
+  const call = t.hidden ? null : (t.call ?? "").trim();
+  const runs = call ? `The test runs \`${call}\`` : "A hidden test calls your code";
+  const key = e ? `${e.name}: ${e.message}` : r.stderr.trim();
   if (e?.name === "NameError") {
     const name = /^name '(\w+)' is not defined/.exec(e.message)?.[1] ?? "";
     const suggestion = /Did you mean: '(\w+)'\?/.exec(e.message)?.[1];
-    return `The test calls \`${name}\`, but your program doesn't define anything with that name${suggestion ? ` (did you mean to name it \`${name}\`, not \`${suggestion}\`?)` : ""}. Name your function (or class) exactly as the task says, at the top level of the file (not indented inside something else).`;
+    return { key, text: `The test calls \`${name}\`, but your program doesn't define anything with that name${suggestion ? ` (did you mean to name it \`${name}\`, not \`${suggestion}\`?)` : ""}. Name your function (or class) exactly as the task says, at the top level of the file (not indented inside something else).` };
   }
   if (e?.name === "TypeError" && /takes \d+ positional arguments? but \d+ (?:was|were) given|missing \d+ required positional argument/.test(e.message))
-    return `The test runs \`${call}\`, but ${e.message.replace(/^(\w+)\(\)/, "`$1()`")}. Give the def line exactly the parameters the task asks for.`;
-  if (e?.name === "TypeError" && /object is not callable/.test(e.message)) return `The test runs \`${call}\`, but what it calls isn't a function: ${e.message}. Check that your function's name isn't also used for a variable.`;
-  if (e?.name === "AttributeError") return `The test runs \`${call}\`, but ${e.message}. Name your methods and attributes exactly as the task says.`;
-  if (e?.name === "ImportError" || e?.name === "ModuleNotFoundError") return `The test runs \`${call}\`, but ${e.message}. Check your file and function names.`;
+    return { key, text: `${runs}, but ${e.message.replace(/^(\w+)\(\)/, "`$1()`")}. Give the def line exactly the parameters the task asks for.` };
+  if (e?.name === "TypeError" && /object is not callable/.test(e.message)) return { key, text: `${runs}, but what it calls isn't a function: ${e.message}. Check that your function's name isn't also used for a variable.` };
+  if (e?.name === "AttributeError") return { key, text: `${runs}, but ${e.message}. Name your methods and attributes exactly as the task says.` };
+  if (e?.name === "ImportError" || e?.name === "ModuleNotFoundError") return { key, text: `${runs}, but ${e.message}. Check your file and function names.` };
   const note = e ? explainError(e, sources) : null;
-  return `The test's own code \`${call}\` stopped with an error: ${e ? `${e.name}: ${e.message}` : r.stderr.trim()}.${note ? ` ${note}` : ""}`;
+  return { key, text: `${call ? `The test's own code \`${call}\`` : "A hidden test's own code"} stopped with an error: ${e ? `${e.name}: ${e.message}` : r.stderr.trim()}.${note ? ` ${note}` : ""}` };
 }
 
-/** The note for a call that should give a value but gave None: usually a print where a return belongs. */
+/**
+ * The note for a call that should give a value but gave None: usually a print where a return belongs.
+ * Plain text (notes aren't Markdown), and a hidden test's call isn't named.
+ */
 function returnedNone(t: TestCase, got: string): string {
-  const call = (t.call ?? "").trim().split("\n").pop() ?? "";
+  const call = t.hidden ? null : ((t.call ?? "").trim().split("\n").pop() ?? "");
+  const what = call ? `The call ${call}` : "Your function";
   return got
-    ? `\`${call}\` printed something but returned None. The task asks for a function that returns its result: use return instead of print inside the function (the test prints what it returns).`
-    : `\`${call}\` returned None, which means the function has no return line with a value (or never reaches one). Give it a return line that returns the result.`;
+    ? `${what} printed something but returned None. The task asks for a function that returns its result: use return instead of print inside the function (the test prints what it returns).`
+    : `${what} returned None, which means the function has no return line with a value (or never reaches one). Give it a return line that returns the result.`;
 }
 
 /** The files a challenge's tests give the program, as the engine takes them. */
@@ -200,7 +210,10 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
   const syntax = first && first.exitCode !== 0 ? syntaxDiagnostic(parseError(first.stderr), own) : null;
   if (syntax) return { ...base, status: "syntax-error", diagnostics: [syntax], errorOutput: first!.stderr, tests: [] };
   // A call test that couldn't call the learner's code at all (no such function, wrong parameters).
-  const callProblems = [...new Set(ex.tests.flatMap((t, i) => (runs[i]?.callError ? [callProblem(t, runs[i], own)] : [])))];
+  // Each reason once, in the words of the first visible test that failed that way.
+  const failedCalls = ex.tests.flatMap((t, i) => (runs[i]?.callError ? [{ t, p: callProblem(t, runs[i], own) }] : [])).sort((a, b) => Number(!!a.t.hidden) - Number(!!b.t.hidden));
+  const seenCalls = new Set<string>();
+  const callProblems = failedCalls.filter(({ p }) => !seenCalls.has(p.key) && seenCalls.add(p.key)).map(({ p }) => p.text);
   if (callProblems.length) return { ...base, status: "call-error", callProblems, tests: [] };
   const tests = ex.tests.map((t, i): TestResult => {
     const r = runs[i];

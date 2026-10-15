@@ -168,7 +168,7 @@ page("/learn", {
 /** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the Pro Track, as src/pages/ModulePage.tsx does. */
 const COURSE_END = content.plan.filter((m) => m.course === "II").pop()?.id;
 const courseEnd = (m) =>
-  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can go on with the extra modules, or try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
+  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can ${content.plan.some((x) => x.course === "extra") ? "go on with the extra modules" : `<a href="${link("/projects")}">build the projects</a>`}, or try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
 for (const m of content.modules) {
   page(modulePath(m), {
     title: `Module ${m.number}: ${m.title} | ${NAME}`,

@@ -179,13 +179,17 @@ it("a function that prints instead of returning fails the tests that need a valu
   // double(21) prints 42 (the text matches) but gives None.
   assert.equal(b.got, "42");
   assert.equal(b.pass, false);
-  has(b.note, "`double(21)` printed something but returned None", "use return instead of print");
+  has(b.note, "The call double(21) printed something but returned None", "use return instead of print");
+  lacks(b.note, "`");
+  // A hidden test's call isn't named.
+  has(r.tests[2].note, "Your function printed something but returned None");
+  lacks(r.tests[2].note, "double(-3)");
 });
 
 it("a function with no return line at all gets the returned-None note", async () => {
   const code = "def double(n):\n    result = n * 2\n";
   const r = await grade(exercise(FUNCTION_TESTS), code);
-  has(r.tests[1].note, "`double(21)` returned None", "Give it a return line");
+  has(r.tests[1].note, "The call double(21) returned None", "Give it a return line");
 });
 
 it("a misnamed function is a call error that names both names", async () => {
@@ -201,7 +205,10 @@ it("a function with the wrong parameters is a call error", async () => {
   const code = "def double():\n    return 2\n";
   const r = await grade(exercise(FUNCTION_TESTS), code);
   assert.equal(r.status, "call-error");
+  // One reason, in the words of the first visible test; the hidden test's call isn't shown.
+  assert.equal(r.callProblems.length, 1, r.callProblems.join(" | "));
   has(r.callProblems[0], "The test runs `print(double(4))`", "takes 0 positional arguments but 1 was given", "exactly the parameters");
+  lacks(r.callProblems.join(" "), "double(-3)");
 });
 
 it("an error inside the learner's function is a failed test, not a call error", async () => {

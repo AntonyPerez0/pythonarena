@@ -12,6 +12,8 @@ import { finishedPart, isoDay, moduleFinished, recordDate } from "../lib/record"
 
 /** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the Pro Track. */
 const COURSE_END = plan.filter((m) => m.course === "II").pop()?.id;
+/** Whether the plan has extra modules after the MOOC's (Python Arena's own). */
+const EXTRAS = plan.some((m) => m.course === "extra");
 
 export default function ModulePage() {
   const { moduleId = "" } = useParams();
@@ -86,7 +88,7 @@ export default function ModulePage() {
             After the course
           </h2>
           <p>
-            This is the last module of the MOOC. Next, you can go on with the extra modules, or try the Pro Track: projects for your own computer with Python and pytest. <Link to="/pro/">See the Pro Track</Link>
+            This is the last module of the MOOC. Next, you can {EXTRAS ? "go on with the extra modules" : <Link to="/projects/">build the projects</Link>}, or try the Pro Track: projects for your own computer with Python and pytest. <Link to="/pro/">See the Pro Track</Link>
           </p>
         </section>
       )}

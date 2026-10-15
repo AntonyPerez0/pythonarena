@@ -182,11 +182,9 @@ type FrameOut = { index: number; log: string; png: Uint8Array | null; title: str
 function runCase(index: number, files: Record<string, string>, main: string, c: RunInput): RunResult {
   const parts = { stdout: "", stderr: "", output: "" };
   let pending: { stream: string; text: string }[] = [];
-  let last = performance.now();
   const flush = () => {
     if (pending.length) post({ type: "output", index, chunks: pending });
     pending = [];
-    last = performance.now();
   };
   let lastPicture: Uint8Array | null = null;
   const sink = (stream: string, text: string | PyProxy) => {
@@ -203,8 +201,9 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
     parts[stream as "stdout" | "stderr"] += text;
     parts.output += text;
     pending.push({ stream, text });
-    // The worker is busy until the program ends, so output goes out as it's printed (a few times a second at most).
-    if (performance.now() - last > 40) flush();
+    // The worker is busy until the program ends, so each piece goes out as it's printed: the last line before an
+    // endless loop must reach the page, which keeps what the program printed when it stops it.
+    flush();
   };
   // Keys left out rather than null: toPy turns null into a JsNull, not None.
   const spec = py!.toPy({ files, main, stdin: c.stdin ?? "", given: c.files ?? {}, args: c.args ?? [], ...(c.call != null ? { call: c.call } : {}), ...(c.window ? { window: c.window } : {}) });

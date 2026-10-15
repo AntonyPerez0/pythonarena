@@ -292,7 +292,7 @@ await test('an unknown address shows "Page not found"', async () => {
   await ctx.close();
 });
 
-await test('extra modules: the plan has none, so no page shows an Extra label or an "Extra modules" section, and nothing points to extra modules', async () => {
+await test('extra modules: the Extra label and the "Extra modules" section show only for extra modules the plan has (it has none), and the end of the course points to none that don\'t exist', async () => {
   const extras = COURSE_INDEX.plan.filter((m) => m.course === 'extra');
   const { ctx, page, errors } = await newPage();
   await page.goto(BASE + 'learn/');
@@ -896,6 +896,7 @@ const lessonSession = await newPage();
 await lessonSession.ctx.close();
 
 // ------------------------------------------------------------------ pygame lessons (parts 13 and 14)
+console.log('pygame lessons');
 // The course's pygame modules come in a later batch: these tests check the first lesson with a window
 // example and the first window challenge, once the build has them, and say so while it doesn't.
 
@@ -928,6 +929,46 @@ async function windowText(panel) {
   if ((await d.getAttribute('open')) === null) await d.locator('summary').click();
   return d.locator('pre').textContent();
 }
+
+/** The site's images a step's text shows (```asset blocks): [name, width, height]. */
+const assetBlocks = (step) => [...step.text.matchAll(/^```asset (\S+)\n(\d+)x(\d+)\n```$/gm)].map((m) => [m[1], Number(m[2]), Number(m[3])]);
+const ASSET_STEP = (() => {
+  for (const m of COURSE_INDEX.modules) {
+    const step = moduleOf(m.id).steps.find((s) => assetBlocks(s).length > 0);
+    if (step) return { moduleId: m.id, step };
+  }
+  return null;
+})();
+
+await test('images in lessons: an asset block shows one of the site\'s images, drawn larger with crisp pixels, with its name and size (the pre-rendered page too)', async () => {
+  if (!ASSET_STEP) {
+    console.log('       (skipped: no lesson shows one of the site\'s images yet)');
+    return;
+  }
+  const { moduleId, step } = ASSET_STEP;
+  const blocks = assetBlocks(step);
+  const { ctx, page, errors } = await newPage();
+  await page.goto(BASE + `learn/${moduleId}/${step.slug}/`);
+  await page.locator('.workbench').waitFor({ timeout: ENGINE_TIMEOUT });
+  const figures = page.locator('article.step-text figure.asset-img');
+  expect((await figures.count()) === blocks.length, `${await figures.count()} images drawn for ${blocks.length} asset blocks`);
+  for (const [k, [name, w, h]] of blocks.entries()) {
+    const img = figures.nth(k).locator('img');
+    await img.scrollIntoViewIfNeeded();
+    await page.waitForFunction((e) => e.complete && e.naturalWidth > 0, await img.elementHandle());
+    const shown = await img.evaluate((e) => ({ w: e.naturalWidth, h: e.naturalHeight, alt: e.alt, rendering: getComputedStyle(e).imageRendering, drawn: e.getBoundingClientRect().width }));
+    expect(shown.w === w && shown.h === h && shown.alt === `The image ${name}` && shown.rendering === 'pixelated' && shown.drawn > w, `${name}: ${JSON.stringify(shown)}`);
+    const caption = await figures.nth(k).locator('figcaption').innerText();
+    expect(caption === `${name}, ${w} × ${h} pixels`, `${name}'s caption: ${caption}`);
+    expect((await fetch(BASE + `images/${name}`)).status === 200, `images/${name} isn't served`);
+  }
+  // The pre-rendered page shows the same images.
+  const html = await (await fetch(BASE + `learn/${moduleId}/${step.slug}/`)).text();
+  for (const [name] of blocks) expect(html.includes(`<img src="${BASE_PATH}images/${name}"`), `the pre-rendered page lacks ${name}`);
+  await bothThemes(page, 'a lesson with images');
+  expect(errors.length === 0, errors.join('\n'));
+  await ctx.close();
+});
 
 await test('a pygame lesson: a window example shows its last frame with its title, size and the window as text (the pre-rendered page too); Play runs it in the page to the same last frame; axe in both themes and at 320 px', async () => {
   if (!SHOT_STEP) {
@@ -1713,6 +1754,8 @@ await test('placement quiz: one question per written module; the first miss sets
   const { ctx, page, errors } = await newPage();
   expect(DRILLS.placement.length === LIVE_COUNT && DRILLS.placement.every((q, i) => q.module === COURSE_INDEX.modules[i].id), `${DRILLS.placement.length} placement questions for ${LIVE_COUNT} written modules`);
   await page.goto(BASE + 'placement/');
+  // The questions load after the page appears: then the intro says how many there are.
+  await page.locator('text=Start the quiz').waitFor();
   const intro = await page.locator('#main').innerText();
   expect(intro.includes(`Answer ${DRILLS.placement.length} quick questions, one for each module${ALL_LIVE ? '' : ' written so far'}`), intro);
   await page.click('text=Start the quiz');

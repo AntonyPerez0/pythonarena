@@ -344,7 +344,7 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
 
       {started && (
         <div className="pg-controls">
-          <button type="button" className="btn" onClick={() => setPlaying(!playing)} aria-pressed={!playing}>
+          <button type="button" className="btn" onClick={() => setPlaying(!playing)}>
             {playing ? <Pause className="icon" aria-hidden="true" /> : <Play className="icon" aria-hidden="true" />} {playing ? "Pause" : "Play"}
           </button>
           {interactive && (
