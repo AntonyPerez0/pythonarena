@@ -15,27 +15,26 @@ steps:
               self.name = name
               self.__songs = []
 
-          def add(self, song):
-              self.__songs.append(song)
+          def add(self, title, seconds):
+              self.__songs.append((title, seconds))
 
           def count(self):
               return len(self.__songs)
 
 
-      class SmartPlaylist(Playlist):
-          def search(self, word):
-              found = []
-              for song in self.__songs:
-                  if word in song:
-                      found.append(song)
-              return found
+      class TimedPlaylist(Playlist):
+          def duration(self):
+              total = 0
+              for title, seconds in self.__songs:
+                  total += seconds
+              return f"{total // 60} min {total % 60} s"
 
 
-      mix = SmartPlaylist("Road trip")
-      mix.add("Highway Song")
-      mix.add("Slow River")
+      mix = TimedPlaylist("Road trip")
+      mix.add("Highway Song", 215)
+      mix.add("Slow River", 187)
       print(mix.count())
-      print(mix.search("River"))
+      print(mix.duration())
       ```
 
       ```output
@@ -44,20 +43,20 @@ steps:
 
       ```crash
       Traceback (most recent call last):
-        File "main.py", line 26, in <module>
-          print(mix.search("River"))
-                ~~~~~~~~~~^^^^^^^^^
-        File "main.py", line 16, in search
-          for song in self.__songs:
-                      ^^^^^^^^^^^^
-      AttributeError: 'SmartPlaylist' object has no attribute '_SmartPlaylist__songs'. Did you mean: '_Playlist__songs'?
+        File "main.py", line 25, in <module>
+          print(mix.duration())
+                ~~~~~~~~~~~~^^
+        File "main.py", line 16, in duration
+          for title, seconds in self.__songs:
+                                ^^^^^^^^^^^^
+      AttributeError: 'TimedPlaylist' object has no attribute '_TimedPlaylist__songs'. Did you mean: '_Playlist__songs'?
       ```
 
-      `add` and `count` work, because they are `Playlist`'s own methods. `search` fails.
+      The playlist keeps each song as a pair of a title and a length in seconds. `add` and `count` work, because they are `Playlist`'s own methods. `duration`, which adds up the lengths, fails.
 
       ### What the error message tells you
 
-      The message shows how Python hides a private attribute: it quietly renames it, putting the class's name in front. This renaming is called **name mangling**. Inside the class `Playlist`, `self.__songs` really means `self._Playlist__songs`. Inside `SmartPlaylist`, the same words `self.__songs` mean `self._SmartPlaylist__songs`, and the playlist has no attribute of that name.
+      The message shows how Python hides a private attribute: it quietly renames it, putting the class's name in front. This renaming is called **name mangling**. Inside the class `Playlist`, `self.__songs` really means `self._Playlist__songs`. Inside `TimedPlaylist`, the same words `self.__songs` mean `self._TimedPlaylist__songs`, and the playlist has no attribute of that name.
 
       Python's "Did you mean" points at the real name, `_Playlist__songs`. Writing that would work, but don't: it goes around the lock on purpose, and the code breaks as soon as someone renames the class. The renaming has a good side, too. A derived class can have a private attribute of its own with the same name as one in its base class, and the two never get mixed up.
 
@@ -71,32 +70,31 @@ steps:
               self.name = name
               self.__songs = []
 
-          def add(self, song):
-              self.__songs.append(song)
+          def add(self, title, seconds):
+              self.__songs.append((title, seconds))
 
           def songs(self):
               # A copy, so the private list stays safe.
               return self.__songs[:]
 
 
-      class SmartPlaylist(Playlist):
-          def search(self, word):
-              found = []
-              for song in self.songs():
-                  if word in song:
-                      found.append(song)
-              return found
+      class TimedPlaylist(Playlist):
+          def duration(self):
+              total = 0
+              for title, seconds in self.songs():
+                  total += seconds
+              return f"{total // 60} min {total % 60} s"
 
 
-      mix = SmartPlaylist("Road trip")
-      mix.add("Highway Song")
-      mix.add("Slow River")
-      mix.add("River Bend")
-      print(mix.search("River"))
+      mix = TimedPlaylist("Road trip")
+      mix.add("Highway Song", 215)
+      mix.add("Slow River", 187)
+      mix.add("River Bend", 242)
+      print(mix.duration())
       ```
 
       ```output
-      ['Slow River', 'River Bend']
+      10 min 44 s
       ```
 
       This is often the best way: the base class keeps control of its data, and the derived class only asks for it. When a base class has no such method and its derived classes really need the data, the base class can share it in another way, which is the topic of the next step.
@@ -340,7 +338,7 @@ steps:
 
       Python has no keyword for it. Instead there's a **convention**, an agreement among Python programmers: a name that starts with **one** underscore is protected. Python itself doesn't stop anyone from using it. The underscore is a sign to other programmers: this is for the class and its derived classes, keep out.
 
-      Here's the playlist again, this time with a protected list of songs:
+      Here's the timed playlist again, this time with a protected list of songs. The derived class gets a second method too, `longest`, which finds the longest song:
 
       ```python run
       class Playlist:
@@ -348,35 +346,46 @@ steps:
               self.name = name
               self._songs = []
 
-          def add(self, song):
-              self._songs.append(song)
+          def add(self, title, seconds):
+              self._songs.append((title, seconds))
 
           def count(self):
               return len(self._songs)
 
 
-      class SmartPlaylist(Playlist):
-          def search(self, word):
-              found = []
-              for song in self._songs:
-                  if word in song:
-                      found.append(song)
-              return found
+      class TimedPlaylist(Playlist):
+          def duration(self):
+              total = 0
+              for title, seconds in self._songs:
+                  total += seconds
+              return f"{total // 60} min {total % 60} s"
+
+          def longest(self):
+              best_title = ""
+              best_seconds = 0
+              for title, seconds in self._songs:
+                  if seconds > best_seconds:
+                      best_title = title
+                      best_seconds = seconds
+              return best_title
 
 
-      mix = SmartPlaylist("Road trip")
-      mix.add("Highway Song")
-      mix.add("Slow River")
+      mix = TimedPlaylist("Road trip")
+      mix.add("Highway Song", 215)
+      mix.add("Slow River", 187)
+      mix.add("River Bend", 242)
       print(mix.count())
-      print(mix.search("River"))
+      print(mix.duration())
+      print(mix.longest())
       ```
 
       ```output
-      2
-      ['Slow River']
+      3
+      10 min 44 s
+      River Bend
       ```
 
-      `search` can now use `self._songs` directly. Python doesn't rename a name with one underscore, so `self._songs` is the same attribute in both classes.
+      `duration` and `longest` can now use `self._songs` directly, without asking for a copy first. Python doesn't rename a name with one underscore, so `self._songs` is the same attribute in both classes.
 
       ### Only an agreement
 
@@ -409,7 +418,7 @@ steps:
       | Protected | `self._name` | yes | yes | no, by agreement |
       | Private | `self.__name` | yes | no | no |
 
-      Which one to pick? Make public what clients need to use. Make an attribute private when not even a derived class should change it directly, such as a balance that must never go below zero. Make it protected when the class is meant to be extended and the derived classes need the data to do their job. Derived classes then share the duty of keeping the data valid, so it's a good habit to make changes through the base class's methods, such as `add`, and use the protected attribute mostly for reading, as `search` does.
+      Which one to pick? Make public what clients need to use. Make an attribute private when not even a derived class should change it directly, such as a balance that must never go below zero. Make it protected when the class is meant to be extended and the derived classes need the data to do their job. Derived classes then share the duty of keeping the data valid, so it's a good habit to make changes through the base class's methods, such as `add`, and use the protected attribute mostly for reading, as `duration` and `longest` do.
 
       **Your turn:** the base class keeps its items in a protected list. Fill in the blank so that the derived class returns the items in alphabetical order, and the program prints:
 
@@ -932,122 +941,155 @@ steps:
               print(log.error_count())
             hidden: true
       - task: |
-          A diary keeps its entries in a protected list. Write a class `PinDiary` that inherits `Diary`, for a diary that is locked with a PIN code:
+          A `Grades` object keeps a student's grades in a protected list. Write a class `CheckedGrades` that inherits `Grades` and accepts only grades on a scale:
 
-          - The constructor takes the PIN and stores it in a **private** attribute.
-          - `add(entry, pin)` and `read(pin)` override `Diary`'s methods. With the right PIN they do what `Diary`'s versions do: call those with `super()`. With a wrong PIN they raise a `ValueError` with the message `Wrong PIN`.
-          - Write the PIN check only once, in a protected method `_check(pin)` that both methods call.
+          - The constructor takes the scale's `lowest` and `highest` grade.
+          - The protected method `_check(grade)` raises a `ValueError` with a message such as `grade must be from 1 to 5` (with the scale's own numbers) when the grade is outside the scale. For a grade on the scale it does nothing.
+          - `add(grade)` overrides `Grades`'s: it checks the grade, and then adds it with `super()`.
+          - `add_all(grades)` adds a whole list of grades, but only if every one of them is on the scale. It checks them all first, so a list with even one bad grade adds none of them.
 
           For example,
 
           ```python fragment
-          diary = PinDiary("2468")
-          diary.add("Saw a fox today", "2468")
-          print(diary.read("2468"))
+          grades = CheckedGrades(1, 5)
+          grades.add(4)
+          grades.add_all([5, 3])
           try:
-              diary.read("1234")
+              grades.add_all([2, 7, 4])
           except ValueError as error:
               print("Error:", error)
+          try:
+              grades.add(0)
+          except ValueError as error:
+              print("Error:", error)
+          print(grades.all())
+          print(grades.average())
           ```
 
           should print:
 
           ```
-          ['Saw a fox today']
-          Error: Wrong PIN
+          Error: grade must be from 1 to 5
+          Error: grade must be from 1 to 5
+          [4, 5, 3]
+          4.0
           ```
         seed: |
-          class Diary:
+          class Grades:
               def __init__(self):
-                  self._entries = []
+                  self._grades = []
 
-              def add(self, entry):
-                  self._entries.append(entry)
+              def add(self, grade):
+                  self._grades.append(grade)
 
-              def read(self):
-                  return self._entries[:]
+              def all(self):
+                  return self._grades[:]
+
+              def average(self):
+                  return sum(self._grades) / len(self._grades)
 
 
-          # Write the class PinDiary here.
+          # Write the class CheckedGrades here.
 
 
           if __name__ == "__main__":
-              diary = PinDiary("2468")
-              diary.add("Saw a fox today", "2468")
-              print(diary.read("2468"))
-              try:
-                  diary.read("1234")
-              except ValueError as error:
-                  print("Error:", error)
+              grades = CheckedGrades(1, 5)
+              grades.add(4)
+              grades.add_all([5, 3])
+              print(grades.all())
         solution: |
-          class Diary:
+          class Grades:
               def __init__(self):
-                  self._entries = []
+                  self._grades = []
 
-              def add(self, entry):
-                  self._entries.append(entry)
+              def add(self, grade):
+                  self._grades.append(grade)
 
-              def read(self):
-                  return self._entries[:]
+              def all(self):
+                  return self._grades[:]
+
+              def average(self):
+                  return sum(self._grades) / len(self._grades)
 
 
-          class PinDiary(Diary):
-              def __init__(self, pin):
+          class CheckedGrades(Grades):
+              def __init__(self, lowest, highest):
                   super().__init__()
-                  self.__pin = pin
+                  self._lowest = lowest
+                  self._highest = highest
 
-              def _check(self, pin):
-                  if pin != self.__pin:
-                      raise ValueError("Wrong PIN")
+              def _check(self, grade):
+                  if grade < self._lowest or grade > self._highest:
+                      raise ValueError(f"grade must be from {self._lowest} to {self._highest}")
 
-              def add(self, entry, pin):
-                  self._check(pin)
-                  super().add(entry)
+              def add(self, grade):
+                  self._check(grade)
+                  super().add(grade)
 
-              def read(self, pin):
-                  self._check(pin)
-                  return super().read()
+              def add_all(self, grades):
+                  for grade in grades:
+                      self._check(grade)
+                  for grade in grades:
+                      super().add(grade)
 
 
           if __name__ == "__main__":
-              diary = PinDiary("2468")
-              diary.add("Saw a fox today", "2468")
-              print(diary.read("2468"))
-              try:
-                  diary.read("1234")
-              except ValueError as error:
-                  print("Error:", error)
+              grades = CheckedGrades(1, 5)
+              grades.add(4)
+              grades.add_all([5, 3])
+              print(grades.all())
         hints:
-          - "The constructor calls `super().__init__()`, which creates the list of entries, and then stores the PIN in `self.__pin`."
-          - "`_check(pin)` raises the error when the PIN is wrong: `raise ValueError(\"Wrong PIN\")`. When the PIN is right it does nothing at all."
-          - "`add` first calls `self._check(pin)` and then `super().add(entry)`. If the PIN is wrong, the error stops the method before anything is added. `read` works the same way, and returns what `super().read()` returns."
+          - "The constructor calls `super().__init__()`, which creates the list of grades, and then stores the lowest and the highest grade in attributes of its own."
+          - "`_check` raises the error when `grade < self._lowest or grade > self._highest`: `raise ValueError(f\"grade must be from {self._lowest} to {self._highest}\")`."
+          - "`add` calls `self._check(grade)` and then `super().add(grade)`: if the check raises, the method stops before anything is added. `add_all` needs two loops: one that checks every grade, and only after it one that adds them."
         require:
-          - pattern: class\s+PinDiary\s*\(\s*Diary\s*\)
-            message: "`PinDiary` should inherit `Diary`."
-          - pattern: self\.__\w+\s*=
-            message: Store the PIN in a private attribute, with two underscores.
+          - pattern: class\s+CheckedGrades\s*\(\s*Grades\s*\)
+            message: "`CheckedGrades` should inherit `Grades`."
           - pattern: def\s+_check\s*\(
-            message: "Write the PIN check in a protected method `_check(pin)`."
+            message: "Write the check in a protected method `_check(grade)`."
+          - pattern: self\._check\(
+            min: 2
+            message: "Both `add` and `add_all` should check the grades with `self._check(...)`."
           - pattern: super\(\)\.add\(
-            message: "Let `Diary`'s `add` add the entry: `super().add(...)`."
-          - pattern: super\(\)\.read\(
-            message: "Let `Diary`'s `read` give the entries: `super().read()`."
+            message: "Let `Grades`'s `add` add a grade: `super().add(...)`."
         tests:
           - call: |
-              diary = PinDiary("2468")
-              diary.add("Saw a fox today", "2468")
-              print(diary.read("2468"))
+              grades = CheckedGrades(1, 5)
+              grades.add(4)
+              grades.add_all([5, 3])
               try:
-                  diary.read("1234")
+                  grades.add_all([2, 7, 4])
               except ValueError as error:
                   print("Error:", error)
+              try:
+                  grades.add(0)
+              except ValueError as error:
+                  print("Error:", error)
+              print(grades.all())
+              print(grades.average())
           - call: |
-              diary = PinDiary("0000")
-              diary.add("Day one", "0000")
+              grades = CheckedGrades(4, 10)
+              grades.add_all([10, 4])
               try:
-                  diary.add("Sneaky entry", "1111")
+                  grades.add(3)
               except ValueError as error:
                   print("Error:", error)
-              diary.add("Day two", "0000")
-              print(diary.read("0000"))
+              try:
+                  grades.add_all([7, 8, 11])
+              except ValueError as error:
+                  print("Error:", error)
+              grades.add(9)
+              print(grades.all())
+              print(grades.average())
+            hidden: true
+          - call: |
+              grades = CheckedGrades(0, 100)
+              grades.add_all([])
+              grades.add(100)
+              grades.add(0)
+              try:
+                  grades.add(-1)
+              except ValueError as error:
+                  print("Error:", error)
+              print(grades.all())
             hidden: true

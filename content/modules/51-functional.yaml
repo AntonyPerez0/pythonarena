@@ -5,9 +5,25 @@ steps:
     slug: map
     title: Transforming with map
     text: |
-      Python lets you write programs in different styles, called **programming paradigms**. You've used several already. In **imperative** programming a program is a series of commands run in order. In **procedural** programming those commands are grouped into functions. In **object-oriented** programming the data and the code that handles it live together in objects.
+      Most of your programs so far have worked by changing things, one step at a time: a loop adds to a total, `append` makes a list longer, a method changes an attribute of an object. **Functional programming** is a way of writing programs that works the other way round. It computes new values from old ones with functions, and it leaves the old values as they are. A way of writing programs like this is called a **programming paradigm**. Here's one small job done both ways:
 
-      **Functional programming** is one more style. It builds a program from functions that take values and return new values, and it avoids changing variables along the way. Lambda expressions and comprehensions are tools of this style. Python lets you mix styles freely, so you can pick whichever makes each part of a program clearest. This step and the next two show three classic functional tools: `map`, `filter` and `reduce`.
+      ```python run
+      numbers = [3, 8, 5]
+
+      doubled = []
+      for number in numbers:
+          doubled.append(number * 2)
+      print(doubled)
+
+      print([number * 2 for number in numbers])
+      ```
+
+      ```output
+      [6, 16, 10]
+      [6, 16, 10]
+      ```
+
+      The loop changes the list `doubled` in every round, so to know what it holds at some point, you follow the rounds. The comprehension is one expression that says what the new list is, and nothing changes on the way. That's the functional way of thinking, and you've used it since comprehensions. This step and the next two show three classic functional tools: `map`, `filter` and `reduce`. Each of them takes a function as an argument, just as `sorted` takes a key.
 
       ### map
 
@@ -71,26 +87,24 @@ steps:
 
       ### map and your own objects
 
-      `map` works with any items, objects of your own classes too. The lambda can read an attribute of each object, or call one of its methods:
+      `map` works with any items, objects of your own classes too. The function gets one object and can compute anything from it, such as a number or a line of text made from its attributes:
 
       ```python run
-      class Account:
-          def __init__(self, owner, balance):
-              self.owner = owner
-              self.__balance = balance
-
-          def balance(self):
-              return self.__balance
+      class Room:
+          def __init__(self, name, width, length):
+              self.name = name
+              self.width = width
+              self.length = length
 
 
-      accounts = [Account("Ines", 120), Account("Omar", 75), Account("Pia", 300)]
-      print(list(map(lambda account: account.owner, accounts)))
-      print(list(map(lambda account: account.balance(), accounts)))
+      rooms = [Room("kitchen", 3, 4), Room("hall", 1.5, 6), Room("bedroom", 4, 3.5)]
+      print(list(map(lambda room: room.width * room.length, rooms)))
+      print(list(map(lambda room: f"{room.name}: {room.width} x {room.length} m", rooms)))
       ```
 
       ```output
-      ['Ines', 'Omar', 'Pia']
-      [120, 75, 300]
+      [12, 9.0, 14.0]
+      ['kitchen: 3 x 4 m', 'hall: 1.5 x 6 m', 'bedroom: 4 x 3.5 m']
       ```
 
       **Your turn:** fill in the blanks so that the program converts the temperatures to Fahrenheit with `map` and prints them as a list:

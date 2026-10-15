@@ -62,7 +62,7 @@ steps:
       [1, 4, 9, 16, 25]
       ```
 
-      The second one shows that the new items don't have to be of the same type as the old ones: numbers went in, strings came out. The third uses the string method `capitalize`, which gives the string with its first letter in capitals.
+      The second one shows that the new items don't have to be of the same type as the old ones: numbers went in, strings came out. The third uses the string method `capitalize`, which gives the string with its first letter in capitals and the rest in small letters, so `"aDA"` would become `'Ada'` too.
 
       A function can return a comprehension directly. There's no need to store it in a variable first:
 
@@ -206,11 +206,27 @@ steps:
       []
       ```
 
-      When a comprehension gets longer, read the condition first: which items get through? Then read the expression: what happens to each of them?
+      In the second comprehension, 3, 5 and 7 are never squared at all. They're left out before the expression is worked out.
 
-      ### The filter comes first
+      ### A filter as a guard
 
-      Python checks the condition before it works out the expression, so the expression only sees the items that passed. That makes a filter a good guard for an expression that wouldn't work on every item. Dividing by zero stops a program, so here the zeros are filtered out:
+      That order matters when the expression can fail. Here each team shares 40 pizza slices, and the comprehension works out how many slices each person gets. But two teams have 0 people, a mistake in the data, and dividing by 0 stops the program:
+
+      ```python run crash
+      team_sizes = [4, 0, 5, 0, 10]
+      pizza_slices = [40 // size for size in team_sizes]
+      print(pizza_slices)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          pizza_slices = [40 // size for size in team_sizes]
+                          ~~~^^~~~~~
+      ZeroDivisionError: division by zero
+      ```
+
+      A filter fixes it. For each size, Python checks the condition first, and only a size that passes gets as far as `40 // size`:
 
       ```python run
       team_sizes = [4, 0, 5, 0, 10]
@@ -221,8 +237,6 @@ steps:
       ```output
       [10, 8, 4]
       ```
-
-      Without the `if`, the first zero would stop the program with a `ZeroDivisionError`.
 
       The condition can be anything that gives `True` or `False`, including conditions joined with `and` and `or`, and `in`:
 
@@ -255,7 +269,7 @@ steps:
           print([n // 5 for n in numbers if n != 15])
           print([n for n in numbers if n > 50])
         hints:
-          - "Read the condition first: which numbers pass it?"
+          - "Start with the numbers that pass each condition. In the first line, which numbers are greater than 10?"
           - "In the second line, every number except 15 passes, and each one is divided by 5."
           - No number is greater than 50, so the last list has no items at all.
       - task: |

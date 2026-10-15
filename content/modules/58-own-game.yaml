@@ -672,7 +672,7 @@ steps:
 
       You can write and play a game of your own in the Playground of this site, where all its pictures are available.
 
-      **Your turn:** in the challenges of this step the monster is faster. It moves `MONSTER_SPEED` pixels a frame, 2 to begin with. That needs care: a monster 1 pixel to the left of the robot would jump past it, then back on the next frame, and so on, and shake.
+      **Your turn:** in the challenges of this step the monster is faster. It moves `MONSTER_SPEED` pixels a frame, 2 to begin with. That needs care: a monster 1 pixel to the left of the robot would jump 1 pixel past it, then back again on the next frame, and so on. It would shake.
 
       Write the method `move_monster`. On every frame, the monster's x moves `MONSTER_SPEED` pixels toward the robot's x, but never past it: if the robot's x is closer than that, the monster's x becomes the robot's x. If the two are already the same, the monster's x stays as it is. The monster's y moves toward the robot's y in the same way.
     assets: [robot.png, coin.png, monster.png]
@@ -684,6 +684,7 @@ steps:
       WIDTH = 480
       HEIGHT = 360
       GAME_TIME = 15
+      MONSTER_SPEED = 2
 
 
       class CoinChase:
@@ -759,7 +760,7 @@ steps:
               self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
 
           def move_monster(self):
-              # Move the monster one pixel toward the robot, on both axes.
+              # Move the monster toward the robot on both axes, but never past it.
               pass
 
           def draw(self):
@@ -788,6 +789,7 @@ steps:
       WIDTH = 480
       HEIGHT = 360
       GAME_TIME = 15
+      MONSTER_SPEED = 2
 
 
       class CoinChase:
@@ -864,13 +866,13 @@ steps:
 
           def move_monster(self):
               if self.monster_x < self.robot_x:
-                  self.monster_x += 1
+                  self.monster_x = min(self.monster_x + MONSTER_SPEED, self.robot_x)
               if self.monster_x > self.robot_x:
-                  self.monster_x -= 1
+                  self.monster_x = max(self.monster_x - MONSTER_SPEED, self.robot_x)
               if self.monster_y < self.robot_y:
-                  self.monster_y += 1
+                  self.monster_y = min(self.monster_y + MONSTER_SPEED, self.robot_y)
               if self.monster_y > self.robot_y:
-                  self.monster_y -= 1
+                  self.monster_y = max(self.monster_y - MONSTER_SPEED, self.robot_y)
 
           def draw(self):
               self.window.fill((30, 90, 60))
@@ -891,22 +893,27 @@ steps:
           game = CoinChase()
           game.run()
     hints:
-      - Compare the monster's x with the robot's. If it's smaller, the monster moves right, so x grows by one. If it's bigger, x gets one smaller.
-      - "Use two separate `if` statements, so that nothing happens when they're equal: `if self.monster_x < self.robot_x:` and `if self.monster_x > self.robot_x:`."
-      - Then the same for y, with `self.monster_y` and `self.robot_y`.
+      - "Start with x. When the monster's x is smaller than the robot's, it grows by `MONSTER_SPEED`, but not beyond the robot's x. `min(self.monster_x + MONSTER_SPEED, self.robot_x)` is whichever of the two is smaller."
+      - "When the monster's x is bigger, it gets smaller by `MONSTER_SPEED`, and `max(...)` with the robot's x stops it at the robot, as `max` kept the robot inside the window."
+      - "Use two separate `if` statements for x, so that nothing happens when the two are equal. Then do the same for y."
     tests:
       - name: The monster comes closer
         window: {frames: 120}
-      - window: {frames: 61, events: [{at: 1, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}]}
+      - name: Up, then a little down
+        window: {frames: 48, events: [{at: 5, type: keydown, key: K_UP}, {at: 40, type: keyup, key: K_UP}, {at: 40, type: keydown, key: K_DOWN}, {at: 46, type: keyup, key: K_DOWN}]}
         hidden: true
-      - window: {frames: 360}
+      - name: Down, then right under the monster
+        window: {frames: 117, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 58, type: keyup, key: K_DOWN}, {at: 58, type: keydown, key: K_RIGHT}, {at: 115, type: keyup, key: K_RIGHT}]}
+        hidden: true
+      - name: Down, then right toward the monster
+        window: {frames: 114, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 62, type: keyup, key: K_DOWN}, {at: 62, type: keydown, key: K_RIGHT}, {at: 113, type: keyup, key: K_RIGHT}]}
         hidden: true
     more:
       - task: |
-          The game never ends, and the time in the corner stays at 15. Add the time limit:
+          The time in the corner stays at 15: it never runs out. Add a time limit, in which every coin gives the robot more time:
 
           - in `update`, add one to `self.frames` on every frame
-          - write the method `seconds_left()`, which returns `GAME_TIME` minus the number of whole seconds played (`self.frames // 60`)
+          - write the method `seconds_left()`. It returns `GAME_TIME`, plus `SECONDS_PER_COIN` seconds for each coin collected (`self.coins`), minus the number of whole seconds played (`self.frames // 60`)
           - at the end of `update`, set `self.over` to `True` when no seconds are left
         assets: [robot.png, coin.png, monster.png]
         seed: |
@@ -917,6 +924,8 @@ steps:
           WIDTH = 480
           HEIGHT = 360
           GAME_TIME = 15
+          MONSTER_SPEED = 2
+          SECONDS_PER_COIN = 2
 
 
           class CoinChase:
@@ -991,13 +1000,13 @@ steps:
 
               def move_monster(self):
                   if self.monster_x < self.robot_x:
-                      self.monster_x += 1
+                      self.monster_x = min(self.monster_x + MONSTER_SPEED, self.robot_x)
                   if self.monster_x > self.robot_x:
-                      self.monster_x -= 1
+                      self.monster_x = max(self.monster_x - MONSTER_SPEED, self.robot_x)
                   if self.monster_y < self.robot_y:
-                      self.monster_y += 1
+                      self.monster_y = min(self.monster_y + MONSTER_SPEED, self.robot_y)
                   if self.monster_y > self.robot_y:
-                      self.monster_y -= 1
+                      self.monster_y = max(self.monster_y - MONSTER_SPEED, self.robot_y)
 
               def draw(self):
                   self.window.fill((30, 90, 60))
@@ -1025,6 +1034,8 @@ steps:
           WIDTH = 480
           HEIGHT = 360
           GAME_TIME = 15
+          MONSTER_SPEED = 2
+          SECONDS_PER_COIN = 2
 
 
           class CoinChase:
@@ -1054,7 +1065,7 @@ steps:
                   self.coin_y = random.randint(40, HEIGHT - 24)
 
               def seconds_left(self):
-                  return GAME_TIME - self.frames // 60
+                  return GAME_TIME + SECONDS_PER_COIN * self.coins - self.frames // 60
 
               def run(self):
                   while True:
@@ -1101,13 +1112,13 @@ steps:
 
               def move_monster(self):
                   if self.monster_x < self.robot_x:
-                      self.monster_x += 1
+                      self.monster_x = min(self.monster_x + MONSTER_SPEED, self.robot_x)
                   if self.monster_x > self.robot_x:
-                      self.monster_x -= 1
+                      self.monster_x = max(self.monster_x - MONSTER_SPEED, self.robot_x)
                   if self.monster_y < self.robot_y:
-                      self.monster_y += 1
+                      self.monster_y = min(self.monster_y + MONSTER_SPEED, self.robot_y)
                   if self.monster_y > self.robot_y:
-                      self.monster_y -= 1
+                      self.monster_y = max(self.monster_y - MONSTER_SPEED, self.robot_y)
 
               def draw(self):
                   self.window.fill((30, 90, 60))
@@ -1129,14 +1140,15 @@ steps:
               game.run()
         hints:
           - "`self.frames` starts at 0 in `reset`. `self.frames += 1` in `update` counts the frames played."
-          - "`seconds_left` is one line: `return GAME_TIME - self.frames // 60`."
-          - "After counting the frame: `if self.seconds_left() == 0:` then `self.over = True`."
+          - "`seconds_left` is one line: start from `GAME_TIME`, add `SECONDS_PER_COIN * self.coins`, and subtract `self.frames // 60`."
+          - "After counting the frame: `if self.seconds_left() == 0:` then `self.over = True`. Only ever set it to `True` there, never to `False`: the monster may have ended the game in the same frame."
         tests:
-          - name: Two seconds in
-            window: {frames: 130}
-          - name: Seconds left after 61 frames
+          - name: A coin gives two more seconds
+            window: {frames: 100, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}]}
+          - name: Seconds left with 2 coins, after 61 frames
             call: |
               game = CoinChase()
+              game.coins = 2
               game.frames = 61
               print(game.seconds_left())
           - window: {frames: 200}
@@ -1149,17 +1161,25 @@ steps:
             hidden: true
           - call: |
               game = CoinChase()
+              game.coins = 1
+              game.frames = 899
+              game.update()
+              print(game.seconds_left(), game.over)
+            hidden: true
+          - call: |
+              game = CoinChase()
               game.frames = 500
               game.update()
               print(game.seconds_left(), game.over)
             hidden: true
       - task: |
-          The monster walks right through the robot, and nothing happens. Finish the game's end:
+          The monster walks right through the robot, and nothing happens. Give the robot three lives: `reset` already sets `self.lives` to 3, and `draw` shows them. In `update`, when the monster's rectangle and the robot's overlap (both are 40 by 40 pixels):
 
-          - in `update`, set `self.over` to `True` when the monster's rectangle and the robot's overlap (both are 40 by 40 pixels)
-          - in `run`, call `update` only while the game isn't over, so that nothing moves after that
+          - the robot loses a life: `self.lives` gets one smaller
+          - the monster goes back to where it started, (420, 40)
+          - if no lives are left, the game is over: set `self.over` to `True`
 
-          `draw` already shows the message, and R already restarts the game.
+          When the time runs out, the game must still end, as before.
         assets: [robot.png, coin.png, monster.png]
         seed: |
           import random
@@ -1169,6 +1189,8 @@ steps:
           WIDTH = 480
           HEIGHT = 360
           GAME_TIME = 15
+          MONSTER_SPEED = 2
+          SECONDS_PER_COIN = 2
 
 
           class CoinChase:
@@ -1189,6 +1211,7 @@ steps:
                   self.monster_x = 420
                   self.monster_y = 40
                   self.coins = 0
+                  self.lives = 3
                   self.frames = 0
                   self.over = False
                   self.place_coin()
@@ -1198,12 +1221,13 @@ steps:
                   self.coin_y = random.randint(40, HEIGHT - 24)
 
               def seconds_left(self):
-                  return GAME_TIME - self.frames // 60
+                  return GAME_TIME + SECONDS_PER_COIN * self.coins - self.frames // 60
 
               def run(self):
                   while True:
                       self.handle_events()
-                      self.update()
+                      if not self.over:
+                          self.update()
                       self.draw()
                       self.clock.tick(60)
 
@@ -1242,13 +1266,13 @@ steps:
 
               def move_monster(self):
                   if self.monster_x < self.robot_x:
-                      self.monster_x += 1
+                      self.monster_x = min(self.monster_x + MONSTER_SPEED, self.robot_x)
                   if self.monster_x > self.robot_x:
-                      self.monster_x -= 1
+                      self.monster_x = max(self.monster_x - MONSTER_SPEED, self.robot_x)
                   if self.monster_y < self.robot_y:
-                      self.monster_y += 1
+                      self.monster_y = min(self.monster_y + MONSTER_SPEED, self.robot_y)
                   if self.monster_y > self.robot_y:
-                      self.monster_y -= 1
+                      self.monster_y = max(self.monster_y - MONSTER_SPEED, self.robot_y)
 
               def draw(self):
                   self.window.fill((30, 90, 60))
@@ -1257,6 +1281,8 @@ steps:
                   self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
                   coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
                   self.window.blit(coins_text, (10, 10))
+                  lives_text = self.font.render(f"Lives: {self.lives}", True, (255, 255, 255))
+                  self.window.blit(lives_text, (200, 10))
                   time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
                   self.window.blit(time_text, (390, 10))
                   if self.over:
@@ -1276,6 +1302,8 @@ steps:
           WIDTH = 480
           HEIGHT = 360
           GAME_TIME = 15
+          MONSTER_SPEED = 2
+          SECONDS_PER_COIN = 2
 
 
           class CoinChase:
@@ -1296,6 +1324,7 @@ steps:
                   self.monster_x = 420
                   self.monster_y = 40
                   self.coins = 0
+                  self.lives = 3
                   self.frames = 0
                   self.over = False
                   self.place_coin()
@@ -1305,7 +1334,7 @@ steps:
                   self.coin_y = random.randint(40, HEIGHT - 24)
 
               def seconds_left(self):
-                  return GAME_TIME - self.frames // 60
+                  return GAME_TIME + SECONDS_PER_COIN * self.coins - self.frames // 60
 
               def run(self):
                   while True:
@@ -1332,7 +1361,11 @@ steps:
                       self.coins += 1
                       self.place_coin()
                   if robot.colliderect(monster):
-                      self.over = True
+                      self.lives -= 1
+                      self.monster_x = 420
+                      self.monster_y = 40
+                      if self.lives == 0:
+                          self.over = True
                   self.frames += 1
                   if self.seconds_left() == 0:
                       self.over = True
@@ -1352,13 +1385,13 @@ steps:
 
               def move_monster(self):
                   if self.monster_x < self.robot_x:
-                      self.monster_x += 1
+                      self.monster_x = min(self.monster_x + MONSTER_SPEED, self.robot_x)
                   if self.monster_x > self.robot_x:
-                      self.monster_x -= 1
+                      self.monster_x = max(self.monster_x - MONSTER_SPEED, self.robot_x)
                   if self.monster_y < self.robot_y:
-                      self.monster_y += 1
+                      self.monster_y = min(self.monster_y + MONSTER_SPEED, self.robot_y)
                   if self.monster_y > self.robot_y:
-                      self.monster_y -= 1
+                      self.monster_y = max(self.monster_y - MONSTER_SPEED, self.robot_y)
 
               def draw(self):
                   self.window.fill((30, 90, 60))
@@ -1367,6 +1400,8 @@ steps:
                   self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
                   coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
                   self.window.blit(coins_text, (10, 10))
+                  lives_text = self.font.render(f"Lives: {self.lives}", True, (255, 255, 255))
+                  self.window.blit(lives_text, (200, 10))
                   time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
                   self.window.blit(time_text, (390, 10))
                   if self.over:
@@ -1380,12 +1415,30 @@ steps:
               game.run()
         hints:
           - "`update` already makes the rectangle `monster`. Check it like the coin: `if robot.colliderect(monster):`."
-          - "In `run`, put the call in an `if`: `if not self.over:` and `self.update()` inside it."
-          - The events and the drawing still happen when the game is over. Only `update` is skipped.
+          - "Inside that `if`, take one from `self.lives`, and set `self.monster_x` and `self.monster_y` back to 420 and 40. Otherwise the monster would still be on the robot in the next frame, and take another life."
+          - "Then, still inside it, check whether `self.lives` is 0, and if it is, set `self.over` to `True`. Don't set `self.over` to `False` anywhere in `update`: the time limit may have just ended the game."
         tests:
-          - name: Caught by the monster
-            window: {frames: 360}
-          - window: {frames: 380, events: [{at: 350, type: keydown, key: K_RIGHT}, {at: 375, type: keyup, key: K_RIGHT}]}
+          - name: Caught once
+            window: {frames: 240}
+          - name: Caught three times
+            window: {frames: 560}
             hidden: true
-          - window: {frames: 390, events: [{at: 360, type: keydown, key: K_r}, {at: 360, type: keyup, key: K_r}]}
+          - name: Down, then right
+            window: {frames: 215, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}, {at: 60, type: keydown, key: K_RIGHT}, {at: 120, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - name: The time runs out
+            call: |
+              game = CoinChase()
+              game.frames = 899
+              game.update()
+              print(game.over)
+            hidden: true
+          - name: Caught with the last life
+            call: |
+              game = CoinChase()
+              game.lives = 1
+              game.monster_x = 70
+              game.monster_y = 160
+              game.update()
+              print(game.lives, game.monster_x, game.monster_y, game.over)
             hidden: true

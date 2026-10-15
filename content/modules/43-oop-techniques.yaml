@@ -293,10 +293,6 @@ steps:
           - "A method can create an object of its own class: `return Color(...)`, with the new red, green and blue in the parentheses."
           - "The average rounded down is `(self.red + other.red) // 2`. Don't change `self.red`: a new color gets the new values."
           - "In `brighter`, `min(self.red + 50, 255)` is the smaller of the two, so it's never more than 255."
-        require:
-          - pattern: return\s+Color\s*\(
-            min: 2
-            message: "Both methods should return a new color: `return Color(...)`."
         tests:
           - call: |
               red = Color(255, 0, 0)
@@ -380,7 +376,7 @@ steps:
 
       ### A full set of comparisons
 
-      `<=` and `>=` don't come from `<` and `==` automatically: each needs a method of its own. They can be written with the ones you have. Software versions such as 3.12 and 3.14 are a good example. The major version, the first number, matters most, and the minor version only decides when the major versions are equal:
+      `<=` doesn't come from `<` and `==` automatically: write `__le__` for it, and `__ge__` for `>=`. (When one side has no method for an operator, Python tries the mirrored method of the other side: for `b >= a` it can use `a.__le__(b)`. Still, writing a method for each operator you use is the clear way.) The new methods can be written with the ones you have. Software versions such as 3.12 and 3.14 are a good example. The major version, the first number, matters most, and the minor version only decides when the major versions are equal:
 
       ```python run
       class Version:
@@ -984,36 +980,46 @@ steps:
       `print`, `str` and f-strings use an object's `__str__`. The function `repr`, and a list being printed, use its **`__repr__`**. A good `__repr__` returns text that looks like the Python code that would create an object with the same contents:
 
       ```python run
-      class Pet:
-          def __init__(self, name, age):
-              self.name = name
-              self.age = age
+      class Order:
+          def __init__(self, table, dishes):
+              self.table = table
+              self.dishes = dishes
 
           def __str__(self):
-              return f"{self.name}, {self.age} years old"
+              return f"table {self.table}: {', '.join(self.dishes)}"
 
           def __repr__(self):
-              return f"Pet({repr(self.name)}, {self.age})"
+              return f"Order({self.table}, {self.dishes})"
 
 
-      rex = Pet("Rex", 3)
-      print(rex)
-      print(f"My pet is {rex}")
-      print(repr(rex))
-      pets = [rex, Pet("Tom", 5)]
-      print(pets)
+      first = Order(4, ["soup", "pie"])
+      print(first)
+      print(f"Next up, {first}")
+      print(repr(first))
+      orders = [first, Order(7, ["tea"])]
+      print(orders)
       ```
 
       ```output
-      Rex, 3 years old
-      My pet is Rex, 3 years old
-      Pet('Rex', 3)
-      [Pet('Rex', 3), Pet('Tom', 5)]
+      table 4: soup, pie
+      Next up, table 4: soup, pie
+      Order(4, ['soup', 'pie'])
+      [Order(4, ['soup', 'pie']), Order(7, ['tea'])]
       ```
 
-      Notice `repr(self.name)` inside `__repr__`. It puts quotes around the name, so the text reads like code: `Pet('Rex', 3)`. Without it, you'd get `Pet(Rex, 3)`, which isn't how you'd write the call.
+      The kitchen reads the `__str__` text, and a programmer looking at the list of orders sees exactly what each order holds. The list of dishes could go into `__repr__`'s f-string as it is, because a list always shows its items with `repr`: the dishes get their quotes by themselves. A string on its own doesn't. An f-string puts in its bare text, and `repr` adds the quotes:
 
-      Without a `__repr__`, a printed list of pets would show something like `<__main__.Pet object at 0x7f3a2c1d5e50>` for each one: the class and an address in the computer's memory, which helps nobody.
+      ```python repl
+      >>> dish = "soup"
+      >>> print(f"Order({dish})")
+      Order(soup)
+      >>> print(f"Order({repr(dish)})")
+      Order('soup')
+      ```
+
+      So when an attribute is a string, write `repr(...)` around it in `__repr__`, and the text reads like the code that makes the object.
+
+      Without a `__repr__`, a printed list of orders would show something like `<__main__.Order object at 0x7f3a2c1d5e50>` for each one: the class and an address in the computer's memory, which helps nobody.
 
       ### When there's only __repr__
 

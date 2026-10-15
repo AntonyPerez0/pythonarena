@@ -260,84 +260,88 @@ drills:
   - type: boss
     after: iterators
     prompt: |
-      Write a class `Money` for amounts in whole euros. The constructor takes the number of euros. Give the class these methods:
+      Write a class `Distance` for distances in whole meters, such as the laps and stretches of a running plan. The constructor takes the number of meters. Give the class these methods:
 
-      - `__str__` returns text such as `25 eur`.
-      - `__add__` returns a new `Money` with the sum of two amounts.
-      - `__eq__` and `__lt__` compare two amounts.
+      - `__str__` returns text such as `400 m`.
+      - `__add__` returns a new `Distance` with the sum of two distances.
+      - `__mul__` takes a whole number and returns a new `Distance` that many times as long, for running the same stretch several times.
+      - `__lt__` compares two distances.
 
       For example,
 
       ```python fragment
-      price = Money(25)
-      tip = Money(5)
-      print(price + tip)
-      print(price == Money(25))
-      print(tip < price)
-      print(price)
+      lap = Distance(400)
+      warm_up = Distance(800)
+      print(lap * 3)
+      print(warm_up + lap * 3)
+      print(lap < warm_up)
+      print(lap)
       ```
 
       should print:
 
       ```
-      30 eur
+      1200 m
+      2000 m
       True
-      True
-      25 eur
+      400 m
       ```
     seed: |
-      # Write the class Money here.
+      # Write the class Distance here.
 
 
       if __name__ == "__main__":
-          price = Money(25)
-          tip = Money(5)
-          print(price + tip)
+          lap = Distance(400)
+          print(lap * 3)
+          print(lap)
     solution: |
-      class Money:
-          def __init__(self, euros):
-              self.euros = euros
+      class Distance:
+          def __init__(self, meters):
+              self.meters = meters
 
           def __str__(self):
-              return f"{self.euros} eur"
+              return f"{self.meters} m"
 
           def __add__(self, other):
-              return Money(self.euros + other.euros)
+              return Distance(self.meters + other.meters)
 
-          def __eq__(self, other):
-              return self.euros == other.euros
+          def __mul__(self, times):
+              return Distance(self.meters * times)
 
           def __lt__(self, other):
-              return self.euros < other.euros
+              return self.meters < other.meters
 
 
       if __name__ == "__main__":
-          price = Money(25)
-          tip = Money(5)
-          print(price + tip)
+          lap = Distance(400)
+          print(lap * 3)
+          print(lap)
     hints:
-      - "Store the euros in the constructor, and let `__str__` return `f\"{self.euros} eur\"`."
-      - "`__add__` returns `Money(self.euros + other.euros)`. `__eq__` and `__lt__` return the result of comparing the euros."
+      - "Store the meters in the constructor, and let `__str__` return `f\"{self.meters} m\"`."
+      - "In `lap * 3`, `self` is the distance and the other operand is the number 3, not a `Distance`: multiply `self.meters` by it."
+      - "`__add__` and `__mul__` each return a new `Distance` object; `__lt__` returns the result of comparing the meters."
     require:
       - pattern: def\s+__add__\s*\(
         message: "Write `__add__` for `+`."
-      - pattern: def\s+__eq__\s*\(
-        message: "Write `__eq__` for `==`."
+      - pattern: def\s+__mul__\s*\(
+        message: "Write `__mul__` for `*`."
       - pattern: def\s+__lt__\s*\(
         message: "Write `__lt__` for `<`."
     tests:
       - call: |
-          price = Money(25)
-          tip = Money(5)
-          print(price + tip)
-          print(price == Money(25))
-          print(tip < price)
-          print(price)
+          lap = Distance(400)
+          warm_up = Distance(800)
+          print(lap * 3)
+          print(warm_up + lap * 3)
+          print(lap < warm_up)
+          print(lap)
       - call: |
-          rent = Money(700)
-          food = Money(250)
-          print(rent + food + Money(50))
-          print(rent < food)
-          print(food != Money(250))
-          print(max([food, rent, Money(5)]))
+          hill = Distance(150)
+          road = Distance(2500)
+          print(hill * 6 + road)
+          print(road < hill)
+          print(hill * 0)
+          for stretch in sorted([road, hill * 10, Distance(75)]):
+              print(stretch)
+          print(hill)
         hidden: true

@@ -78,7 +78,7 @@ drills:
 
   - type: choice
     after: user-interface
-    prompt: "In a well-organized text user interface, what does the main loop in `execute` do?"
+    prompt: "In a well-organized text user interface, what does the main loop in `run` do?"
     choices:
       - Reads a command and calls the method that handles it
       - Handles every command itself, all inside the loop
@@ -174,22 +174,22 @@ drills:
   - type: bug
     after: files
     code: |
-      data = {"robin": ["park"], "heron": ["lake", "river"]}
-      with open("birds.txt", "w") as file:
-          for species, places in data.items():
-              file.write(";".join([species] + places))  # BUG
-      with open("birds.txt") as file:
+      books = [("Dune", 412), ("Emma", 474)]
+      with open("books.txt", "w") as file:
+          for title, length in books:
+              file.write(f"{title}|{length}")  # BUG
+      with open("books.txt") as file:
           print(file.read())
-    fix: file.write(";".join([species] + places) + "\n")
-    why: "`write` doesn't add a line break by itself. Without `\"\\n\"` at the end, both species end up on the same line, and the file can't be read back correctly."
+    fix: file.write(f"{title}|{length}\n")
+    why: "`write` doesn't add a line break by itself. Without `\"\\n\"` at the end, both books end up on the same line, and the file can't be read back correctly."
 
   - type: choice
     after: files
-    prompt: How does the bird log application use its file?
+    prompt: How does the reading log application use its file?
     choices:
       - It reads the whole file when it starts, and writes all the data back when the user quits
       - It opens the file again for every command
-      - It changes only the lines that changed, in place
+      - It writes a book to the file as soon as it's added, and reads the file again for every command
     answer: 1
     why: "Reading once and writing everything back at the end is the simplest way to keep data in a file. While the program runs, the data lives in its objects."
 
