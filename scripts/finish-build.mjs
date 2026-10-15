@@ -42,10 +42,11 @@ writeFileSync(swPath, sw);
 
 console.log(`finish-build: service worker ${version} with ${assets.length} files`);
 
-// Lighthouse's script budget only sees the page's own scripts, so the workers get their own budget.
-const WORKER_BUDGET = { 'compile.worker': 100_000, 'run.worker': 600_000 };
-for (const f of files.filter((f) => /^assets\/(compile|run)\.worker-.*\.js$/.test(f))) {
-  const name = f.includes('compile.worker') ? 'compile.worker' : 'run.worker';
+// Lighthouse's script budget only sees the page's own scripts, so the worker gets its own budget
+// (Python itself, Pyodide, isn't in it: the worker downloads it from engine/).
+const WORKER_BUDGET = { 'run.worker': 60_000 };
+for (const f of files.filter((f) => /^assets\/run\.worker-.*\.js$/.test(f))) {
+  const name = 'run.worker';
   const size = statSync(join(dist, f)).size;
   console.log(`finish-build: ${name} ${(size / 1000).toFixed(0)} KB (budget ${WORKER_BUDGET[name] / 1000} KB)`);
   if (size > WORKER_BUDGET[name]) {

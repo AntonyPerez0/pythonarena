@@ -3,29 +3,26 @@
 // React app replaces the pre-rendered content when it starts. Also writes 404.html (GitHub Pages
 // serves it for unknown addresses, and the app then shows the right page), sitemap.xml and robots.txt.
 //
-// Env: SITE_URL (default https://javaarena.com), BASE_PATH (default /).
+// Env: SITE_URL (default https://antonyperez0.github.io/pythonarena), BASE_PATH (default /).
 import fs from "node:fs";
 import path from "node:path";
 import { marked } from "marked";
-import { assetExample, assetFigureHtml } from "../src/grader/assets.ts";
 import { FILE_MARK, splitFiles } from "../src/grader/files.js";
-import { windowExample } from "../src/grader/window.ts";
-import { windowFigureHtml } from "../src/components/window-drawing.ts";
 import { readOnlyBlockHtml } from "../src/components/code-blocks.ts";
-import { withoutClassDiagrams } from "./content/class-diagram.mjs";
 import { RECORD_NOTICE } from "../src/lib/record.ts";
 import { PRO_GUIDE_HTML, PRO_HONEST, PRO_LEAD } from "../src/lib/pro-guide.ts";
 import { readProTrack } from "./pro-track/site.mjs";
-import { JAVA_API_URL, KIND_LABEL, TOPICS_LEAD, aboutParts, matchCount, topicLetter } from "../src/lib/topics.ts";
+import { PYTHON_DOCS_URL, KIND_LABEL, TOPICS_LEAD, aboutParts, matchCount, topicLetter } from "../src/lib/topics.ts";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const DIST = path.join(ROOT, "dist");
 // Host names are case-insensitive, but canonical links should match what GitHub Pages serves (lower case).
-const siteUrl = new URL(process.env.SITE_URL ?? "https://javaarena.com");
+const siteUrl = new URL(process.env.SITE_URL ?? "https://antonyperez0.github.io/pythonarena");
 const SITE = `${siteUrl.protocol}//${siteUrl.host.toLowerCase()}${siteUrl.pathname}`.replace(/\/$/, "");
 const BASE = process.env.BASE_PATH ?? "/";
-const NAME = "Java Arena";
-const MOOC = "https://java-programming.mooc.fi";
+const NAME = "Python Arena";
+const MOOC = "https://programming-26.mooc.fi";
+const MOOC_NAME = "Python Programming MOOC 2026";
 const LICENSE = "https://creativecommons.org/licenses/by-nc-sa/4.0/";
 const GEN = path.join(ROOT, "src/generated");
 const index = JSON.parse(fs.readFileSync(path.join(GEN, "course.json"), "utf8"));
@@ -42,27 +39,32 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const link = (p) => BASE + p.replace(/^\//, "").replace(/^([^.?#]*[^/.?#])$/, "$1/");
 const canonical = (route) => (route === "/" ? `${SITE}/` : `${SITE}${route.replace(/\/$/, "")}/`);
 
-const LABELS = { output: "Output", input: "Input", javac: "What javac prints", crash: "The program crashes with" };
+const LABELS = { output: "Output", input: "Input", crash: "Python stops with" };
+/** A session of the interactive interpreter (```pycon), its prompts dimmed, as the page shows it (src/components/Markdown.tsx). */
+const replHtml = (text) =>
+  text
+    .replace(/\n$/, "")
+    .split("\n")
+    .map((line) => {
+      const m = /^(>>>|\.\.\.)( ?)(.*)$/.exec(line);
+      return m ? `<span class="tk-prompt">${esc(m[1])}</span>${m[2]}${esc(m[3])}` : `<span class="repl-out">${esc(line)}</span>`;
+    })
+    .join("\n");
 marked.use({
   renderer: {
     code({ text, lang }) {
-      // A java window example's window (stored by the build): drawn, with the window as text, as the page shows it.
-      const shown = lang === "window" ? windowExample(text) : null;
-      if (shown) return windowFigureHtml(shown);
       const file = lang ? /^file\s+(\S+)$/.exec(lang) : null;
       if (file) return `<figure class="io io-file"><figcaption>The file ${esc(file[1])}</figcaption><pre><code>${esc(text)}</code></pre></figure>\n`;
-      // An image of content/assets (stored by the build): drawn with its name and size, as the page shows it.
-      const asset = lang && /^asset\s/.test(lang) ? assetExample(text) : null;
-      if (asset) return assetFigureHtml(asset.name, asset.image, BASE);
-      if (lang === "java" && new RegExp(FILE_MARK.source, "m").test(text))
-        return splitFiles(text).map((f) => `<figure class="code-file"><figcaption>${esc(f.path)}</figcaption><pre class="code-java"><code>${esc(f.text.replace(/\n$/, ""))}</code></pre></figure>\n`).join("");
+      if (lang === "pycon") return `<figure class="io io-repl"><figcaption>In the Python interpreter</figcaption><pre class="code-py"><code>${replHtml(text)}</code></pre></figure>\n`;
+      if (lang === "python" && new RegExp(FILE_MARK.source, "m").test(text))
+        return splitFiles(text).map((f) => `<figure class="code-file"><figcaption>${esc(f.path)}</figcaption><pre class="code-py"><code>${esc(f.text.replace(/\n$/, ""))}</code></pre></figure>\n`).join("");
       if (lang === "input" && /\n$/.test(text))
         return `<figure class="io io-input"><figcaption>Input</figcaption><pre><code>${esc(text.replace(/\n$/, ""))}\n<span class="input-empty">(an empty line)</span></code></pre></figure>\n`;
       // Code to read in another language and commands for your own computer, as the page shows them.
       const other = readOnlyBlockHtml(lang, text);
       if (other) return other;
       if (lang && LABELS[lang]) return `<figure class="io io-${lang}"><figcaption>${LABELS[lang]}</figcaption><pre><code>${esc(text)}</code></pre></figure>\n`;
-      return `<pre${lang === "java" ? ' class="code-java"' : ""}><code>${esc(text)}</code></pre>\n`;
+      return `<pre${lang === "python" ? ' class="code-py"' : ""}><code>${esc(text)}</code></pre>\n`;
     },
     codespan({ text }) {
       return `<code>${text.replace(/-&gt;/g, '<span class="nw">-&gt;</span>')}</code>`;
@@ -78,9 +80,9 @@ function md(s, top = 2) {
   const shift = top - Math.min(...levels);
   return html.replace(/<(\/?)h([1-6])([\s>])/g, (_, slash, n, after) => `<${slash}h${Math.min(6, Math.max(1, Number(n) + shift))}${after}`);
 }
-/** Plain-text summary of Markdown, cut at a word boundary. Class diagrams (HTML drawn by the build) are left out. */
+/** Plain-text summary of Markdown, cut at a word boundary. */
 function summary(text, max = 155) {
-  const plain = withoutClassDiagrams(text)
+  const plain = String(text)
     .replace(/```[\s\S]*?```/g, " ")
     .replace(/^\s*(?:[-*+]|\d+\.)\s+/gm, "")
     .replace(/`([^`]*)`/g, "$1")
@@ -103,16 +105,16 @@ const EXTRA_TITLE = "An extra module: not part of the University of Helsinki's M
 const extraTag = (m) => (m.course === "extra" ? ` <span class="extra-tag" title="${EXTRA_TITLE}">Extra</span>` : "");
 /** The course names and notes, as on the app's Learn page (src/pages/Learn.tsx). */
 const COURSES = [
-  ["I", "Java Programming I", "Parts 1 to 7 of the MOOC: the basics of programming, up to classes, objects and larger programs."],
-  ["II", "Java Programming II", "Parts 8 to 14 of the MOOC: hash maps, inheritance, interfaces, streams, exceptions, generics, and graphical programs."],
-  ["extra", "Extra modules", "Newer Java features and topics the MOOC doesn't cover. Optional, for after the course."],
+  ["I", "Introduction to Programming", "Parts 1 to 7 of the MOOC: printing and input, variables, conditions, loops, strings, functions, lists, dictionaries, files, errors and modules."],
+  ["II", "Advanced Course in Programming", "Parts 8 to 14 of the MOOC: classes and objects, encapsulation, inheritance, operator overloading, comprehensions, recursion, functional programming, regular expressions and games with pygame."],
+  ["extra", "Extra modules", "Topics the MOOC doesn't cover. Optional, for after the course."],
 ];
 
 function credit(m) {
   // An extra module never gets a MOOC section line, whatever course.yaml says (the content build refuses one anyway).
   if (m.course === "extra" || !m.mooc?.length) return `<p>An extra module, not part of the University of Helsinki's course. Lesson text: <a href="${LICENSE}">CC BY-NC-SA 4.0</a>.</p>`;
   const secs = m.mooc.map((s) => `<a href="${MOOC}${s.path}">${esc(s.section)} ${esc(s.title)}</a>`).join(", ");
-  return `<p>This module follows ${m.mooc.length > 1 ? "sections" : "section"} ${secs} of <a href="${MOOC}">Java Programming</a> by Arto Hellas, Matti Luukkainen and contributors (Agile Education Research group, University of Helsinki), licensed under <a href="${LICENSE}">CC BY-NC-SA 4.0</a>. The explanations and exercises here are written for Java Arena and shared under the same license. Java Arena is not affiliated with or endorsed by the University of Helsinki.</p>`;
+  return `<p>This module follows ${m.mooc.length > 1 ? "sections" : "section"} ${secs} of the <a href="${MOOC}">${MOOC_NAME}</a> by Erkki Kaila, Antti Laaksonen, Matti Luukkainen and contributors (Agile Education Research group, University of Helsinki), licensed under <a href="${LICENSE}">CC BY-NC-SA 4.0</a>. The explanations and exercises here are written for Python Arena and shared under the same license. Python Arena is not affiliated with or endorsed by the University of Helsinki.</p>`;
 }
 
 const pages = [];
@@ -123,37 +125,37 @@ const moocCount = content.plan.length - extraCount;
 const page = (route, p) => pages.push({ route, index: true, type: "website", jsonld: null, ...p });
 
 page("/", {
-  title: `${NAME}: learn Java in your browser`,
-  description: `Free, non-commercial Java lessons with the real javac 21 compiler and a Java virtual machine running in your browser. Follows the University of Helsinki's Java Programming MOOC, plus extra modules of its own.`,
+  title: `${NAME}: learn Python in your browser`,
+  description: `Free, non-commercial Python lessons with real Python (CPython 3.14) running in your browser. Follows the University of Helsinki's Python Programming MOOC, with its own lessons and exercises.`,
   jsonld: {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: NAME,
     url: SITE + "/",
   },
-  body: `<h1>Learn Java by writing real Java</h1>
-<p>Every exercise is compiled by the real javac 21 compiler and run by a Java virtual machine, both inside your browser, on your own device. The lessons of Java Programming I and II follow the University of Helsinki's Java Programming MOOC, with their own explanations and exercises; the extra modules after them are Java Arena's own.</p>
-<p>${allLive ? `All ${content.plan.length} modules are online: ${moocCount} following the MOOC (Java Programming I and II)${extraCount ? ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Java Arena's own` : ""}, with ${stepCount} steps and ${challengeCount} challenges.` : `Java Arena is new: ${content.modules.length} of ${content.plan.length} modules are online so far (${stepCount} steps, ${challengeCount} challenges). The rest of the course is added in batches.`}</p>
+  body: `<h1>Learn Python by writing real Python</h1>
+<p>Every exercise is run by real Python (CPython 3.14, compiled to WebAssembly), inside your browser, on your own device. The lessons follow the University of Helsinki's Python Programming MOOC, from your first print to classes, recursion and regular expressions, with their own explanations and exercises.</p>
+<p>${allLive ? `All ${content.plan.length} modules are online: ${moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming)${extraCount ? ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own` : ""}, with ${stepCount} steps and ${challengeCount} challenges.` : `Python Arena is new: ${content.modules.length} of ${content.plan.length} modules are online so far (${stepCount} steps, ${challengeCount} challenges). The rest of the course is added in batches.`}</p>
 <ul>${content.modules.map((m) => `<li><a href="${link(modulePath(m))}">Module ${m.number}: ${esc(m.title)}</a>${extraTag(m)}</li>`).join("")}<li><a href="${link("/learn")}">All modules</a></li></ul>
 <p>Practice: <a href="${link("/deathmatch")}">Deathmatch drills</a>, <a href="${link("/daily")}">the daily challenge</a> and <a href="${link("/placement")}">a placement quiz</a>.</p>
 <p><a href="${link("/projects")}">Projects</a>: larger programs built over several milestones.</p>
-<p><a href="${link("/pro")}">Pro Track</a>: after the course, projects to build on your own computer with a JDK 21, Maven and JUnit 5 tests.</p>`,
+<p><a href="${link("/pro")}">Pro Track</a>: after the course, projects to build on your own computer with Python and pytest tests.</p>`,
 });
 
 page("/learn", {
   title: `All modules | ${NAME}`,
-  description: `The course plan: ${moocCount} modules following the University of Helsinki's Java Programming MOOC, parts 1 to 14${extraCount ? `, plus ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Java Arena's own` : ""}. ${allLive ? "All of them are online." : `${content.modules.length} are online so far.`}`,
+  description: `The course plan: ${moocCount} modules following the University of Helsinki's Python Programming MOOC, parts 1 to 14${extraCount ? `, plus ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own` : ""}. ${allLive ? "All of them are online." : `${content.modules.length} are online so far.`}`,
   body:
-    `<h1>The course</h1><p>Java Arena follows the order and topics of the University of Helsinki's Java Programming MOOC, parts 1 to 14, with its own lessons and exercises.${allLive ? "" : " Modules that aren't written yet are listed so you can see what's coming."}</p><p><a href="${link("/projects")}">Projects</a>: larger programs built over several milestones, each after the modules it needs.</p><p><a href="${link("/pro")}">Pro Track</a>: projects for your own computer, for after the course.</p><p><a href="${link("/topics")}">Topics A to Z</a>: Java keywords, classes, methods and ideas, each with the steps that teach it.</p>` +
+    `<h1>The course</h1><p>Python Arena follows the order and topics of the University of Helsinki's Python Programming MOOC, parts 1 to 14, with its own lessons and exercises.${allLive ? "" : " Modules that aren't written yet are listed so you can see what's coming."}</p><p><a href="${link("/projects")}">Projects</a>: larger programs built over several milestones, each after the modules it needs.</p><p><a href="${link("/pro")}">Pro Track</a>: projects for your own computer, for after the course.</p><p><a href="${link("/topics")}">Topics A to Z</a>: Python keywords, functions, methods and ideas, each with the steps that teach it.</p>` +
     COURSES.filter(([c]) => content.plan.some((m) => m.course === c))
       .map(([c, name, note]) => `<h2>${esc(name)}</h2><p>${esc(note)}</p><ol>` + content.plan.filter((m) => m.course === c).map((m) => `<li value="${m.number}">${m.live ? `<a href="${link(modulePath(m))}">${esc(m.title)}</a>` : `${esc(m.title)} (not written yet)`}${extraTag(m)}</li>`).join("") + `</ol>`)
       .join(""),
 });
 
-/** The MOOC's last module (the end of Java Programming II): its page points on to the Pro Track, as src/pages/ModulePage.tsx does. */
+/** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the Pro Track, as src/pages/ModulePage.tsx does. */
 const COURSE_END = content.plan.filter((m) => m.course === "II").pop()?.id;
 const courseEnd = (m) =>
-  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can go on with the extra modules, or try the Pro Track: projects for your own computer with a JDK 21, Maven and JUnit 5. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
+  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can go on with the extra modules, or try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
 for (const m of content.modules) {
   page(modulePath(m), {
     title: `Module ${m.number}: ${m.title} | ${NAME}`,
@@ -176,7 +178,7 @@ for (const m of content.modules) {
         interactivityType: "active",
         isAccessibleForFree: true,
         inLanguage: "en",
-        programmingLanguage: "Java",
+        programmingLanguage: "Python",
         license: LICENSE,
         url: canonical(stepPath(m, s)),
       },
@@ -207,8 +209,8 @@ function afterModule(p) {
   return `After ${m.live ? `<a href="${link(modulePath(m))}">${name}</a>` : name}`;
 }
 page("/projects", {
-  title: `Projects: larger Java programs, one milestone at a time | ${NAME}`,
-  description: "Larger Java programs built over several milestones, each starting from your own code of the one before. Each project comes after the modules it needs.",
+  title: `Projects: larger Python programs, one milestone at a time | ${NAME}`,
+  description: "Larger Python programs built over several milestones, each starting from your own code of the one before. Each project comes after the modules it needs.",
   body: `<nav aria-label="Breadcrumb"><a href="${link("/learn")}">Learn</a></nav><h1>Projects</h1><p>Larger programs, built one milestone at a time. Each milestone starts from your own code of the one before it, so at the end you have one whole program that you wrote.</p>${
     projects.length ? `<ul>${projects.map((p) => `<li><a href="${link(projectPath(p))}">${esc(p.title)}</a> (${afterModule(p)}): ${esc(p.summary)}</li>`).join("")}</ul>` : "<p>No projects yet. They're on their way.</p>"
   }`,
@@ -227,7 +229,7 @@ for (const p of projects) {
       interactivityType: "active",
       isAccessibleForFree: true,
       inLanguage: "en",
-      programmingLanguage: "Java",
+      programmingLanguage: "Python",
       license: LICENSE,
       url: canonical(projectPath(p)),
     },
@@ -259,8 +261,8 @@ const PRO_SECTIONS = [
 ];
 const PRO_CRUMBS = `<nav class="crumbs" aria-label="Breadcrumb"><a href="${link("/learn")}">Learn</a> › `;
 page("/pro", {
-  title: `Pro Track: Java projects for your own computer | ${NAME}`,
-  description: "Projects to build on your own computer after the course, with a JDK 21, Maven and JUnit 5 tests, and GitHub Actions running the tests in your own repository if you like.",
+  title: `Pro Track: Python projects for your own computer | ${NAME}`,
+  description: "Projects to build on your own computer after the course, with Python, pip and pytest tests, and GitHub Actions running the tests in your own repository if you like.",
   layout: true,
   body: `<div class="pro-page narrow">${PRO_CRUMBS}<span>Pro Track</span></nav><div class="page-head"><h1>Pro Track</h1><p class="lead">${esc(PRO_LEAD)}</p><p class="pro-honest">${esc(PRO_HONEST)}</p></div>
 <section><h2>The projects</h2>${
@@ -289,13 +291,13 @@ pro.projects.forEach((p, k) => {
       learningResourceType: "Project",
       isAccessibleForFree: true,
       inLanguage: "en",
-      programmingLanguage: "Java",
+      programmingLanguage: "Python",
       url: canonical(proPath(p)),
     },
     layout: true,
     body: `<div class="pro-page pro-project narrow">${PRO_CRUMBS}<a href="${link("/pro")}">Pro Track</a></nav><div class="page-head"><p class="eyebrow">Pro Track project · about ${esc(p.hours)} hours</p><h1>${esc(p.title)}</h1><p class="lead">${p.summaryHtml}</p>
 <p class="actions"><a class="btn btn-primary" href="${BASE}${p.zip.file}" download="${p.id}.zip">Download the project (zip, ${Math.max(1, Math.round(p.zip.bytes / 1024))} KB)</a> <a class="btn" href="${p.folder}">The folder on GitHub</a> <a class="btn" href="#checklist">Your checklist (0 of ${p.checklist.length} ticked)</a></p>
-<p class="muted small">Unzip it on your computer and open its README.md. The zip isn't saved for offline use, so downloading it needs a connection. New to Maven? The <a href="${link("/pro")}">Pro Track page</a> shows how to set up your computer.</p></div>
+<p class="muted small">Unzip it on your computer and open its README.md. The zip isn't saved for offline use, so downloading it needs a connection. New to virtual environments and pytest? The <a href="${link("/pro")}">Pro Track page</a> shows how to set up your computer.</p></div>
 <section><h2>What it practices</h2><ul class="pro-practices">${p.practices.map(practice).join("")}</ul></section>
 ${PRO_SECTIONS.filter(([key]) => p.sections[key])
   .map(([key, heading]) => `<section><h2>${esc(heading)}</h2><div class="md">${p.sections[key]}</div></section>`)
@@ -324,47 +326,47 @@ const topicHtml = (t) =>
     .join("")}${t.drills ? `<li><a href="${link("/deathmatch")}?topic=${encodeURIComponent(t.drills.topic)}">Drills in Deathmatch</a> <span class="muted">(topic: ${esc(t.drills.title)})</span></li>` : ""}</ul></li>`;
 if (topics.length)
   page("/topics", {
-    title: `Java topics A to Z | ${NAME}`,
-    description: `${topics.length} Java keywords, classes, methods and ideas, A to Z, each in one plain line with links to the Java Arena lessons that teach it.`,
+    title: `Python topics A to Z | ${NAME}`,
+    description: `${topics.length} Python keywords, functions, methods and ideas, A to Z, each in one plain line with links to the Python Arena lessons that teach it.`,
     layout: true,
-    body: `<div class="topics-page narrow"><nav class="crumbs" aria-label="Breadcrumb"><a href="${link("/learn")}">Learn</a> › <span>Topics A to Z</span></nav><div class="page-head"><h1>Topics A to Z</h1><p class="lead">${esc(TOPICS_LEAD)} <a href="${JAVA_API_URL}">Java 21's API documentation</a>.</p></div>
+    body: `<div class="topics-page narrow"><nav class="crumbs" aria-label="Breadcrumb"><a href="${link("/learn")}">Learn</a> › <span>Topics A to Z</span></nav><div class="page-head"><h1>Topics A to Z</h1><p class="lead">${esc(TOPICS_LEAD)} <a href="${PYTHON_DOCS_URL}">Python's library reference</a>.</p></div>
 <div class="topics-search" role="search"><label for="topics-q">Search the topics</label><input id="topics-q" type="search" autocomplete="off" spellcheck="false" aria-describedby="topics-count"><p id="topics-count" class="muted small" role="status">${esc(matchCount(topics.length, topics.length, ""))}</p></div>
 <nav class="topics-letters" aria-label="Letters"><ul>${topicGroups.map(([l]) => `<li><a href="#${letterId(l)}"${l === "#" ? ' aria-label="Operators and symbols"' : ""}>${esc(l)}</a></li>`).join("")}</ul></nav>
 ${topicGroups.map(([l, list]) => `<section aria-labelledby="${letterId(l)}"><h2 id="${letterId(l)}" class="topics-letter">${l === "#" ? "Operators and symbols" : l}</h2><ul class="topic-list">${list.map(topicHtml).join("")}</ul></section>`).join("\n")}</div>`,
   });
 page("/playground", {
-  title: `Java playground | ${NAME}`,
-  description: "Write any Java program and run it with your own input, with the real javac 21 compiler running in your browser. Share programs as links.",
+  title: `Python playground | ${NAME}`,
+  description: "Write any Python program and run it with your own input, with real Python running in your browser. Share programs as links.",
   layout: true,
-  body: `<div class="playground"><div class="page-head"><h1>Playground</h1><p class="muted">Write any Java program and run it with your own input. It runs on your device with the real javac 21, and it's saved in this browser.</p></div></div>`,
+  body: `<div class="playground"><div class="page-head"><h1>Playground</h1><p class="muted">Write any Python program and run it with your own input. It runs on your device with real Python (CPython 3.14), and it's saved in this browser.</p></div></div>`,
 });
 
 // Practice pages: the text that describes them, the same as the app's first view of each.
 page("/deathmatch", {
-  title: `Deathmatch: Java practice drills | ${NAME}`,
-  description: "Endless quick Java drills from the lessons you've finished: predict the output, fill the blank, spot the bug, will it compile, and small programs to write. Spaced review and interview prep.",
+  title: `Deathmatch: Python practice drills | ${NAME}`,
+  description: "Endless quick Python drills from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, and small programs to write. Spaced review and interview prep.",
   layout: true,
-  body: `<div class="lobby practice-page"><div class="page-head"><h1>Deathmatch</h1><p class="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it compile, pick one. Every 8th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p><p class="muted small">Stuck on a keyword or a method? <a href="${link("/topics")}">Topics A to Z</a> says what it is in one line and links to the step that teaches it.</p></div></div>`,
+  body: `<div class="lobby practice-page"><div class="page-head"><h1>Deathmatch</h1><p class="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, pick one. Every 8th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p><p class="muted small">Stuck on a keyword or a function? <a href="${link("/topics")}">Topics A to Z</a> says what it is in one line and links to the step that teaches it.</p></div></div>`,
 });
 page("/daily", {
-  title: `Daily Java challenge | ${NAME}`,
-  description: "One Java question a day, the same for everyone. Answer it to keep your streak going.",
+  title: `Daily Python challenge | ${NAME}`,
+  description: "One Python question a day, the same for everyone. Answer it to keep your streak going.",
   layout: true,
   body: `<div class="narrow practice-page"><div class="page-head"><h1>Daily challenge</h1><p class="muted">One question a day, the same for everyone. Answer it to keep your streak going; a new one comes at midnight.</p></div></div>`,
 });
 page("/placement", {
-  title: `Placement quiz: where to start with Java | ${NAME}`,
-  description: "Already know some Java? A short quiz, one question per module, shows where to start and which modules you can skip.",
+  title: `Placement quiz: where to start with Python | ${NAME}`,
+  description: "Already know some Python? A short quiz, one question per module, shows where to start and which modules you can skip.",
   layout: true,
-  body: `<div class="narrow"><div class="page-head"><h1>Placement quiz</h1><p>Already know some Java? Answer a few quick questions, one for each module${allLive ? "" : " written so far"}. The first one you miss shows where to start, and you can skip the modules before it.</p></div></div>`,
+  body: `<div class="narrow"><div class="page-head"><h1>Placement quiz</h1><p>Already know some Python? Answer a few quick questions, one for each module${allLive ? "" : " written so far"}. The first one you miss shows where to start, and you can skip the modules before it.</p></div></div>`,
 });
 
-page("/settings", { title: `Settings | ${NAME}`, description: "Theme, text size, the Java engine download, and your progress on this device: move it to another device with a transfer link, a QR code or a progress file.", body: `<h1>Settings</h1><p>Theme, text size, the Java engine download, and your progress. Everything here is saved in this browser only; a transfer link, a QR code or a progress file moves your progress to another device.</p>` });
+page("/settings", { title: `Settings | ${NAME}`, description: "Theme, text size, the Python download, and your progress on this device: move it to another device with a transfer link, a QR code or a progress file.", body: `<h1>Settings</h1><p>Theme, text size, the Python download, and your progress. Everything here is saved in this browser only; a transfer link, a QR code or a progress file moves your progress to another device.</p>` });
 // Where a transfer link opens (/transfer/#p=...): the link is read in the browser, so the page is
 // the same for every link. Not for search engines (noindex, not in the sitemap), but saved for offline use.
 page("/transfer", {
   title: `Move your progress | ${NAME}`,
-  description: "Bring your Java Arena progress to this device from a transfer link or a progress file.",
+  description: "Bring your Python Arena progress to this device from a transfer link or a progress file.",
   index: false,
   layout: true,
   body: `<div class="narrow transfer-page"><div class="page-head"><h1>Move your progress</h1><p class="muted">A transfer link from Settings opens this page on the device you're moving to. Your progress comes in only when you choose Merge or Replace.</p></div></div>`,
@@ -373,38 +375,41 @@ page("/transfer", {
 // same for everyone. Not for search engines (noindex, not in the sitemap), but saved for offline use.
 page("/record", {
   title: `Your record | ${NAME}`,
-  description: "A personal record of the Java Arena modules and projects you finished, from the progress saved in this browser. Print it or save it as a PDF.",
+  description: "A personal record of the Python Arena modules and projects you finished, from the progress saved in this browser. Print it or save it as a PDF.",
   index: false,
   layout: true,
-  body: `<div class="narrow record-page"><div class="page-head record-screen"><h1>Your record</h1><p class="muted">What you finished in Java Arena, from the progress saved in this browser. Print it or save it as a PDF to keep it.</p></div><p class="record-notice">${esc(RECORD_NOTICE)}</p></div>`,
+  body: `<div class="narrow record-page"><div class="page-head record-screen"><h1>Your record</h1><p class="muted">What you finished in Python Arena, from the progress saved in this browser. Print it or save it as a PDF to keep it.</p></div><p class="record-notice">${esc(RECORD_NOTICE)}</p></div>`,
 });
 page("/about", {
   title: `About and credits | ${NAME}`,
-  description: "What Java Arena is, the University of Helsinki course it follows, how the in-browser Java engine works, privacy and licenses.",
-  body: `<h1>About and credits</h1><p>Java Arena is a free, non-commercial site for learning Java, with real compiling and running in the browser. The modules of Java Programming I and II follow the order and topics of <a href="${MOOC}">Java Programming</a>, a free course by the University of Helsinki licensed under <a href="${LICENSE}">CC BY-NC-SA 4.0</a>; the extra modules after them are Java Arena's own and not part of the MOOC. Java Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or Oracle.</p>`,
+  description: "What Python Arena is, the University of Helsinki course it follows, how Python runs in the browser, privacy and licenses.",
+  body: `<h1>About and credits</h1><p>Python Arena is a free, non-commercial site for learning Python, with real Python running in the browser. Its modules follow the order and topics of the <a href="${MOOC}">${MOOC_NAME}</a>, a free course by the University of Helsinki licensed under <a href="${LICENSE}">CC BY-NC-SA 4.0</a>. Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation.</p>`,
 });
 
 // ---------------------------------------------------------------- write
 // The header and footer as the app draws them (src/App.tsx), so the page doesn't shift when it starts.
-const MARK = `<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#E11D21"></rect><path d="M11.5 8.8H21.5M18.6 8.8V18.4c0 3-1.7 4.8-4.4 4.8-1.9 0-3.2-.9-3.9-2.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
-const BRAND = `<a href="${link("/")}" class="brand" aria-label="Java Arena home">${MARK}<span class="brand-name">Java <b>Arena</b></span></a>`;
+const PY_PROMPT = `<path d="M6.5 10.5 11.5 16l-5 5.5M12.5 10.5l5 5.5-5 5.5M18.5 10.5l5 5.5-5 5.5" fill="none" stroke="#FFD43B" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"></path>`;
+const MARK = `<svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#3776AB"></rect>${PY_PROMPT}</svg>`;
+const BRAND = `<a href="${link("/")}" class="brand" aria-label="Python Arena home">${MARK}<span class="brand-name">Python <b>Arena</b></span></a>`;
 const HEADER = `<header class="topbar">${BRAND}<nav id="main-nav" class="nav" aria-label="Main"><a href="${link("/learn")}">Learn</a><a href="${link("/deathmatch")}">Deathmatch</a><a href="${link("/daily")}">Daily</a><a href="${link("/playground")}">Playground</a><a href="${link("/settings")}">Settings</a><a href="${link("/about")}">About</a></nav><div class="topbar-right"><a href="${link("/learn")}" class="btn btn-primary btn-sm topbar-cta">Start learning</a></div></header>`;
-const REPO = "https://github.com/AntonyPerez0/Java-Arena";
+const REPO = "https://github.com/AntonyPerez0/pythonarena";
 // The footer's row of the Arena sites, as src/components/Arenas.tsx draws it (ArenaFamily), with the
 // same marks (fixed gradient ids: the static page draws each mark once).
 const ARENA_MARKS = {
   cpp: `<svg class="arena-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><defs><linearGradient id="arena-cpp-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5C6BC0"></stop><stop offset="0.55" stop-color="#3F75B8"></stop><stop offset="1" stop-color="#00599C"></stop></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#arena-cpp-g)"></rect><rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="#fff" stroke-opacity="0.25"></rect><path d="M17.6 10.1a7.2 7.2 0 1 0 0 11.8" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round"></path><path d="M23.4 12.6v6.8M20 16h6.8" stroke="#fff" stroke-width="3" stroke-linecap="round"></path></svg>`,
   java: `<svg class="arena-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#E11D21"></rect><path d="M11.5 8.8H21.5M18.6 8.8V18.4c0 3-1.7 4.8-4.4 4.8-1.9 0-3.2-.9-3.9-2.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>`,
+  python: `<svg class="arena-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#3776AB"></rect>${PY_PROMPT}</svg>`,
   rust: `<svg class="arena-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><defs><linearGradient id="arena-rust-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F98A1F"></stop><stop offset="0.5" stop-color="#E5531A"></stop><stop offset="1" stop-color="#B7410E"></stop></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#arena-rust-g)"></rect><rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="#fff" stroke-opacity="0.22"></rect><path d="M5.2 15.4c-1.7-1.3-1.9-4-.4-5.6 1-1 2.4-1.2 3.6-.7l-1.3 2.3 2.4.4c.3 1.6-.4 3.2-1.8 3.9-.8.4-1.7.3-2.5-.3z" fill="#fff"></path><path d="M26.8 15.4c1.7-1.3 1.9-4 .4-5.6-1-1-2.4-1.2-3.6-.7l1.3 2.3-2.4.4c-.3 1.6.4 3.2 1.8 3.9.8.4 1.7.3 2.5-.3z" fill="#fff"></path><path d="M8.6 15.2l2.4 2.2M23.4 15.2l-2.4 2.2" stroke="#fff" stroke-width="1.6" stroke-linecap="round"></path><path d="M10.2 22.2l-2 2.6M12.6 23.2l-1.2 2.8M21.8 22.2l2 2.6M19.4 23.2l1.2 2.8" stroke="#fff" stroke-width="1.5" stroke-linecap="round"></path><path d="M8.6 20.4c0-3.9 3.3-7 7.4-7s7.4 3.1 7.4 7c0 1.9-3.3 3.3-7.4 3.3s-7.4-1.4-7.4-3.3zM9.6 16.6l.4-2.2 1.6 1M11.4 14.6l.9-2.1 1.3 1.4M14 13.4l1-1.9 1 1.9M17 13.4l1.3-1.4.9 2.1M19.4 14.6l1.6-1 .4 2.2" fill="#fff" stroke="#fff" stroke-width="1" stroke-linejoin="round"></path><circle cx="13.3" cy="18.6" r="1.35" fill="#2b1206"></circle><circle cx="18.7" cy="18.6" r="1.35" fill="#2b1206"></circle><circle cx="13.7" cy="18.1" r="0.45" fill="#fff"></circle><circle cx="19.1" cy="18.1" r="0.45" fill="#fff"></circle></svg>`,
 };
 const ARENAS = [
   ["cpp", "C/C++ Arena", "C and C++", "https://cpparena.com/"],
   ["java", "Java Arena", "Java", "https://javaarena.com/"],
   ["rust", "RustArena", "Rust", "https://rustarena.app/"],
+  ["python", "Python Arena", "Python", "https://antonyperez0.github.io/pythonarena/"],
 ];
 const arenaText = (name, sub) => `<span class="arena-text"><span class="arena-name">${name}</span><span class="arena-sub">${sub}</span></span>`;
-const ARENA_ROW = `<div class="arena-family"><h2>Arena sites</h2><p>Learn another language the same way, free.</p><ul class="arena-cards">${ARENAS.map(([id, name, language, url]) => `<li>${id === "java" ? `<div class="arena-item arena-here">${ARENA_MARKS[id]}${arenaText(name, "You're here")}</div>` : `<a class="arena-item" href="${url}">${ARENA_MARKS[id]}${arenaText(name, `Learn ${language} <span aria-hidden="true">·</span> ${new URL(url).host}`)}</a>`}</li>`).join("")}</ul></div>`;
-const FOOTER = `<footer class="footer"><div class="footer-inner"><div class="footer-grid"><div class="footer-brand">${BRAND}<p>Learn Java with the real compiler, running in your browser. Free and non-commercial.</p></div><div class="footer-col"><h2>Learn</h2><ul><li><a href="${link("/learn")}">All modules</a></li><li><a href="${link("/learn/printing")}">Start with module 1</a></li><li><a href="${link("/projects")}">Projects</a></li><li><a href="${link("/pro")}">Pro Track</a></li><li><a href="${link("/topics")}">Topics A to Z</a></li><li><a href="${link("/playground")}">Playground</a></li></ul></div><div class="footer-col"><h2>Practice</h2><ul><li><a href="${link("/deathmatch")}">Deathmatch</a></li><li><a href="${link("/daily")}">Daily challenge</a></li><li><a href="${link("/placement")}">Placement quiz</a></li></ul></div><div class="footer-col"><h2>Site</h2><ul><li><a href="${link("/settings")}">Settings</a></li><li><a href="${link("/about")}">About and credits</a></li><li><a href="${REPO}">Source on GitHub</a></li><li><a href="${REPO}/issues/new">Report a problem</a></li></ul></div></div>${ARENA_ROW}<div class="footer-bottom"><p>The course's lessons follow the order and topics of <a href="${MOOC}">Java Programming</a> by the University of Helsinki, licensed under <a href="${LICENSE}" rel="license">CC BY-NC-SA 4.0</a>; the extra modules after the course are Java Arena's own. Java Arena's lessons are shared under the same license; the site's code is MIT licensed. Java Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or Oracle. Java is a registered trademark of Oracle and/or its affiliates.</p><p>Your progress stays in this browser. No account, no ads, no tracking.</p></div></div></footer>`;
+const ARENA_ROW = `<div class="arena-family"><h2>Arena sites</h2><p>Learn another language the same way, free.</p><ul class="arena-cards">${ARENAS.map(([id, name, language, url]) => `<li>${id === "python" ? `<div class="arena-item arena-here">${ARENA_MARKS[id]}${arenaText(name, "You're here")}</div>` : `<a class="arena-item" href="${url}">${ARENA_MARKS[id]}${arenaText(name, `Learn ${language} <span aria-hidden="true">·</span> ${new URL(url).host}`)}</a>`}</li>`).join("")}</ul></div>`;
+const FOOTER = `<footer class="footer"><div class="footer-inner"><div class="footer-grid"><div class="footer-brand">${BRAND}<p>Learn Python with the real Python, running in your browser. Free and non-commercial.</p></div><div class="footer-col"><h2>Learn</h2><ul><li><a href="${link("/learn")}">All modules</a></li><li><a href="${link("/learn/printing")}">Start with module 1</a></li><li><a href="${link("/projects")}">Projects</a></li><li><a href="${link("/pro")}">Pro Track</a></li><li><a href="${link("/topics")}">Topics A to Z</a></li><li><a href="${link("/playground")}">Playground</a></li></ul></div><div class="footer-col"><h2>Practice</h2><ul><li><a href="${link("/deathmatch")}">Deathmatch</a></li><li><a href="${link("/daily")}">Daily challenge</a></li><li><a href="${link("/placement")}">Placement quiz</a></li></ul></div><div class="footer-col"><h2>Site</h2><ul><li><a href="${link("/settings")}">Settings</a></li><li><a href="${link("/about")}">About and credits</a></li><li><a href="${REPO}">Source on GitHub</a></li><li><a href="${REPO}/issues/new">Report a problem</a></li></ul></div></div>${ARENA_ROW}<div class="footer-bottom"><p>The course's lessons follow the order and topics of the <a href="${MOOC}">Python Programming MOOC</a> by the University of Helsinki, licensed under <a href="${LICENSE}" rel="license">CC BY-NC-SA 4.0</a>. Python Arena's lessons are shared under the same license; the site's code is MIT licensed. Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation. "Python" is a registered trademark of the Python Software Foundation.</p><p>Your progress stays in this browser. No account, no ads, no tracking.</p></div></div></footer>`;
 // The fonts are needed for the first paint: fetch them right away instead of after the CSS.
 const FONTS = fs
   .readdirSync(path.join(DIST, "assets"))
@@ -448,7 +453,7 @@ fs.writeFileSync(
   ),
 );
 
-const indexed = [...pages.filter((p) => p.index).map((p) => canonical(p.route)), `${SITE}/bench/`];
+const indexed = pages.filter((p) => p.index).map((p) => canonical(p.route));
 fs.writeFileSync(path.join(DIST, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${indexed.map((u) => `  <url><loc>${u}</loc></url>`).join("\n")}\n</urlset>\n`);
 fs.writeFileSync(path.join(DIST, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
 console.log(`prerender: ${pages.length} pages, 404.html, sitemap.xml with ${indexed.length} addresses`);

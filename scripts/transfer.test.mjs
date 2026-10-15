@@ -114,9 +114,9 @@ test("a damaged, cut, unknown or newer link is refused with a clear message", as
   await refused("#p=abc$%", "damaged", /damaged/);
   await refused("#p=" + toBase64Url(storedDeflate(new TextEncoder().encode("not json"))), "damaged", /damaged/);
   const wire = (o) => "#p=" + toBase64Url(storedDeflate(new TextEncoder().encode(JSON.stringify(o))));
-  await refused(wire({ hello: 1 }), "unknown", /isn't a Java Arena transfer link/);
-  await refused(wire([1, 2]), "unknown", /isn't a Java Arena transfer link/);
-  await refused(wire({ ...toWire(tr(sample())), v: TRANSFER_VERSION + 1 }), "newer", /newer version of Java Arena.*Reload/);
+  await refused(wire({ hello: 1 }), "unknown", /isn't a Python Arena transfer link/);
+  await refused(wire([1, 2]), "unknown", /isn't a Python Arena transfer link/);
+  await refused(wire({ ...toWire(tr(sample())), v: TRANSFER_VERSION + 1 }), "newer", /newer version of Python Arena.*Reload/);
   // Right version, wrong insides.
   const w = toWire(tr(sample()));
   await refused(wire({ ...w, s: [["x", 1, "soon", []]] }), "damaged", /finishing time/);
@@ -131,11 +131,11 @@ test("a damaged, cut, unknown or newer link is refused with a clear message", as
 test("a progress file: pretty JSON with the format, version, site, date and data, always with code; it reads back", () => {
   const s = sample();
   const pg = { code: "class P {}", stdin: "", savedAt: T0 };
-  const text = fileText(tr(s, pg, true), "https://example.org/Java-Arena/");
+  const text = fileText(tr(s, pg, true), "https://example.org/pythonarena/");
   const json = JSON.parse(text);
-  assert.equal(json.format, "java-arena-progress");
+  assert.equal(json.format, "python-arena-progress");
   assert.equal(json.version, 1);
-  assert.equal(json.site, "https://example.org/Java-Arena/");
+  assert.equal(json.site, "https://example.org/pythonarena/");
   assert.match(json.date, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(json.withCode, true);
   assert.equal(json.data.steps["printing-first-program"].challenges[0].code, "class A {}");
@@ -143,7 +143,7 @@ test("a progress file: pretty JSON with the format, version, site, date and data
   assert.deepEqual(parseFile(text), tr(s, pg, true));
   // A byte order mark (some editors add one) is fine.
   assert.deepEqual(parseFile("﻿" + text), tr(s, pg, true));
-  assert.equal(fileName(new Date(2026, 0, 5, 23, 59).getTime()), "java-arena-progress-2026-01-05.json");
+  assert.equal(fileName(new Date(2026, 0, 5, 23, 59).getTime()), "python-arena-progress-2026-01-05.json");
 });
 
 test("a damaged, unknown or newer file is refused with a clear message", () => {
@@ -151,9 +151,9 @@ test("a damaged, unknown or newer file is refused with a clear message", () => {
   const bad = (text, problem, words) => assert.throws(() => parseFile(text), (e) => e instanceof TransferError && e.problem === problem && words.test(e.message));
   bad("{ not json", "damaged", /isn't JSON/);
   bad("", "damaged", /isn't JSON/);
-  bad(JSON.stringify({ format: "something-else", version: 1 }), "unknown", /isn't a Java Arena progress file/);
-  bad(JSON.stringify([1]), "unknown", /isn't a Java Arena progress file/);
-  bad(JSON.stringify({ ...good, version: 2 }), "newer", /newer version of Java Arena/);
+  bad(JSON.stringify({ format: "something-else", version: 1 }), "unknown", /isn't a Python Arena progress file/);
+  bad(JSON.stringify([1]), "unknown", /isn't a Python Arena progress file/);
+  bad(JSON.stringify({ ...good, version: 2 }), "newer", /newer version of Python Arena/);
   bad(JSON.stringify({ ...good, version: "1" }), "unknown", /unknown version/);
   bad(JSON.stringify({ ...good, version: 0 }), "unknown", /unknown version/);
   bad(JSON.stringify({ ...good, data: null }), "damaged", /damaged/);
@@ -393,7 +393,7 @@ test("the record page's name never travels: not in a link or a file, and Replace
     const back = await decodeTransfer("#" + (await encodeTransfer(tr(s, null, withCode))));
     assert.equal("name" in back.settings, false);
   }
-  const file = fileText(t, "https://example.org/Java-Arena/");
+  const file = fileText(t, "https://example.org/pythonarena/");
   assert.ok(!file.includes("Ada Lovelace"));
   assert.equal("name" in parseFile(file).settings, false);
   // Replace keeps this browser's name (the import has none); without one here, there is none after.
@@ -574,7 +574,7 @@ function raster(q, scale) {
 }
 
 test("QR codes of links up to the limit are drawn and a QR decoder reads them back exactly", () => {
-  const base = "https://javaarena.com/transfer/#p=";
+  const base = "https://antonyperez0.github.io/pythonarena/transfer/#p=";
   const filler = "Zx9-_aQ3".repeat(200);
   for (const len of [base.length + 1, 200, 600, 1000, QR_MAX_CHARS]) {
     const link = base + filler.slice(0, len - base.length);
@@ -592,7 +592,7 @@ test("QR codes of links up to the limit are drawn and a QR decoder reads them ba
 
 test("a real transfer link's QR code decodes to a link that imports", async () => {
   const s = state({ steps: { "printing-first-program": { done: true, doneAt: T0, clean: true, challenges: { 0: ch({ done: true, attempts: 1 }) } } } });
-  const link = "https://javaarena.com/transfer/#" + (await encodeTransfer(tr(s, null, false)));
+  const link = "https://antonyperez0.github.io/pythonarena/transfer/#" + (await encodeTransfer(tr(s, null, false)));
   const q = qrFor(link);
   const { px, w } = raster(q, 2);
   const read = jsQR(px, w, w).data;

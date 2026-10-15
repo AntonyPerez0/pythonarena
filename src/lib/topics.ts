@@ -36,9 +36,9 @@ export const KIND_LABEL: Record<TopicKind, string> = {
   tool: "tool",
 };
 
-/** The letter an entry is listed under (as scripts/content/topics.mjs sorts them): "#" for operators. */
+/** The letter an entry is listed under (as scripts/content/topics.mjs sorts them): "#" for operators; __init__ under I, @property under P. */
 export function topicLetter(term: string): string {
-  const c = term.replace(/^@/, "").charAt(0).toUpperCase();
+  const c = term.replace(/^[@_]+/, "").charAt(0).toUpperCase();
   return /[A-Z]/.test(c) ? c : "#";
 }
 

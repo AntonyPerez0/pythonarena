@@ -8,9 +8,9 @@ import { blockKindProblem, readOnlyBlockHtml, xmlHighlightHtml } from "../src/co
 const textOf = (html) => html.replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 
 test("the kinds of code block a lesson may have, and the ones it may not", () => {
-  for (const ok of ["", "java run", "java fragment", "java window", "output", "input", "javac", "crash", "events", "classes", "text", "xml", "xml pom.xml", "shell", "file data.txt", "asset landscape.png"]) assert.equal(blockKindProblem(ok), null, ok);
-  for (const bad of ["bash", "sh", "python", "XML", "console", "javascript", "sql", "shell pom.xml", "text x"]) assert.match(blockKindProblem(bad) ?? "", /isn't one lessons use/, bad);
-  assert.match(blockKindProblem("xml notes.txt"), /an xml block may name its file, such as ```xml pom\.xml/);
+  for (const ok of ["", "python run", "python run crash", "python repl", "python fragment", "pycon", "output", "input", "crash", "text", "xml", "xml pom.xml", "shell", "file data.txt"]) assert.equal(blockKindProblem(ok), null, ok);
+  for (const bad of ["bash", "sh", "java", "XML", "console", "javascript", "sql", "shell pom.xml", "text x", "javac", "asset landscape.png"]) assert.match(blockKindProblem(bad) ?? "", /isn't one lessons use/, bad);
+  assert.match(blockKindProblem("xml notes.txt"), /an xml block may name its file, such as ```xml config\.xml/);
 });
 
 test("an xml block is highlighted, keeps its text exactly, and shows its file's name", () => {
@@ -33,5 +33,5 @@ test("an xml block is highlighted, keeps its text exactly, and shows its file's 
 test("a shell block is commands for your own computer, as text; other kinds are left to Markdown", () => {
   const html = readOnlyBlockHtml("shell", "mvn package\njava -jar target/app.jar <in.txt\n");
   assert.equal(html, '<figure class="io io-shell"><figcaption>Commands for your own computer</figcaption><pre><code>mvn package\njava -jar target/app.jar &lt;in.txt</code></pre></figure>\n');
-  for (const other of [undefined, "", "text", "java", "output", "file a.txt"]) assert.equal(readOnlyBlockHtml(other, "x"), null, String(other));
+  for (const other of [undefined, "", "text", "python", "output", "file a.txt"]) assert.equal(readOnlyBlockHtml(other, "x"), null, String(other));
 });

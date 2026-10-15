@@ -40,11 +40,11 @@ export const MAX_TOPIC_STEPS = 3;
 /** The longest description, in characters. */
 export const MAX_ABOUT = 180;
 
-const SYMBOL_NAMES = { "%": "percent", "&": "and", "|": "or", "!": "not", "=": "equals", "+": "plus", "-": "minus", ">": "greater", "<": "less", ":": "colon" };
+const SYMBOL_NAMES = { "%": "percent", "&": "and", "|": "or", "!": "not", "=": "equals", "+": "plus", "-": "minus", ">": "greater", "<": "less", ":": "colon", "*": "star", "/": "slash", "@": "at", ".": "dot", "~": "tilde", "^": "caret", "[": "bracket", "]": "bracket", "(": "paren", ")": "paren", "{": "brace", "}": "brace" };
 
 /**
  * The address fragment of an entry: its term in lower case, letters and digits, with hyphens
- * between (a term of symbols only gets their names: ++ is plus-plus).
+ * between (a term of symbols only gets their names: // is slash-slash).
  */
 export function topicSlug(term) {
   const slug = String(term)
@@ -54,9 +54,9 @@ export function topicSlug(term) {
   return slug || [...String(term)].map((c) => SYMBOL_NAMES[c] ?? c.codePointAt(0).toString(16)).join("-");
 }
 
-/** Sorts entries A to Z by term, ignoring capitals and a leading @; symbols first. */
+/** Sorts entries A to Z by term, ignoring capitals and a leading @ or underscores; symbols first. */
 export function compareTopics(a, b) {
-  const key = (t) => (topicLetter(t.term) === "#" ? "0" : "1") + t.term.replace(/^@/, "").toLowerCase();
+  const key = (t) => (topicLetter(t.term) === "#" ? "0" : "1") + t.term.replace(/^[@_]+/, "").toLowerCase();
   const ka = key(a);
   const kb = key(b);
   return ka < kb ? -1 : ka > kb ? 1 : a.term < b.term ? -1 : a.term > b.term ? 1 : 0;

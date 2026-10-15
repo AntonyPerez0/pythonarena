@@ -1,7 +1,7 @@
 // Lighthouse CI on pull requests: scores key pages as a phone would (median of 3 runs).
 const base = process.env.BASE_PATH ?? "/";
 const origin = "http://127.0.0.1:4173";
-const pages = ["", "learn/", "learn/printing/first-program/", "playground/", "deathmatch/", "bench/", "projects/", "record/", "topics/", "pro/"];
+const pages = ["", "learn/", "learn/printing/first-program/", "playground/", "deathmatch/", "projects/", "record/", "topics/", "pro/"];
 const thresholds = {
   "categories:performance": ["error", { minScore: 0.8, aggregationMethod: "median-run" }],
   "categories:accessibility": ["error", { minScore: 0.95, aggregationMethod: "median-run" }],

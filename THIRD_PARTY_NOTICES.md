@@ -4,7 +4,7 @@ Python Arena's own code is MIT licensed (see [LICENSE](LICENSE) for its scope). 
 
 ## Python in the browser (downloaded by the browser from this site)
 
-`public/engine/` is copied by `scripts/copy-engine.mjs` from the [`pyodide`](https://www.npmjs.com/package/pyodide) npm package, at the exact version pinned in `package.json`, unchanged (the build also writes gzip copies of some files).
+`public/engine/` is copied by `scripts/copy-engine.mjs` from the [`pyodide`](https://www.npmjs.com/package/pyodide) npm package, at the exact version pinned in `package.json`, unchanged (the build also writes gzip copies of some files). The license texts, `Pyodide-MPL-2.0.txt` and CPython's `CPython-LICENSE.txt` (from the tag of the Python version Pyodide runs), are kept in `engine-licenses/` and published with the engine, at `engine/licenses/`.
 
 | Component | Where it is | License |
 |---|---|---|

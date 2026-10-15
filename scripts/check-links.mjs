@@ -18,27 +18,25 @@ import { pathToFileURL } from 'node:url';
 /** Hosts that links may go to (a host's subdomains too). */
 export const ALLOWED_HOSTS = [
   // The course this site follows, and the site's own pages.
-  'java-programming.mooc.fi',
+  'programming-26.mooc.fi',
   'mooc.fi',
-  'javaarena.com',
   'antonyperez0.github.io',
   // The other Arena sites, linked from the header and the footer.
   'cpparena.com',
+  'javaarena.com',
   'rustarena.app',
-  // Java itself.
-  'docs.oracle.com',
-  'openjdk.org',
-  'dev.java',
-  'adoptium.net',
-  'openjfx.io',
-  'gluonhq.com',
-  // Tools the Pro Track and module 54 use.
-  'maven.apache.org',
-  'central.sonatype.com',
-  'search.maven.org',
-  'mvnrepository.com',
-  'junit.org',
-  'h2database.com',
+  // Python itself, and the engine that runs it in the browser.
+  'docs.python.org',
+  'www.python.org',
+  'python.org',
+  'peps.python.org',
+  'pypi.org',
+  'pyodide.org',
+  // Tools the Pro Track uses.
+  'docs.pytest.org',
+  'pyga.me',
+  'docs.astral.sh',
+  'code.visualstudio.com',
   'github.com',
   'docs.github.com',
   'cli.github.com',
@@ -48,6 +46,7 @@ export const ALLOWED_HOSTS = [
   'creativecommons.org',
   'opensource.org',
   'www.gnu.org',
+  'www.mozilla.org',
 ];
 
 /** Link shorteners: they hide where a link goes, so they're refused even if a host above matched. */

@@ -26,7 +26,7 @@ export function writeNpmLicenses(root, outFile) {
     return `${"=".repeat(78)}\n${pkg.name} ${pkg.version} (${typeof pkg.license === "string" ? pkg.license : JSON.stringify(pkg.license)})\n${pkg.homepage ?? ""}\n${"=".repeat(78)}\n\n${text}\n`;
   });
   mkdirSync(join(outFile, ".."), { recursive: true });
-  writeFileSync(outFile, `Third-party npm packages in Java Arena's published pages (including the Inter and JetBrains Mono fonts).\nThe Java engine's own components are listed in engine/licenses/.\n\n${parts.join("\n")}`);
+  writeFileSync(outFile, `Third-party npm packages in Python Arena's published pages (including the Inter and JetBrains Mono fonts).\nPython in the browser (Pyodide and CPython) is listed in engine/licenses/.\n\n${parts.join("\n")}`);
   return { count: packages.length, missing };
 }
 

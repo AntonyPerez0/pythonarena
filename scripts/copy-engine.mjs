@@ -2,7 +2,7 @@
 // with gzip copies and one manifest. The run worker downloads the files once (the .gz copies, unpacked
 // with DecompressionStream as they arrive), keeps them in Cache Storage and starts Python from there.
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 
@@ -34,9 +34,10 @@ for (const name of FILES) {
     manifest.gzip[name] = gz.length;
   }
 }
-// The harness is part of the engine's version too: a changed harness gets a fresh cache.
-hash.update(readFileSync(join(root, "src", "engine", "arena.py")));
 manifest.version = `${pkg.version}-${hash.digest("hex").slice(0, 10)}`;
 writeFileSync(join(out, "manifest.json"), JSON.stringify(manifest, null, 1));
+// The license texts are published with the files they cover (engine-licenses/, kept in this repository).
+mkdirSync(join(out, "licenses"), { recursive: true });
+for (const f of readdirSync(join(root, "engine-licenses"))) copyFileSync(join(root, "engine-licenses", f), join(out, "licenses", f));
 const total = FILES.reduce((a, f) => a + (manifest.gzip[f] ?? manifest.files[f]), 0);
 console.log(`copy-engine: Pyodide ${pkg.version} (Python ${lock.info.python}), ${FILES.length} files, ${(total / 1e6).toFixed(1)} MB to download, version ${manifest.version}`);

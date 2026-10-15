@@ -202,7 +202,7 @@ Expected outputs come from one run of the solution, and every solution runs twic
 - `random`: seed it (`random.seed(1)`) in the program or in a test's `call` before the function runs. CPython and Pyodide give the same numbers for the same seed. Or test properties instead of exact numbers (that the number is between 1 and 6, that the list has 7 different numbers).
 - Dates and times: no `date.today()` or `datetime.now()` in anything that's checked; use fixed dates, `datetime(2026, 3, 1)`.
 - No `id()`, and no printing of an object without `__str__` (its address changes).
-- Don't print an `OSError`'s message (such as a `FileNotFoundError` caught with `as e`): its error number differs between CPython and Pyodide (`[Errno 2]` and `[Errno 44]`). Print your own message, or the file name.
+- Don't print an `OSError`'s message yourself (such as a `FileNotFoundError` caught with `as e`): its error number differs between CPython and Pyodide (`[Errno 2]` and `[Errno 44]`). Print your own message, or the file name. (A traceback is fine: the harness shows Linux's numbers in it.)
 
 ## Style
 

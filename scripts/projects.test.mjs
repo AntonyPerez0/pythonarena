@@ -5,22 +5,22 @@ import assert from "node:assert/strict";
 import { firstMilestone, milestoneOpen, startCode, withFiles } from "../src/lib/projects.ts";
 import { splitFiles } from "../src/grader/files.js";
 
-const MAIN = (body) => `public class Main {\n    public static void main(String[] args) {\n        ${body}\n    }\n}\n`;
+const MAIN = (body) => `def main():\n    ${body}\n\n\nmain()\n`;
 const milestones = [
-  { id: "one", seed: MAIN("// start") },
-  { id: "two", seed: MAIN("model one") + "", files: { "Item.java": "public class Item {\n}\n" } },
-  { id: "three", seed: MAIN("model two") },
+  { id: "one", seed: MAIN("# start") },
+  { id: "two", seed: MAIN("model_one()") + "", files: { "item.py": "class Item:\n    pass\n" } },
+  { id: "three", seed: MAIN("model_two()") },
 ];
-// The model start of milestone 2 is milestone 1's model solution with Item.java.
-milestones[1].seed = withFiles(MAIN("model one"), milestones[1].files);
+// The model start of milestone 2 is milestone 1's model solution with item.py.
+milestones[1].seed = withFiles(MAIN("model_one()"), milestones[1].files);
 const ch = (over = {}) => ({ done: false, hintsUsed: 0, attempts: 0, ...over });
 const progress = (milestones) => ({ done: false, milestones });
 
 test("withFiles adds a milestone's new files after the program's own, and never twice", () => {
-  const one = withFiles(MAIN("x"), { "Item.java": "public class Item {\n}\n" });
-  assert.deepEqual(splitFiles(one).map((f) => f.path), ["Main.java", "Item.java"]);
+  const one = withFiles(MAIN("x"), { "item.py": "class Item:\n    pass\n" });
+  assert.deepEqual(splitFiles(one).map((f) => f.path), ["main.py", "item.py"]);
   assert.equal(splitFiles(one)[0].text, MAIN("x"));
-  assert.equal(withFiles(one, { "Item.java": "other" }), one);
+  assert.equal(withFiles(one, { "item.py": "other" }), one);
   assert.equal(withFiles(MAIN("x"), undefined), MAIN("x"));
 });
 
@@ -40,7 +40,7 @@ test("a milestone starts from the learner's passing code of the one before, with
   const p = progress({ one: ch({ done: true, code: MAIN("mine, edited later"), passed: MAIN("mine") }) });
   const s = startCode(milestones, p, 1);
   assert.equal(s.from, "passed");
-  assert.deepEqual(splitFiles(s.code).map((f) => [f.path, f.text]), [["Main.java", MAIN("mine")], ["Item.java", "public class Item {\n}\n"]]);
+  assert.deepEqual(splitFiles(s.code).map((f) => [f.path, f.text]), [["main.py", MAIN("mine")], ["item.py", "class Item:\n    pass\n"]]);
   // Opened by showing the solution without passing: the learner's own code, or the model solution when there's none.
   assert.deepEqual(startCode(milestones, progress({ one: ch({ sawSolution: true, code: MAIN("half done") }) }), 1).from, "own");
   assert.deepEqual(startCode(milestones, progress({ one: ch({ sawSolution: true }) }), 1), { code: milestones[1].seed, from: "model" });

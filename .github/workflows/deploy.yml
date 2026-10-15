@@ -2,39 +2,24 @@ name: Build, verify and deploy to GitHub Pages
 
 # The jobs (README.md, "Deploy", says the same):
 #
-#   build             npm ci, the unit tests (first: they need no build output), the fidelity
-#                     suite on the reference JDK, then npm run build: every lesson program checked
-#                     on the JDK (the content build), tsc, the site build and the pre-rendered
-#                     pages. Uploads what the checks need as the artifact site-build (dist,
-#                     src/generated, public/lessons, public/images, and fidelity/out with the JDK's
-#                     fidelity results and the content check list) and, on main, dist as the
-#                     Pages artifact. Then the link check (scripts/check-links.mjs): every internal
-#                     link in the built pages, sitemap, manifest and lesson files resolves, and every
-#                     external link (there and in content/) goes to an allowed host.
-#   fx-check          every JavaFX program on real OpenJFX 21, compared with Java Arena's JavaFX.
-#   fidelity-browser  the fidelity suite in the browser engine, compared with the JDK's results.
-#   content-replay    every lesson and project program replayed in the browser engine and compared with the
-#                     JDK, in 3 shards side by side (CONTENT_SHARD=k/3, scripts/content/shard.mjs:
-#                     each program in exactly one shard).
-#   e2e               the browser tests (engine, accessibility with axe, phone widths, offline,
-#                     mobile data), with screenshots. One job: its tests share pages and state
-#                     (the keyboard test needs the engine tests before it), so it isn't split,
-#                     except for the phone pass below, whose tests need nothing from the others.
-#   phone-pass        the browser tests named "the phone pass": every page type at 320, 360, 390
-#                     and 412 px in both themes (axe, no sideways scrolling, tap targets of 24 px,
-#                     a visible focus).
-#   pro-track         the Pro Track's projects (pro-track/<id>/) with real Maven and a JDK 21: each
-#                     starter compiles and fails its tests, and with its model solution
-#                     (pro-track-solutions/<id>/) every test passes (scripts/pro-track-check.mjs).
-#                     Needs nothing from the build, so it starts at once; Maven's repository is cached.
-#   lighthouse        pull requests only: Lighthouse scores against lighthouserc.cjs.
-#   deploy            main only, once build and every check above have passed: publishes the
-#                     dist the build job made, unchanged.
-#
-# The checks need only the build (pro-track not even that), so they run at the same time. Each job that runs the JDK or
-# Chromium restores its cache (fx-check installs only Chromium's system libraries, not Chromium), and every job uses the npm cache; the content build's cache is in
-# the build job (node_modules/.cache, made again on each run, as before the split); the OpenJFX
-# jars are cached in fx-check. The check jobs' first steps are in .github/actions/check-job-setup.
+#   build            npm ci, the unit tests (first: they need no build output), then npm run build:
+#                    every lesson, drill and project program run on the reference CPython (the content
+#                    build), tsc, the site build and the pre-rendered pages. Uploads what the checks
+#                    need as the artifact site-build (dist, src/generated, public/lessons and
+#                    fidelity/out with the content check list) and, on main, dist as the Pages
+#                    artifact. Then the link check (scripts/check-links.mjs): every internal link in
+#                    the built pages, sitemap, manifest and lesson files resolves, and every external
+#                    link (there and in content/) goes to an allowed host.
+#   content-pyodide  every lesson and project program replayed in Pyodide (the engine the browser
+#                    uses, run in Node) and compared with CPython, in 2 shards side by side.
+#   e2e              the browser tests (Python in the page, accessibility with axe, phone widths,
+#                    offline, mobile data), with screenshots.
+#   pro-track        the Pro Track's projects (pro-track/<id>/) with Python and pytest: each starter
+#                    fails some tests, and with its model solution (pro-track-solutions/<id>/) every
+#                    test passes (scripts/pro-track-check.mjs). Needs nothing from the build.
+#   lighthouse       pull requests only: Lighthouse scores against lighthouserc.cjs.
+#   deploy           main only, once build and every check above have passed: publishes the dist the
+#                    build job made, unchanged.
 
 on:
   push:
@@ -50,14 +35,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # The site's own domain, also set under Settings > Pages > Custom domain (DNS at Cloudflare).
+  # The site's own domain, also set under Settings > Pages > Custom domain.
   # Empty: publish at https://<owner>.github.io/<repo>/
-  CUSTOM_DOMAIN: "javaarena.com"
+  CUSTOM_DOMAIN: ""
+  # The reference CPython: exactly the version Pyodide runs (node_modules/pyodide/pyodide-lock.json);
+  # the content build stops if they differ.
+  REFERENCE_PYTHON: "3.14.2"
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-    # About 19 to 23 minutes before the split (the content build 17 to 20 of them).
     timeout-minutes: 45
     outputs:
       base_path: ${{ steps.site.outputs.base_path }}
@@ -70,25 +57,19 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check that the built Java engine is committed
-        run: git ls-files --error-unmatch engine/dist/compiler/javac.wasm engine/dist/compiler/manifest.json engine/dist/runner/runner.core.wasm engine/dist/runner/jdk.zip engine/dist/runner/manifest.json
-
-      - name: Cache the reference JDK
-        uses: actions/cache@v4
+      - name: The reference CPython
+        id: python
+        uses: actions/setup-python@v5
         with:
-          path: ~/.cache/java-arena
-          key: reference-jdk-${{ hashFiles('scripts/get-jdk.sh') }}
+          python-version: ${{ env.REFERENCE_PYTHON }}
 
-      - name: Reference JDK (Temurin 21.0.10+7, the build the engine's class library comes from)
-        run: |
-          echo "JAVA_HOME=$(bash scripts/get-jdk.sh)" >> "$GITHUB_ENV"
-          "$(bash scripts/get-jdk.sh)/bin/java" -version
-
-      - name: Install dependencies (also copies the Java engine into public/engine)
+      - name: Install dependencies (also copies Pyodide into public/engine)
         run: npm ci
 
-      - name: Unit tests (class diagrams in lesson text, checks of written files, explanations of mistakes, content sharding, Java Arena's JavaFX on the reference JDK)
+      - name: Unit tests
         run: npm run test:unit
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
 
       - name: Work out the site address
         id: site
@@ -106,11 +87,10 @@ jobs:
           echo "base_path=$base" >> "$GITHUB_OUTPUT"
           echo "site_url=$url" >> "$GITHUB_OUTPUT"
 
-      - name: Run the fidelity suite on the real JDK
-        run: npm run fidelity:jdk
-
-      - name: Check the lessons on the real JDK, type-check and build the site
+      - name: Run every lesson program on the reference CPython, type-check and build the site
         run: npm run build
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
 
       - name: Check every link (internal ones resolve in the built site; external ones go to allowed hosts)
         run: npm run check-links
@@ -123,7 +103,6 @@ jobs:
             dist
             src/generated
             public/lessons
-            public/images
             fidelity/out
           if-no-files-found: error
           retention-days: 7
@@ -134,100 +113,29 @@ jobs:
         with:
           path: dist
 
-  fx-check:
+  content-pyodide:
     needs: build
     runs-on: ubuntu-24.04
-    # About 4 to 5 minutes, plus about 1.5 to set up.
-    timeout-minutes: 30
-    env:
-      BASE_PATH: ${{ needs.build.outputs.base_path }}
-      SITE_URL: ${{ needs.build.outputs.site_url }}
-    steps:
-      - uses: actions/checkout@v4
-
-      # fx-check starts no browser: it needs only Chromium's system libraries, which include what
-      # real JavaFX's text needs (fontconfig and pango), so Chromium itself isn't downloaded.
-      - uses: ./.github/actions/check-job-setup
-        with:
-          jdk: "true"
-          system-deps: "true"
-
-      # After npm ci, which empties node_modules. Keyed by the pinned versions.
-      - name: Cache the OpenJFX and Monocle jars for the real-JavaFX check
-        uses: actions/cache@v4
-        with:
-          path: node_modules/.cache/java-arena-fx
-          key: fx-check-jars-${{ hashFiles('scripts/fx-check/jars.json') }}
-
-      - name: Run every JavaFX program (lessons, fidelity, probes) on real OpenJFX 21 without a screen and compare with Java Arena's JavaFX
-        run: npm run fx-check
-
-      - name: Keep the real-JavaFX report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fx-check-report
-          path: fidelity/out/fx-check.json
-          if-no-files-found: ignore
-
-  fidelity-browser:
-    needs: build
-    runs-on: ubuntu-24.04
-    # About 2 minutes, plus about 1.5 to set up.
-    timeout-minutes: 30
-    env:
-      BASE_PATH: ${{ needs.build.outputs.base_path }}
-      SITE_URL: ${{ needs.build.outputs.site_url }}
-    steps:
-      - uses: actions/checkout@v4
-
-      # The JDK too: the cross-checks run the browser's class files on HotSpot and the JDK's on the browser runner.
-      - uses: ./.github/actions/check-job-setup
-        with:
-          jdk: "true"
-          chromium: "true"
-
-      - name: Run the fidelity suite in the browser engine and compare with the JDK
-        run: npm run fidelity:browser
-
-      - name: Keep the fidelity report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fidelity-report
-          path: fidelity/out
-          if-no-files-found: ignore
-
-  content-replay:
-    needs: build
-    runs-on: ubuntu-24.04
-    # The whole replay took 19 to 23 minutes in one job: about 6.5 to 8 a shard, plus about 1.5 to set up.
     timeout-minutes: 30
     strategy:
       # Every shard runs to its end, so one run lists every program that differs.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
-    env:
-      BASE_PATH: ${{ needs.build.outputs.base_path }}
-      SITE_URL: ${{ needs.build.outputs.site_url }}
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
 
       - uses: ./.github/actions/check-job-setup
-        with:
-          chromium: "true"
 
-      - name: Run the lesson programs of shard ${{ matrix.shard }} of 3 in the browser engine and compare with the JDK
-        run: npm run content:browser
+      - name: Run the lesson programs of shard ${{ matrix.shard }} of 2 in Pyodide and compare with CPython
+        run: npm run content:pyodide
         env:
-          CONTENT_SHARD: ${{ matrix.shard }}/3
+          CONTENT_SHARD: ${{ matrix.shard }}/2
 
   e2e:
     needs: build
     runs-on: ubuntu-24.04
-    # About 9 to 10 minutes, plus about 1.5 to set up.
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
       BASE_PATH: ${{ needs.build.outputs.base_path }}
       SITE_URL: ${{ needs.build.outputs.site_url }}
@@ -238,11 +146,8 @@ jobs:
         with:
           chromium: "true"
 
-      - name: Browser tests (engine, accessibility with axe, phone widths, offline, mobile data)
+      - name: Browser tests (Python in the page, accessibility with axe, phone widths, offline, mobile data)
         run: npm run test:e2e -- --shots screenshots
-        env:
-          # The phone pass runs in the job phone-pass, side by side with this one.
-          E2E_SKIP: "the phone pass"
 
       - name: Keep the screenshots
         if: always()
@@ -252,37 +157,8 @@ jobs:
           path: screenshots
           if-no-files-found: ignore
 
-  phone-pass:
-    needs: build
-    runs-on: ubuntu-24.04
-    # About 10 minutes on a 4-core machine, plus about 1.5 to set up.
-    timeout-minutes: 30
-    env:
-      BASE_PATH: ${{ needs.build.outputs.base_path }}
-      SITE_URL: ${{ needs.build.outputs.site_url }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/check-job-setup
-        with:
-          chromium: "true"
-
-      - name: The phone pass (every page type at 320, 360, 390 and 412 px in both themes; axe, sideways scrolling, tap targets, focus)
-        run: npm run test:e2e -- --shots screenshots
-        env:
-          E2E_ONLY: "the phone pass"
-
-      - name: Keep the screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: phone-pass-screenshots
-          path: screenshots
-          if-no-files-found: ignore
-
   pro-track:
     runs-on: ubuntu-24.04
-    # About 1 to 2 minutes a project with a warm Maven cache.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -292,30 +168,24 @@ jobs:
         with:
           node-version: 22
 
-      # A JDK 21 (the runner has Maven). setup-java's own Maven cache fails when the repository has no
-      # pom.xml at all, so the cache is set here: keyed by the projects' pom.xml files (none: an empty key part).
-      - uses: actions/setup-java@v4
+      - name: Python for the Pro Track (the version its workflows use)
+        id: python
+        uses: actions/setup-python@v5
         with:
-          distribution: temurin
-          java-version: "21"
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: pro-track/*/requirements.txt
 
-      - name: Cache Maven's repository
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: pro-track-maven-${{ hashFiles('pro-track/*/pom.xml') }}
-          restore-keys: pro-track-maven-
-
-      - name: Each Pro Track starter compiles and fails its tests; with its model solution every test passes
+      - name: Each Pro Track starter fails some of its tests; with its model solution every test passes
         run: node scripts/pro-track-check.mjs
+        env:
+          PYTHON: ${{ steps.python.outputs.python-path }}
 
   # Scores key pages as a phone would, and fails the PR below the thresholds in lighthouserc.cjs.
-  # Lighthouse CI brings its own packages and uses the runner's Chrome, so this job skips npm ci.
   lighthouse:
     if: github.event_name == 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
-    # About 4 minutes, plus about 1 to set up.
     timeout-minutes: 30
     env:
       BASE_PATH: ${{ needs.build.outputs.base_path }}
@@ -341,7 +211,7 @@ jobs:
   # Lighthouse runs on pull requests only, so it isn't in needs (a skipped job there would skip this one).
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [build, fx-check, fidelity-browser, content-replay, e2e, phone-pass, pro-track]
+    needs: [build, content-pyodide, e2e, pro-track]
     runs-on: ubuntu-latest
     permissions:
       pages: write

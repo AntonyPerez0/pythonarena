@@ -95,7 +95,7 @@ test("dates read the same in every browser; the name is one trimmed line of at m
 test("the notice is the design's sentence, and the record's own files use none of the words it rules out", () => {
   assert.equal(
     RECORD_NOTICE,
-    "This is a personal record made by Java Arena from the progress saved in this browser. It is not a certificate. It isn't issued or checked by the University of Helsinki or the MOOC, and nobody verifies it.",
+    "This is a personal record made by Python Arena from the progress saved in this browser. It is not a certificate. It isn't issued or checked by the University of Helsinki or the MOOC, and nobody verifies it.",
   );
   for (const f of ["src/lib/record.ts", "src/pages/Record.tsx", "src/record.css"]) {
     const text = readFileSync(new URL(`../${f}`, import.meta.url), "utf8").replace(RECORD_NOTICE, "");

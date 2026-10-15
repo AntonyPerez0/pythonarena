@@ -22,6 +22,7 @@ import builtins
 import io
 import linecache
 import os
+import re
 import shutil
 import sys
 import traceback
@@ -168,11 +169,22 @@ def _innermost_file(tb):
     return last
 
 
+# Pyodide's error numbers are Emscripten's, not Linux's: a missing file is [Errno 44] there and
+# [Errno 2] on a computer. Tracebacks show the numbers CPython on Linux (and macOS) shows.
+_EMSCRIPTEN_ERRNO = {44: 2, 31: 21, 20: 17, 54: 20, 2: 13, 55: 39, 28: 22, 63: 1}
+
+
+def _linux_errno(text):
+    if sys.platform != "emscripten":
+        return text
+    return re.sub(r"\[Errno (\d+)\]", lambda m: f"[Errno {_EMSCRIPTEN_ERRNO.get(int(m.group(1)), int(m.group(1)))}]", text)
+
+
 def _report(e, own, root, errors, result):
     """Prints an exception as Python does, with only the frames in the program's own files."""
     # A syntax error in main.py has no frame of the program's own, so it prints as Python prints it for a script.
     _strip_frames(e, own)
-    text = "".join(traceback.format_exception(e))
+    text = _linux_errno("".join(traceback.format_exception(e)))
     text = text.replace(root + os.sep, "").replace(root + "/", "")
     try:
         errors.write(text)
