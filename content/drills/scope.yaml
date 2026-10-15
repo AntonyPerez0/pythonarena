@@ -1,0 +1,255 @@
+topic: scope
+drills:
+  - type: runs
+    after: local-variables
+    code: |
+      def setup():
+          level = 1
+
+
+      setup()
+      print(level)
+    why: "`level` is a local variable of `setup`. It's gone when the function returns, so the main program stops with a `NameError`."
+
+  - type: predict
+    after: local-variables
+    code: |
+      def f():
+          n = 10
+          return n * 2
+
+
+      n = 3
+      print(f())
+      print(n)
+    why: "The `n` inside `f` is a local variable of its own. Setting it to 10 doesn't touch the main program's `n`, which stays 3."
+
+  - type: predict
+    after: local-variables
+    code: |
+      def counter():
+          total = 0
+          total += 5
+          return total
+
+
+      print(counter() + counter())
+    why: "Local variables are created again on every call, so each call starts from 0 and returns 5."
+
+  - type: predict
+    after: local-variables
+    code: |
+      name = "Ada"
+
+
+      def hello():
+          print("Hi", name)
+
+
+      name = "Bo"
+      hello()
+    why: "The function reads the global `name` when it's called, and by then the main program has changed it to `Bo`."
+
+  - type: choice
+    after: local-variables
+    prompt: Where can a variable that is created inside a function be used?
+    choices:
+      - Anywhere in the program, once the function has been called
+      - Only inside that function, while it runs
+      - Only in the main program
+    answer: 2
+    why: "A variable created in a function is local: it exists only inside the function, during the call."
+
+  - type: bug
+    after: local-variables
+    code: |
+      def square(n):
+          result = n * n  # BUG
+
+
+      print(square(4))
+    fix: return n * n
+    why: "Without `return` the function gives `None`, and the local `result` disappears when the call ends."
+
+  - type: runs
+    after: global
+    code: |
+      total = 0
+
+
+      def add(n):
+          total += n
+
+
+      add(5)
+    why: "`total += n` assigns to `total`, so `total` is a local variable in `add`, and it has no value yet when Python reads it: an `UnboundLocalError`."
+
+  - type: predict
+    after: global
+    code: |
+      x = 1
+
+
+      def set_x():
+          x = 99
+
+
+      set_x()
+      print(x)
+    why: "Without `global`, the assignment in `set_x` creates a local `x`. The global `x` stays 1."
+
+  - type: fill
+    after: global
+    code: |
+      level = 1
+
+
+      def level_up():
+          [[global]] level
+          level += 1
+
+
+      level_up()
+      print(level)
+    why: "`global level` makes the function's `level` mean the global variable, so `level += 1` changes it."
+
+  - type: predict
+    after: global
+    code: |
+      log = []
+
+
+      def note(text):
+          log.append(text)
+
+
+      note("a")
+      note("b")
+      print(log)
+    why: "`append` changes the list without assigning to the name `log`, so no `global` is needed: the function uses the global list."
+
+  - type: choice
+    after: global
+    prompt: When does a function need the line `global name`?
+    choices:
+      - Whenever it reads a variable of the main program
+      - When it assigns a new value to the global variable `name`
+      - Whenever it has a parameter called `name`
+    answer: 2
+    why: "Reading a global needs nothing. Only an assignment would make the name local, so that's when `global` is needed."
+
+  - type: bug
+    after: global
+    code: |
+      count = 0
+
+
+      def tick():
+          global total  # BUG
+          count += 1
+
+
+      tick()
+      print(count)
+    fix: global count
+    why: "The `global` line must name the variable the function assigns to. With `global total`, `count` is still local and has no value."
+
+  - type: predict
+    after: passing-data
+    code: |
+      def double_all(numbers):
+          result = []
+          for n in numbers:
+              result.append(n * 2)
+          return result
+
+
+      values = [1, 2, 3]
+      doubled = double_all(values)
+      print(values)
+      print(doubled)
+    why: "The function builds a new list and returns it, so the list it was given stays as it was."
+
+  - type: predict
+    after: passing-data
+    code: |
+      def reset(numbers):
+          numbers[0] = 0
+
+
+      data = [5, 6]
+      reset(data)
+      print(data)
+    why: "A list given as an argument isn't copied: `numbers` and `data` are the same list, so the change shows in the main program."
+
+  - type: choice
+    after: passing-data
+    prompt: What's usually the best way for a function to give its result to the rest of the program?
+    choices:
+      - Store it in a global variable
+      - Return it with `return`
+      - Print it
+    answer: 2
+    why: "A returned value goes wherever the caller wants it, and the function stays independent of the rest of the program."
+
+  - type: boss
+    after: passing-data
+    prompt: |
+      Write two functions that work together without global variables:
+
+      - `count_words(text)` returns a dictionary from each word of the text to the number of times it appears (split the text at spaces with `split()`);
+      - `most_common(counts)` gets such a dictionary and returns the word with the highest count (the first of them, if several have the same count).
+
+      For example, `print(most_common(count_words("to be or not to be to")))` prints:
+
+      ```
+      to
+      ```
+    seed: |
+      def count_words(text):
+          pass
+
+
+      def most_common(counts):
+          pass
+
+
+      if __name__ == "__main__":
+          print(most_common(count_words("to be or not to be to")))
+    solution: |
+      def count_words(text):
+          counts = {}
+          for word in text.split():
+              if word not in counts:
+                  counts[word] = 0
+              counts[word] += 1
+          return counts
+
+
+      def most_common(counts):
+          best = ""
+          best_count = 0
+          for word, count in counts.items():
+              if count > best_count:
+                  best = word
+                  best_count = count
+          return best
+
+
+      if __name__ == "__main__":
+          print(most_common(count_words("to be or not to be to")))
+    hints:
+      - "`count_words` goes through `text.split()` and keeps a count for each word in a dictionary, which it returns."
+      - "`most_common` gets the dictionary as its parameter and keeps the best word and its count in two local variables."
+    forbid:
+      - pattern: \bglobal\b
+        message: Pass the dictionary from one function to the other, without `global`.
+    tests:
+      - call: print(most_common(count_words("to be or not to be to")))
+      - call: count_words("a b a")
+      - call: |
+          most_common({"cat": 2, "dog": 5, "eel": 5})
+        hidden: true
+      - call: |
+          count_words("one fish two fish red fish")
+        hidden: true

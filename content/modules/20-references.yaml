@@ -1,0 +1,761 @@
+id: references
+summary: What a variable really holds. Two names for one list, copying a list, lists given to functions and changed by them, and side effects that change a list by accident.
+steps:
+  - id: references-same-list
+    slug: same-list
+    title: Two names for one list
+    text: |
+      So far you could think of a variable as a box that holds a value. For lists, that picture leads you astray. A variable doesn't hold the list itself: it holds a **reference** to it, which tells Python where the list is in the computer's memory. Think of the list as a house, and of the reference as the house's address written on a note.
+
+      Most of the time the difference doesn't matter. It matters as soon as two variables refer to the same list:
+
+      ```python repl
+      >>> a = [1, 2, 3]
+      >>> b = a
+      >>> b.append(4)
+      >>> b[0] = 10
+      >>> a
+      [10, 2, 3, 4]
+      ```
+
+      `b = a` doesn't copy the list. It copies the reference, the address, so `a` and `b` are now two names for one and the same list. A change made through either name changes that one list, and both names see it. In a program this can be a surprise:
+
+      ```python run
+      weekday_songs = ["Intro", "Rain", "Comets"]
+      weekend_songs = weekday_songs
+      weekend_songs.append("Party Time")
+
+      print("Weekdays:", weekday_songs)
+      print("Weekend:", weekend_songs)
+      ```
+
+      ```output
+      Weekdays: ['Intro', 'Rain', 'Comets', 'Party Time']
+      Weekend: ['Intro', 'Rain', 'Comets', 'Party Time']
+      ```
+
+      ### Numbers and strings can't change
+
+      Why doesn't the same happen with numbers?
+
+      ```python repl
+      >>> x = 5
+      >>> y = x
+      >>> y += 1
+      >>> x
+      5
+      >>> y
+      6
+      ```
+
+      Numbers, strings and Booleans are **immutable**: nothing can change them. `y += 1` doesn't change the number 5. It makes a new number, 6, and points `y` at it, while `x` still refers to 5. String methods work the same way: `upper` gives a new string and leaves the old one as it was. Lists are **mutable**: `append`, `sort`, `remove`, `pop` and assigning to an index all change the list itself, and every name that refers to it sees the change.
+
+      Giving a variable a new value is different from changing the list it refers to:
+
+      ```python repl
+      >>> a = [1, 2, 3]
+      >>> b = a
+      >>> b = [7, 8]
+      >>> a
+      [1, 2, 3]
+      ```
+
+      `b = [7, 8]` points `b` at a new list. The old list doesn't change, and `a` still refers to it.
+
+      ### References inside lists
+
+      A matrix is a list that holds references to its rows. Taking a row out of a matrix gives you another name for that row, not a copy of it:
+
+      ```python run
+      seats = [["free", "free"], ["free", "taken"]]
+      first_row = seats[0]
+      first_row[1] = "taken"
+      print(seats)
+      ```
+
+      ```output
+      [['free', 'taken'], ['free', 'taken']]
+      ```
+
+      That's why `row[j] = ...` inside a loop over a matrix changes the matrix: `row` refers to one of its rows. But `number *= 10` on a number taken from a row only points the variable `number` at a new number.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      team = ["Ana", "Ben"]
+      players = team
+      players.append("Cleo")
+      print(team)
+      players = ["Dev"]
+      print(team)
+      print(players)
+    hints:
+      - "`players = team` doesn't copy the list: both names refer to the same list."
+      - "So `players.append(\"Cleo\")` changes the list that `team` refers to, too."
+      - "`players = [\"Dev\"]` points `players` at a new list, and `team` keeps the old one."
+    more:
+      - task: |
+          The program should print the guests in the order they arrived and, below that, in alphabetical order. But both lines come out sorted:
+
+          ```
+          Arrived: ['Lee', 'Ada', 'Max']
+          Sorted: ['Ada', 'Lee', 'Max']
+          ```
+
+          Fix it so it prints the output above. Keep both variables.
+        seed: |
+          arrived = ["Lee", "Ada", "Max"]
+          alphabetical = arrived
+          alphabetical.sort()
+
+          print("Arrived:", arrived)
+          print("Sorted:", alphabetical)
+        solution: |
+          arrived = ["Lee", "Ada", "Max"]
+          alphabetical = sorted(arrived)
+
+          print("Arrived:", arrived)
+          print("Sorted:", alphabetical)
+        hints:
+          - "`alphabetical = arrived` makes two names for one list, so sorting it sorts the guests' arrival order too."
+          - "`sorted(arrived)` gives a new, sorted list and leaves `arrived` as it was. Use it instead of the two lines with `=` and `sort`."
+        require:
+          - pattern: \balphabetical\s*=
+            message: Keep the variable `alphabetical` for the sorted list.
+        tests:
+          - expect: |
+              Arrived: ['Lee', 'Ada', 'Max']
+              Sorted: ['Ada', 'Lee', 'Max']
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          grid = [[0, 0], [0, 0]]
+          row = grid[1]
+          row[0] = 5
+          value = grid[0][1]
+          value = 9
+          print(grid)
+          print(row)
+        hints:
+          - "`row = grid[1]` gives a second name to the second row of the grid, so `row[0] = 5` changes the grid."
+          - "`value = grid[0][1]` gives `value` the number 0. Then `value = 9` points the variable at a new number; the grid doesn't change."
+
+  - id: references-copying
+    slug: copying
+    title: Copying a list
+    text: |
+      When you want a second list that you can change on its own, you have to make a **copy**. The long way is a new empty list and a loop that appends each item to it:
+
+      ```python run
+      original = [3, 1, 2]
+      duplicate = []
+      for item in original:
+          duplicate.append(item)
+
+      duplicate.append(4)
+      print(original)
+      print(duplicate)
+      ```
+
+      ```output
+      [3, 1, 2]
+      [3, 1, 2, 4]
+      ```
+
+      Now there are two lists, and changing one leaves the other alone. Python has three shorter ways to do the same, and each of them gives a new list with the same items:
+
+      ```python repl
+      >>> original = [3, 1, 2]
+      >>> a = original.copy()
+      >>> b = original[:]
+      >>> c = list(original)
+      >>> a.append(4)
+      >>> b[0] = 99
+      >>> c.sort()
+      >>> original
+      [3, 1, 2]
+      >>> a
+      [3, 1, 2, 4]
+      >>> b
+      [99, 1, 2]
+      >>> c
+      [1, 2, 3]
+      ```
+
+      - `copy()` is a list method that does just that.
+      - `[:]` is a slice with no start and no end, so it takes every item. A slice is always a new list.
+      - `list(...)` builds a new list from the items it's given, as it does with `range`.
+
+      All three work. `copy()` is the easiest to read, because it says what it does.
+
+      ### Copying a list of lists
+
+      A copy holds the same items as the original. When those items are lists, as in a matrix, the copy holds references to the very same inner lists. The two outer lists are separate, but they share their rows:
+
+      ```python run
+      board = [[".", "."], [".", "."]]
+      saved = board.copy()
+
+      board[0][0] = "X"
+      board.append(["new", "row"])
+      print(saved)
+      ```
+
+      ```output
+      [['X', '.'], ['.', '.']]
+      ```
+
+      The new row went into `board` only, because the outer lists are separate. But the `"X"` went into a row that both lists share, so it shows up in `saved` too. To copy a matrix so that nothing is shared, copy each row as well:
+
+      ```python run
+      board = [[".", "."], [".", "."]]
+      saved = []
+      for row in board:
+          saved.append(row.copy())
+
+      board[0][0] = "X"
+      print(board)
+      print(saved)
+      ```
+
+      ```output
+      [['X', '.'], ['.', '.']]
+      [['.', '.'], ['.', '.']]
+      ```
+
+      **Your turn:** the sale prices should be half of the normal prices, but the normal prices must stay as they are. Fill in the blank with a copy of `prices`, so the program prints:
+
+      ```
+      Normal: [10, 25, 40]
+      Sale: [5, 12, 20]
+      ```
+    fill: |
+      prices = [10, 25, 40]
+      sale_prices = [[prices.copy()‖prices[:]‖list(prices)]]
+      for i in range(len(sale_prices)):
+          sale_prices[i] = sale_prices[i] // 2
+
+      print("Normal:", prices)
+      print("Sale:", sale_prices)
+    hints:
+      - "`sale_prices = prices` wouldn't do: both names would refer to one list, and halving it would halve the normal prices too."
+      - "A copy is `prices.copy()`. (`prices[:]` and `list(prices)` work too.)"
+    tests:
+      - expect: |
+          Normal: [10, 25, 40]
+          Sale: [5, 12, 20]
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          a = [1, 2, 3]
+          b = a[:]
+          c = a
+          c.append(4)
+          b.append(5)
+          print(a)
+          print(b)
+          print(len(c))
+        hints:
+          - "`b = a[:]` makes a new list, a copy. `c = a` makes a second name for the list `a` refers to."
+          - "So `c.append(4)` changes the list of `a`, and `b.append(5)` changes only the copy."
+      - task: |
+          Write a function `copy_grid(grid)` that returns a copy of a matrix. Nothing may be shared between the copy and the original: after the copy is made, changes to the original's rows must not show up in the copy.
+
+          ```python fragment
+          grid = [[1, 2], [3, 4]]
+          saved = copy_grid(grid)
+          grid[0][0] = 99
+          print(saved)
+          print(grid)
+          ```
+
+          ```
+          [[1, 2], [3, 4]]
+          [[99, 2], [3, 4]]
+          ```
+        seed: |
+          def copy_grid(grid: list) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              grid = [[1, 2], [3, 4]]
+              saved = copy_grid(grid)
+              grid[0][0] = 99
+              print(saved)
+              print(grid)
+        solution: |
+          def copy_grid(grid: list) -> list:
+              result = []
+              for row in grid:
+                  result.append(row.copy())
+              return result
+
+
+          if __name__ == "__main__":
+              grid = [[1, 2], [3, 4]]
+              saved = copy_grid(grid)
+              grid[0][0] = 99
+              print(saved)
+              print(grid)
+        hints:
+          - "`grid.copy()` isn't enough: it makes a new outer list, but the rows in it are the same lists as in `grid`."
+          - Make a new empty list, then go through the rows and append a copy of each row to it.
+          - "A copy of one row is `row.copy()`."
+        tests:
+          - call: |
+              grid = [[1, 2], [3, 4]]
+              saved = copy_grid(grid)
+              grid[0][0] = 99
+              print(saved)
+              print(grid)
+          - call: |
+              grid = [["a"], ["b"], ["c"]]
+              saved = copy_grid(grid)
+              grid[2].append("d")
+              grid.append(["e"])
+              print(saved)
+            hidden: true
+          - call: |
+              grid = [[5, 6, 7]]
+              saved = copy_grid(grid)
+              saved[0][1] = 0
+              print(grid)
+              print(saved)
+            hidden: true
+
+  - id: references-list-parameters
+    slug: list-parameters
+    title: Lists as parameters
+    text: |
+      A function call works like `b = a`: the parameter gets a reference to the list you give as the argument, not a copy of it. The function and the code that calls it share one list, so a function can change a list it's given:
+
+      ```python run
+      def add_bonus(scores: list):
+          for i in range(len(scores)):
+              scores[i] += 5
+
+
+      points = [10, 20, 30]
+      add_bonus(points)
+      print(points)
+      ```
+
+      ```output
+      [15, 25, 35]
+      ```
+
+      `add_bonus` has no `return`. It does its job by changing the list, so you call it on a line of its own, for what it does, not for a value.
+
+      The other way is to leave the original alone and return a new list:
+
+      ```python run
+      def with_bonus(scores: list) -> list:
+          result = []
+          for score in scores:
+              result.append(score + 5)
+          return result
+
+
+      points = [10, 20, 30]
+      new_points = with_bonus(points)
+      print(points)
+      print(new_points)
+      ```
+
+      ```output
+      [10, 20, 30]
+      [15, 25, 35]
+      ```
+
+      Both are fine. What matters is that you know, and say, which one a function does: does it change the list it's given, or return a new one?
+
+      ### Assigning to the parameter changes nothing outside
+
+      Here is a common mistake. The function builds a new list and then assigns it to the parameter:
+
+      ```python run
+      def double_all(numbers: list):
+          doubled = []
+          for number in numbers:
+              doubled.append(number * 2)
+          numbers = doubled
+
+
+      values = [1, 2, 3]
+      double_all(values)
+      print(values)
+      ```
+
+      ```output
+      [1, 2, 3]
+      ```
+
+      `numbers = doubled` points the parameter `numbers` at the new list. That's a new value for one variable inside the function, just like `b = [7, 8]` in the first step of this module. The list that `values` refers to is never touched, and the new list is lost when the function ends.
+
+      To change the caller's list, change the list itself: assign to its indexes, as `add_bonus` does, or replace its items with a **slice assignment**. A slice on the left side of `=` replaces those items with the items of the list on the right:
+
+      ```python repl
+      >>> numbers = [1, 2, 3, 4]
+      >>> numbers[1:3] = [20, 30]
+      >>> numbers
+      [1, 20, 30, 4]
+      >>> numbers[:] = [9, 9]
+      >>> numbers
+      [9, 9]
+      ```
+
+      `numbers[:] = doubled` replaces every item of the list, so it's the fix for `double_all`: the last line of the function becomes `numbers[:] = doubled`.
+
+      **Your turn:** write a function `cap_scores(scores, limit)` that changes the list it's given: every score greater than `limit` becomes `limit`. The function returns nothing.
+
+      ```python fragment
+      scores = [45, 120, 80, 101]
+      cap_scores(scores, 100)
+      print(scores)
+      ```
+
+      ```
+      [45, 100, 80, 100]
+      ```
+    seed: |
+      def cap_scores(scores: list, limit: int):
+          pass
+
+
+      if __name__ == "__main__":
+          scores = [45, 120, 80, 101]
+          cap_scores(scores, 100)
+          print(scores)
+    solution: |
+      def cap_scores(scores: list, limit: int):
+          for i in range(len(scores)):
+              if scores[i] > limit:
+                  scores[i] = limit
+
+
+      if __name__ == "__main__":
+          scores = [45, 120, 80, 101]
+          cap_scores(scores, 100)
+          print(scores)
+    hints:
+      - To change an item of the list, you need its index, so go through the indexes with `for i in range(len(scores)):`.
+      - "If `scores[i]` is greater than `limit`, assign `scores[i] = limit`."
+      - The function doesn't need a `return`. The caller's list changes, and the caller sees the change.
+    tests:
+      - call: |
+          scores = [45, 120, 80, 101]
+          cap_scores(scores, 100)
+          print(scores)
+      - call: |
+          scores = [3, 9, 5]
+          cap_scores(scores, 4)
+          print(scores)
+        hidden: true
+      - call: |
+          scores = [1, 2]
+          cap_scores(scores, 10)
+          print(scores)
+        hidden: true
+    more:
+      - task: |
+          `shout_all(words)` should change the list it's given, so that every word is in capital letters with an exclamation mark at the end. It builds the right list, but the caller's list doesn't change. Fix it.
+
+          ```python fragment
+          words = ["hey", "stop"]
+          shout_all(words)
+          print(words)
+          ```
+
+          ```
+          ['HEY!', 'STOP!']
+          ```
+        seed: |
+          def shout_all(words: list):
+              loud = []
+              for word in words:
+                  loud.append(word.upper() + "!")
+              words = loud
+
+
+          if __name__ == "__main__":
+              words = ["hey", "stop"]
+              shout_all(words)
+              print(words)
+        solution: |
+          def shout_all(words: list):
+              loud = []
+              for word in words:
+                  loud.append(word.upper() + "!")
+              words[:] = loud
+
+
+          if __name__ == "__main__":
+              words = ["hey", "stop"]
+              shout_all(words)
+              print(words)
+        hints:
+          - "`words = loud` only points the parameter at the new list. The caller's list stays as it was."
+          - Change the caller's list itself. A slice assignment replaces all of its items at once.
+          - "Change the last line to `words[:] = loud`."
+        tests:
+          - call: |
+              words = ["hey", "stop"]
+              shout_all(words)
+              print(words)
+          - call: |
+              words = ["run", "now", "please"]
+              shout_all(words)
+              print(words)
+            hidden: true
+      - task: |
+          Write a function `remove_all(items, value)` that removes every copy of `value` from the list it's given. It changes the list and returns nothing. If `value` isn't in the list, the list stays as it is.
+
+          ```python fragment
+          items = [1, 3, 1, 2, 1]
+          remove_all(items, 1)
+          print(items)
+          ```
+
+          ```
+          [3, 2]
+          ```
+        seed: |
+          def remove_all(items: list, value):
+              pass
+
+
+          if __name__ == "__main__":
+              items = [1, 3, 1, 2, 1]
+              remove_all(items, 1)
+              print(items)
+        solution: |
+          def remove_all(items: list, value):
+              while value in items:
+                  items.remove(value)
+
+
+          if __name__ == "__main__":
+              items = [1, 3, 1, 2, 1]
+              remove_all(items, 1)
+              print(items)
+        hints:
+          - "`items.remove(value)` removes the first copy of `value` from the list, and changes the caller's list too."
+          - Repeat it as long as `value` is still in the list, with a `while` loop and `in`.
+          - "Another way: build a new list without the value and put it into the caller's list with `items[:] = ...`."
+        tests:
+          - call: |
+              items = [1, 3, 1, 2, 1]
+              remove_all(items, 1)
+              print(items)
+          - call: |
+              items = ["a", "b", "a"]
+              remove_all(items, "a")
+              print(items)
+            hidden: true
+          - call: |
+              items = [4, 5, 6]
+              remove_all(items, 7)
+              print(items)
+            hidden: true
+          - call: |
+              items = [2, 2, 2]
+              remove_all(items, 2)
+              print(items)
+            hidden: true
+
+  - id: references-side-effects
+    slug: side-effects
+    title: Side effects
+    text: |
+      A function that changes something outside itself, besides returning a value, has a **side effect**. When that is its job, as with `add_bonus` in the previous step, the side effect is what you want. When it happens by accident, it's a bug, and a sneaky one: the function returns the right answer, and the damage shows up somewhere else in the program.
+
+      This function finds the median of a list of numbers, the number in the middle when they are in order:
+
+      ```python run
+      def median(numbers: list) -> int:
+          numbers.sort()
+          return numbers[len(numbers) // 2]
+
+
+      temperatures = [21, 17, 25, 19, 23]
+      print("Median:", median(temperatures))
+      print("By day:", temperatures)
+      ```
+
+      ```output
+      Median: 21
+      By day: [17, 19, 21, 23, 25]
+      ```
+
+      The median is right, but `sort` sorted the caller's list too, and now the temperatures are no longer in the order of the days. The fix is to work on a sorted copy, which `sorted` gives:
+
+      ```python run
+      def median(numbers: list) -> int:
+          in_order = sorted(numbers)
+          return in_order[len(in_order) // 2]
+
+
+      temperatures = [21, 17, 25, 19, 23]
+      print("Median:", median(temperatures))
+      print("By day:", temperatures)
+      ```
+
+      ```output
+      Median: 21
+      By day: [21, 17, 25, 19, 23]
+      ```
+
+      ### The same call, a different answer
+
+      A side effect can also make a function give a different answer each time it's called:
+
+      ```python run
+      def sum_except_first(numbers: list) -> int:
+          numbers.pop(0)
+          return sum(numbers)
+
+
+      bills = [100, 20, 30, 40]
+      print(sum_except_first(bills))
+      print(sum_except_first(bills))
+      ```
+
+      ```output
+      90
+      70
+      ```
+
+      Each call removes an item from `bills` for good. A slice is a new list, so `return sum(numbers[1:])` gives the same answer without touching the caller's list.
+
+      ### Pure functions
+
+      A function whose only result is the value it returns, and which changes nothing else, is called a **pure function**. Pure functions are easier to trust and to test: the same arguments always give the same answer, and calling one can't break anything elsewhere. A good habit:
+
+      - A function that computes an answer should not change its arguments. If it needs to sort, remove or replace items, it works on a copy (`sorted`, `copy()`, a slice) or on a new list of its own.
+      - A function whose job is to change a list says so in its description, and returns nothing.
+
+      The methods that change a list are the ones to watch in a function that computes an answer: `append`, `insert`, `remove`, `pop`, `sort`, and assigning to an index or a slice.
+
+      **Your turn:** `second_largest(numbers)` returns the right number, but it also sorts the caller's list. Fix it so it doesn't change the list it's given.
+
+      ```python fragment
+      numbers = [4, 9, 1, 7]
+      print(second_largest(numbers))
+      print(numbers)
+      ```
+
+      ```
+      7
+      [4, 9, 1, 7]
+      ```
+    seed: |
+      def second_largest(numbers: list) -> int:
+          numbers.sort()
+          return numbers[-2]
+
+
+      if __name__ == "__main__":
+          numbers = [4, 9, 1, 7]
+          print(second_largest(numbers))
+          print(numbers)
+    solution: |
+      def second_largest(numbers: list) -> int:
+          in_order = sorted(numbers)
+          return in_order[-2]
+
+
+      if __name__ == "__main__":
+          numbers = [4, 9, 1, 7]
+          print(second_largest(numbers))
+          print(numbers)
+    hints:
+      - "`numbers.sort()` sorts the very list the caller gave the function."
+      - "`sorted(numbers)` gives a new, sorted list. Store it in a variable of its own and take the second last item of that."
+    tests:
+      - call: |
+          numbers = [4, 9, 1, 7]
+          print(second_largest(numbers))
+          print(numbers)
+      - call: |
+          numbers = [10, 30, 20]
+          print(second_largest(numbers))
+          print(numbers)
+        hidden: true
+      - call: |
+          numbers = [5, 5, 2, 8, 6]
+          print(second_largest(numbers))
+          print(numbers)
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def last_two(items: list) -> list:
+              result = []
+              result.append(items.pop())
+              result.append(items.pop())
+              return result
+
+
+          letters = ["a", "b", "c", "d"]
+          print(last_two(letters))
+          print(letters)
+          print(last_two(letters))
+        hints:
+          - "`pop()` without an index removes the last item of the list and returns it."
+          - "`items` refers to the caller's list `letters`, so each call removes two items from `letters` for good."
+          - The second call works on what's left after the first one.
+      - task: |
+          Write a pure function `without(items, value)` that returns a new list with every item except the ones equal to `value`, in their original order. The list it's given must not change.
+
+          ```python fragment
+          items = [1, 3, 1, 2]
+          print(without(items, 1))
+          print(items)
+          ```
+
+          ```
+          [3, 2]
+          [1, 3, 1, 2]
+          ```
+        seed: |
+          def without(items: list, value) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              items = [1, 3, 1, 2]
+              print(without(items, 1))
+              print(items)
+        solution: |
+          def without(items: list, value) -> list:
+              result = []
+              for item in items:
+                  if item != value:
+                      result.append(item)
+              return result
+
+
+          if __name__ == "__main__":
+              items = [1, 3, 1, 2]
+              print(without(items, 1))
+              print(items)
+        hints:
+          - Don't use `remove` on `items`, because that changes the caller's list.
+          - Start with a new empty list and append each item that isn't equal to `value`. Return the new list.
+        tests:
+          - call: |
+              items = [1, 3, 1, 2]
+              print(without(items, 1))
+              print(items)
+          - call: |
+              items = ["red", "blue", "red", "green"]
+              print(without(items, "red"))
+              print(items)
+            hidden: true
+          - call: |
+              items = [7, 8]
+              print(without(items, 9))
+              print(items)
+            hidden: true

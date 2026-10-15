@@ -1,0 +1,1180 @@
+id: text-adventure
+title: A text adventure
+after: reading-files
+summary: "A small game you play by typing. Walk through the rooms of an old clockmaker's house, pick things up, open a locked door and start the great clock again, with the whole world read from a file into dictionaries."
+intro: |
+  In this project you build a **text adventure**: a game that tells you where you are, reads what you want to do (`go north`, `take key`), and answers in text. The world isn't written into the program. It comes from a file, `world.txt`, so the same program can play any world that the file describes.
+
+  When it's finished, this file is a whole world: the house of an old clockmaker, with five rooms, three things to find, a locked door and a goal.
+
+  ```text
+  room;Workshop;Half-built clocks tick on every shelf.
+  room;Hallway;A long hallway. The grandfather clock here has stopped.
+  room;Kitchen;A kettle sits on a cold stove.
+  room;Attic;Dusty boxes stand under a round window.
+  room;Clock Tower;Huge wheels fill the tower. One gear is missing.
+  exit;Workshop;north;Hallway
+  exit;Hallway;south;Workshop
+  exit;Hallway;east;Kitchen
+  exit;Hallway;up;Attic
+  exit;Kitchen;west;Hallway
+  exit;Attic;down;Hallway
+  exit;Attic;up;Clock Tower
+  exit;Clock Tower;down;Attic
+  item;Workshop;key
+  item;Kitchen;gear
+  item;Attic;oil
+  lock;Attic;up;key
+  goal;Clock Tower;gear;You fit the gear into place, and the great clock starts ticking again.
+  ```
+
+  A player who types these commands, one per line:
+
+  ```text
+  take key
+  go north
+  go east
+  take gear
+  go west
+  go up
+  go up
+  ```
+
+  sees this, with the game's prompt `> ` in front of each command:
+
+  ```text
+  == Workshop ==
+  Half-built clocks tick on every shelf.
+  Exits: north
+  You see: key
+  > take key
+  You take the key.
+  > go north
+  == Hallway ==
+  A long hallway. The grandfather clock here has stopped.
+  Exits: south, east, up
+  > go east
+  == Kitchen ==
+  A kettle sits on a cold stove.
+  Exits: west
+  You see: gear
+  > take gear
+  You take the gear.
+  > go west
+  == Hallway ==
+  A long hallway. The grandfather clock here has stopped.
+  Exits: south, east, up
+  > go up
+  == Attic ==
+  Dusty boxes stand under a round window.
+  Exits: down, up
+  You see: oil
+  > go up
+  You unlock the way up with the key.
+  == Clock Tower ==
+  Huge wheels fill the tower. One gear is missing.
+  Exits: down
+  You fit the gear into place, and the great clock starts ticking again.
+  You won in 5 moves.
+  ```
+
+  ### What you need
+
+  Everything up to module 23: functions that return values (modules 13 and 14), lists (module 15), the string methods `split`, `join` and `strip` (module 18), dictionaries, also dictionaries inside a dictionary (module 21), a function that returns two values as a tuple (module 22), and reading a file line by line with `with open(...)` (module 23).
+
+  ### How you build it
+
+  Every line of `world.txt` starts with its kind (`room`, `exit`, `item`, `lock` or `goal`), then the name of the room it's about, and then the rest, all separated by `;`. The room lines come first in the file. Each milestone teaches the program one more kind of line, with the commands that go with it:
+
+  1. **Rooms:** the rooms from the file, and a loop that reads commands.
+  2. **Exits:** `go north` takes you to the next room.
+  3. **Things to carry:** `take`, `drop` and `inventory`.
+  4. **A locked door:** an exit that opens only for a player who carries the right thing.
+  5. **The goal:** the game ends when you reach it, and counts your moves.
+
+  The program skips the lines of a kind it doesn't know yet, so a world file written for a later milestone still works with an earlier program.
+seed: |
+  # A text adventure. The world is read from the file world.txt.
+
+
+  def read_world(filename):
+      rooms = {}
+      start = ""
+      with open(filename) as file:
+          for line in file:
+              parts = line.strip().split(";")
+              # Each line starts with its kind. A room line is room;name;description
+
+      return rooms, start
+
+
+  def main():
+      rooms, start = read_world("world.txt")
+      location = start
+      # Show the room where the game starts, then read commands until quit.
+
+
+  if __name__ == "__main__":
+      main()
+milestones:
+  - id: rooms
+    title: Rooms
+    task: |
+      The starting code opens `world.txt` and splits each of its lines at `;`. A line such as `room;Workshop;Half-built clocks tick on every shelf.` is a room: the word `room`, the room's name and its description.
+
+      1. In `read_world`, add each room to the dictionary `rooms`. The key is the room's name, and the value is a dictionary of its own, for everything the game knows about that room. For now that's only the description: `{"description": "Half-built clocks tick on every shelf."}`. The game starts in the first room of the file, so `start` is the name of that room. A line of another kind (the next milestones read those) is simply skipped.
+      2. Write `show_room(rooms, name)`, which prints the room's name between `==` signs, and its description under it:
+
+         ```text
+         == Workshop ==
+         Half-built clocks tick on every shelf.
+         ```
+
+      3. In `main`, show the room where the game starts. Then read commands with the prompt `> `, one at a time, until the player types `quit`:
+         - `look` shows the room again.
+         - `quit` prints `Goodbye!` and ends the game.
+         - Anything else prints `I don't understand that.`
+
+      With this `world.txt`
+
+      ```text
+      room;Workshop;Half-built clocks tick on every shelf.
+      room;Hallway;A long hallway. The grandfather clock here has stopped.
+      ```
+
+      and the commands `look`, `dance` and `quit`, the program prints:
+
+      ```
+      == Workshop ==
+      Half-built clocks tick on every shelf.
+      > look
+      == Workshop ==
+      Half-built clocks tick on every shelf.
+      > dance
+      I don't understand that.
+      > quit
+      Goodbye!
+      ```
+    hints:
+      - "In the loop of `read_world`, `if parts[0] == \"room\":` picks the room lines. Then `parts[1]` is the name and `parts[2]` the description: `rooms[parts[1]] = {\"description\": parts[2]}`."
+      - "`start` begins as `\"\"`, so the first room line is the one that finds it still empty: `if start == \"\":` then `start = parts[1]`."
+      - "`show_room` prints `f\"== {name} ==\"` and then `rooms[name][\"description\"]`. In `main`, a `while True:` loop reads `command = input(\"> \")` and leaves with `break` after `Goodbye!`."
+    tests:
+      - name: Look around
+        files:
+          world.txt: |
+            room;Workshop;Half-built clocks tick on every shelf.
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+        stdin: |
+          look
+          dance
+          quit
+      - name: Reading the rooms
+        files:
+          world.txt: |
+            room;Workshop;Half-built clocks tick on every shelf.
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+        call: |
+          rooms, start = read_world("world.txt")
+          print(start)
+          print(len(rooms))
+          print(rooms["Hallway"]["description"])
+      - name: Another world, with lines to skip
+        hidden: true
+        files:
+          world.txt: |
+            room;Deck;Wet planks creak under your feet.
+            room;Cabin;A hammock swings from the ceiling.
+            room;Galley;Pots and pans rattle with every wave.
+            exit;Deck;down;Cabin
+            exit;Cabin;up;Deck
+            item;Galley;biscuit
+        stdin: |
+          Look
+          look
+          go down
+          quit
+      - name: The rooms as dictionaries
+        hidden: true
+        files:
+          world.txt: |
+            room;Cellar;Shelves of jam jars line the walls.
+            exit;Cellar;up;Garden
+            room;Garden;Bees buzz between the roses.
+        call: |
+          rooms, start = read_world("world.txt")
+          print(start)
+          print(rooms)
+          show_room(rooms, "Garden")
+      - name: Quit at once
+        hidden: true
+        files:
+          world.txt: |
+            room;Shed;Rakes and spades hang on the wall.
+        stdin: |
+          quit
+    solution: |
+      # A text adventure. The world is read from the file world.txt.
+
+
+      def read_world(filename):
+          rooms = {}
+          start = ""
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "room":
+                      rooms[parts[1]] = {"description": parts[2]}
+                      if start == "":
+                          start = parts[1]
+          return rooms, start
+
+
+      def show_room(rooms, name):
+          print(f"== {name} ==")
+          print(rooms[name]["description"])
+
+
+      def main():
+          rooms, start = read_world("world.txt")
+          location = start
+          show_room(rooms, location)
+          while True:
+              command = input("> ")
+              if command == "quit":
+                  print("Goodbye!")
+                  break
+              if command == "look":
+                  show_room(rooms, location)
+              else:
+                  print("I don't understand that.")
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: exits
+    title: Exits
+    task: |
+      Now the rooms get exits. A line such as `exit;Workshop;north;Hallway` means: from the Workshop, the way north leads to the Hallway. The room lines come first in the file, so every room that an exit line names already exists when the line is read.
+
+      1. Give each room's dictionary the key `"exits"`, with an empty dictionary as its value when the room is created. For each exit line, `read_world` adds the direction as a key to that dictionary, with the name of the room it leads to as the value.
+      2. When a room has exits, `show_room` prints one more line after the description, with their directions in the order of the file, separated by a comma and a space: `Exits: south, east`. A room without exits prints no such line.
+      3. A new command: `go` and a direction, such as `go north`, takes the player through that exit and shows the new room. When the room has no exit that way, it prints `You can't go west from here.` (with the direction the player typed). Only a command of exactly these two words is a move; `go` on its own is still a command the game doesn't understand.
+
+      With this `world.txt`
+
+      ```text
+      room;Workshop;Half-built clocks tick on every shelf.
+      room;Hallway;A long hallway. The grandfather clock here has stopped.
+      room;Kitchen;A kettle sits on a cold stove.
+      exit;Workshop;north;Hallway
+      exit;Hallway;south;Workshop
+      exit;Hallway;east;Kitchen
+      exit;Kitchen;west;Hallway
+      ```
+
+      and the commands `go north`, `go up`, `go east` and `quit`, the program prints:
+
+      ```
+      == Workshop ==
+      Half-built clocks tick on every shelf.
+      Exits: north
+      > go north
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: south, east
+      > go up
+      You can't go up from here.
+      > go east
+      == Kitchen ==
+      A kettle sits on a cold stove.
+      Exits: west
+      > quit
+      Goodbye!
+      ```
+    hints:
+      - "A room is now created as `{\"description\": parts[2], \"exits\": {}}`. For an exit line, `rooms[parts[1]][\"exits\"][parts[2]] = parts[3]`: the room, then its exits, then the direction."
+      - "`join` from module 18 puts the comma and the space between the directions. Going through a dictionary gives its keys in order, and so does joining one: `\", \".join(room[\"exits\"])` joins the directions."
+      - "Split the command into words with `words = command.split()`. It's a move when `len(words) == 2 and words[0] == \"go\"`, and `words[1]` is the direction: `if direction in room[\"exits\"]:` tells whether there's a way."
+    tests:
+      - name: Walk north and east
+        files:
+          world.txt: |
+            room;Workshop;Half-built clocks tick on every shelf.
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+            room;Kitchen;A kettle sits on a cold stove.
+            exit;Workshop;north;Hallway
+            exit;Hallway;south;Workshop
+            exit;Hallway;east;Kitchen
+            exit;Kitchen;west;Hallway
+        stdin: |
+          go north
+          go up
+          go east
+          quit
+      - name: Exits of a room
+        files:
+          world.txt: |
+            room;Workshop;Half-built clocks tick on every shelf.
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+            room;Kitchen;A kettle sits on a cold stove.
+            exit;Hallway;south;Workshop
+            exit;Hallway;east;Kitchen
+            exit;Hallway;up;Attic
+        call: |
+          rooms, start = read_world("world.txt")
+          show_room(rooms, "Hallway")
+          show_room(rooms, "Kitchen")
+      - name: Up and down the ship
+        hidden: true
+        files:
+          world.txt: |
+            room;Deck;Wet planks creak under your feet.
+            room;Cabin;A hammock swings from the ceiling.
+            room;Hold;Barrels are stacked in the dark.
+            room;Crow's Nest;You can see for miles.
+            exit;Deck;down;Cabin
+            exit;Deck;up;Crow's Nest
+            exit;Cabin;up;Deck
+            exit;Cabin;down;Hold
+            exit;Crow's Nest;down;Deck
+        stdin: |
+          go down
+          go down
+          go up
+          look
+          go
+          go up now
+          go down
+          go up
+          go up
+          quit
+      - name: A room without exits
+        hidden: true
+        files:
+          world.txt: |
+            room;Cell;Four stone walls and a narrow window.
+            item;Cell;spoon
+        stdin: |
+          go north
+          look
+          quit
+      - name: The exits as a dictionary
+        hidden: true
+        files:
+          world.txt: |
+            room;Cellar;Shelves of jam jars line the walls.
+            room;Garden;Bees buzz between the roses.
+            exit;Cellar;up;Garden
+            exit;Garden;down;Cellar
+            exit;Garden;west;Cellar
+        call: |
+          rooms, start = read_world("world.txt")
+          print(rooms["Garden"]["exits"])
+          print(rooms["Cellar"]["exits"]["up"])
+          show_room(rooms, "Garden")
+    solution: |
+      # A text adventure. The world is read from the file world.txt.
+
+
+      def read_world(filename):
+          rooms = {}
+          start = ""
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "room":
+                      rooms[parts[1]] = {"description": parts[2], "exits": {}}
+                      if start == "":
+                          start = parts[1]
+                  elif parts[0] == "exit":
+                      rooms[parts[1]]["exits"][parts[2]] = parts[3]
+          return rooms, start
+
+
+      def show_room(rooms, name):
+          room = rooms[name]
+          print(f"== {name} ==")
+          print(room["description"])
+          if len(room["exits"]) > 0:
+              print("Exits: " + ", ".join(room["exits"]))
+
+
+      def move(rooms, location, direction):
+          room = rooms[location]
+          if direction not in room["exits"]:
+              print(f"You can't go {direction} from here.")
+              return location
+          return room["exits"][direction]
+
+
+      def main():
+          rooms, start = read_world("world.txt")
+          location = start
+          show_room(rooms, location)
+          while True:
+              command = input("> ")
+              words = command.split()
+              if command == "quit":
+                  print("Goodbye!")
+                  break
+              if command == "look":
+                  show_room(rooms, location)
+              elif len(words) == 2 and words[0] == "go":
+                  new_location = move(rooms, location, words[1])
+                  if new_location != location:
+                      location = new_location
+                      show_room(rooms, location)
+              else:
+                  print("I don't understand that.")
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: items
+    title: Things to carry
+    task: |
+      An adventure needs things to find. A line such as `item;Kitchen;gear` means that a gear lies in the Kitchen. Item names are single words.
+
+      1. Give each room's dictionary the key `"items"`, with an empty list when the room is created. For each item line, `read_world` appends the item to that room's list.
+      2. When a room has items, `show_room` prints one more line after the exits: `You see: gear, spoon`, in the order of the list.
+      3. The player carries an **inventory**, a list that starts empty, and three new commands use it:
+         - `take gear`: when the gear is in the room, it moves from the room's list to the end of the inventory, and the game prints `You take the gear.` Otherwise it prints `There is no gear here.`
+         - `drop gear`: when the player carries the gear, it moves from the inventory to the end of the room's list, with `You drop the gear.` Otherwise `You don't have the gear.`
+         - `inventory` prints `You carry: key, gear`, in the order of the list, or `You carry nothing.`
+
+      With the world of the last milestone and three item lines at the end of it
+
+      ```text
+      item;Workshop;key
+      item;Kitchen;gear
+      item;Kitchen;spoon
+      ```
+
+      and the commands `take key`, `take gear`, `go north`, `go east`, `take gear`, `drop key`, `inventory`, `look` and `quit`, the program prints:
+
+      ```
+      == Workshop ==
+      Half-built clocks tick on every shelf.
+      Exits: north
+      You see: key
+      > take key
+      You take the key.
+      > take gear
+      There is no gear here.
+      > go north
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: south, east
+      > go east
+      == Kitchen ==
+      A kettle sits on a cold stove.
+      Exits: west
+      You see: gear, spoon
+      > take gear
+      You take the gear.
+      > drop key
+      You drop the key.
+      > inventory
+      You carry: gear
+      > look
+      == Kitchen ==
+      A kettle sits on a cold stove.
+      Exits: west
+      You see: spoon, key
+      > quit
+      Goodbye!
+      ```
+    hints:
+      - "A room is now created with `\"items\": []` as well, and an item line does `rooms[parts[1]][\"items\"].append(parts[2])`. `join` works for the list of items as well."
+      - "In `main`, `inventory = []` goes before the loop. A take is `len(words) == 2 and words[0] == \"take\"`, like a move. `rooms[location][\"items\"]` is the list of the room the player is in."
+      - "Moving an item is two steps: `remove` it from one list and `append` it to the other. A function such as `take(room, item, inventory)` keeps `main` short: a list passed to a function is the same list, so the function's changes show in `main` too."
+    tests:
+      - name: Take and drop
+        files:
+          world.txt: |
+            room;Workshop;Half-built clocks tick on every shelf.
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+            room;Kitchen;A kettle sits on a cold stove.
+            exit;Workshop;north;Hallway
+            exit;Hallway;south;Workshop
+            exit;Hallway;east;Kitchen
+            exit;Kitchen;west;Hallway
+            item;Workshop;key
+            item;Kitchen;gear
+            item;Kitchen;spoon
+        stdin: |
+          take key
+          take gear
+          go north
+          go east
+          take gear
+          drop key
+          inventory
+          look
+          quit
+      - name: Carry things to another room
+        hidden: true
+        files:
+          world.txt: |
+            room;Deck;Wet planks creak under your feet.
+            room;Cabin;A hammock swings from the ceiling.
+            exit;Deck;down;Cabin
+            exit;Cabin;up;Deck
+            item;Deck;rope
+            item;Deck;map
+            item;Cabin;lantern
+        stdin: |
+          inventory
+          drop rope
+          take map
+          take map
+          take rope
+          inventory
+          go down
+          drop map
+          take lantern
+          inventory
+          go up
+          take
+          take two ropes
+          look
+          quit
+      - name: Items as lists
+        hidden: true
+        files:
+          world.txt: |
+            room;Cellar;Shelves of jam jars line the walls.
+            room;Garden;Bees buzz between the roses.
+            exit;Cellar;up;Garden
+            item;Garden;rake
+            item;Cellar;jar
+            item;Garden;seeds
+        call: |
+          rooms, start = read_world("world.txt")
+          print(rooms["Garden"]["items"])
+          print(rooms["Cellar"]["items"])
+          show_room(rooms, "Garden")
+    solution: |
+      # A text adventure. The world is read from the file world.txt.
+
+
+      def read_world(filename):
+          rooms = {}
+          start = ""
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "room":
+                      rooms[parts[1]] = {"description": parts[2], "exits": {}, "items": []}
+                      if start == "":
+                          start = parts[1]
+                  elif parts[0] == "exit":
+                      rooms[parts[1]]["exits"][parts[2]] = parts[3]
+                  elif parts[0] == "item":
+                      rooms[parts[1]]["items"].append(parts[2])
+          return rooms, start
+
+
+      def show_room(rooms, name):
+          room = rooms[name]
+          print(f"== {name} ==")
+          print(room["description"])
+          if len(room["exits"]) > 0:
+              print("Exits: " + ", ".join(room["exits"]))
+          if len(room["items"]) > 0:
+              print("You see: " + ", ".join(room["items"]))
+
+
+      def move(rooms, location, direction):
+          room = rooms[location]
+          if direction not in room["exits"]:
+              print(f"You can't go {direction} from here.")
+              return location
+          return room["exits"][direction]
+
+
+      def take(room, item, inventory):
+          if item in room["items"]:
+              room["items"].remove(item)
+              inventory.append(item)
+              print(f"You take the {item}.")
+          else:
+              print(f"There is no {item} here.")
+
+
+      def drop(room, item, inventory):
+          if item in inventory:
+              inventory.remove(item)
+              room["items"].append(item)
+              print(f"You drop the {item}.")
+          else:
+              print(f"You don't have the {item}.")
+
+
+      def main():
+          rooms, start = read_world("world.txt")
+          location = start
+          inventory = []
+          show_room(rooms, location)
+          while True:
+              command = input("> ")
+              words = command.split()
+              if command == "quit":
+                  print("Goodbye!")
+                  break
+              if command == "look":
+                  show_room(rooms, location)
+              elif command == "inventory":
+                  if len(inventory) == 0:
+                      print("You carry nothing.")
+                  else:
+                      print("You carry: " + ", ".join(inventory))
+              elif len(words) == 2 and words[0] == "go":
+                  new_location = move(rooms, location, words[1])
+                  if new_location != location:
+                      location = new_location
+                      show_room(rooms, location)
+              elif len(words) == 2 and words[0] == "take":
+                  take(rooms[location], words[1], inventory)
+              elif len(words) == 2 and words[0] == "drop":
+                  drop(rooms[location], words[1], inventory)
+              else:
+                  print("I don't understand that.")
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: locks
+    title: A locked door
+    task: |
+      Some ways are locked. A line such as `lock;Attic;up;key` means that the exit `up` from the Attic is locked, and that the key opens it. The exit itself has its own exit line, as before.
+
+      1. Give each room's dictionary the key `"locks"`, with an empty dictionary when the room is created. For each lock line, `read_world` adds the direction as a key, with the item that opens it as the value.
+      2. When the player tries to go through a locked exit:
+         - If they carry the item that opens it, the game prints `You unlock the way up with the key.`, the lock is gone for good, and the player goes through as usual.
+         - Otherwise the game prints `The way up is locked.` and the player stays where they are.
+
+      A locked exit is listed among the exits as usual: the player only finds out it's locked when they try it.
+
+      With this `world.txt`
+
+      ```text
+      room;Hallway;A long hallway. The grandfather clock here has stopped.
+      room;Attic;Dusty boxes stand under a round window.
+      room;Clock Tower;Huge wheels fill the tower. One gear is missing.
+      room;Workshop;Half-built clocks tick on every shelf.
+      exit;Hallway;up;Attic
+      exit;Hallway;south;Workshop
+      exit;Attic;down;Hallway
+      exit;Attic;up;Clock Tower
+      exit;Clock Tower;down;Attic
+      exit;Workshop;north;Hallway
+      item;Workshop;key
+      lock;Attic;up;key
+      ```
+
+      and the commands `go up`, `go up`, `go down`, `go south`, `take key`, `go north`, `go up`, `go up`, `go down`, `go up` and `quit`, the program prints:
+
+      ```
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: up, south
+      > go up
+      == Attic ==
+      Dusty boxes stand under a round window.
+      Exits: down, up
+      > go up
+      The way up is locked.
+      > go down
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: up, south
+      > go south
+      == Workshop ==
+      Half-built clocks tick on every shelf.
+      Exits: north
+      You see: key
+      > take key
+      You take the key.
+      > go north
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: up, south
+      > go up
+      == Attic ==
+      Dusty boxes stand under a round window.
+      Exits: down, up
+      > go up
+      You unlock the way up with the key.
+      == Clock Tower ==
+      Huge wheels fill the tower. One gear is missing.
+      Exits: down
+      > go down
+      == Attic ==
+      Dusty boxes stand under a round window.
+      Exits: down, up
+      > go up
+      == Clock Tower ==
+      Huge wheels fill the tower. One gear is missing.
+      Exits: down
+      > quit
+      Goodbye!
+      ```
+
+      The last `go up` passes without a word: the lock was opened before.
+    hints:
+      - "A room is now created with `\"locks\": {}` too, and a lock line does `rooms[parts[1]][\"locks\"][parts[2]] = parts[3]`."
+      - "Whoever handles `go` now needs the inventory as well: give your move function one more parameter. After finding that the exit exists, check `if direction in room[\"locks\"]:`, and look up the item that opens it."
+      - "`del room[\"locks\"][direction]` removes the lock for good, because the room's dictionary is the same one that `rooms` keeps."
+    tests:
+      - name: Find the key and open the door
+        files:
+          world.txt: |
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+            room;Attic;Dusty boxes stand under a round window.
+            room;Clock Tower;Huge wheels fill the tower. One gear is missing.
+            room;Workshop;Half-built clocks tick on every shelf.
+            exit;Hallway;up;Attic
+            exit;Hallway;south;Workshop
+            exit;Attic;down;Hallway
+            exit;Attic;up;Clock Tower
+            exit;Clock Tower;down;Attic
+            exit;Workshop;north;Hallway
+            item;Workshop;key
+            lock;Attic;up;key
+        stdin: |
+          go up
+          go up
+          go down
+          go south
+          take key
+          go north
+          go up
+          go up
+          go down
+          go up
+          quit
+      - name: Two locks and the wrong item
+        hidden: true
+        files:
+          world.txt: |
+            room;Deck;Wet planks creak under your feet.
+            room;Cabin;A hammock swings from the ceiling.
+            room;Hold;Barrels are stacked in the dark.
+            exit;Deck;down;Cabin
+            exit;Cabin;up;Deck
+            exit;Cabin;down;Hold
+            exit;Hold;up;Cabin
+            item;Deck;rope
+            item;Cabin;lantern
+            lock;Deck;down;rope
+            lock;Cabin;down;lantern
+        stdin: |
+          go down
+          take rope
+          go down
+          go down
+          drop rope
+          go up
+          go west
+          take lantern
+          go down
+          inventory
+          quit
+      - name: Dropping the key after unlocking
+        hidden: true
+        files:
+          world.txt: |
+            room;Gate;An iron gate in a stone wall.
+            room;Yard;Weeds grow between the cobbles.
+            exit;Gate;in;Yard
+            exit;Yard;out;Gate
+            item;Gate;key
+            lock;Gate;in;key
+        stdin: |
+          take key
+          go in
+          drop key
+          go out
+          go in
+          quit
+      - name: Locks as a dictionary
+        hidden: true
+        files:
+          world.txt: |
+            room;Cellar;Shelves of jam jars line the walls.
+            room;Garden;Bees buzz between the roses.
+            exit;Cellar;up;Garden
+            exit;Garden;down;Cellar
+            lock;Cellar;up;ladder
+        call: |
+          rooms, start = read_world("world.txt")
+          print(rooms["Cellar"]["locks"])
+          print(rooms["Garden"]["locks"])
+    solution: |
+      # A text adventure. The world is read from the file world.txt.
+
+
+      def read_world(filename):
+          rooms = {}
+          start = ""
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "room":
+                      rooms[parts[1]] = {"description": parts[2], "exits": {}, "items": [], "locks": {}}
+                      if start == "":
+                          start = parts[1]
+                  elif parts[0] == "exit":
+                      rooms[parts[1]]["exits"][parts[2]] = parts[3]
+                  elif parts[0] == "item":
+                      rooms[parts[1]]["items"].append(parts[2])
+                  elif parts[0] == "lock":
+                      rooms[parts[1]]["locks"][parts[2]] = parts[3]
+          return rooms, start
+
+
+      def show_room(rooms, name):
+          room = rooms[name]
+          print(f"== {name} ==")
+          print(room["description"])
+          if len(room["exits"]) > 0:
+              print("Exits: " + ", ".join(room["exits"]))
+          if len(room["items"]) > 0:
+              print("You see: " + ", ".join(room["items"]))
+
+
+      def move(rooms, location, direction, inventory):
+          room = rooms[location]
+          if direction not in room["exits"]:
+              print(f"You can't go {direction} from here.")
+              return location
+          if direction in room["locks"]:
+              item = room["locks"][direction]
+              if item not in inventory:
+                  print(f"The way {direction} is locked.")
+                  return location
+              print(f"You unlock the way {direction} with the {item}.")
+              del room["locks"][direction]
+          return room["exits"][direction]
+
+
+      def take(room, item, inventory):
+          if item in room["items"]:
+              room["items"].remove(item)
+              inventory.append(item)
+              print(f"You take the {item}.")
+          else:
+              print(f"There is no {item} here.")
+
+
+      def drop(room, item, inventory):
+          if item in inventory:
+              inventory.remove(item)
+              room["items"].append(item)
+              print(f"You drop the {item}.")
+          else:
+              print(f"You don't have the {item}.")
+
+
+      def main():
+          rooms, start = read_world("world.txt")
+          location = start
+          inventory = []
+          show_room(rooms, location)
+          while True:
+              command = input("> ")
+              words = command.split()
+              if command == "quit":
+                  print("Goodbye!")
+                  break
+              if command == "look":
+                  show_room(rooms, location)
+              elif command == "inventory":
+                  if len(inventory) == 0:
+                      print("You carry nothing.")
+                  else:
+                      print("You carry: " + ", ".join(inventory))
+              elif len(words) == 2 and words[0] == "go":
+                  new_location = move(rooms, location, words[1], inventory)
+                  if new_location != location:
+                      location = new_location
+                      show_room(rooms, location)
+              elif len(words) == 2 and words[0] == "take":
+                  take(rooms[location], words[1], inventory)
+              elif len(words) == 2 and words[0] == "drop":
+                  drop(rooms[location], words[1], inventory)
+              else:
+                  print("I don't understand that.")
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: goal
+    title: The goal
+    task: |
+      Last, the game gets a goal. A line such as `goal;Clock Tower;gear;You fit the gear into place, and the great clock starts ticking again.` means: the player wins by being in the Clock Tower with the gear in their inventory, and then the game prints that message.
+
+      1. For a goal line, `read_world` gives that room's dictionary the key `"goal"`, with a **tuple** of the item and the message as its value: `("gear", "You fit the gear ...")`. Rooms without a goal don't get the key at all.
+      2. The game counts the player's **moves**: each `go` that takes the player to another room is one move. A way that is closed, or locked, is no move.
+      3. After every command, the game checks whether the player has won. If so, it prints the goal's message and then `You won in 5 moves.` (with the number of moves; for exactly one move, `You won in 1 move.`), and the game ends. It doesn't matter how the player got there: walking in with the item, or picking it up in that room.
+
+      A world without a goal line is played as before, until `quit`.
+
+      With the world and the commands at the top of this page, the program prints:
+
+      ```
+      == Workshop ==
+      Half-built clocks tick on every shelf.
+      Exits: north
+      You see: key
+      > take key
+      You take the key.
+      > go north
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: south, east, up
+      > go east
+      == Kitchen ==
+      A kettle sits on a cold stove.
+      Exits: west
+      You see: gear
+      > take gear
+      You take the gear.
+      > go west
+      == Hallway ==
+      A long hallway. The grandfather clock here has stopped.
+      Exits: south, east, up
+      > go up
+      == Attic ==
+      Dusty boxes stand under a round window.
+      Exits: down, up
+      You see: oil
+      > go up
+      You unlock the way up with the key.
+      == Clock Tower ==
+      Huge wheels fill the tower. One gear is missing.
+      Exits: down
+      You fit the gear into place, and the great clock starts ticking again.
+      You won in 5 moves.
+      ```
+    hints:
+      - "A goal line does `rooms[parts[1]][\"goal\"] = (parts[2], parts[3])`. Then `room[\"goal\"][0]` is the item and `room[\"goal\"][1]` the message."
+      - "Keep `moves = 0` before the loop, and add one where the player arrives in a new room, next to the call that shows it."
+      - "At the end of each round of the loop, `room = rooms[location]` and `if \"goal\" in room and room[\"goal\"][0] in inventory:` tell you the player has won. Print the two lines there and `break`."
+    tests:
+      - name: Start the great clock
+        files:
+          world.txt: |
+            room;Workshop;Half-built clocks tick on every shelf.
+            room;Hallway;A long hallway. The grandfather clock here has stopped.
+            room;Kitchen;A kettle sits on a cold stove.
+            room;Attic;Dusty boxes stand under a round window.
+            room;Clock Tower;Huge wheels fill the tower. One gear is missing.
+            exit;Workshop;north;Hallway
+            exit;Hallway;south;Workshop
+            exit;Hallway;east;Kitchen
+            exit;Hallway;up;Attic
+            exit;Kitchen;west;Hallway
+            exit;Attic;down;Hallway
+            exit;Attic;up;Clock Tower
+            exit;Clock Tower;down;Attic
+            item;Workshop;key
+            item;Kitchen;gear
+            item;Attic;oil
+            lock;Attic;up;key
+            goal;Clock Tower;gear;You fit the gear into place, and the great clock starts ticking again.
+        stdin: |
+          take key
+          go north
+          go east
+          take gear
+          go west
+          go up
+          go up
+      - name: Arrive first, then fetch the item
+        hidden: true
+        files:
+          world.txt: |
+            room;Deck;Wet planks creak under your feet.
+            room;Cabin;A hammock swings from the ceiling.
+            room;Hold;Barrels are stacked in the dark.
+            exit;Deck;down;Cabin
+            exit;Cabin;up;Deck
+            exit;Cabin;down;Hold
+            exit;Hold;up;Cabin
+            item;Hold;compass
+            goal;Deck;compass;With the compass in hand, you set a course for home.
+        stdin: |
+          go up
+          go down
+          go down
+          go down
+          take compass
+          go up
+          go up
+      - name: Win in one move
+        hidden: true
+        files:
+          world.txt: |
+            room;Gate;An iron gate in a stone wall.
+            room;Yard;Weeds grow between the cobbles.
+            exit;Gate;in;Yard
+            item;Gate;flag
+            goal;Yard;flag;You plant the flag in the middle of the yard.
+        stdin: |
+          take flag
+          go in
+      - name: Win by taking the item
+        hidden: true
+        files:
+          world.txt: |
+            room;Garden;Bees buzz between the roses.
+            item;Garden;honey
+            goal;Garden;honey;You found the honey!
+        stdin: |
+          look
+          take honey
+      - name: No goal in this world
+        hidden: true
+        files:
+          world.txt: |
+            room;Cellar;Shelves of jam jars line the walls.
+            room;Garden;Bees buzz between the roses.
+            exit;Cellar;up;Garden
+            exit;Garden;down;Cellar
+            item;Cellar;jar
+        stdin: |
+          take jar
+          go up
+          drop jar
+          inventory
+          quit
+      - name: A goal as a tuple
+        hidden: true
+        files:
+          world.txt: |
+            room;Garden;Bees buzz between the roses.
+            room;Pond;Frogs sit on the lily pads.
+            exit;Garden;east;Pond
+            goal;Pond;net;You catch a frog. Well, almost.
+        call: |
+          rooms, start = read_world("world.txt")
+          print(rooms["Pond"]["goal"])
+          print("goal" in rooms["Garden"])
+    solution: |
+      # A text adventure. The world is read from the file world.txt.
+
+
+      def read_world(filename):
+          rooms = {}
+          start = ""
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "room":
+                      rooms[parts[1]] = {"description": parts[2], "exits": {}, "items": [], "locks": {}}
+                      if start == "":
+                          start = parts[1]
+                  elif parts[0] == "exit":
+                      rooms[parts[1]]["exits"][parts[2]] = parts[3]
+                  elif parts[0] == "item":
+                      rooms[parts[1]]["items"].append(parts[2])
+                  elif parts[0] == "lock":
+                      rooms[parts[1]]["locks"][parts[2]] = parts[3]
+                  elif parts[0] == "goal":
+                      rooms[parts[1]]["goal"] = (parts[2], parts[3])
+          return rooms, start
+
+
+      def show_room(rooms, name):
+          room = rooms[name]
+          print(f"== {name} ==")
+          print(room["description"])
+          if len(room["exits"]) > 0:
+              print("Exits: " + ", ".join(room["exits"]))
+          if len(room["items"]) > 0:
+              print("You see: " + ", ".join(room["items"]))
+
+
+      def move(rooms, location, direction, inventory):
+          room = rooms[location]
+          if direction not in room["exits"]:
+              print(f"You can't go {direction} from here.")
+              return location
+          if direction in room["locks"]:
+              item = room["locks"][direction]
+              if item not in inventory:
+                  print(f"The way {direction} is locked.")
+                  return location
+              print(f"You unlock the way {direction} with the {item}.")
+              del room["locks"][direction]
+          return room["exits"][direction]
+
+
+      def take(room, item, inventory):
+          if item in room["items"]:
+              room["items"].remove(item)
+              inventory.append(item)
+              print(f"You take the {item}.")
+          else:
+              print(f"There is no {item} here.")
+
+
+      def drop(room, item, inventory):
+          if item in inventory:
+              inventory.remove(item)
+              room["items"].append(item)
+              print(f"You drop the {item}.")
+          else:
+              print(f"You don't have the {item}.")
+
+
+      def main():
+          rooms, start = read_world("world.txt")
+          location = start
+          inventory = []
+          moves = 0
+          show_room(rooms, location)
+          while True:
+              command = input("> ")
+              words = command.split()
+              if command == "quit":
+                  print("Goodbye!")
+                  break
+              if command == "look":
+                  show_room(rooms, location)
+              elif command == "inventory":
+                  if len(inventory) == 0:
+                      print("You carry nothing.")
+                  else:
+                      print("You carry: " + ", ".join(inventory))
+              elif len(words) == 2 and words[0] == "go":
+                  new_location = move(rooms, location, words[1], inventory)
+                  if new_location != location:
+                      location = new_location
+                      moves += 1
+                      show_room(rooms, location)
+              elif len(words) == 2 and words[0] == "take":
+                  take(rooms[location], words[1], inventory)
+              elif len(words) == 2 and words[0] == "drop":
+                  drop(rooms[location], words[1], inventory)
+              else:
+                  print("I don't understand that.")
+              room = rooms[location]
+              if "goal" in room and room["goal"][0] in inventory:
+                  print(room["goal"][1])
+                  if moves == 1:
+                      print("You won in 1 move.")
+                  else:
+                      print(f"You won in {moves} moves.")
+                  break
+
+
+      if __name__ == "__main__":
+          main()

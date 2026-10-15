@@ -1,0 +1,303 @@
+topic: interview
+drills:
+  - type: predict
+    code: |
+      def add_item(item, items=[]):
+          items.append(item)
+          return items
+
+
+      print(add_item("a"))
+      print(add_item("b"))
+    why: "A default value is made once, when `def` runs, not on every call. Every call without `items` gets the same list, so it remembers `a`."
+
+  - type: bug
+    code: |
+      def add_item(item, items=[]):  # BUG
+          if items is None:
+              items = []
+          items.append(item)
+          return items
+
+
+      print(add_item("a"))
+      print(add_item("b"))
+    fix: "def add_item(item, items=None):"
+    why: "The usual fix for a mutable default: default to `None`, and make a new list inside the function, which then runs on every call."
+
+  - type: predict
+    code: |
+      a = [1, 2, 3]
+      b = [1, 2, 3]
+      c = a
+      print(a == b)
+      print(a is b)
+      print(a is c)
+    why: "`==` compares the contents, `is` asks whether two names refer to the very same object. `a` and `b` are equal but separate lists; `c` is another name for `a`."
+
+  - type: choice
+    prompt: What does this print?
+    code: |
+      print(0.1 + 0.2)
+    choices:
+      - "0.3"
+      - "0.30000000000000004"
+      - "0.29999999999999998"
+    answer: 2
+    verify: output
+    why: "Floats are stored in binary, where 0.1 and 0.2 can't be exact, so the sum is a tiny bit off. Compare floats with a tolerance, or round them, instead of with `==`."
+
+  - type: predict
+    code: |
+      print(7 / 2)
+      print(6 / 3)
+      print(7 // 2)
+      print(-7 // 2)
+    why: "`/` always gives a float, even when the division is exact. `//` rounds the result down, toward minus infinity, so -3.5 becomes -4, not -3."
+
+  - type: runs
+    code: |
+      word = "cat"
+      word[0] = "b"
+      print(word)
+    why: "Strings are immutable: no character of a string can be changed. Make a new string instead, such as `\"b\" + word[1:]`."
+
+  - type: predict
+    code: |
+      def change(numbers):
+          numbers.append(0)
+          numbers = [9]
+
+
+      scores = [5, 7]
+      change(scores)
+      print(scores)
+    why: "The parameter refers to the caller's list, so `append` changes that list. `numbers = [9]` only points the local name at a new list, and the caller never sees it."
+
+  - type: fill
+    prompt: Fill the blank so that changing `backup` leaves `original` as it was.
+    code: |
+      original = [1, 2]
+      backup = [[original.copy()‖original[:]‖list(original)]]
+      backup.append(3)
+      print(original, backup)
+    why: "`backup = original` would only give the same list a second name. `copy()`, the slice `[:]` and `list(...)` all make a new list with the same items."
+
+  - type: predict
+    code: |
+      grid = [[0] * 2] * 2
+      grid[0][0] = 1
+      print(grid)
+    why: "`* 2` on the outer list repeats a reference to the same inner list, so both rows are one list. Build the rows separately: `[[0] * 2 for _ in range(2)]`."
+
+  - type: predict
+    code: |
+      text = "interview"
+      print(text[:5])
+      print(text[-4:])
+      print(text[::2])
+      print(text[::-1])
+    why: "A slice is `[start:stop:step]`, and the item at the stop index isn't included. Negative indexes count from the end, and a step of -1 walks backwards through the whole string."
+
+  - type: runs
+    code: |
+      letters = ["a", "b", "c"]
+      print(letters[1:10])
+      print(letters[10])
+    why: "A slice that runs past the end just stops at the end, so `letters[1:10]` is `['b', 'c']`. A single index past the end is an `IndexError`."
+
+  - type: predict
+    code: |
+      values = [0, "", [], "0", [0], None]
+      print([bool(value) for value in values])
+    why: "Zero, empty strings, empty lists and `None` are falsy. `\"0\"` is a string with one character and `[0]` a list with one item, so both are truthy."
+
+  - type: predict
+    code: |
+      print(list(range(4)))
+      print(list(range(1, 10, 3)))
+      print(list(range(5, 0, -2)))
+      print(len(range(10, 20)))
+    why: "`range` stops before its end value. Its third argument is the step, which can be negative to count down."
+
+  - type: predict
+    code: |
+      stock = {"pears": 2, "apples": 5}
+      stock["plums"] = 1
+      stock["pears"] = 7
+      print(stock)
+    why: "Dictionaries keep the order in which keys were first added. Giving an existing key a new value doesn't move it to the end."
+
+  - type: runs
+    code: |
+      count = 0
+
+
+      def add_one():
+          count += 1
+
+
+      add_one()
+      print(count)
+    why: "Assigning to `count` anywhere in a function makes it local to that function, so `count += 1` reads a local variable that has no value yet. `global count` would fix it; passing the value in and returning the new one is better."
+
+  - type: fill
+    code: |
+      count = 0
+
+
+      def add_one():
+          [[global]] count
+          count += 1
+
+
+      add_one()
+      add_one()
+      print(count)
+    why: "`global count` tells Python that `count` in this function is the variable outside it, so the function may change it."
+
+  - type: predict
+    code: |
+      def loud(value):
+          print("checked", value)
+          return value
+
+
+      print(loud(0) and loud(1))
+      print(loud(2) or loud(3))
+    why: "`and` stops at the first falsy value and `or` at the first truthy one, so the second call never happens. Both give back the value they stopped at, not just `True` or `False`."
+
+  - type: predict
+    code: |
+      words = ["tea", "coffee", "milk", "water"]
+      print([w.upper() for w in words if len(w) > 3])
+      print({w: len(w) for w in words if "e" in w})
+    why: "A comprehension builds a new list (or dictionary) from a loop in one expression. The `if` at the end keeps only the items that pass."
+
+  - type: choice
+    prompt: What does this print?
+    code: |
+      x = "outer"
+      squares = [x * x for x in range(4)]
+      print(x)
+    choices:
+      - outer
+      - "3"
+      - "9"
+    answer: 1
+    verify: output
+    why: "A comprehension's loop variable lives only inside the comprehension, so the `x` outside it is untouched. A plain `for` loop would have changed it to 3."
+
+  - type: predict
+    code: |
+      def describe(first, *rest, **options):
+          print(first, rest, options)
+
+
+      describe(1, 2, 3, sep="-")
+      describe("solo")
+    why: "`*rest` collects the extra positional arguments into a tuple, and `**options` the extra keyword arguments into a dictionary. Both are empty when there are none."
+
+  - type: predict
+    code: |
+      for text in ["42", "x"]:
+          try:
+              number = int(text)
+          except ValueError:
+              print("bad", text)
+          else:
+              print("good", number)
+          finally:
+              print("done")
+    why: "`else` runs only when the `try` block raised nothing, and `finally` runs every time, error or not."
+
+  - type: bug
+    code: |
+      numbers = [1, 2, 2, 3, 2]
+      for n in numbers:  # BUG
+          if n == 2:
+              numbers.remove(n)
+      print(numbers)
+    fix: "for n in numbers[:]:"
+    why: "Removing items from a list while looping over it makes the loop skip the item after each removal. Loop over a copy, or build a new list of the items to keep."
+
+  - type: fill
+    prompt: Fill the blank so that `ordered` is sorted but `numbers` stays as it was.
+    code: |
+      numbers = [3, 1, 2]
+      ordered = [[sorted]](numbers)
+      print(ordered, numbers)
+    why: "`sorted(numbers)` returns a new sorted list. The method `numbers.sort()` sorts the list itself and returns `None`, a classic surprise."
+
+  - type: boss
+    prompt: |
+      The classic: write a function `fizzbuzz(n)` that **returns** a list of strings for the numbers from 1 to `n`. A multiple of both 3 and 5 is `"FizzBuzz"`, another multiple of 3 is `"Fizz"`, another multiple of 5 is `"Buzz"`, and any other number is the number itself as a string.
+
+      `fizzbuzz(5)` returns:
+
+      ```
+      ['1', '2', 'Fizz', '4', 'Buzz']
+      ```
+    seed: |
+      def fizzbuzz(n):
+          result = []
+          return result
+    solution: |
+      def fizzbuzz(n):
+          result = []
+          for number in range(1, n + 1):
+              if number % 15 == 0:
+                  result.append("FizzBuzz")
+              elif number % 3 == 0:
+                  result.append("Fizz")
+              elif number % 5 == 0:
+                  result.append("Buzz")
+              else:
+                  result.append(str(number))
+          return result
+    hints:
+      - "Loop over `range(1, n + 1)`, and use `%` to test for multiples: `number % 3 == 0`."
+      - "Check for multiples of both first (`number % 15 == 0`), or 15 would come out as `Fizz`. Remember `str(number)` for the other numbers."
+    tests:
+      - call: fizzbuzz(5)
+      - call: fizzbuzz(15)
+        hidden: true
+      - call: fizzbuzz(1)
+        hidden: true
+      - call: fizzbuzz(0)
+        hidden: true
+      - call: fizzbuzz(30)[-1]
+        hidden: true
+
+  - type: boss
+    prompt: |
+      Write a function `is_palindrome(text)` that returns `True` when the text reads the same forwards and backwards, and `False` otherwise. Upper and lower case don't matter, and neither do spaces: `"Never odd or even"` is a palindrome. An empty text is one too.
+
+      `is_palindrome("Never odd or even")` returns:
+
+      ```
+      True
+      ```
+    seed: |
+      def is_palindrome(text):
+          return False
+    solution: |
+      def is_palindrome(text):
+          letters = text.lower().replace(" ", "")
+          return letters == letters[::-1]
+    hints:
+      - "First make a cleaned-up version of the text: `lower()` for the case, and `replace(\" \", \"\")` to drop the spaces."
+      - "A string reversed is `s[::-1]`. The text is a palindrome when the cleaned-up string equals its reverse."
+    tests:
+      - call: is_palindrome("Never odd or even")
+      - call: is_palindrome("Python")
+      - call: is_palindrome("racecar")
+        hidden: true
+      - call: is_palindrome("Step on no pets")
+        hidden: true
+      - call: is_palindrome("ab")
+        hidden: true
+      - call: is_palindrome("")
+        hidden: true
+      - call: is_palindrome("Abca")
+        hidden: true

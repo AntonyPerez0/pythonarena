@@ -1,0 +1,172 @@
+topic: terminology
+drills:
+  - type: choice
+    after: statements-and-blocks
+    prompt: How many statements are in the block of the `if` statement?
+    code: |
+      if 3 > 2:
+          print("one")
+          print("two")
+      print("three")
+    choices:
+      - "1"
+      - "2"
+      - "3"
+    answer: 2
+    why: "The block is the two indented lines. The last `print` is back at the left edge, so it belongs to the main block."
+
+  - type: runs
+    after: statements-and-blocks
+    code: |
+      points = 4
+      if points > 5:
+          print("bonus")
+      points = points + 1
+          print(points)
+    why: "The block of the `if` ended at `points = points + 1`, which is in the main block. A new block can only start after a line that ends with a colon, so the indented last line makes Python stop with `IndentationError: unexpected indent`."
+
+  - type: predict
+    after: statements-and-blocks
+    code: |
+      points = 4
+      if points > 5:
+          print("bonus")
+          points = points + 10
+      print(points)
+    why: "The condition is false, so both lines of the block are skipped, the addition too. The last `print` is in the main block and shows the unchanged value."
+
+  - type: choice
+    after: expressions-and-types
+    prompt: Which of these is a statement, not an expression?
+    choices:
+      - "`score + 1`"
+      - "`score > 10`"
+      - "`score = 10`"
+      - "`len(name)`"
+    answer: 3
+    why: "`score = 10` stores a value: it does something, but it has no value of its own. The others are expressions that Python evaluates to a value."
+
+  - type: predict
+    after: expressions-and-types
+    code: |
+      a = 7
+      b = 2
+      print(a > b * 3)
+    why: "Python evaluates `b * 3` first, which is 6. Then the comparison `7 > 6` is `True`."
+
+  - type: predict
+    after: expressions-and-types
+    code: |
+      print(type(2 * 5 > 9))
+    why: "The arithmetic comes first, then the comparison `10 > 9`. A comparison is an expression of the type `bool`."
+
+  - type: predict
+    after: expressions-and-types
+    code: |
+      x = 4
+      print(f"{x} doubled is {x * 2}")
+    why: "Anything inside the braces of an f-string is an expression, and Python puts its value in the string."
+
+  - type: fill
+    after: functions
+    code: |
+      print([[len]]("python"))
+    why: "`len` returns the number of characters in a string. `\"python\"` has 6."
+
+  - type: predict
+    after: functions
+    code: |
+      print(len("a b c"))
+    why: "Spaces are characters too: three letters and two spaces make 5."
+
+  - type: predict
+    after: functions
+    code: |
+      print(len(""))
+      print(len(" "))
+    why: "`\"\"` is the empty string, with no characters, so its length is 0. A space is a character, so `\" \"` has length 1."
+
+  - type: runs
+    after: functions
+    code: |
+      year = 2026
+      print(len(year))
+    why: "`len` works on strings, not numbers, so Python stops with `TypeError: object of type 'int' has no len()`. `len(str(year))` would work."
+
+  - type: predict
+    after: functions
+    code: |
+      print(len(str(12345)))
+    why: "The inner call runs first: `str(12345)` returns the string `\"12345\"`, and `len` counts its 5 characters."
+
+  - type: bug
+    after: functions
+    stdin: Grace
+    code: |
+      name = input("Name: ")
+      length = len("name")  # BUG
+      print(length)
+    fix: length = len(name)
+    why: "With quotes, `\"name\"` is a four-letter string, not the variable. Without quotes, `len` counts the characters of what the user typed."
+
+  - type: predict
+    after: errors-and-debugging
+    stdin: "7"
+    code: |
+      answer = input("Answer: ")
+      print(answer == 7)
+    why: "`input` returns a string, and the string `\"7\"` is not equal to the number `7`. Convert it with `int` before comparing."
+
+  - type: runs
+    after: errors-and-debugging
+    code: |
+      print("Start")
+      result = 5 / 0
+      print(result)
+    why: "Dividing by zero is a runtime error. `Start` is printed first, then Python stops at line 2 with a `ZeroDivisionError`."
+
+  - type: choice
+    after: errors-and-debugging
+    prompt: Which kind of mistake stops a program before any of its lines run?
+    choices:
+      - A syntax error
+      - A runtime error
+      - A bug that makes the result wrong
+    answer: 1
+    why: "With a syntax error, Python can't read the program, so it runs nothing. A runtime error stops it at the line that fails, and a bug doesn't stop it at all."
+
+  - type: predict
+    after: errors-and-debugging
+    code: |
+      price = 20
+      price - 5
+      print("debug, price:", price)
+    why: "The debugging print shows the bug: `price - 5` calculates 15 but stores it nowhere, so `price` is still 20. It should be `price -= 5`."
+
+  - type: boss
+    after: errors-and-debugging
+    prompt: |
+      Write a program that asks for a password and prints its length. If the password is shorter than 8 characters, it also prints how many characters are missing.
+
+      ```
+      Password: cat123
+      Length: 6
+      Too short by 2 characters.
+      ```
+    seed: |
+      password = input("Password: ")
+    solution: |
+      password = input("Password: ")
+      length = len(password)
+      print(f"Length: {length}")
+      if length < 8:
+          print(f"Too short by {8 - length} characters.")
+    hints:
+      - "`len(password)` gives the number of characters."
+      - "The missing characters are `8 - length`, printed only inside an `if length < 8:` block."
+    tests:
+      - stdin: cat123
+      - stdin: correct horse
+        hidden: true
+      - stdin: abcdefgh
+        hidden: true

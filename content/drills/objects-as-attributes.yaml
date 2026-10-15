@@ -1,0 +1,368 @@
+topic: objects-as-attributes
+drills:
+  - type: predict
+    after: object-in-object
+    code: |
+      class Customer:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Order:
+          def __init__(self, number, customer):
+              self.number = number
+              self.customer = customer
+
+
+      order = Order(17, Customer("Ida"))
+      print(order.customer.name)
+    why: "`order.customer` is the `Customer` object, and `.name` is that customer's name."
+
+  - type: predict
+    after: object-in-object
+    code: |
+      class Owner:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Boat:
+          def __init__(self, owner):
+              self.owner = owner
+
+
+      eva = Owner("Eva")
+      a = Boat(eva)
+      b = Boat(eva)
+      a.owner.name = "Eve"
+      print(b.owner.name)
+    why: "Both boats refer to the same `Owner` object, so renaming it through one boat shows through the other."
+
+  - type: runs
+    after: object-in-object
+    code: |
+      class Author:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Book:
+          def __init__(self, title, author):
+              self.title = title
+              self.author = author
+
+
+      book = Book("The Quiet Sea", "Ana Lind")
+      print(book.author.name)
+    why: "The book got a string as its author, not an `Author` object, and a string has no attribute `name`: `AttributeError: 'str' object has no attribute 'name'`. Pass `Author(\"Ana Lind\")` instead."
+
+  - type: fill
+    after: object-in-object
+    code: |
+      class Battery:
+          def __init__(self):
+              self.charge = 100
+
+
+      class Phone:
+          def __init__(self):
+              self.battery = Battery()
+
+          def call(self):
+              self.[[battery]].charge -= 5
+
+
+      phone = Phone()
+      phone.call()
+      print(phone.battery.charge)
+    why: "The charge belongs to the phone's battery, so the method goes through the attribute: `self.battery.charge`."
+
+  - type: runs
+    after: imports
+    code: |
+      from point import Point
+
+
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+
+      print(Point(1, 2).x)
+    why: "There's no file `point.py`, so the import stops the program with a `ModuleNotFoundError`. The class is in the same file, so the program needs no import at all."
+
+  - type: choice
+    after: imports
+    prompt: When does your program need an `import` to use a class?
+    choices:
+      - Always, before a class can be used
+      - When the class is defined in another file
+      - When a class uses another class as an attribute
+    answer: 2
+    why: "An `import` is for code in another file, a module of Python's own or a file of yours. A class in the same file can be used just by its name."
+
+  - type: predict
+    after: list-of-objects
+    code: |
+      class Team:
+          def __init__(self):
+              self.players = []
+
+          def add(self, name):
+              self.players.append(name)
+
+
+      reds = Team()
+      blues = Team()
+      reds.add("Ann")
+      reds.add("Bo")
+      print(len(reds.players), len(blues.players))
+    why: "`__init__` runs for each new team, so each team gets its own list. Adding to the Reds doesn't touch the Blues."
+
+  - type: bug
+    after: list-of-objects
+    code: |
+      class Basket:
+          def __init__(self):
+              self.fruits = []
+
+          def add(self, fruit):
+              fruits.append(fruit)  # BUG
+
+
+      basket = Basket()
+      basket.add("apple")
+      print(basket.fruits)
+    fix: self.fruits.append(fruit)
+    why: "Inside a method, the list is the attribute `self.fruits`. Plain `fruits` is a local name that doesn't exist, so Python stops with a `NameError`."
+
+  - type: predict
+    after: list-of-objects
+    code: |
+      class Item:
+          def __init__(self, kg):
+              self.kg = kg
+
+
+      class Bag:
+          def __init__(self):
+              self.items = []
+
+          def weight(self):
+              total = 0
+              for item in self.items:
+                  total += item.kg
+              return total
+
+
+      bag = Bag()
+      bag.items.append(Item(2))
+      bag.items.append(Item(3))
+      print(bag.weight())
+    why: "`weight` adds up the `kg` of every item in the bag's list: 2 + 3 is 5."
+
+  - type: predict
+    after: none
+    code: |
+      class Shelf:
+          def __init__(self):
+              self.titles = ["Dune", "Emma"]
+
+          def find(self, title):
+              for t in self.titles:
+                  if t == title:
+                      return t
+              return None
+
+
+      shelf = Shelf()
+      print(shelf.find("Emma"))
+      print(shelf.find("Ulysses"))
+    why: "`Emma` is on the shelf, so `find` returns it. `Ulysses` isn't, so the loop ends without a match and `find` returns `None`, which `print` shows as `None`."
+
+  - type: predict
+    after: none
+    code: |
+      def find(names, wanted):
+          for name in names:
+              if name == wanted:
+                  return name
+              else:
+                  return None
+
+
+      print(find(["Ann", "Bo"], "Ann"))
+      print(find(["Ann", "Bo"], "Bo"))
+    why: "The `else: return None` is inside the loop, so the function gives up after checking only the first name. `return None` belongs after the loop, once every name has been checked."
+
+  - type: runs
+    after: none
+    code: |
+      class Team:
+          def __init__(self):
+              self.players = []
+
+          def find(self, name):
+              for player in self.players:
+                  if player.name == name:
+                      return player
+              return None
+
+
+      found = Team().find("Ann")
+      print(found.name)
+    why: "The team is empty, so `find` returns `None`, and `None` has no attribute `name`: `AttributeError: 'NoneType' object has no attribute 'name'`."
+
+  - type: fill
+    after: none
+    code: |
+      class Seat:
+          def __init__(self):
+              self.passenger = None
+
+
+      seat = Seat()
+      if seat.passenger is [[None]]:
+          print("free")
+      else:
+          print("taken")
+    why: "A new seat's passenger is `None`, and `is None` is how you test for it."
+
+  - type: choice
+    after: none
+    prompt: "What does `AttributeError: 'NoneType' object has no attribute 'price'` tell you?"
+    choices:
+      - The class has no attribute called `price`
+      - The value before `.price` was `None`, not an object
+      - The attribute `price` was set to `None`
+    answer: 2
+    why: "`NoneType` is the type of `None`. Something you used as an object, often the result of a search that found nothing, was `None`."
+
+  - type: predict
+    after: none
+    code: |
+      class Desk:
+          def __init__(self):
+              self.laptop = None
+
+          def __str__(self):
+              if self.laptop is None:
+                  return "desk: free"
+              return "desk: " + self.laptop
+
+
+      desk = Desk()
+      print(desk)
+      desk.laptop = "Ada's laptop"
+      print(desk)
+    why: "The attribute starts as `None`, so `__str__` says the desk is free. Once it refers to something, `__str__` shows it."
+
+  - type: boss
+    after: none
+    prompt: |
+      Write the method `heaviest(self)` in the class `Basket`. It returns the heaviest `Fruit` object in the basket, or `None` if the basket is empty. If two fruits are equally heavy, it returns the one added first.
+
+      For example, this code:
+
+      ```python fragment
+      basket = Basket()
+      print(basket.heaviest())
+      basket.add(Fruit("apple", 180))
+      basket.add(Fruit("melon", 950))
+      basket.add(Fruit("plum", 60))
+      print(basket.heaviest())
+      ```
+
+      prints:
+
+      ```
+      None
+      melon (950 g)
+      ```
+    seed: |
+      class Fruit:
+          def __init__(self, name, grams):
+              self.name = name
+              self.grams = grams
+
+          def __str__(self):
+              return f"{self.name} ({self.grams} g)"
+
+
+      class Basket:
+          def __init__(self):
+              self.fruits = []
+
+          def add(self, fruit):
+              self.fruits.append(fruit)
+
+          def heaviest(self):
+              pass
+
+
+      if __name__ == "__main__":
+          basket = Basket()
+          print(basket.heaviest())
+          basket.add(Fruit("apple", 180))
+          basket.add(Fruit("melon", 950))
+          basket.add(Fruit("plum", 60))
+          print(basket.heaviest())
+    solution: |
+      class Fruit:
+          def __init__(self, name, grams):
+              self.name = name
+              self.grams = grams
+
+          def __str__(self):
+              return f"{self.name} ({self.grams} g)"
+
+
+      class Basket:
+          def __init__(self):
+              self.fruits = []
+
+          def add(self, fruit):
+              self.fruits.append(fruit)
+
+          def heaviest(self):
+              if len(self.fruits) == 0:
+                  return None
+              best = self.fruits[0]
+              for fruit in self.fruits:
+                  if fruit.grams > best.grams:
+                      best = fruit
+              return best
+
+
+      if __name__ == "__main__":
+          basket = Basket()
+          print(basket.heaviest())
+          basket.add(Fruit("apple", 180))
+          basket.add(Fruit("melon", 950))
+          basket.add(Fruit("plum", 60))
+          print(basket.heaviest())
+    hints:
+      - "First handle the empty basket: if the list is empty, return `None`."
+      - "Otherwise start with the first fruit as the heaviest and compare the `grams` of each fruit with it, using `>` so the first of two equal fruits stays."
+    tests:
+      - call: |
+          basket = Basket()
+          print(basket.heaviest())
+          basket.add(Fruit("apple", 180))
+          basket.add(Fruit("melon", 950))
+          basket.add(Fruit("plum", 60))
+          print(basket.heaviest())
+      - call: |
+          basket = Basket()
+          basket.add(Fruit("kiwi", 75))
+          basket.add(Fruit("pear", 200))
+          basket.add(Fruit("mango", 200))
+          print(basket.heaviest())
+          print(basket.heaviest() is basket.fruits[1])
+        hidden: true
+      - call: |
+          basket = Basket()
+          basket.add(Fruit("lime", 50))
+          print(basket.heaviest().name)
+        hidden: true

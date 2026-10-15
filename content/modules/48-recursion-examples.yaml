@@ -1,0 +1,1048 @@
+id: recursion-examples
+summary: Where recursion really shines. Binary trees built from a small Node class, recursive algorithms that count, add up and measure them, a sorted binary tree you can search and add to, and data nested to any depth.
+steps:
+  - id: recursion-examples-binary-trees
+    slug: binary-trees
+    title: Binary trees
+    text: |
+      So far a loop could have done everything recursion did. Recursion really pays off with data that branches, such as a family tree, folders inside folders or a tournament bracket. The simplest branching structure is a **binary tree**:
+
+      ```text
+              8
+             / \
+            3   10
+           / \    \
+          1   6    14
+      ```
+
+      Each value in it sits in a **node**. A node has a value and at most two **children**, a left one and a right one. The node at the top is the **root** (trees in computer science grow downwards), and the nodes without children are **leaves**: here 1, 6 and 14.
+
+      A tree needs only one class, for a node that knows its value and its two children. A missing child is `None`:
+
+      ```python fragment
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+      ```
+
+      Since the children are parameters with default values, the whole tree above can be built by nesting the calls of the constructor:
+
+      ```python fragment
+      tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+      ```
+
+      ### Every child is a tree too
+
+      Each child is the root of a smaller tree, a **subtree**: the node 3 with its children 1 and 6 is a complete binary tree of its own. That's why recursion fits trees so well. To do something to every node, do it to this node, and then do the same to the left subtree and to the right subtree:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def print_values(node):
+          print(node.value)
+          if node.left is not None:
+              print_values(node.left)
+          if node.right is not None:
+              print_values(node.right)
+
+
+      tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+      print_values(tree)
+      ```
+
+      ```output
+      8
+      3
+      1
+      6
+      10
+      14
+      ```
+
+      The function goes down the left side first, and each node is printed exactly once, however big the tree is. A loop would struggle here: after the left subtree it would have to remember every right subtree it skipped on the way down. With recursion, the waiting calls remember them for you.
+
+      ### None as the base case
+
+      `print_values` checks each child before calling itself. Another way is to let the function accept `None`, an empty tree, and make that the base case. Counting the nodes works like this: an empty tree has no nodes, and any other tree has this node plus the nodes of its two subtrees:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def count_nodes(node):
+          if node is None:
+              return 0
+          return 1 + count_nodes(node.left) + count_nodes(node.right)
+
+
+      tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+      print(count_nodes(tree))
+      print(count_nodes(tree.left))
+      ```
+
+      ```output
+      6
+      3
+      ```
+
+      Without the check for `None`, the calls run into the missing children of the leaves:
+
+      ```python run crash
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def count_nodes(node):
+          return 1 + count_nodes(node.left) + count_nodes(node.right)
+
+
+      print(count_nodes(Node(5)))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 12, in <module>
+          print(count_nodes(Node(5)))
+                ~~~~~~~~~~~^^^^^^^^^
+        File "main.py", line 9, in count_nodes
+          return 1 + count_nodes(node.left) + count_nodes(node.right)
+                     ~~~~~~~~~~~^^^^^^^^^^^
+        File "main.py", line 9, in count_nodes
+          return 1 + count_nodes(node.left) + count_nodes(node.right)
+                                 ^^^^^^^^^
+      AttributeError: 'NoneType' object has no attribute 'left'
+      ```
+
+      The leaf's `left` is `None`, and `None` has no attributes. Whenever you see `'NoneType' object has no attribute`, look for a missing check for `None`.
+
+      **Your turn:** the function prints a tree as an outline, each value indented by two spaces per level. Fill in the blank so the left subtree is printed one level deeper. The program should print:
+
+      ```
+      8
+        3
+          1
+          6
+        10
+          14
+      ```
+    fill: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def show(node, depth):
+          if node is None:
+              return
+          print("  " * depth + str(node.value))
+          show(node.left, [[depth + 1]])
+          show(node.right, depth + 1)
+
+
+      tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+      show(tree, 0)
+    hints:
+      - The children are one level deeper than the node itself.
+      - "The left subtree gets the same depth as the right one: `depth + 1`."
+    tests:
+      - expect: |
+          8
+            3
+              1
+              6
+            10
+              14
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def visit(node):
+              if node is not None:
+                  visit(node.left)
+                  visit(node.right)
+                  print(node.value)
+
+
+          visit(Node(1, Node(2), Node(3, Node(4))))
+        hints:
+          - "Draw the tree first: 1 is the root, 2 its left child and 3 its right child, and 4 is the left child of 3."
+          - This time a node prints its value only after both of its subtrees have been visited.
+          - "So 2 prints first. In the right subtree, 4 prints before 3, and the root comes last."
+      - task: |
+          A leaf is a node without children. Write a recursive function `count_leaves(node)` that returns the number of leaves in a tree. An empty tree, `None`, has no leaves.
+
+          For example, this program:
+
+          ```python fragment
+          tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+          print(count_leaves(tree))
+          ```
+
+          prints:
+
+          ```
+          3
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def count_leaves(node):
+              pass
+
+
+          if __name__ == "__main__":
+              tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+              print(count_leaves(tree))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def count_leaves(node):
+              if node is None:
+                  return 0
+              if node.left is None and node.right is None:
+                  return 1
+              return count_leaves(node.left) + count_leaves(node.right)
+
+
+          if __name__ == "__main__":
+              tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+              print(count_leaves(tree))
+        hints:
+          - "There are two base cases: an empty tree has 0 leaves, and a node whose children are both `None` is a leaf, 1."
+          - "Any other node isn't a leaf itself, so its leaves are the leaves of its left subtree plus those of its right subtree."
+          - "`return count_leaves(node.left) + count_leaves(node.right)`"
+        require:
+          - pattern: def count_leaves\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bcount_leaves\s*\(
+            message: Make `count_leaves` call itself inside its own body.
+        tests:
+          - call: |
+              tree = Node(8, Node(3, Node(1), Node(6)), Node(10, None, Node(14)))
+              print(count_leaves(tree))
+          - call: count_leaves(Node(5))
+            hidden: true
+          - call: count_leaves(None)
+            hidden: true
+          - call: count_leaves(Node(1, Node(2, Node(3))))
+            hidden: true
+          - call: count_leaves(Node(1, Node(2, Node(4), Node(5)), Node(3, Node(6), Node(7))))
+            hidden: true
+
+  - id: recursion-examples-sum-max-depth
+    slug: sum-max-depth
+    title: Sums, the greatest value and depth
+    text: |
+      Most algorithms on trees have the same shape as `count_nodes`: an answer for the empty tree, and for any other tree, this node's value combined with the answers for its two subtrees. Here is a tree with a negative number in it:
+
+      ```text
+               7
+             /   \
+            2     9
+           /     / \
+         -4     5   12
+                 \
+                  6
+      ```
+
+      The **sum** of its values is this node's value plus the sums of the two subtrees. An empty tree adds nothing. The **depth** of a tree, also called its height, is the number of nodes on the longest path from the root down to a leaf. An empty tree has depth 0, and any other tree is one level deeper than the deeper of its two subtrees:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def tree_sum(node):
+          if node is None:
+              return 0
+          return node.value + tree_sum(node.left) + tree_sum(node.right)
+
+
+      def depth(node):
+          if node is None:
+              return 0
+          return 1 + max(depth(node.left), depth(node.right))
+
+
+      tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+      print(tree_sum(tree))
+      print(depth(tree))
+      print(depth(tree.left))
+      ```
+
+      ```output
+      37
+      4
+      2
+      ```
+
+      The longest path is 7, 9, 5, 6: four nodes. The left subtree, 2 with its child -4, has depth 2.
+
+      ### When the empty tree has no good answer
+
+      What's the smallest value of an empty tree? There's no good answer. If the base case returned 0, a tree with only positive numbers would get 0 as its smallest value, which is wrong. For questions like this, assume the tree isn't empty, start from the node's own value, and compare it with the answer for each subtree that exists:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def smallest(node):
+          result = node.value
+          if node.left is not None:
+              result = min(result, smallest(node.left))
+          if node.right is not None:
+              result = min(result, smallest(node.right))
+          return result
+
+
+      tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+      print(smallest(tree))
+      print(smallest(tree.right))
+      ```
+
+      ```output
+      -4
+      5
+      ```
+
+      Here the base case is a leaf: neither `if` is true, so the leaf returns its own value without calling the function again.
+
+      ### The recipe
+
+      To write a recursive function for a tree, answer two questions. What is the answer for the smallest tree, an empty one or a leaf? And if you already had the answers for the two subtrees, how would you get the answer for the whole tree? The recursive calls give you those answers, so you only need to combine them.
+
+      **Your turn:** the function counts the values in a tree that are greater than `limit`. Fill in the blank so it adds the count for the left subtree. The program should print:
+
+      ```
+      3
+      6
+      ```
+    fill: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def count_greater(node, limit):
+          if node is None:
+              return 0
+          here = 1 if node.value > limit else 0
+          return here + [[count_greater(node.left, limit)]] + count_greater(node.right, limit)
+
+
+      tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+      print(count_greater(tree, 6))
+      print(count_greater(tree, 0))
+    hints:
+      - The left subtree is counted the same way as the right one.
+      - "Copy the call for the right subtree and change `right` to `left`: `count_greater(node.left, limit)`."
+    tests:
+      - expect: |
+          3
+          6
+    more:
+      - task: |
+          Write a recursive function `greatest(node)` that returns the greatest value in a tree. The tree is never empty, but its values can be negative.
+
+          For example, this program:
+
+          ```python fragment
+          tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+          print(greatest(tree))
+          ```
+
+          prints:
+
+          ```
+          12
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def greatest(node):
+              pass
+
+
+          if __name__ == "__main__":
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(greatest(tree))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def greatest(node):
+              result = node.value
+              if node.left is not None:
+                  result = max(result, greatest(node.left))
+              if node.right is not None:
+                  result = max(result, greatest(node.right))
+              return result
+
+
+          if __name__ == "__main__":
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(greatest(tree))
+        hints:
+          - "Start from the node's own value: `result = node.value`."
+          - "For each child that isn't `None`, compare `result` with the greatest value of that subtree."
+          - "`result = max(result, greatest(node.left))`, and the same for the right child."
+        require:
+          - pattern: def greatest\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bgreatest\s*\(
+            message: Make `greatest` call itself inside its own body.
+        tests:
+          - call: |
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(greatest(tree))
+          - call: greatest(Node(-8, Node(-3), Node(-10)))
+            hidden: true
+          - call: greatest(Node(4))
+            hidden: true
+          - call: greatest(Node(1, Node(2, None, Node(30)), Node(3)))
+            hidden: true
+      - task: |
+          Write a recursive function `contains(node, value)` that returns `True` if the value is in the tree and `False` if it isn't. The values can be anywhere in the tree, in no particular order. An empty tree, `None`, contains nothing.
+
+          For example, this program:
+
+          ```python fragment
+          tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+          print(contains(tree, 6))
+          print(contains(tree, 8))
+          ```
+
+          prints:
+
+          ```
+          True
+          False
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def contains(node, value):
+              pass
+
+
+          if __name__ == "__main__":
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(contains(tree, 6))
+              print(contains(tree, 8))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def contains(node, value):
+              if node is None:
+                  return False
+              if node.value == value:
+                  return True
+              return contains(node.left, value) or contains(node.right, value)
+
+
+          if __name__ == "__main__":
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(contains(tree, 6))
+              print(contains(tree, 8))
+        hints:
+          - "An empty tree doesn't contain the value: return `False`. And if this node's value is the one you want, return `True`."
+          - Otherwise the value is in the tree if it's in the left subtree or in the right subtree.
+          - "`return contains(node.left, value) or contains(node.right, value)`"
+        require:
+          - pattern: def contains\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bcontains\s*\(
+            message: Make `contains` call itself inside its own body.
+        tests:
+          - call: |
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(contains(tree, 6))
+              print(contains(tree, 8))
+          - call: |
+              tree = Node(7, Node(2, Node(-4)), Node(9, Node(5, None, Node(6)), Node(12)))
+              print(contains(tree, -4), contains(tree, 7), contains(tree, 12), contains(tree, 0))
+            hidden: true
+          - call: contains(None, 1)
+            hidden: true
+          - call: contains(Node(3, Node(1)), 1)
+            hidden: true
+
+  - id: recursion-examples-sorted-tree
+    slug: sorted-tree
+    title: A sorted binary tree
+    text: |
+      In the trees so far, a value could be anywhere, so a search had to visit every node. A **sorted binary tree** (also called a binary search tree) keeps its values in order. Everything in a node's left subtree is smaller than the node's value, and everything in its right subtree is greater:
+
+      ```text
+               50
+             /    \
+           30      70
+          /  \    /  \
+        20   40  60   80
+      ```
+
+      ### Searching
+
+      The order makes searching fast, in the same way as binary search. Compare the value you're looking for with the node's value. If it's smaller, it can only be in the left subtree, and if it's greater, only in the right one. So the search goes down one path and never needs the other side:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def find(node, value):
+          if node is None:
+              return False
+          if value == node.value:
+              return True
+          if value < node.value:
+              return find(node.left, value)
+          return find(node.right, value)
+
+
+      tree = Node(50, Node(30, Node(20), Node(40)), Node(70, Node(60), Node(80)))
+      print(find(tree, 60))
+      print(find(tree, 65))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      The search for 65 goes from 50 to the right, from 70 to the left, and from 60 to the right, where there's nothing: `None` gives `False`. It looked at three nodes out of seven. In a tree with a million values whose branches are about equally deep, it would look at about twenty.
+
+      ### Adding values
+
+      To add a value, go down the same path as a search. When the way on is `None`, that's the place for the new node:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def add(node, value):
+          if value < node.value:
+              if node.left is None:
+                  node.left = Node(value)
+              else:
+                  add(node.left, value)
+          elif value > node.value:
+              if node.right is None:
+                  node.right = Node(value)
+              else:
+                  add(node.right, value)
+
+
+      def print_in_order(node):
+          if node is not None:
+              print_in_order(node.left)
+              print(node.value)
+              print_in_order(node.right)
+
+
+      tree = Node(42)
+      for value in [17, 99, 8, 23, 61, 23]:
+          add(tree, value)
+      print_in_order(tree)
+      ```
+
+      ```output
+      8
+      17
+      23
+      42
+      61
+      99
+      ```
+
+      A value that's already in the tree is neither smaller nor greater than the node that holds it, so neither branch adds it again: the second 23 is left out.
+
+      `print_in_order` visits the left subtree first, then the node, and then the right subtree. In a sorted tree, everything on the left is smaller and everything on the right is greater, so the values come out in increasing order.
+
+      The shape of the tree depends on the order the values are added in. Adding values that are already sorted, such as 1, 2, 3, 4, makes every new node a right child, and the "tree" becomes one long line. Searching it is then no faster than going through a list.
+
+      **Your turn:** fill in the blanks so the search goes into the correct subtree. The program should print:
+
+      ```
+      True
+      False
+      True
+      ```
+    fill: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def find(node, value):
+          if node is None:
+              return False
+          if value == node.value:
+              return True
+          if value < node.value:
+              return find([[node.left]], value)
+          return find([[node.right]], value)
+
+
+      tree = Node(50, Node(30, Node(20), Node(40)), Node(70, Node(60), Node(80)))
+      print(find(tree, 20))
+      print(find(tree, 75))
+      print(find(tree, 80))
+    hints:
+      - Smaller values are always in the left subtree, and greater ones in the right subtree.
+      - "The first blank is `node.left` and the second `node.right`."
+    tests:
+      - expect: |
+          True
+          False
+          True
+    more:
+      - task: |
+          Write a recursive function `smallest(node)` that returns the smallest value in a sorted binary tree. The tree is never empty. Use the order of the tree: you don't need to look at every node.
+
+          For example, this program:
+
+          ```python fragment
+          tree = Node(50, Node(30, Node(20), Node(40)), Node(70))
+          print(smallest(tree))
+          ```
+
+          prints:
+
+          ```
+          20
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def smallest(node):
+              pass
+
+
+          if __name__ == "__main__":
+              tree = Node(50, Node(30, Node(20), Node(40)), Node(70))
+              print(smallest(tree))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def smallest(node):
+              if node.left is None:
+                  return node.value
+              return smallest(node.left)
+
+
+          if __name__ == "__main__":
+              tree = Node(50, Node(30, Node(20), Node(40)), Node(70))
+              print(smallest(tree))
+        hints:
+          - "In a sorted tree, the smaller values are always on the left. Where is the smallest one, then?"
+          - "Keep going left. A node with no left child holds the smallest value of its subtree: that's the base case."
+          - "Otherwise, the answer is `smallest(node.left)`."
+        require:
+          - pattern: def smallest\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bsmallest\s*\(
+            message: Make `smallest` call itself inside its own body.
+        forbid:
+          - pattern: \b(?:while|for)\b
+            message: Use recursion instead of a loop.
+        tests:
+          - call: |
+              tree = Node(50, Node(30, Node(20), Node(40)), Node(70))
+              print(smallest(tree))
+          - call: smallest(Node(5))
+            hidden: true
+          - call: smallest(Node(5, None, Node(9)))
+            hidden: true
+          - call: smallest(Node(10, Node(4, None, Node(6)), Node(12)))
+            hidden: true
+      - task: |
+          Write a recursive function `in_order(node)` that returns a list of all the values in a sorted binary tree, in increasing order. An empty tree, `None`, gives an empty list.
+
+          For example, this program:
+
+          ```python fragment
+          tree = Node(50, Node(30, Node(20), Node(40)), Node(70, Node(60), Node(80)))
+          print(in_order(tree))
+          ```
+
+          prints:
+
+          ```
+          [20, 30, 40, 50, 60, 70, 80]
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def in_order(node):
+              pass
+
+
+          if __name__ == "__main__":
+              tree = Node(50, Node(30, Node(20), Node(40)), Node(70, Node(60), Node(80)))
+              print(in_order(tree))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def in_order(node):
+              if node is None:
+                  return []
+              return in_order(node.left) + [node.value] + in_order(node.right)
+
+
+          if __name__ == "__main__":
+              tree = Node(50, Node(30, Node(20), Node(40)), Node(70, Node(60), Node(80)))
+              print(in_order(tree))
+        hints:
+          - "The base case is the empty tree, which gives `[]`."
+          - "The values of the left subtree come first, then the node's own value, then the values of the right subtree."
+          - "Lists can be joined with `+`: `in_order(node.left) + [node.value] + in_order(node.right)`."
+        require:
+          - pattern: def in_order\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bin_order\s*\(
+            message: Make `in_order` call itself inside its own body.
+        forbid:
+          - pattern: \bsorted\s*\(|\.sort\s*\(
+            message: Use the order of the tree instead of sorting the values.
+        tests:
+          - call: |
+              tree = Node(50, Node(30, Node(20), Node(40)), Node(70, Node(60), Node(80)))
+              print(in_order(tree))
+          - call: in_order(None)
+            hidden: true
+          - call: in_order(Node(1, None, Node(2, None, Node(3))))
+            hidden: true
+          - call: in_order(Node(10, Node(5, Node(1), Node(7)), Node(15)))
+            hidden: true
+
+  - id: recursion-examples-nested-structures
+    slug: nested-structures
+    title: When loops get clumsy
+    text: |
+      A binary tree branches in two at each node, but recursion handles any kind of branching. The pattern stays the same: deal with this level, and call the function for everything nested inside it, however deep that goes.
+
+      ### Lists inside lists
+
+      Take a list whose items can be numbers or lists, which again can hold numbers or lists: `[1, [2, 3], [4, [5, 6]], 7]`. One loop handles one level, and a loop inside it handles two, but how many loops would you need when nobody knows how deep the nesting goes? With recursion, you don't need to know. For each item, if it's a list, ask the same function about it. Otherwise it's a number:
+
+      ```python run
+      def deep_sum(items):
+          total = 0
+          for item in items:
+              if type(item) == list:
+                  total += deep_sum(item)
+              else:
+                  total += item
+          return total
+
+
+      print(deep_sum([1, [2, 3], [4, [5, 6]], 7]))
+      print(deep_sum([[[[10]]]]))
+      ```
+
+      ```output
+      28
+      10
+      ```
+
+      `type(item)` gives the type of the item, and `type(item) == list` is true when the item is a list. The loop goes across one level, and the recursive calls go down into the lists inside it. There's no separate base case: a list without lists inside it simply makes no recursive calls.
+
+      ### Any number of children
+
+      In a discussion thread, a comment can have any number of replies, and each reply can have replies of its own. A list of children takes the place of `left` and `right`:
+
+      ```python run
+      class Comment:
+          def __init__(self, author, text):
+              self.author = author
+              self.text = text
+              self.replies = []
+
+          def add_reply(self, comment):
+              self.replies.append(comment)
+
+
+      def show(comment, depth):
+          print("  " * depth + f"{comment.author}: {comment.text}")
+          for reply in comment.replies:
+              show(reply, depth + 1)
+
+
+      def count_comments(comment):
+          return 1 + sum([count_comments(reply) for reply in comment.replies])
+
+
+      first = Comment("Ada", "Is recursion hard?")
+      answer = Comment("Ben", "Only until it clicks.")
+      first.add_reply(answer)
+      answer.add_reply(Comment("Ada", "It clicked!"))
+      first.add_reply(Comment("Cy", "Draw the calls on paper."))
+
+      show(first, 0)
+      print(count_comments(first), "comments")
+      ```
+
+      ```output
+      Ada: Is recursion hard?
+        Ben: Only until it clicks.
+          Ada: It clicked!
+        Cy: Draw the calls on paper.
+      4 comments
+      ```
+
+      `count_comments` combines a comprehension with recursion: one comment, plus the count of each reply's whole thread. It has no `if` at all. For a comment without replies, the comprehension goes through an empty list and makes `[]`, `sum([])` is 0, and the function returns 1 without calling itself. That's the base case.
+
+      ### Loop or recursion?
+
+      Use a loop to go through a flat series of items one by one. Reach for recursion when the data is nested to a depth you don't know in advance (trees, folders, menus inside menus, lists inside lists), or when a problem splits into smaller problems of the same kind, as in binary search. As the examples show, the two often work together: the loop goes across, and the recursion goes down.
+
+      **Your turn:** fill in the blank so the function counts the numbers in a nested list, at any depth. The program should print:
+
+      ```
+      7
+      0
+      ```
+    fill: |
+      def count_numbers(items):
+          count = 0
+          for item in items:
+              if type(item) == list:
+                  count += [[count_numbers(item)]]
+              else:
+                  count += 1
+          return count
+
+
+      print(count_numbers([1, [2, 3], [4, [5, 6]], 7]))
+      print(count_numbers([]))
+    hints:
+      - When the item is a list, the numbers inside it have to be counted too, at any depth.
+      - "Let the function count them: `count_numbers(item)`."
+    tests:
+      - expect: |
+          7
+          0
+    more:
+      - task: |
+          A folder holds files and other folders. The class `Folder` has a list of the sizes of its own files and a list of its subfolders. Write a recursive function `total_size(folder)` that returns the size of all the files in the folder and in all the folders inside it, at any depth.
+
+          For example, this program:
+
+          ```python fragment
+          home = Folder("home", [10, 20])
+          photos = Folder("photos", [300, 450])
+          home.add(photos)
+          photos.add(Folder("trips", [1200]))
+          home.add(Folder("empty", []))
+          print(total_size(home))
+          print(total_size(photos))
+          ```
+
+          prints:
+
+          ```
+          1980
+          1950
+          ```
+        seed: |
+          class Folder:
+              def __init__(self, name, file_sizes):
+                  self.name = name
+                  self.file_sizes = file_sizes
+                  self.subfolders = []
+
+              def add(self, folder):
+                  self.subfolders.append(folder)
+
+
+          def total_size(folder):
+              pass
+
+
+          if __name__ == "__main__":
+              home = Folder("home", [10, 20])
+              photos = Folder("photos", [300, 450])
+              home.add(photos)
+              photos.add(Folder("trips", [1200]))
+              home.add(Folder("empty", []))
+              print(total_size(home))
+              print(total_size(photos))
+        solution: |
+          class Folder:
+              def __init__(self, name, file_sizes):
+                  self.name = name
+                  self.file_sizes = file_sizes
+                  self.subfolders = []
+
+              def add(self, folder):
+                  self.subfolders.append(folder)
+
+
+          def total_size(folder):
+              return sum(folder.file_sizes) + sum([total_size(sub) for sub in folder.subfolders])
+
+
+          if __name__ == "__main__":
+              home = Folder("home", [10, 20])
+              photos = Folder("photos", [300, 450])
+              home.add(photos)
+              photos.add(Folder("trips", [1200]))
+              home.add(Folder("empty", []))
+              print(total_size(home))
+              print(total_size(photos))
+        hints:
+          - "The folder's own files add up to `sum(folder.file_sizes)`."
+          - "Each subfolder's total is `total_size(sub)`, a recursive call. Add those up too, with a loop or with `sum` and a comprehension."
+          - "A folder without subfolders makes no recursive calls, so it needs no separate base case."
+        require:
+          - pattern: def total_size\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\btotal_size\s*\(
+            message: Make `total_size` call itself inside its own body.
+        tests:
+          - call: |
+              home = Folder("home", [10, 20])
+              photos = Folder("photos", [300, 450])
+              home.add(photos)
+              photos.add(Folder("trips", [1200]))
+              home.add(Folder("empty", []))
+              print(total_size(home))
+              print(total_size(photos))
+          - call: total_size(Folder("lonely", [5, 5, 5]))
+            hidden: true
+          - call: |
+              top = Folder("top", [])
+              middle = Folder("middle", [])
+              top.add(middle)
+              middle.add(Folder("a", [7]))
+              middle.add(Folder("b", [8, 1]))
+              total_size(top)
+            hidden: true
+      - task: |
+          Write a recursive function `flatten(items)` that gets a list whose items can be lists, nested to any depth, and returns a new flat list of all the items that aren't lists, in their original order.
+
+          For example, this call:
+
+          ```python fragment
+          print(flatten([1, [2, 3], [4, [5, 6]], 7]))
+          ```
+
+          prints:
+
+          ```
+          [1, 2, 3, 4, 5, 6, 7]
+          ```
+        seed: |
+          def flatten(items):
+              pass
+
+
+          if __name__ == "__main__":
+              print(flatten([1, [2, 3], [4, [5, 6]], 7]))
+        solution: |
+          def flatten(items):
+              result = []
+              for item in items:
+                  if type(item) == list:
+                      result += flatten(item)
+                  else:
+                      result.append(item)
+              return result
+
+
+          if __name__ == "__main__":
+              print(flatten([1, [2, 3], [4, [5, 6]], 7]))
+        hints:
+          - "Start with an empty list `result` and go through the items with a loop, as in `deep_sum`."
+          - "An item that isn't a list goes into `result` with `append`."
+          - "For an item that is a list, `flatten(item)` gives its items as a flat list. Add them all to `result` with `+=`."
+        require:
+          - pattern: def flatten\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bflatten\s*\(
+            message: Make `flatten` call itself inside its own body.
+        tests:
+          - call: print(flatten([1, [2, 3], [4, [5, 6]], 7]))
+          - call: flatten([])
+            hidden: true
+          - call: flatten([[[["x"]]], "y", [[], ["z"]]])
+            hidden: true
+          - call: flatten([5, 4, 3])
+            hidden: true

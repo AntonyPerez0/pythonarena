@@ -1,0 +1,148 @@
+topic: strings
+drills:
+  - type: predict
+    after: operations
+    code: |
+      print("ab" * 3)
+      print("=" * 3 + ">")
+    why: "`*` repeats a string, and it comes before `+`: `\"===\"` is made first, then `>` is joined to it."
+
+  - type: predict
+    after: operations
+    code: |
+      a = "3"
+      b = "4"
+      print(a + b)
+      print(a * 2)
+    why: "`a` and `b` are strings, not numbers. `+` joins them into `34`, and `* 2` repeats `3`."
+
+  - type: runs
+    after: operations
+    code: |
+      times = "3"
+      print("x" * times)
+    why: "A string can be repeated only by a whole number, and `times` is the string `\"3\"`. This happens when `input` is used without `int`."
+
+  - type: fill
+    after: operations
+    code: |
+      print("-" [[*]] 10)
+    why: "`\"-\" * 10` repeats the dash 10 times."
+
+  - type: predict
+    after: length
+    code: |
+      print(len("a b"))
+      print(len(""))
+    why: "The space is a character too, so `a b` has 3. The empty string has none."
+
+  - type: runs
+    after: length
+    code: |
+      number = 2026
+      print(len(number))
+    why: "`len` counts the characters of a string, and a number isn't a string. `len(str(number))` would give 4."
+
+  - type: predict
+    after: indexing
+    code: |
+      word = "python"
+      print(word[1])
+    why: "Indexes start from 0, so the index 1 is the second character, `y`."
+
+  - type: runs
+    after: indexing
+    code: |
+      word = "cat"
+      print(word[3])
+    why: "`\"cat\"` has the indexes 0, 1 and 2. There's nothing at 3, so Python stops with an `IndexError`."
+
+  - type: bug
+    after: indexing
+    prompt: The program should print the last letter of the word. One line has a bug. Which one?
+    code: |
+      word = "tiger"
+      last = word[len(word)]  # BUG
+      print(last)
+    fix: last = word[len(word) - 1]
+    why: "The last index is one less than the length, since indexes start from 0. `word[-1]` would work too."
+
+  - type: predict
+    after: negative-indexes
+    code: |
+      word = "hello"
+      print(word[-1])
+      print(word[-2])
+    why: "Negative indexes count from the end: -1 is the last character, -2 the one before it."
+
+  - type: choice
+    after: negative-indexes
+    prompt: "Which of these gives the last character of a non-empty string `s`?"
+    choices:
+      - "`s[-1]`"
+      - "`s[len(s)]`"
+      - "`s[-0]`"
+    answer: 1
+    why: "-1 counts from the end. `s[len(s)]` is one past the last index, and `-0` is just 0, the first character."
+
+  - type: predict
+    after: slices
+    code: |
+      word = "keyboard"
+      print(word[0:3])
+      print(word[3:])
+    why: "A slice includes its start but not its end: `0:3` is the indexes 0, 1 and 2. With no end, it goes to the end of the string."
+
+  - type: predict
+    after: slices
+    code: |
+      word = "python"
+      print(word[:2] + word[-2:])
+    why: "`word[:2]` is the first two characters, `py`, and `word[-2:]` the last two, `on`."
+
+  - type: fill
+    after: slices
+    code: |
+      text = "sunflower"
+      print(text[[[:3‖0:3]]])
+    why: "`text[:3]` is the first three characters: the indexes 0, 1 and 2."
+
+  - type: predict
+    after: searching
+    code: |
+      print("cat" in "concatenate")
+      print("Cat" in "concatenate")
+    why: "`in` looks for the piece anywhere in the string, but capitals count: `Cat` with a capital C isn't there."
+
+  - type: predict
+    after: searching
+    code: |
+      word = "banana"
+      print(word.find("na"))
+      print(word.find("x"))
+    why: "`find` gives the index where the first `na` starts, 2. When the piece isn't there at all, it gives -1."
+
+  - type: boss
+    after: searching
+    prompt: |
+      Write a program that asks for a full name, a first name and a last name with one space between them, and prints it the other way round, last name first, with a comma.
+
+      ```
+      Name: Ada Lovelace
+      Lovelace, Ada
+      ```
+    seed: |
+      name = input("Name: ")
+    solution: |
+      name = input("Name: ")
+      space = name.find(" ")
+      print(name[space + 1:] + ", " + name[:space])
+    hints:
+      - "`name.find(\" \")` gives the index of the space."
+      - The first name is the slice up to the space, and the last name the slice from one past the space to the end.
+    tests:
+      - stdin: Ada Lovelace
+      - stdin: Grace Hopper
+        hidden: true
+      - stdin: Al Khwarizmi
+        hidden: true

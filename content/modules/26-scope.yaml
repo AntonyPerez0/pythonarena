@@ -1,0 +1,645 @@
+id: scope
+summary: Where a variable can be used. Local variables that live inside a function, global variables and the global keyword (and why to use it sparingly), and passing data between functions with parameters and return values instead.
+steps:
+  - id: scope-local
+    slug: local-variables
+    title: Local variables
+    text: |
+      The **scope** of a variable is the part of the program where the variable can be used. Variables created inside a function, its parameters included, are **local** to that function: they exist only inside it, and only while it runs. When the function returns, they are gone:
+
+      ```python run crash
+      def greet(name):
+          message = f"Hello, {name}!"
+          print(message)
+
+
+      greet("Ada")
+      print(message)
+      ```
+
+      ```output
+      Hello, Ada!
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 7, in <module>
+          print(message)
+                ^^^^^^^
+      NameError: name 'message' is not defined
+      ```
+
+      The function printed its greeting, but outside the function there is no variable `message`. The same goes for the parameter `name`. To get a value out of a function, the function returns it, and the caller stores the return value in a variable of its own.
+
+      ### Same name, different variables
+
+      Because a function's variables are its own, a function can use a name that the main program also uses, and the two don't disturb each other:
+
+      ```python run
+      def double(number):
+          result = number * 2
+          print("Inside:", result)
+          return result
+
+
+      result = 10
+      answer = double(4)
+      print("Outside:", result)
+      print("Answer:", answer)
+      ```
+
+      ```output
+      Inside: 8
+      Outside: 10
+      Answer: 8
+      ```
+
+      There are two variables called `result` here: one in the main program, with the value 10, and one inside `double`, which exists only during the call. Setting the function's `result` to 8 leaves the main program's `result` alone. This is what makes functions safe to use: you can call a function without knowing which names it uses inside.
+
+      ### Each call starts afresh
+
+      Local variables are created again on every call, so they don't remember anything from the call before:
+
+      ```python run
+      def count_visit():
+          visits = 0
+          visits += 1
+          print("Visits:", visits)
+
+
+      count_visit()
+      count_visit()
+      count_visit()
+      ```
+
+      ```output
+      Visits: 1
+      Visits: 1
+      Visits: 1
+      ```
+
+      ### Global variables
+
+      As the module on functions showed, variables created in the main program, outside every function, are **global**. A function can read a global variable, and it sees the value the variable has at the moment of the call:
+
+      ```python run
+      tax_percent = 25
+
+
+      def with_tax(price):
+          return price * (100 + tax_percent) / 100
+
+
+      print(with_tax(80))
+      tax_percent = 10
+      print(with_tax(80))
+      ```
+
+      ```output
+      100.0
+      88.0
+      ```
+
+      Reading globals like this works, but the function depends on something outside it, and you saw in the module on functions how that leads to bugs. Usually it's clearer to give the function what it needs as a parameter. The next step shows what happens when a function tries to change a global variable.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      def change(x):
+          x = x + 1
+          print("in:", x)
+
+
+      x = 5
+      change(x)
+      print("out:", x)
+    hints:
+      - The parameter `x` is a local variable of `change`, separate from the `x` of the main program.
+      - Inside the function the local `x` becomes 6. The main program's `x` is still 5.
+    more:
+      - task: |
+          The program should print the area of two rooms, but it stops with a `NameError`. Fix it so the function returns the area and the main program prints the returned value. It should print:
+
+          ```
+          Kitchen: 12
+          Living room: 30
+          ```
+        seed: |
+          def area(width, height):
+              result = width * height
+
+
+          area(3, 4)
+          print("Kitchen:", result)
+          area(5, 6)
+          print("Living room:", result)
+        solution: |
+          def area(width, height):
+              return width * height
+
+
+          kitchen = area(3, 4)
+          print("Kitchen:", kitchen)
+          living_room = area(5, 6)
+          print("Living room:", living_room)
+        hints:
+          - "`result` is a local variable of `area`, so the main program can't see it. The function has to hand the value out with `return`."
+          - "Store each return value in a variable of the main program, `kitchen = area(3, 4)`, or print the call directly: `print(\"Kitchen:\", area(3, 4))`."
+        require:
+          - pattern: \breturn\b
+            message: Make `area` return the area with `return`.
+        forbid:
+          - pattern: \bglobal\b
+            message: Use `return` instead of `global` to get the result out of the function.
+          - pattern: print\(\s*""\s*,\s*(12|30)\b
+            message: Print the value that `area` returns, not a number typed by hand.
+        tests:
+          - expect: |
+              Kitchen: 12
+              Living room: 30
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          greeting = "Hi"
+
+
+          def greet(name):
+              print(greeting, name)
+
+
+          greet("Ada")
+          greeting = "Hello"
+          greet("Bo")
+        hints:
+          - "`greet` reads the global variable `greeting`. It has no variable of its own with that name."
+          - A function sees the value a global variable has at the moment of the call, and the second call comes after the main program changed it.
+
+  - id: scope-global
+    slug: global
+    title: The global keyword
+    text: |
+      A function can read a global variable. But as soon as a function assigns to a name, that name is a local variable of the function, even when a global variable of the same name exists:
+
+      ```python run
+      score = 0
+
+
+      def add_points(points):
+          score = points
+          print("Inside:", score)
+
+
+      add_points(5)
+      print("Outside:", score)
+      ```
+
+      ```output
+      Inside: 5
+      Outside: 0
+      ```
+
+      The assignment created a new local `score`. The global `score` is still 0.
+
+      Python decides this for the whole function before it runs it: a name the function assigns to anywhere in it is local everywhere in it. That's why this function fails, although it looks as if it simply adds to the global variable:
+
+      ```python run crash
+      score = 0
+
+
+      def add_points(points):
+          score += points
+
+
+      add_points(5)
+      print(score)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 8, in <module>
+          add_points(5)
+          ~~~~~~~~~~^^^
+        File "main.py", line 5, in add_points
+          score += points
+          ^^^^^
+      UnboundLocalError: cannot access local variable 'score' where it is not associated with a value
+      ```
+
+      `score += points` is short for `score = score + points`, which is an assignment, so `score` is local in `add_points`. To work out the new value, Python first reads the local `score`, which has no value yet: an **UnboundLocalError**.
+
+      ### global
+
+      The statement **`global`** at the start of a function says that a name means the global variable. Then assigning to it changes the global variable:
+
+      ```python run
+      lives = 3
+
+
+      def lose_life():
+          global lives
+          lives -= 1
+          print("Ouch! Lives left:", lives)
+
+
+      lose_life()
+      lose_life()
+      if lives > 0:
+          print("Still in the game")
+      ```
+
+      ```output
+      Ouch! Lives left: 2
+      Ouch! Lives left: 1
+      Still in the game
+      ```
+
+      `global` is only needed to assign to a global variable. Reading one needs nothing, and neither does changing the contents of a global list with a method such as `append`, because that doesn't assign to the variable.
+
+      ### When to use it, and when not
+
+      Use `global` sparingly. A function that changes global variables can't be understood on its own: to know what it does, you need to know what the rest of the program does to the same variables, and it can't be reused in another program without them. Above all, `global` is not a way to get a result out of a function:
+
+      ```python fragment
+      def average(numbers):
+          global result
+          result = sum(numbers) / len(numbers)
+      ```
+
+      This works, but `return sum(numbers) / len(numbers)` is better: the caller decides where the result goes, and the function works the same wherever it's used.
+
+      Global variables are reasonable for a few things that really belong to the whole program: the state of a game, such as the lives left above, or a counter of how many times something has happened in the program.
+
+      **Your turn:** fill in the blank so that each call of `press` adds one to the global `count`, and the program prints:
+
+      ```
+      Pressed 3 times
+      ```
+    fill: |
+      count = 0
+
+
+      def press():
+          [[global]] count
+          count += 1
+
+
+      press()
+      press()
+      press()
+      print("Pressed", count, "times")
+    hints:
+      - Without the missing word, `count += 1` would make `count` a local variable and stop with an `UnboundLocalError`.
+      - "The keyword that makes `count` mean the global variable is `global`."
+    tests:
+      - expect: Pressed 3 times
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          x = 1
+
+
+          def a():
+              x = 2
+              print(x)
+
+
+          def b():
+              global x
+              x = 3
+              print(x)
+
+
+          a()
+          print(x)
+          b()
+          print(x)
+        hints:
+          - "`a` assigns to `x` without `global`, so it creates a local `x`. The global `x` stays 1."
+          - "`b` says `global x`, so its assignment changes the global `x` to 3."
+      - task: |
+          A ticket machine gives out numbers in order. Write a function `next_ticket()` that returns the next ticket number: one more than the global variable `last_ticket`, which the function also updates. With `last_ticket` at 0, the first call returns 1, the next 2, and so on.
+
+          For example, with the starter code's `last_ticket = 0`, three calls print:
+
+          ```
+          1
+          2
+          3
+          ```
+        seed: |
+          last_ticket = 0
+
+
+          def next_ticket():
+              pass
+
+
+          if __name__ == "__main__":
+              print(next_ticket())
+              print(next_ticket())
+              print(next_ticket())
+        solution: |
+          last_ticket = 0
+
+
+          def next_ticket():
+              global last_ticket
+              last_ticket += 1
+              return last_ticket
+
+
+          if __name__ == "__main__":
+              print(next_ticket())
+              print(next_ticket())
+              print(next_ticket())
+        hints:
+          - "The function assigns to `last_ticket`, so it needs `global last_ticket` as its first line."
+          - Add one to `last_ticket` and return its new value.
+        require:
+          - pattern: \bglobal\s+last_ticket\b
+            message: Use `global last_ticket` so the function can update the global counter.
+        tests:
+          - call: |
+              print(next_ticket())
+              print(next_ticket())
+              print(next_ticket())
+          - call: |
+              last_ticket = 41
+              print(next_ticket())
+              print(next_ticket())
+            hidden: true
+          - call: next_ticket()
+            hidden: true
+
+  - id: scope-passing-data
+    slug: passing-data
+    title: Passing data between functions
+    text: |
+      A program made of several functions needs to move data between them. The module on strings and lists showed one way: through parameters and return values. Now that you know `global`, there's a second way: global variables that all the functions read and change. The first way is almost always the better one.
+
+      With parameters and return values, each function is an independent whole. What it needs comes in as arguments, and what it produces goes out with `return`. You can read the function and understand it without the rest of the program, test it by calling it with different arguments, and use it in another program. When many functions change the same global variables, any of them can change the data at any time, and finding which one caused a wrong value means reading all of them.
+
+      Here is a program in three functions. The main program keeps the data, the list `temperatures`, and hands it to each function that needs it:
+
+      ```python run
+      def read_temperatures(days):
+          temperatures = []
+          for day in range(1, days + 1):
+              temperatures.append(int(input(f"Day {day}: ")))
+          return temperatures
+
+
+      def warm_days(temperatures):
+          count = 0
+          for temperature in temperatures:
+              if temperature >= 20:
+                  count += 1
+          return count
+
+
+      def report(temperatures):
+          print("Highest:", max(temperatures))
+          print("Lowest:", min(temperatures))
+          print("Warm days:", warm_days(temperatures))
+
+
+      temperatures = read_temperatures(4)
+      report(temperatures)
+      ```
+
+      ```input
+      18
+      22
+      25
+      17
+      ```
+
+      ```output
+      Day 1: 18
+      Day 2: 22
+      Day 3: 25
+      Day 4: 17
+      Highest: 25
+      Lowest: 17
+      Warm days: 2
+      ```
+
+      - `read_temperatures` creates the list and returns it. The main program stores it in its own variable.
+      - `report` gets the list as an argument, and passes it on to `warm_days`, which returns a number.
+      - None of the functions uses a global variable. The parameter `temperatures` in each function is a local name for the list the caller gave it.
+
+      ### A main function
+
+      You can go one step further and put the main program in a function too, usually called `main`. Then the program has no global variables at all, and the line under `if __name__ == "__main__":` only starts it:
+
+      ```python fragment
+      def main():
+          temperatures = read_temperatures(4)
+          report(temperatures)
+
+
+      if __name__ == "__main__":
+          main()
+      ```
+
+      Now `temperatures` is a local variable of `main`. The only way other functions can get it is as an argument, which is exactly the point.
+
+      ### A list is passed, not copied
+
+      One thing to remember from the module on references: a list given as an argument is the same list, not a copy. If a function changes it with `append` or by assigning to an index, the caller sees the change. That's useful when changing the list is the function's job. When it isn't, a function should build a new list and return it.
+
+      **Your turn:** this program works, but its functions share the global list `words`. Change it so that `read_words()` creates the list and returns it, and `longest(words)` gets the list as a parameter and returns the longest word (the first of them, if several are as long). The main program prints the result. Don't use `global`. A run looks like this:
+
+      ```
+      Word: tree
+      Word: elephant
+      Word: cat
+      Word: end
+      Longest: elephant
+      ```
+    seed: |
+      words = []
+
+
+      def read_words():
+          global words
+          while True:
+              word = input("Word: ")
+              if word == "end":
+                  break
+              words.append(word)
+
+
+      def longest():
+          global words
+          best = ""
+          for word in words:
+              if len(word) > len(best):
+                  best = word
+          print("Longest:", best)
+
+
+      if __name__ == "__main__":
+          read_words()
+          longest()
+    solution: |
+      def read_words():
+          words = []
+          while True:
+              word = input("Word: ")
+              if word == "end":
+                  break
+              words.append(word)
+          return words
+
+
+      def longest(words):
+          best = ""
+          for word in words:
+              if len(word) > len(best):
+                  best = word
+          return best
+
+
+      if __name__ == "__main__":
+          words = read_words()
+          print("Longest:", longest(words))
+    hints:
+      - "In `read_words`, create the empty list inside the function and `return` it at the end. Remove the global `words = []` and the `global` lines."
+      - "`longest` gets a parameter, `def longest(words):`, and returns `best` instead of printing it."
+      - "In the main block: `words = read_words()`, then print the value of `longest(words)`."
+    forbid:
+      - pattern: \bglobal\b
+        message: Pass the list as an argument and return values instead of using `global`.
+    tests:
+      - stdin: |
+          tree
+          elephant
+          cat
+          end
+      - call: print(longest(["sun", "planet", "moon"]))
+      - call: |
+          longest(["ab", "cd", "e"])
+        hidden: true
+      - call: read_words()
+        stdin: |
+          red
+          green
+          end
+        hidden: true
+      - stdin: |
+          a
+          end
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def add_item(items, item):
+              items.append(item)
+              return len(items)
+
+
+          basket = ["pen"]
+          count = add_item(basket, "ink")
+          print(count)
+          print(basket)
+        hints:
+          - "`items` is a local name for the same list that `basket` refers to: the list isn't copied."
+          - "`append` changes that one list, so the main program sees `ink` in `basket` too. The function returns the new length."
+      - task: |
+          The file of a month's expenses has a category and an amount on each line (`category;amount`), and a category can appear on many lines. The starter code has the `main` function ready. Write the two functions it uses:
+
+          - `read_expenses(filename)` returns a dictionary from each category to its total amount, in the order the categories first appear in the file;
+          - `print_report(expenses)` gets such a dictionary and prints each category and its total, then the total of everything.
+
+          With this `may.csv`
+
+          ```text
+          food;120
+          rent;800
+          food;125
+          fun;60
+          ```
+
+          a run looks like this:
+
+          ```
+          File: may.csv
+          food: 245
+          rent: 800
+          fun: 60
+          Total: 1105
+          ```
+        seed: |
+          def read_expenses(filename):
+              pass
+
+
+          def print_report(expenses):
+              pass
+
+
+          def main():
+              expenses = read_expenses(input("File: "))
+              print_report(expenses)
+
+
+          if __name__ == "__main__":
+              main()
+        solution: |
+          def read_expenses(filename):
+              expenses = {}
+              with open(filename) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      category = parts[0]
+                      if category not in expenses:
+                          expenses[category] = 0
+                      expenses[category] += int(parts[1])
+              return expenses
+
+
+          def print_report(expenses):
+              total = 0
+              for category, amount in expenses.items():
+                  print(f"{category}: {amount}")
+                  total += amount
+              print("Total:", total)
+
+
+          def main():
+              expenses = read_expenses(input("File: "))
+              print_report(expenses)
+
+
+          if __name__ == "__main__":
+              main()
+        hints:
+          - "`read_expenses` reads the file line by line into a dictionary. When a category comes up for the first time, start its total at 0, then add the amount with `int`."
+          - "`print_report` gets the dictionary as its parameter. It goes through `expenses.items()`, prints each pair and adds the amounts to a total."
+          - Neither function needs a global variable. `main` passes the dictionary from one to the other.
+        tests:
+          - stdin: may.csv
+            files:
+              may.csv: |
+                food;120
+                rent;800
+                food;125
+                fun;60
+          - call: |
+              print(read_expenses("june.csv"))
+            files:
+              june.csv: |
+                travel;300
+                food;80
+                travel;45
+            hidden: true
+          - call: |
+              print_report({"books": 30, "food": 210})
+            hidden: true
+          - stdin: july.csv
+            files:
+              july.csv: |
+                gifts;55
+            hidden: true

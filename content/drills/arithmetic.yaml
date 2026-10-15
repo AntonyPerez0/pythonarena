@@ -1,0 +1,183 @@
+topic: arithmetic
+drills:
+  - type: predict
+    after: operators
+    code: |
+      print(17 // 5)
+      print(17 % 5)
+    why: "5 fits into 17 three times (`//`), and 2 is left over (`%`)."
+
+  - type: predict
+    after: operators
+    code: |
+      print(2 ** 4)
+      print(2 ^ 4)
+    why: "`**` is the power: 2 * 2 * 2 * 2 is 16. `^` is a different operator altogether, so it gives a wrong answer without an error."
+
+  - type: fill
+    after: operators
+    code: |
+      minutes = 200
+      print(f"{minutes [[//]] 60} h {minutes % 60} min")
+    why: "`//` tells how many whole hours fit into the minutes, and `%` gives the minutes left over."
+
+  - type: choice
+    after: operators
+    prompt: "Which calculation is 0 exactly when `n` is even?"
+    choices:
+      - "`n // 2`"
+      - "`n % 2`"
+      - "`n / 2`"
+    answer: 2
+    why: "`%` gives the remainder, and an even number divided by 2 leaves no remainder."
+
+  - type: predict
+    after: order-of-operations
+    code: |
+      print(2 + 3 * 4)
+      print((2 + 3) * 4)
+    why: "Multiplication comes before addition, unless parentheses say otherwise."
+
+  - type: predict
+    after: order-of-operations
+    code: |
+      print(10 - 2 ** 2)
+      print(8 / 2 * 2)
+    why: "The power comes first: 10 - 4 is 6. `/` and `*` are on the same level, so Python goes from left to right: 8 / 2 is 4.0, times 2 is 8.0."
+
+  - type: bug
+    after: order-of-operations
+    code: |
+      a = 6
+      b = 10
+      mean = a + b / 2  # BUG
+      print(mean)
+    fix: mean = (a + b) / 2
+    why: "Without parentheses, only `b` is divided by 2. The sum has to be in parentheses."
+
+  - type: predict
+    after: number-types
+    code: |
+      print(6 / 2)
+      print(6 // 2)
+      print(6 + 2.0)
+    why: "`/` always gives a float. `//` on two integers gives an integer. A float in a calculation makes the result a float."
+
+  - type: predict
+    after: number-types
+    code: |
+      print(type(3))
+      print(type(3 / 1))
+    why: "`3` is an integer, but `/` always gives a float, even when the division is even."
+
+  - type: predict
+    after: number-types
+    code: |
+      print(int(9.99))
+      print(float(4))
+    why: "`int` drops the decimals without rounding, and `float` turns 4 into the float 4.0."
+
+  - type: runs
+    after: numbers-as-input
+    stdin: "20"
+    code: |
+      age = input("Age: ")
+      print(age + 1)
+    why: "`input` gives a string, and `+` can't join a string and an integer, so Python stops with a `TypeError`. Convert it first: `int(input(...))`."
+
+  - type: predict
+    after: numbers-as-input
+    stdin: "3"
+    code: |
+      n = input("Number: ")
+      print(n * 2)
+    why: "`n` holds the string `\"3\"`, and a string times a number repeats it: `33`. With `int(input(...))`, it would print 6."
+
+  - type: runs
+    after: numbers-as-input
+    stdin: "1.5"
+    code: |
+      hours = int(input("Hours: "))
+      print(hours * 60)
+    why: "`int` only accepts whole numbers, so `1.5` stops the program with a `ValueError`. Use `float` when the user may type decimals."
+
+  - type: fill
+    after: numbers-as-input
+    stdin: "2.5"
+    code: |
+      km = [[float]](input("Kilometers: "))
+      print(km * 1000)
+    why: "The user may type decimals, so the input is converted with `float`."
+
+  - type: predict
+    after: using-variables
+    code: |
+      total = 10
+      total += 5
+      total -= 3
+      print(total)
+    why: "`+=` adds to the variable and `-=` subtracts from it: 10 + 5 - 3 is 12."
+
+  - type: bug
+    after: using-variables
+    stdin: |
+      4
+      6
+    code: |
+      total = 0
+      total += int(input("First: "))
+      total = int(input("Second: "))  # BUG
+      print(total)
+    fix: 'total += int(input("Second: "))'
+    why: "`=` replaces the total with the second number. `+=` adds it to the total."
+
+  - type: boss
+    after: using-variables
+    prompt: |
+      Write a program that asks how many days and prints how many seconds there are in that many days. If the user types `2`, the run looks like this:
+
+      ```
+      Days: 2
+      Seconds: 172800
+      ```
+    seed: |
+      # Ask for the days, then print the seconds.
+    solution: |
+      # Ask for the days, then print the seconds.
+      days = int(input("Days: "))
+      print(f"Seconds: {days * 24 * 60 * 60}")
+    hints:
+      - Read the number of days with `int(input(...))`.
+      - "A day has 24 hours, an hour 60 minutes and a minute 60 seconds: multiply them all."
+    tests:
+      - stdin: "2"
+      - stdin: "7"
+        hidden: true
+
+  - type: boss
+    after: using-variables
+    prompt: |
+      A bus has 40 seats. Write a program that asks how many people are going on a trip and prints how many buses they need. A bus that is only partly full still counts. If the user types `90`, the run looks like this:
+
+      ```
+      People: 90
+      Buses: 3
+      ```
+    seed: |
+      # Ask for the number of people, then print the buses.
+    solution: |
+      # Ask for the number of people, then print the buses.
+      people = int(input("People: "))
+      buses = (people + 39) // 40
+      print(f"Buses: {buses}")
+    hints:
+      - "`people // 40` counts only the full buses: 90 // 40 is 2, but the 10 people left over need a bus too."
+      - "Add 39 before dividing: then any people left over push the result up by one, and an exact multiple of 40 doesn't. Try it with 80 and 81."
+    tests:
+      - stdin: "90"
+      - stdin: "80"
+        hidden: true
+      - stdin: "81"
+        hidden: true
+      - stdin: "5"
+        hidden: true

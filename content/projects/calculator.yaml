@@ -1,0 +1,1045 @@
+id: calculator
+title: A command calculator
+after: strings-and-lists
+summary: "A calculator you talk to in commands such as add 3 4 or sum 1 2 3. A function for each operation, a line taken apart with split, clear messages for bad input instead of a crash, a history of what you calculated, and ans for the last answer."
+intro: |
+  In this project you build a calculator that you use by typing commands, one per line. Each command is a word that says what to do, followed by the numbers to do it with: `add 3 4` adds 3 and 4, and `sum 1 2 3 4` adds up any number of numbers. The calculator answers every line, and keeps going until you type `quit`.
+
+  When it's finished, a session looks like this. The person types these lines:
+
+  ```text
+  add 3 4
+  div ans 2
+  sum 1 2 3 4
+  mul ans ans
+  pow 2 8
+  div 5 0
+  add 2 three
+  history
+  quit
+  ```
+
+  and the calculator answers them, with its prompt `> ` in front of each typed line:
+
+  ```text
+  > add 3 4
+  7
+  > div ans 2
+  3.5
+  > sum 1 2 3 4
+  10
+  > mul ans ans
+  100
+  > pow 2 8
+  Error: unknown command pow
+  > div 5 0
+  Error: can't divide by zero
+  > add 2 three
+  Error: three is not a number
+  > history
+  1: add 3 4 = 7
+  2: div 7 2 = 3.5
+  3: sum 1 2 3 4 = 10
+  4: mul 10 10 = 100
+  > quit
+  Bye!
+  ```
+
+  A mistake never stops the program: it gets a message that says what's wrong, and the next line is read as usual. `ans` stands for the last answer, and `history` lists every calculation that worked.
+
+  ### What you need
+
+  Everything up to module 18: `while` loops with `break` and `continue` (modules 9 to 12), strings and their indexes (module 11), functions that take parameters and return values, with the program's own code under `if __name__ == "__main__":` (modules 13 and 14), lists and `for` loops (modules 15 and 16), f-strings (module 17), and the string methods `split` and `replace` (module 18).
+
+  ### How you build it
+
+  Each milestone starts from your own code of the milestone before, and adds one thing to it:
+
+  1. **Four operations:** a function for each operation, and `calculate`, which answers one line.
+  2. **Errors in commands:** unknown commands and missing numbers get a message instead of a crash.
+  3. **Is it a number?** Your own check for numbers, which also lets in decimals such as `2.5`.
+  4. **Any number of numbers:** `sum`, `max`, `min` and `mean` take as many numbers as you type.
+  5. **History:** the calculator remembers what it calculated.
+  6. **The last answer:** `ans` in a command means the answer before it.
+
+  Some checks call your functions directly, as in the lessons, and others type lines into the whole program and compare everything it prints.
+seed: |
+  # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+  def add(a, b):
+      return a + b
+
+
+  def calculate(line):
+      # Take the line apart, do the calculation it asks for,
+      # and return the answer as a string.
+      return ""
+
+
+  def main():
+      while True:
+          line = input("> ")
+          if line == "quit":
+              print("Bye!")
+              break
+          print(calculate(line))
+
+
+  if __name__ == "__main__":
+      main()
+milestones:
+  - id: operations
+    title: Four operations
+    task: |
+      The calculator reads one line at a time and answers it, until the line is `quit`. The starting code already has that loop in `main`: for every line, it prints what `calculate` returns. Your part is the calculating.
+
+      A command is a word and two whole numbers, separated by spaces:
+
+      - `add 3 4` adds the numbers: 7
+      - `sub 10 4` subtracts the second number from the first: 6
+      - `mul 6 7` multiplies them: 42
+      - `div 7 2` divides the first by the second: 3.5
+
+      1. Next to `add`, write the functions `subtract(a, b)`, `multiply(a, b)` and `divide(a, b)`. Each one returns its result. `divide` uses `/`, so `divide(7, 2)` returns `3.5`.
+      2. Write `calculate(line)`. It gets one line, such as `"add 3 4"`, and returns the answer **as a string**: `"7"`. It takes the line apart, turns the two numbers into integers with `int`, calls the function for the command, and turns the result into a string with `str`.
+
+      The string method `split` from module 18 takes a line apart at its spaces, and gives the pieces as a list of strings:
+
+      ```python repl
+      >>> parts = "add 3 4".split()
+      >>> parts
+      ['add', '3', '4']
+      >>> parts[0]
+      'add'
+      >>> int(parts[1]) + int(parts[2])
+      7
+      ```
+
+      For now, every line is a correct command; the next milestone deals with mistakes. With the input `add 3 4`, `sub 10 4`, `mul 6 7`, `div 7 2` and `quit`, the program prints:
+
+      ```
+      > add 3 4
+      7
+      > sub 10 4
+      6
+      > mul 6 7
+      42
+      > div 7 2
+      3.5
+      > quit
+      Bye!
+      ```
+    hints:
+      - "Write the three new functions just like `add`: each has one line, such as `return a - b`."
+      - "In `calculate`, start with `parts = line.split()`. Then `command = parts[0]`, `a = int(parts[1])` and `b = int(parts[2])`."
+      - "Then one `if` for each command: under `if command == \"add\":` comes `return str(add(a, b))`, and the same for `sub`, `mul` and `div` with their own functions."
+    tests:
+      - name: Four commands
+        stdin: |
+          add 3 4
+          sub 10 4
+          mul 6 7
+          div 7 2
+          quit
+      - name: The four functions
+        call: print(add(2, 3), subtract(2, 3), multiply(2, 3), divide(3, 2))
+      - name: Negative and even answers
+        hidden: true
+        stdin: |
+          sub 3 10
+          mul 0 5
+          div 6 3
+          div 10 4
+          add 100 250
+          quit
+      - name: Calculate one line
+        hidden: true
+        call: calculate("mul 12 12")
+      - name: Calculate a division
+        hidden: true
+        call: calculate("div 9 4")
+      - name: Quit at once
+        hidden: true
+        stdin: |
+          quit
+    forbid:
+      - pattern: \beval\s*\(
+        message: "Do the calculation with your own functions instead of `eval`."
+    solution: |
+      # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+      def add(a, b):
+          return a + b
+
+
+      def subtract(a, b):
+          return a - b
+
+
+      def multiply(a, b):
+          return a * b
+
+
+      def divide(a, b):
+          return a / b
+
+
+      def calculate(line):
+          parts = line.split()
+          command = parts[0]
+          a = int(parts[1])
+          b = int(parts[2])
+          if command == "add":
+              return str(add(a, b))
+          if command == "sub":
+              return str(subtract(a, b))
+          if command == "mul":
+              return str(multiply(a, b))
+          return str(divide(a, b))
+
+
+      def main():
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  print("Bye!")
+                  break
+              print(calculate(line))
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: errors
+    title: Errors in commands
+    task: |
+      People make typing mistakes. Right now `add 3` stops the whole program with an `IndexError`, because there is no `parts[2]`, and `div 5 0` stops it with a `ZeroDivisionError`. A calculator should answer a mistake with a message and carry on. Change `calculate` so that it returns these messages instead of crashing, checking them in this order:
+
+      1. A command that isn't `add`, `sub`, `mul` or `div` returns `Error: unknown command pow` (with the word that was typed).
+      2. A command with too few or too many numbers returns `Error: add needs 2 numbers` (with the command's name).
+      3. Dividing by zero returns `Error: can't divide by zero`.
+
+      And one change in `main`: a line that is empty, or has only spaces, gets no answer at all. The calculator just shows its prompt again.
+
+      With the input `add 3`, `pow 2 8`, `div 5 0`, an empty line, `mul 2 3 4`, `mul 2 3` and `quit`, the program prints:
+
+      ```
+      > add 3
+      Error: add needs 2 numbers
+      > pow 2 8
+      Error: unknown command pow
+      > div 5 0
+      Error: can't divide by zero
+      >
+      > mul 2 3 4
+      Error: mul needs 2 numbers
+      > mul 2 3
+      6
+      > quit
+      Bye!
+      ```
+
+      The numbers are still whole numbers; the next milestone deals with text that isn't a number at all.
+    hints:
+      - "Check before you use: test the command and the number of parts first, and only then read `parts[1]` and `parts[2]`. A function can `return` early, as soon as it knows the answer is an error."
+      - "`if command not in [\"add\", \"sub\", \"mul\", \"div\"]:` catches every unknown command. A correct command has exactly 3 parts, so check `len(parts) != 3` next."
+      - "For the empty line, `line.split()` gives an empty list `[]`, and `line.strip()` an empty string. In `main`, `continue` goes straight back to the top of the loop when `len(line.split()) == 0`."
+    tests:
+      - name: Mistakes get messages
+        stdin: |
+          add 3
+          pow 2 8
+          div 5 0
+
+          mul 2 3 4
+          mul 2 3
+          quit
+      - name: Only spaces and odd commands
+        hidden: true
+        stdin: "   \nhello\nsub\ndiv 0 5\nadd   2    3\nADD 2 3\nquit\n"
+      - name: An error as a return value
+        hidden: true
+        call: |
+          print(calculate("div 3 0"))
+          print(calculate("sub 1"))
+          print(calculate("times 2 3"))
+          print(calculate("div 3 4"))
+    forbid:
+      - pattern: \beval\s*\(
+        message: "Do the calculation with your own functions instead of `eval`."
+    solution: |
+      # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+      def add(a, b):
+          return a + b
+
+
+      def subtract(a, b):
+          return a - b
+
+
+      def multiply(a, b):
+          return a * b
+
+
+      def divide(a, b):
+          return a / b
+
+
+      def calculate(line):
+          parts = line.split()
+          command = parts[0]
+          if command not in ["add", "sub", "mul", "div"]:
+              return f"Error: unknown command {command}"
+          if len(parts) != 3:
+              return f"Error: {command} needs 2 numbers"
+          a = int(parts[1])
+          b = int(parts[2])
+          if command == "add":
+              return str(add(a, b))
+          if command == "sub":
+              return str(subtract(a, b))
+          if command == "mul":
+              return str(multiply(a, b))
+          if b == 0:
+              return "Error: can't divide by zero"
+          return str(divide(a, b))
+
+
+      def main():
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  print("Bye!")
+                  break
+              if len(line.split()) == 0:
+                  continue
+              print(calculate(line))
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: numbers
+    title: Is it a number?
+    task: |
+      Two problems are left with the numbers. `add 2 three` still crashes with a `ValueError` in `int`, and the calculator can't do decimals: `add 2.5 1` crashes too. Both are solved by looking at the text before turning it into a number.
+
+      1. Write `is_number(text)`. It returns `True` when the text is a number the calculator accepts, and `False` otherwise. A number has at least one digit; apart from digits it may have **one** decimal point `.` anywhere, and a minus sign `-` only as its very first character. So `12`, `-3`, `0.5` and `-2.25` are numbers, but `""`, `-`, `1.2.3`, `4-` and `12a` are not.
+      2. Write `to_number(text)`, for a text that `is_number` accepts. It returns the number as an integer when the text has no decimal point, and as a float when it has one: `to_number("12")` returns `12`, and `to_number("2.5")` returns `2.5`.
+      3. In `calculate`, after the checks of the command and the count, check each number: the first one that isn't a number returns `Error: three is not a number` (with the text that was typed). Then turn the numbers into numbers with `to_number` instead of `int`.
+
+      The check calls `is_number` on several texts:
+
+      ```python fragment
+      print(is_number("12"), is_number("-3"), is_number("0.5"), is_number("-2.25"))
+      print(is_number(""), is_number("-"), is_number("1.2.3"), is_number("4-"), is_number("12a"))
+      ```
+
+      and expects:
+
+      ```
+      True True True True
+      False False False False False
+      ```
+
+      With the input `add 2.5 1`, `mul -3 4`, `add 2 three`, `sub 1.5 0.25`, `div 1 0.0` and `quit`, the program prints:
+
+      ```text
+      > add 2.5 1
+      3.5
+      > mul -3 4
+      -12
+      > add 2 three
+      Error: three is not a number
+      > sub 1.5 0.25
+      1.25
+      > div 1 0.0
+      Error: can't divide by zero
+      > quit
+      Bye!
+      ```
+    hints:
+      - "Go through the text one character at a time, counting the digits and the decimal points. `character in \"0123456789\"` is `True` for a digit."
+      - "A character that is neither a digit nor a point is only allowed when it is a `-` at index 0; anything else means `return False` at once. After the loop, the text is a number when it had at least one digit and at most one point."
+      - "In `to_number`, `\".\" in text` tells which kind it is: `float(text)` for a decimal, `int(text)` for a whole number. In `calculate`, a `for` loop over `parts[1:]` can return the error for the first text that `is_number` turns down."
+    tests:
+      - name: Which texts are numbers
+        call: |
+          print(is_number("12"), is_number("-3"), is_number("0.5"), is_number("-2.25"))
+          print(is_number(""), is_number("-"), is_number("1.2.3"), is_number("4-"), is_number("12a"))
+      - name: Decimals and words
+        stdin: |
+          add 2.5 1
+          mul -3 4
+          add 2 three
+          sub 1.5 0.25
+          div 1 0.0
+          quit
+      - name: More texts to check
+        hidden: true
+        call: |
+          print(is_number("."), is_number("--1"), is_number("1e5"), is_number("3 "), is_number("+7"))
+          print(is_number(".5"), is_number("7."), is_number("007"), is_number("-0.125"))
+      - name: Whole numbers and decimals
+        hidden: true
+        call: "[to_number(\"12\"), to_number(\"-0.5\"), to_number(\"7.\"), to_number(\"-40\")]"
+      - name: The first text that isn't a number
+        hidden: true
+        stdin: |
+          add x 1
+          mul 2 2,5
+          sub - 1
+          div 3 -0.5
+          pow two 3
+          add 1
+          quit
+    forbid:
+      - pattern: \beval\s*\(
+        message: "Do the calculation with your own functions instead of `eval`."
+    solution: |
+      # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+      def add(a, b):
+          return a + b
+
+
+      def subtract(a, b):
+          return a - b
+
+
+      def multiply(a, b):
+          return a * b
+
+
+      def divide(a, b):
+          return a / b
+
+
+      def is_number(text):
+          digits = 0
+          points = 0
+          for i in range(len(text)):
+              character = text[i]
+              if character in "0123456789":
+                  digits += 1
+              elif character == ".":
+                  points += 1
+              elif character != "-" or i > 0:
+                  return False
+          return digits > 0 and points <= 1
+
+
+      def to_number(text):
+          if "." in text:
+              return float(text)
+          return int(text)
+
+
+      def calculate(line):
+          parts = line.split()
+          command = parts[0]
+          if command not in ["add", "sub", "mul", "div"]:
+              return f"Error: unknown command {command}"
+          if len(parts) != 3:
+              return f"Error: {command} needs 2 numbers"
+          for text in parts[1:]:
+              if not is_number(text):
+                  return f"Error: {text} is not a number"
+          a = to_number(parts[1])
+          b = to_number(parts[2])
+          if command == "add":
+              return str(add(a, b))
+          if command == "sub":
+              return str(subtract(a, b))
+          if command == "mul":
+              return str(multiply(a, b))
+          if b == 0:
+              return "Error: can't divide by zero"
+          return str(divide(a, b))
+
+
+      def main():
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  print("Bye!")
+                  break
+              if len(line.split()) == 0:
+                  continue
+              print(calculate(line))
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: many-numbers
+    title: Any number of numbers
+    task: |
+      Adding up a long column of numbers two at a time is slow. Four new commands take **any number of numbers**, at least one:
+
+      - `sum 1 2 3 4` adds them all up: 10
+      - `max 4 -2 9.5 3` gives the largest: 9.5
+      - `min 4 -2 9.5 3` gives the smallest: -2
+      - `mean 1 2 3 4` gives their average, the sum divided by how many there are: 2.5
+
+      1. Write a function for each one: `total(numbers)`, `largest(numbers)`, `smallest(numbers)` and `mean(numbers)`. Each takes a list of numbers and returns its result. (The names `sum`, `max` and `min` are Python's own functions, which yours may use; giving your functions the same names would hide them.)
+      2. In `calculate`, these four commands are known as well. One of them without any numbers returns `Error: sum needs at least 1 number` (with the command's name). The numbers are checked with `is_number` as before, and every text that isn't a number gets the same message as before.
+
+      The two-number commands work as they did, `add 1 2 3` is still an error, and the checks keep their order: the command, then the count, then each number, then dividing by zero.
+
+      With the input `sum 1 2 3 4`, `max 4 -2 9.5 3`, `min 4 -2 9.5 3`, `mean 1 2 3 4`, `sum`, `mean 7` and `quit`, the program prints:
+
+      ```
+      > sum 1 2 3 4
+      10
+      > max 4 -2 9.5 3
+      9.5
+      > min 4 -2 9.5 3
+      -2
+      > mean 1 2 3 4
+      2.5
+      > sum
+      Error: sum needs at least 1 number
+      > mean 7
+      7.0
+      > quit
+      Bye!
+      ```
+    hints:
+      - "The four new functions are one line each with Python's `sum`, `max`, `min` and `len`: `mean` returns `sum(numbers) / len(numbers)`."
+      - "In `calculate`, turn all the texts after the command into a list of numbers first: start from `numbers = []`, and in a loop over `parts[1:]` return the error for a text that isn't a number, or append `to_number(text)`. Then `numbers[0]` and `numbers[1]` are the two numbers of `add`."
+      - "Check the count separately for the two kinds of commands: `if command in [\"add\", \"sub\", \"mul\", \"div\"]:` needs exactly 2 numbers, `elif command in [\"sum\", \"max\", \"min\", \"mean\"]:` at least 1, and `else` is an unknown command."
+    tests:
+      - name: Long commands
+        stdin: |
+          sum 1 2 3 4
+          max 4 -2 9.5 3
+          min 4 -2 9.5 3
+          mean 1 2 3 4
+          sum
+          mean 7
+          quit
+      - name: Functions on lists
+        call: print(total([1, 2, 3]), largest([5, 1, 7]), smallest([5, 1, 7]), mean([1, 2]))
+      - name: Mistakes in long commands
+        hidden: true
+        stdin: |
+          sum 2.5 2.5
+          max 3
+          min 3 x
+          mean 2 4 nine 1
+          max
+          add 1 2 3
+          sum -1 -2 -3
+          average 1 2
+          quit
+      - name: Long commands as strings
+        hidden: true
+        call: |
+          print(calculate("mean 10 20 60"))
+          print(calculate("min 8"))
+          print(calculate("sum 1 2 3 4 5 6 7 8 9 10"))
+          print(calculate("div 7 0"))
+    forbid:
+      - pattern: \beval\s*\(
+        message: "Do the calculation with your own functions instead of `eval`."
+      - pattern: \bdef\s+(sum|max|min)\s*\(
+        message: "Name your functions `total`, `largest` and `smallest`: a function called `sum`, `max` or `min` hides Python's own."
+    solution: |
+      # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+      def add(a, b):
+          return a + b
+
+
+      def subtract(a, b):
+          return a - b
+
+
+      def multiply(a, b):
+          return a * b
+
+
+      def divide(a, b):
+          return a / b
+
+
+      def total(numbers):
+          return sum(numbers)
+
+
+      def largest(numbers):
+          return max(numbers)
+
+
+      def smallest(numbers):
+          return min(numbers)
+
+
+      def mean(numbers):
+          return sum(numbers) / len(numbers)
+
+
+      def is_number(text):
+          digits = 0
+          points = 0
+          for i in range(len(text)):
+              character = text[i]
+              if character in "0123456789":
+                  digits += 1
+              elif character == ".":
+                  points += 1
+              elif character != "-" or i > 0:
+                  return False
+          return digits > 0 and points <= 1
+
+
+      def to_number(text):
+          if "." in text:
+              return float(text)
+          return int(text)
+
+
+      def calculate(line):
+          parts = line.split()
+          command = parts[0]
+          texts = parts[1:]
+          if command in ["add", "sub", "mul", "div"]:
+              if len(texts) != 2:
+                  return f"Error: {command} needs 2 numbers"
+          elif command in ["sum", "max", "min", "mean"]:
+              if len(texts) == 0:
+                  return f"Error: {command} needs at least 1 number"
+          else:
+              return f"Error: unknown command {command}"
+          numbers = []
+          for text in texts:
+              if not is_number(text):
+                  return f"Error: {text} is not a number"
+              numbers.append(to_number(text))
+          if command == "add":
+              return str(add(numbers[0], numbers[1]))
+          if command == "sub":
+              return str(subtract(numbers[0], numbers[1]))
+          if command == "mul":
+              return str(multiply(numbers[0], numbers[1]))
+          if command == "div":
+              if numbers[1] == 0:
+                  return "Error: can't divide by zero"
+              return str(divide(numbers[0], numbers[1]))
+          if command == "sum":
+              return str(total(numbers))
+          if command == "max":
+              return str(largest(numbers))
+          if command == "min":
+              return str(smallest(numbers))
+          return str(mean(numbers))
+
+
+      def main():
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  print("Bye!")
+                  break
+              if len(line.split()) == 0:
+                  continue
+              print(calculate(line))
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: history
+    title: History
+    task: |
+      Now the calculator remembers. Every calculation that works is saved in a list, as one string with the line that was typed and its answer: `add 3 4 = 7`. A line that gets an error message isn't saved.
+
+      1. In `main`, keep the history in a list that starts empty, and add each calculation that worked to it. Every answer that isn't an error message is a calculation that worked.
+      2. Write `print_history(history)`, which prints the saved calculations numbered from 1, as `1: add 3 4 = 7`. When the list is empty, it prints `No calculations yet.`
+      3. Two new commands, which `main` handles itself before calling `calculate`. They aren't saved in the history:
+         - `history` prints the history with `print_history`.
+         - `clear` empties the history and prints `History cleared.`
+
+      With the input `history`, `add 3 4`, `pow 2 2`, `mean 1 2`, `history`, `clear`, `history`, `mul 5 5`, `history` and `quit`, the program prints:
+
+      ```
+      > history
+      No calculations yet.
+      > add 3 4
+      7
+      > pow 2 2
+      Error: unknown command pow
+      > mean 1 2
+      1.5
+      > history
+      1: add 3 4 = 7
+      2: mean 1 2 = 1.5
+      > clear
+      History cleared.
+      > history
+      No calculations yet.
+      > mul 5 5
+      25
+      > history
+      1: mul 5 5 = 25
+      > quit
+      Bye!
+      ```
+    hints:
+      - "Create the list before the loop in `main`: `history = []`. Keep the answer of `calculate` in a variable, print it, and append `f\"{line} = {answer}\"` when the answer is not an error. `\"Error\" not in answer` tells you that."
+      - "In `print_history`, loop over the indexes with `range(len(history))`: the number to show is the index plus one."
+      - "Put `if line == \"history\":` and `elif line == \"clear\":` before the `else` that calls `calculate`. Clearing can simply start a new empty list: `history = []`."
+    tests:
+      - name: Remember and forget
+        stdin: |
+          history
+          add 3 4
+          pow 2 2
+          mean 1 2
+          history
+          clear
+          history
+          mul 5 5
+          history
+          quit
+      - name: Printing a history
+        call: print_history(["add 1 2 = 3", "max 4 9 = 9"])
+      - name: An empty history
+        hidden: true
+        call: print_history([])
+      - name: Errors are not saved
+        hidden: true
+        stdin: |
+          sum 1 1 1
+          div 1 0
+          sub 2 x
+          div 1 4
+
+          max 2 8 5
+          history
+          clear
+          clear
+          history
+          quit
+    forbid:
+      - pattern: \beval\s*\(
+        message: "Do the calculation with your own functions instead of `eval`."
+    solution: |
+      # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+      def add(a, b):
+          return a + b
+
+
+      def subtract(a, b):
+          return a - b
+
+
+      def multiply(a, b):
+          return a * b
+
+
+      def divide(a, b):
+          return a / b
+
+
+      def total(numbers):
+          return sum(numbers)
+
+
+      def largest(numbers):
+          return max(numbers)
+
+
+      def smallest(numbers):
+          return min(numbers)
+
+
+      def mean(numbers):
+          return sum(numbers) / len(numbers)
+
+
+      def is_number(text):
+          digits = 0
+          points = 0
+          for i in range(len(text)):
+              character = text[i]
+              if character in "0123456789":
+                  digits += 1
+              elif character == ".":
+                  points += 1
+              elif character != "-" or i > 0:
+                  return False
+          return digits > 0 and points <= 1
+
+
+      def to_number(text):
+          if "." in text:
+              return float(text)
+          return int(text)
+
+
+      def calculate(line):
+          parts = line.split()
+          command = parts[0]
+          texts = parts[1:]
+          if command in ["add", "sub", "mul", "div"]:
+              if len(texts) != 2:
+                  return f"Error: {command} needs 2 numbers"
+          elif command in ["sum", "max", "min", "mean"]:
+              if len(texts) == 0:
+                  return f"Error: {command} needs at least 1 number"
+          else:
+              return f"Error: unknown command {command}"
+          numbers = []
+          for text in texts:
+              if not is_number(text):
+                  return f"Error: {text} is not a number"
+              numbers.append(to_number(text))
+          if command == "add":
+              return str(add(numbers[0], numbers[1]))
+          if command == "sub":
+              return str(subtract(numbers[0], numbers[1]))
+          if command == "mul":
+              return str(multiply(numbers[0], numbers[1]))
+          if command == "div":
+              if numbers[1] == 0:
+                  return "Error: can't divide by zero"
+              return str(divide(numbers[0], numbers[1]))
+          if command == "sum":
+              return str(total(numbers))
+          if command == "max":
+              return str(largest(numbers))
+          if command == "min":
+              return str(smallest(numbers))
+          return str(mean(numbers))
+
+
+      def print_history(history):
+          if len(history) == 0:
+              print("No calculations yet.")
+          for i in range(len(history)):
+              print(f"{i + 1}: {history[i]}")
+
+
+      def main():
+          history = []
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  print("Bye!")
+                  break
+              if len(line.split()) == 0:
+                  continue
+              if line == "history":
+                  print_history(history)
+              elif line == "clear":
+                  history = []
+                  print("History cleared.")
+              else:
+                  answer = calculate(line)
+                  print(answer)
+                  if "Error" not in answer:
+                      history.append(f"{line} = {answer}")
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: last-answer
+    title: The last answer
+    task: |
+      A calculation often goes on from the one before: double that, then take a quarter of it. The word `ans` in a command stands for the last answer, so `mul ans 2` doubles it.
+
+      - `ans` is the answer of the last calculation that worked. Before the first one, it is 0.
+      - An error message doesn't change it, and neither do `history` and `clear`.
+      - In the history, a calculation is saved with the number in place of `ans`: `mul 7 2 = 14`, not `mul ans 2 = 14`.
+
+      Do it in `main`, before the line goes to `calculate`: put the last answer into the line where it says `ans`. The string method `replace` from module 18 does exactly that, and `calculate` then gets an ordinary line of numbers. Keep the last answer as a string, as `calculate` returns it, so it can go straight into the line.
+
+      With the input `add 3 4`, `mul ans 2`, `div ans 4`, `sub ans ans`, `history` and `quit`, the program prints:
+
+      ```
+      > add 3 4
+      7
+      > mul ans 2
+      14
+      > div ans 4
+      3.5
+      > sub ans ans
+      0.0
+      > history
+      1: add 3 4 = 7
+      2: mul 7 2 = 14
+      3: div 14 4 = 3.5
+      4: sub 3.5 3.5 = 0.0
+      > quit
+      Bye!
+      ```
+    hints:
+      - "Keep the last answer in a variable that starts as `\"0\"` before the loop, a string like the answers of `calculate`."
+      - "Just before calling `calculate`, `line = line.replace(\"ans\", last)` puts the number in. The history then saves that line, numbers and all."
+      - "Change the last answer only next to `history.append(...)`, where you already know the answer isn't an error: `last = answer`."
+    tests:
+      - name: Going on from the last answer
+        stdin: |
+          add 3 4
+          mul ans 2
+          div ans 4
+          sub ans ans
+          history
+          quit
+      - name: Before the first answer, and after an error
+        hidden: true
+        stdin: |
+          add ans 5
+          div ans 0
+          mul ans 3
+          sum ans ans ans
+          sub 1 50
+          clear
+          mul ans ans
+          history
+          quit
+      - name: Long commands keep working
+        hidden: true
+        call: |
+          print(calculate("max 4 10 2"))
+          print(is_number("4.5.6"))
+          print_history(["add 1 1 = 2"])
+    forbid:
+      - pattern: \beval\s*\(
+        message: "Do the calculation with your own functions instead of `eval`."
+    solution: |
+      # A calculator that reads commands such as "add 3 4" and answers them.
+
+
+      def add(a, b):
+          return a + b
+
+
+      def subtract(a, b):
+          return a - b
+
+
+      def multiply(a, b):
+          return a * b
+
+
+      def divide(a, b):
+          return a / b
+
+
+      def total(numbers):
+          return sum(numbers)
+
+
+      def largest(numbers):
+          return max(numbers)
+
+
+      def smallest(numbers):
+          return min(numbers)
+
+
+      def mean(numbers):
+          return sum(numbers) / len(numbers)
+
+
+      def is_number(text):
+          digits = 0
+          points = 0
+          for i in range(len(text)):
+              character = text[i]
+              if character in "0123456789":
+                  digits += 1
+              elif character == ".":
+                  points += 1
+              elif character != "-" or i > 0:
+                  return False
+          return digits > 0 and points <= 1
+
+
+      def to_number(text):
+          if "." in text:
+              return float(text)
+          return int(text)
+
+
+      def calculate(line):
+          parts = line.split()
+          command = parts[0]
+          texts = parts[1:]
+          if command in ["add", "sub", "mul", "div"]:
+              if len(texts) != 2:
+                  return f"Error: {command} needs 2 numbers"
+          elif command in ["sum", "max", "min", "mean"]:
+              if len(texts) == 0:
+                  return f"Error: {command} needs at least 1 number"
+          else:
+              return f"Error: unknown command {command}"
+          numbers = []
+          for text in texts:
+              if not is_number(text):
+                  return f"Error: {text} is not a number"
+              numbers.append(to_number(text))
+          if command == "add":
+              return str(add(numbers[0], numbers[1]))
+          if command == "sub":
+              return str(subtract(numbers[0], numbers[1]))
+          if command == "mul":
+              return str(multiply(numbers[0], numbers[1]))
+          if command == "div":
+              if numbers[1] == 0:
+                  return "Error: can't divide by zero"
+              return str(divide(numbers[0], numbers[1]))
+          if command == "sum":
+              return str(total(numbers))
+          if command == "max":
+              return str(largest(numbers))
+          if command == "min":
+              return str(smallest(numbers))
+          return str(mean(numbers))
+
+
+      def print_history(history):
+          if len(history) == 0:
+              print("No calculations yet.")
+          for i in range(len(history)):
+              print(f"{i + 1}: {history[i]}")
+
+
+      def main():
+          history = []
+          last = "0"
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  print("Bye!")
+                  break
+              if len(line.split()) == 0:
+                  continue
+              if line == "history":
+                  print_history(history)
+              elif line == "clear":
+                  history = []
+                  print("History cleared.")
+              else:
+                  line = line.replace("ans", last)
+                  answer = calculate(line)
+                  print(answer)
+                  if "Error" not in answer:
+                      history.append(f"{line} = {answer}")
+                      last = answer
+
+
+      if __name__ == "__main__":
+          main()

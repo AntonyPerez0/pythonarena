@@ -1,0 +1,6 @@
+# Python's and pytest's own files
+__pycache__/
+.pytest_cache/
+
+# The virtual environment (python -m venv .venv)
+.venv/

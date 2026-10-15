@@ -1,0 +1,330 @@
+topic: classes
+drills:
+  - type: fill
+    after: first-class
+    code: |
+      [[class]] Lamp:
+          pass
+
+
+      lamp = Lamp()
+      lamp.watts = 9
+      print(lamp.watts)
+    why: "A class definition starts with the keyword `class`, the class's name and a colon."
+
+  - type: runs
+    after: first-class
+    code: |
+      class Dog:
+          pass
+
+
+      rex = Dog()
+      rex.name = "Rex"
+      fido = Dog()
+      print(fido.name)
+    why: "Only `rex` was given a name. `fido` has no attribute `name`, so Python stops with an `AttributeError`."
+
+  - type: predict
+    after: first-class
+    code: |
+      class Jar:
+          pass
+
+
+      a = Jar()
+      b = Jar()
+      a.cookies = 4
+      b.cookies = a.cookies + 1
+      a.cookies = 0
+      print(a.cookies, b.cookies)
+    why: "Each object has its own attributes. `b.cookies` got the value 5 and keeps it when `a.cookies` changes later."
+
+  - type: choice
+    after: first-class
+    prompt: Which name follows Python's custom for a class?
+    choices:
+      - "`bank_account`"
+      - "`BankAccount`"
+      - "`bankaccount`"
+      - "`BANK_ACCOUNT`"
+    answer: 2
+    why: "Class names are written in PascalCase: each word starts with a capital letter, with no underscores between the words."
+
+  - type: bug
+    after: constructor
+    code: |
+      class Cat:
+          def __init__(self, name, age):
+              self.name = name
+              age = age  # BUG
+
+
+      cat = Cat("Tom", 3)
+      print(cat.name, cat.age)
+    fix: self.age = age
+    why: "Without `self.`, `age = age` only assigns the parameter to itself, and the object never gets the attribute `age`."
+
+  - type: runs
+    after: constructor
+    code: |
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+
+      p = Point(3)
+      print(p.x)
+    why: "The constructor needs both `x` and `y`. Python stops with `TypeError: Point.__init__() missing 1 required positional argument: 'y'`."
+
+  - type: runs
+    after: constructor
+    code: |
+      class Point:
+          def _init_(self, x, y):
+              self.x = x
+              self.y = y
+
+
+      p = Point(3, 4)
+      print(p.x)
+    why: "The constructor's name is `__init__`, with two underscores on each side. With one, it's an ordinary method, Python finds no constructor and says `Point() takes no arguments`."
+
+  - type: predict
+    after: constructor
+    code: |
+      class Score:
+          def __init__(self, name, points):
+              self.name = name
+              self.points = points * 2
+
+
+      s = Score("Ann", 4)
+      print(s.name, s.points)
+    why: "The constructor stores twice the argument in the attribute, so `s.points` is 8."
+
+  - type: fill
+    after: constructor
+    code: |
+      class Lamp:
+          def [[__init__]](self, watts):
+              self.watts = watts
+
+
+      lamp = Lamp(9)
+      print(lamp.watts)
+    why: "The constructor is the method called `__init__`, which Python calls when `Lamp(9)` makes a new object."
+
+  - type: choice
+    after: constructor
+    prompt: "A class's constructor is `def __init__(self, name, moons):`. How many arguments do you give when you make an object of it?"
+    choices:
+      - "1"
+      - "2"
+      - "3"
+    answer: 2
+    why: "Python passes `self`, the new object, by itself. You give only `name` and `moons`."
+
+  - type: predict
+    after: attributes
+    code: |
+      class Team:
+          def __init__(self, name):
+              self.name = name
+              self.members = []
+
+
+      a = Team("A")
+      b = Team("B")
+      a.members.append("Ann")
+      a.members.append("Al")
+      b.members.append("Bo")
+      print(len(a.members), len(b.members))
+    why: "The constructor makes a new empty list for each team, so each team has a list of its own."
+
+  - type: predict
+    after: attributes
+    code: |
+      class Room:
+          def __init__(self, width, length):
+              self.width = width
+              self.length = length
+              self.area = width * length
+
+
+      r = Room(3, 4)
+      r.width = 5
+      print(r.width, r.area)
+    why: "The area is calculated once, in the constructor. Changing the width later doesn't change the stored area."
+
+  - type: bug
+    after: attributes
+    code: |
+      class Player:
+          def __init__(self, name):
+              self.name = name
+              self.lives = lives  # BUG
+
+
+      p = Player("Ada")
+      print(p.name, p.lives)
+    fix: self.lives = 3
+    why: "There's no parameter or variable `lives`. A starting value that is the same for every player is written in the constructor itself."
+
+  - type: predict
+    after: objects-and-functions
+    code: |
+      class Account:
+          def __init__(self, balance):
+              self.balance = balance
+
+
+      def add_bonus(account):
+          account.balance += 10
+
+
+      acc = Account(5)
+      add_bonus(acc)
+      add_bonus(acc)
+      print(acc.balance)
+    why: "The function gets the same object that `acc` refers to, so each call adds 10 to it."
+
+  - type: predict
+    after: objects-and-functions
+    code: |
+      class Item:
+          def __init__(self, name, price):
+              self.name = name
+              self.price = price
+
+
+      items = [Item("pen", 2), Item("book", 12), Item("bag", 25)]
+      total = 0
+      for item in items:
+          if item.price < 20:
+              total += item.price
+      print(total)
+    why: "The loop goes through the objects in the list and adds the prices under 20: 2 + 12."
+
+  - type: boss
+    after: attributes
+    prompt: |
+      Write a class `Contact` whose constructor takes a name, a phone number and an email address, and stores them in the attributes `name`, `phone` and `email`. When no email address is given, it is an empty string. Every new contact also has the attribute `favorite`, which starts as `False`.
+
+      This code:
+
+      ```python fragment
+      mia = Contact("Mia", "555-0101", "mia@example.com")
+      leo = Contact("Leo", "555-0199")
+      leo.favorite = True
+      print(mia.name, mia.phone, mia.email, mia.favorite)
+      print(leo.name, leo.phone, leo.email, leo.favorite)
+      ```
+
+      prints
+
+      ```
+      Mia 555-0101 mia@example.com False
+      Leo 555-0199  True
+      ```
+    seed: |
+      # Write the class Contact here.
+
+
+      if __name__ == "__main__":
+          mia = Contact("Mia", "555-0101", "mia@example.com")
+          print(mia.name, mia.email)
+    solution: |
+      class Contact:
+          def __init__(self, name, phone, email=""):
+              self.name = name
+              self.phone = phone
+              self.email = email
+              self.favorite = False
+
+
+      if __name__ == "__main__":
+          mia = Contact("Mia", "555-0101", "mia@example.com")
+          print(mia.name, mia.email)
+    hints:
+      - "The email gets a default value in the parameter list: `email=\"\"`."
+      - "`favorite` isn't a parameter. The constructor sets `self.favorite = False`."
+    tests:
+      - call: |
+          mia = Contact("Mia", "555-0101", "mia@example.com")
+          leo = Contact("Leo", "555-0199")
+          leo.favorite = True
+          print(mia.name, mia.phone, mia.email, mia.favorite)
+          print(leo.name, leo.phone, leo.email, leo.favorite)
+      - call: |
+          a = Contact("Ann", "555-0123")
+          b = Contact("Bo", "555-0456", "bo@example.org")
+          print(repr(a.email), a.favorite)
+          print(b.name, b.phone, b.email, b.favorite)
+        hidden: true
+
+  - type: boss
+    after: objects-and-functions
+    prompt: |
+      The starter code has a class `Book`. Write a function `pages_by(books, author)` that takes a list of `Book` objects and an author's name, and returns the total number of pages in that author's books (0 when there are none).
+
+      This code:
+
+      ```python fragment
+      books = [Book("Emma", "Jane Austen", 474), Book("Beloved", "Toni Morrison", 324), Book("Persuasion", "Jane Austen", 249)]
+      print(pages_by(books, "Jane Austen"))
+      ```
+
+      prints
+
+      ```
+      723
+      ```
+    seed: |
+      class Book:
+          def __init__(self, title, author, pages):
+              self.title = title
+              self.author = author
+              self.pages = pages
+
+
+      def pages_by(books, author):
+          pass
+
+
+      if __name__ == "__main__":
+          books = [Book("Emma", "Jane Austen", 474), Book("Beloved", "Toni Morrison", 324)]
+          print(pages_by(books, "Jane Austen"))
+    solution: |
+      class Book:
+          def __init__(self, title, author, pages):
+              self.title = title
+              self.author = author
+              self.pages = pages
+
+
+      def pages_by(books, author):
+          total = 0
+          for book in books:
+              if book.author == author:
+                  total += book.pages
+          return total
+
+
+      if __name__ == "__main__":
+          books = [Book("Emma", "Jane Austen", 474), Book("Beloved", "Toni Morrison", 324)]
+          print(pages_by(books, "Jane Austen"))
+    hints:
+      - Go through the books with a loop and keep a running total.
+      - "Add `book.pages` only when `book.author == author`, and return the total at the end."
+    tests:
+      - call: |
+          books = [Book("Emma", "Jane Austen", 474), Book("Beloved", "Toni Morrison", 324), Book("Persuasion", "Jane Austen", 249)]
+          print(pages_by(books, "Jane Austen"))
+      - call: |
+          books = [Book("Sula", "Toni Morrison", 174), Book("Jazz", "Toni Morrison", 229), Book("Emma", "Jane Austen", 474)]
+          print(pages_by(books, "Toni Morrison"))
+          print(pages_by(books, "Mary Shelley"))
+          print(pages_by([], "Jane Austen"))
+        hidden: true

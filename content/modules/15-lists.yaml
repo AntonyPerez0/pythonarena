@@ -1,0 +1,943 @@
+id: lists
+summary: Keeping many values in one list. Indexes, adding items with append and insert, removing them with pop and remove, sorting with sort and sorted, max, min and sum, methods versus functions, and lists as the arguments and return values of your own functions.
+steps:
+  - id: lists-items
+    slug: items
+    title: Lists and indexes
+    text: |
+      So far each value has had its own variable. That gets clumsy fast: a week of temperatures would need seven variables, and a program can't know in advance how many values the user will type. A **list** keeps any number of values under one name. You write it in square brackets, with commas between the values:
+
+      ```python run
+      temperatures = [18, 21, 17, 25]  # a list of four numbers
+      names = ["Ada", "Linus", "Grace"]
+      empty = []
+      print(temperatures)
+      print(names)
+      print(empty)
+      ```
+
+      ```output
+      [18, 21, 17, 25]
+      ['Ada', 'Linus', 'Grace']
+      []
+      ```
+
+      The values in a list are its **items** (or elements). `[]` is an empty list, with no items yet. When you print a list, Python shows it the way you would write it in code, so strings in a list are shown with quotes, as in the interpreter.
+
+      ### Indexes
+
+      Each item has an **index**, its place in the list. As with the characters of a string, the first index is 0, and `-1` is the last item:
+
+      ```python run
+      temperatures = [18, 21, 17, 25]
+      print(temperatures[0])
+      print(temperatures[2])
+      print(temperatures[-1])
+      print("First two together:", temperatures[0] + temperatures[1])
+      ```
+
+      ```output
+      18
+      17
+      25
+      First two together: 39
+      ```
+
+      The function `len` gives the number of items, so the last index is `len(temperatures) - 1`. An index past the end stops the program:
+
+      ```python run crash
+      temperatures = [18, 21, 17, 25]
+      print(len(temperatures))
+      print(temperatures[4])
+      ```
+
+      ```output
+      4
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          print(temperatures[4])
+                ~~~~~~~~~~~~^^^
+      IndexError: list index out of range
+      ```
+
+      The list has 4 items, at indexes 0 to 3. Index 4 would be a fifth item, which doesn't exist.
+
+      ### Changing an item
+
+      Unlike a string, a list can be changed after it's made. Give an item a new value as you would give a variable one:
+
+      ```python run
+      temperatures = [18, 21, 17, 25]
+      temperatures[2] = 19
+      temperatures[0] = temperatures[0] + 1
+      print(temperatures)
+      ```
+
+      ```output
+      [19, 21, 19, 25]
+      ```
+
+      The other items stay as they were. An index in square brackets on the left of `=` says which item gets the new value.
+
+      **Your turn:** fill in the blanks so the program prints the number of planets in the list, the first planet, and then the list with `Earth` renamed to `Terra`:
+
+      ```
+      Planets: 4
+      Closest to the sun: Mercury
+      ['Mercury', 'Venus', 'Terra', 'Mars']
+      ```
+    fill: |
+      planets = ["Mercury", "Venus", "Earth", "Mars"]
+      print("Planets:", [[len]](planets))
+      print("Closest to the sun:", planets[[[0]]])
+      planets[[[2‖-2]]] = "Terra"
+      print(planets)
+    hints:
+      - "The function that counts the items of a list is the same one that counts the characters of a string."
+      - "The first item is at index 0. Count from 0 to find the index of `\"Earth\"`."
+      - "`len(planets)` is 4, the first planet is `planets[0]`, and `Earth` is at index 2."
+    tests:
+      - expect: |
+          Planets: 4
+          Closest to the sun: Mercury
+          ['Mercury', 'Venus', 'Terra', 'Mars']
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [4, 8, 15, 16, 23]
+          print(numbers[1])
+          print(numbers[-1])
+          numbers[0] = numbers[3] + 1
+          print(numbers[0])
+          print(len(numbers))
+          print(numbers)
+        hints:
+          - Indexes start at 0, so `numbers[1]` is the second item. Index -1 is the last item.
+          - "`numbers[3]` is 16, so the first item becomes 17."
+          - Changing an item doesn't change the length of the list.
+      - task: |
+          A house has the rooms in the list `rooms`, numbered from 1. Write a program that asks for a room number and prints that room's name. A number with no room prints `No such room`:
+
+          ```
+          Room number: 2
+          Room 2 is the kitchen
+          ```
+        seed: |
+          rooms = ["hall", "kitchen", "library", "attic"]
+        solution: |
+          rooms = ["hall", "kitchen", "library", "attic"]
+          number = int(input("Room number: "))
+          if 1 <= number <= len(rooms):
+              print(f"Room {number} is the {rooms[number - 1]}")
+          else:
+              print("No such room")
+        hints:
+          - "Room 1 is at index 0, so room `number` is at index `number - 1`."
+          - "The room numbers go from 1 to `len(rooms)`. Check that the number is in that range before you use it as an index."
+          - "`if 1 <= number <= len(rooms):` prints the room with an f-string, and `else:` prints `No such room`."
+        forbid:
+          - pattern: '<=\s*4\b|<\s*5\b'
+            message: "Use `len(rooms)` instead of the number 4, so the program still works if a room is added."
+        tests:
+          - stdin: "2"
+          - stdin: "4"
+            hidden: true
+          - stdin: "1"
+            hidden: true
+          - stdin: "0"
+            hidden: true
+          - stdin: "5"
+            hidden: true
+
+  - id: lists-adding
+    slug: adding
+    title: "Adding items: append and insert"
+    text: |
+      A list often starts empty and grows while the program runs. The **`append`** method adds an item to the end of a list:
+
+      ```python run
+      scores = []
+      scores.append(12)
+      scores.append(30)
+      scores.append(7)
+      print(scores)
+      print(len(scores))
+      ```
+
+      ```output
+      [12, 30, 7]
+      3
+      ```
+
+      Like `upper` for strings, `append` is a method: you write it after the list, with a dot in between. It changes the list it's called on, so `scores.append(12)` adds 12 to `scores` and to no other list.
+
+      `append` really shines in a loop. This program reads names until the user types an empty line:
+
+      ```python run
+      names = []
+      while True:
+          name = input("Name: ")
+          if name == "":
+              break
+          names.append(name)
+      print(names)
+      print(len(names), "names")
+      ```
+
+      ```input
+      Ada
+      Linus
+      Grace
+
+      ```
+
+      ```output
+      Name: Ada
+      Name: Linus
+      Name: Grace
+      Name:
+      ['Ada', 'Linus', 'Grace']
+      3 names
+      ```
+
+      The program doesn't need to know in advance how many names will come: the list simply grows by one item each time.
+
+      `append` takes exactly one item. To add two, call it twice:
+
+      ```python run crash
+      scores = [12, 30]
+      scores.append(7, 9)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          scores.append(7, 9)
+          ~~~~~~~~~~~~~^^^^^^
+      TypeError: list.append() takes exactly one argument (2 given)
+      ```
+
+      ### Adding to a given place
+
+      **`insert`** adds an item at the index you choose. It takes two arguments: first the index, then the item. The items from that index on move one place to the right:
+
+      ```python run
+      queue = ["Ada", "Linus", "Grace"]
+      queue.insert(0, "Guido")
+      print(queue)
+      queue.insert(2, "Margaret")
+      print(queue)
+      ```
+
+      ```output
+      ['Guido', 'Ada', 'Linus', 'Grace']
+      ['Guido', 'Ada', 'Margaret', 'Linus', 'Grace']
+      ```
+
+      `insert(0, ...)` puts an item at the very front. After the first insert, Ada moved from index 0 to index 1, so `"Margaret"` at index 2 lands between Ada and Linus.
+
+      **Your turn:** fill in the blanks so the program adds `milk` to the end of the shopping list and `bread` to its start:
+
+      ```
+      ['bread', 'eggs', 'apples', 'milk']
+      ```
+    fill: |
+      shopping = ["eggs", "apples"]
+      shopping.[[append]]("milk")
+      shopping.[[insert]](0, "bread")
+      print(shopping)
+    hints:
+      - "One method adds an item to the end of a list, the other adds it at a given index."
+      - "`append` adds to the end; `insert` takes the index first, so `insert(0, ...)` adds to the start."
+    tests:
+      - expect: "['bread', 'eggs', 'apples', 'milk']"
+    more:
+      - task: |
+          Write a program that reads guests' names until the user types an empty line, adding each name to a list. At the end it prints the list and the number of guests:
+
+          ```
+          Guest: Ada
+          Guest: Linus
+          Guest:
+          ['Ada', 'Linus']
+          2 guests
+          ```
+        seed: |
+          guests = []
+        solution: |
+          guests = []
+          while True:
+              name = input("Guest: ")
+              if name == "":
+                  break
+              guests.append(name)
+          print(guests)
+          print(len(guests), "guests")
+        hints:
+          - "Read the names in a `while True:` loop, and `break` out of it when the name is the empty string `\"\"`."
+          - "Add each name with `guests.append(name)`, before the loop goes back to read the next one."
+          - "After the loop, print the list and `len(guests)`."
+        tests:
+          - stdin: "Ada\nLinus\n\n"
+          - stdin: "Grace\nGuido\nMargaret\nKen\n\n"
+            hidden: true
+          - stdin: "Barbara\n\n"
+            hidden: true
+      - task: |
+          Write a to-do program. It reads tasks until the user types an empty line. A task that ends with `!` is urgent and goes to the start of the list; the others go to the end. Then it prints the list:
+
+          ```
+          Task: wash dishes
+          Task: pay rent!
+          Task: call grandma
+          Task:
+          ['pay rent!', 'wash dishes', 'call grandma']
+          ```
+
+          You can assume no task is empty except the last line.
+        seed: |
+          tasks = []
+        solution: |
+          tasks = []
+          while True:
+              task = input("Task: ")
+              if task == "":
+                  break
+              if task[-1] == "!":
+                  tasks.insert(0, task)
+              else:
+                  tasks.append(task)
+          print(tasks)
+        hints:
+          - "The last character of a string is at index -1: `task[-1] == \"!\"` tells you if a task is urgent."
+          - "An urgent task goes to the front with `tasks.insert(0, task)`; the others go to the end with `append`."
+          - "Check for the empty line first and `break`, before you look at `task[-1]`: an empty string has no last character."
+        require:
+          - pattern: \.insert\s*\(
+            message: "Put the urgent tasks at the front with `insert`."
+        tests:
+          - stdin: "wash dishes\npay rent!\ncall grandma\n\n"
+          - stdin: "buy milk\nfix bike!\nwater plants\ncall the plumber!\n\n"
+            hidden: true
+          - stdin: "read a book\n\n"
+            hidden: true
+
+  - id: lists-removing
+    slug: removing
+    title: "Removing items: pop and remove"
+    text: |
+      There are two ways to remove an item from a list. Which one you use depends on what you know about the item:
+
+      - if you know its **index**, use `pop`;
+      - if you know its **value**, use `remove`.
+
+      **`pop`** removes the item at the index you give, and the items after it move one place to the left. It also returns the item it removed, so you can still use it:
+
+      ```python run
+      queue = ["Ada", "Linus", "Grace", "Guido"]
+      first = queue.pop(0)
+      print("Now serving", first)
+      print(queue)
+      last = queue.pop()
+      print(last, "left the queue")
+      print(queue)
+      ```
+
+      ```output
+      Now serving Ada
+      ['Linus', 'Grace', 'Guido']
+      Guido left the queue
+      ['Linus', 'Grace']
+      ```
+
+      Without an argument, `pop()` removes the last item.
+
+      **`remove`** looks for a value and removes it. If the value is in the list more than once, only the first one goes:
+
+      ```python run
+      colors = ["red", "blue", "green", "blue"]
+      colors.remove("blue")
+      print(colors)
+      colors.remove("blue")
+      print(colors)
+      ```
+
+      ```output
+      ['red', 'green', 'blue']
+      ['red', 'green']
+      ```
+
+      If the value isn't in the list at all, `remove` stops the program:
+
+      ```python run crash
+      colors = ["red", "green"]
+      colors.remove("pink")
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          colors.remove("pink")
+          ~~~~~~~~~~~~~^^^^^^^^
+      ValueError: list.remove(x): x not in list
+      ```
+
+      ### Is it in the list?
+
+      The `in` operator, which you know from strings, works for lists too: `value in my_list` is `True` if the value is one of the items. Check with it before you remove something that might not be there. `not in` is its opposite:
+
+      ```python run
+      colors = ["red", "green"]
+      if "pink" in colors:
+          colors.remove("pink")
+      else:
+          print("No pink to remove")
+      if "yellow" not in colors:
+          colors.append("yellow")
+      print(colors)
+      ```
+
+      ```output
+      No pink to remove
+      ['red', 'green', 'yellow']
+      ```
+
+      **Your turn:** fill in the blanks. The program takes the first person out of the queue, prints who is served, and then removes Linus, who got tired of waiting:
+
+      ```
+      Serving Ada
+      ['Grace', 'Guido']
+      ```
+    fill: |
+      queue = ["Ada", "Grace", "Linus", "Guido"]
+      served = queue.[[pop]](0)
+      print("Serving", served)
+      queue.[[remove]]("Linus")
+      print(queue)
+    hints:
+      - "To take the item at index 0 and get it back, use the method that removes by index."
+      - "`pop` removes by index and returns the item; `remove` removes by value."
+    tests:
+      - expect: |
+          Serving Ada
+          ['Grace', 'Guido']
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [5, 3, 5, 8, 1]
+          numbers.remove(5)
+          print(numbers)
+          print(numbers.pop(1))
+          print(numbers)
+          print(8 in numbers)
+          numbers.pop()
+          print(numbers)
+        hints:
+          - "`remove(5)` removes only the first 5."
+          - "`pop(1)` removes the item at index 1 and returns it, so `print` shows that item."
+          - "`pop()` with no argument removes the last item."
+      - task: |
+          Write a program for editing a playlist. It reads names of songs to remove until the user types an empty line. A song that's on the list is removed, and the program prints `Removed` and the song; for any other song it prints that it isn't on the list. At the end it prints the playlist:
+
+          ```
+          Remove: Yesterday
+          Removed Yesterday
+          Remove: Imagine
+          Imagine is not on the list
+          Remove:
+          ['Hey Jude', 'Let It Be']
+          ```
+        seed: |
+          playlist = ["Hey Jude", "Yesterday", "Let It Be"]
+        solution: |
+          playlist = ["Hey Jude", "Yesterday", "Let It Be"]
+          while True:
+              song = input("Remove: ")
+              if song == "":
+                  break
+              if song in playlist:
+                  playlist.remove(song)
+                  print("Removed", song)
+              else:
+                  print(song, "is not on the list")
+          print(playlist)
+        hints:
+          - "Read the songs in a `while True:` loop that ends with `break` on an empty line."
+          - "`if song in playlist:` tells you whether the song can be removed."
+          - "Remove it with `playlist.remove(song)`, which removes by value."
+        tests:
+          - stdin: "Yesterday\nImagine\n\n"
+          - stdin: "Let It Be\nHey Jude\nYesterday\n\n"
+            hidden: true
+          - stdin: "Help\nLet It Be\nLet It Be\n\n"
+            hidden: true
+
+  - id: lists-sorting
+    slug: sorting
+    title: "Sorting: sort and sorted"
+    text: |
+      The **`sort`** method puts the items of a list in order, from smallest to greatest. Strings are sorted in alphabetical order:
+
+      ```python run
+      scores = [12, 30, 7, 18]
+      scores.sort()
+      print(scores)
+      names = ["Linus", "Ada", "Grace"]
+      names.sort()
+      print(names)
+      ```
+
+      ```output
+      [7, 12, 18, 30]
+      ['Ada', 'Grace', 'Linus']
+      ```
+
+      `sort` changes the list itself: the original order is gone. When you still need the original, use the function **`sorted`** instead. It doesn't touch the list you give it, but returns a new, sorted list:
+
+      ```python run
+      arrivals = ["Linus", "Ada", "Grace"]
+      alphabetical = sorted(arrivals)
+      print(arrivals)
+      print(alphabetical)
+      ```
+
+      ```output
+      ['Linus', 'Ada', 'Grace']
+      ['Ada', 'Grace', 'Linus']
+      ```
+
+      So `arrivals` still says who came first, and `alphabetical` is a sorted copy.
+
+      For the order from greatest to smallest, sort the list and then turn it around with the **`reverse`** method, which reverses the order of any list:
+
+      ```python run
+      scores = [12, 30, 7, 18]
+      scores.sort()
+      scores.reverse()
+      print(scores)
+      ```
+
+      ```output
+      [30, 18, 12, 7]
+      ```
+
+      ### A common mistake
+
+      `sort` changes the list and returns nothing, that is, `None`. Storing what it returns gives you `None` and not the sorted list:
+
+      ```python run
+      scores = [12, 30, 7]
+      ordered = scores.sort()
+      print(ordered)
+      print(scores)
+      ```
+
+      ```output
+      None
+      [7, 12, 30]
+      ```
+
+      Either sort the list itself with `scores.sort()` and keep using `scores`, or make a sorted copy with `ordered = sorted(scores)`. The same goes for `append`, `insert` and `remove`: they change the list and return `None`, so `scores = scores.append(5)` loses the whole list.
+
+      ### Capital letters
+
+      In alphabetical order, Python puts every capital letter before every small letter, so `"Zebra"` comes before `"apple"`:
+
+      ```python repl
+      >>> sorted(["banana", "Zebra", "apple"])
+      ['Zebra', 'apple', 'banana']
+      ```
+
+      Write the strings in the same case when you want a normal alphabetical order.
+
+      **Your turn:** the program should print the scores in the order they were given and then from smallest to greatest, but the second line prints `None`. Fix it so it prints:
+
+      ```
+      [12, 30, 7, 18]
+      [7, 12, 18, 30]
+      ```
+    seed: |
+      scores = [12, 30, 7, 18]
+      ordered = scores.sort()
+      print(scores)
+      print(ordered)
+    solution: |
+      scores = [12, 30, 7, 18]
+      ordered = sorted(scores)
+      print(scores)
+      print(ordered)
+    hints:
+      - "`scores.sort()` sorts `scores` itself and returns `None`, so `ordered` is `None`, and `scores` loses its original order."
+      - "Make a sorted copy instead: `ordered = sorted(scores)`. It leaves `scores` as it was."
+    tests:
+      - expect: |
+          [12, 30, 7, 18]
+          [7, 12, 18, 30]
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          words = ["pear", "fig", "apple"]
+          other = sorted(words)
+          print(words)
+          print(other)
+          words.sort()
+          print(words[0])
+          print(words.sort())
+        hints:
+          - "`sorted` returns a sorted copy and leaves `words` as it was."
+          - "After `words.sort()`, `words` itself is in alphabetical order."
+          - "`sort` returns `None`, and `print` shows it."
+      - task: |
+          Write a program that reads exam scores (whole numbers) until the user types an empty line. Then it prints the scores in order from lowest to highest, the lowest score and the highest score:
+
+          ```
+          Score: 15
+          Score: 9
+          Score: 20
+          Score:
+          [9, 15, 20]
+          Lowest: 9
+          Highest: 20
+          ```
+
+          You can assume the user types at least one score.
+        seed: |
+          scores = []
+        solution: |
+          scores = []
+          while True:
+              line = input("Score: ")
+              if line == "":
+                  break
+              scores.append(int(line))
+          scores.sort()
+          print(scores)
+          print("Lowest:", scores[0])
+          print("Highest:", scores[-1])
+        hints:
+          - "Read each line as a string and stop on `\"\"`; convert the others with `int` before you append them, so they sort as numbers."
+          - "After `scores.sort()`, the lowest score is the first item and the highest is the last."
+          - "The first item is `scores[0]` and the last is `scores[-1]`."
+        tests:
+          - stdin: "15\n9\n20\n\n"
+          - stdin: "7\n18\n3\n11\n100\n\n"
+            hidden: true
+          - stdin: "12\n\n"
+            hidden: true
+
+  - id: lists-functions
+    slug: max-min-sum
+    title: max, min, sum and methods versus functions
+    text: |
+      Python has functions for the most common questions about a list of numbers. **`max`** returns the greatest item, **`min`** the smallest and **`sum`** the sum of all the items:
+
+      ```python run
+      sales = [120, 75, 210, 95]
+      print("Best day:", max(sales))
+      print("Worst day:", min(sales))
+      print("Total:", sum(sales))
+      print("Average:", sum(sales) / len(sales))
+      ```
+
+      ```output
+      Best day: 210
+      Worst day: 75
+      Total: 500
+      Average: 125.0
+      ```
+
+      The average is the sum divided by the number of items. `max` and `min` work for strings too: then they give the alphabetically last and first item.
+
+      ### Methods and functions
+
+      You now know two kinds of commands that work with lists, and they are written differently:
+
+      - **methods** are written after the list, with a dot: `sales.append(80)`, `sales.sort()`, `sales.pop()`. Most of them change the list.
+      - **functions** get the list as an argument, in the parentheses: `len(sales)`, `max(sales)`, `sum(sales)`, `sorted(sales)`. They return a value and leave the list as it is.
+
+      ```python run
+      sales = [120, 75, 210]
+      sales.append(95)
+      sales.sort()
+      print(sales)
+      print(len(sales), max(sales), sorted(sales))
+      ```
+
+      ```output
+      [75, 95, 120, 210]
+      4 210 [75, 95, 120, 210]
+      ```
+
+      Mixing the two up is a common slip, and Python tells you so. There is no `max` method:
+
+      ```python run crash
+      sales = [120, 75, 210]
+      print(sales.max())
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(sales.max())
+                ^^^^^^^^^
+      AttributeError: 'list' object has no attribute 'max'
+      ```
+
+      and no `sort` function:
+
+      ```python run crash
+      sales = [120, 75, 210]
+      sort(sales)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          sort(sales)
+          ^^^^
+      NameError: name 'sort' is not defined. Did you mean: 'sorted'?
+      ```
+
+      An `AttributeError` about a `'list' object` means you wrote a function as a method; a `NameError` means you wrote a method as a function.
+
+      An empty list has no greatest or smallest item, so `max([])` and `min([])` stop with a `ValueError`. `sum([])` is 0.
+
+      **Your turn:** fill in the blanks so the program prints the total, the highest and the lowest of the step counts:
+
+      ```
+      Total: 31200
+      Highest: 9800
+      Lowest: 3100
+      ```
+    fill: |
+      steps = [6500, 9800, 3100, 4600, 7200]
+      print("Total:", [[sum]](steps))
+      print("Highest:", [[max]](steps))
+      print("Lowest:", [[min]](steps))
+    hints:
+      - "Each blank is the name of a function that takes the list as its argument."
+      - "`sum` adds up the items, `max` gives the greatest and `min` the smallest."
+    tests:
+      - expect: |
+          Total: 31200
+          Highest: 9800
+          Lowest: 3100
+    more:
+      - task: |
+          Write a program that reads temperatures (whole numbers) until the user types an empty line, and then prints how many there were, the warmest, the coldest and the average:
+
+          ```
+          Temperature: 18
+          Temperature: 23
+          Temperature: 16
+          Temperature:
+          Readings: 3
+          Warmest: 23
+          Coldest: 16
+          Average: 19.0
+          ```
+
+          You can assume the user types at least one temperature.
+        seed: |
+          temperatures = []
+        solution: |
+          temperatures = []
+          while True:
+              line = input("Temperature: ")
+              if line == "":
+                  break
+              temperatures.append(int(line))
+          print("Readings:", len(temperatures))
+          print("Warmest:", max(temperatures))
+          print("Coldest:", min(temperatures))
+          print("Average:", sum(temperatures) / len(temperatures))
+        hints:
+          - "First collect the temperatures in the list, converted with `int`, in a loop that stops on an empty line."
+          - "After the loop, `len`, `max` and `min` give the first three answers."
+          - "The average is `sum(temperatures) / len(temperatures)`."
+        tests:
+          - stdin: "18\n23\n16\n\n"
+          - stdin: "-5\n2\n0\n-1\n\n"
+            hidden: true
+          - stdin: "21\n\n"
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          values = [3, 9, 1]
+          values.append(max(values) + 1)
+          print(values)
+          print(sorted(values)[1])
+          print(sum(values) - len(values))
+          print(min(values) == values[2])
+        hints:
+          - "`max(values)` is 9, so the method `append` adds 10 to the end."
+          - "`sorted(values)` is `[1, 3, 9, 10]`, and `[1]` takes its second item."
+          - "The sum of the four items is 23, and the list has 4 items."
+
+  - id: lists-in-functions
+    slug: lists-and-functions
+    title: Lists as arguments and return values
+    text: |
+      Your own functions can take a list as an argument, just like `len` and `max` do. The type hint for a list is `list`:
+
+      ```python run
+      def summary(numbers: list) -> str:
+          return f"{len(numbers)} numbers from {min(numbers)} to {max(numbers)}"
+
+
+      print(summary([4, 18, 9]))
+      ages = [34, 7, 61, 25, 12]
+      print(summary(ages))
+      ```
+
+      ```output
+      3 numbers from 4 to 18
+      5 numbers from 7 to 61
+      ```
+
+      Inside the function, the parameter `numbers` is the list that was given in the call: first `[4, 18, 9]`, then the list in `ages`.
+
+      A function can also return a list. This one reads words until an empty line and returns them all:
+
+      ```python run
+      def read_words(prompt: str) -> list:
+          words = []
+          while True:
+              word = input(prompt)
+              if word == "":
+                  break
+              words.append(word)
+          return words
+
+
+      fruit = read_words("Fruit: ")
+      print("In order:", sorted(fruit))
+      print("Alphabetically last:", max(fruit))
+      ```
+
+      ```input
+      plum
+      banana
+      fig
+
+      ```
+
+      ```output
+      Fruit: plum
+      Fruit: banana
+      Fruit: fig
+      Fruit:
+      In order: ['banana', 'fig', 'plum']
+      Alphabetically last: plum
+      ```
+
+      The function builds the list in a variable of its own and returns it when the loop ends. The code that called it stores the list and goes on working with it.
+
+      ### Why split a program into functions?
+
+      The same program could be written without `read_words`. But with the function, each part has a name that says what it does, and the main code reads almost like a description: read the fruit, print them in order. Each function can also be tried out on its own in the main block, which makes bugs much easier to find.
+
+      A function can be used again, too. Once `read_words` works, reading a second list takes one line:
+
+      ```python fragment
+      fruit = read_words("Fruit: ")
+      vegetables = read_words("Vegetable: ")
+      ```
+
+      Without the function, the whole loop would have to be written out twice.
+
+      **Your turn:** write the function `price_range(prices: list) -> str`, which returns the lowest and the highest price of a list as text. For example, `price_range([12, 3, 8])` returns `'from 3 to 12'`.
+    seed: |
+      def price_range(prices: list) -> str:
+          pass
+
+
+      if __name__ == "__main__":
+          print(price_range([12, 3, 8]))
+    solution: |
+      def price_range(prices: list) -> str:
+          return f"from {min(prices)} to {max(prices)}"
+
+
+      if __name__ == "__main__":
+          print(price_range([12, 3, 8]))
+    hints:
+      - "`min(prices)` and `max(prices)` give the lowest and the highest price."
+      - "Put them in an f-string and return it: `return f\"from {min(prices)} to {max(prices)}\"`."
+    tests:
+      - call: price_range([12, 3, 8])
+      - call: price_range([5])
+        hidden: true
+      - call: price_range([20, 45, 7, 99, 30])
+        hidden: true
+    more:
+      - task: |
+          In some sports, a performance gets scores from several judges, and the highest and the lowest score are left out so that one strict or generous judge can't decide the result. Write the function `fair_average(scores: list) -> float`, which returns the average of the scores without the single highest and the single lowest score. The list has at least three scores. For example, `fair_average([7, 9, 8, 2])` leaves out 9 and 2, and returns `7.5`.
+        seed: |
+          def fair_average(scores: list) -> float:
+              pass
+
+
+          if __name__ == "__main__":
+              print(fair_average([7, 9, 8, 2]))
+        solution: |
+          def fair_average(scores: list) -> float:
+              total = sum(scores) - max(scores) - min(scores)
+              return total / (len(scores) - 2)
+
+
+          if __name__ == "__main__":
+              print(fair_average([7, 9, 8, 2]))
+        hints:
+          - "Leaving out the highest and the lowest score means subtracting `max(scores)` and `min(scores)` from `sum(scores)`."
+          - "Two scores are left out, so divide by `len(scores) - 2`."
+          - "Don't remove the items from the list itself: the list belongs to the code that called the function, so work with `sum`, `max` and `min` instead."
+        forbid:
+          - pattern: \.(remove|pop)\s*\(
+            message: "Leave the list as it is: the code that called the function may still need it. Calculate with `sum`, `max` and `min`."
+        tests:
+          - call: fair_average([7, 9, 8, 2])
+          - call: fair_average([5, 5, 5])
+            hidden: true
+          - call: fair_average([10, 1, 6, 8, 3])
+            hidden: true
+      - task: |
+          Write the function `numbers_between(start: int, end: int) -> list`, which returns a new list of the whole numbers from `start` to `end`, both included. If `start` is greater than `end`, the list is empty. For example, `numbers_between(3, 6)` returns `[3, 4, 5, 6]`.
+        seed: |
+          def numbers_between(start: int, end: int) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(numbers_between(3, 6))
+        solution: |
+          def numbers_between(start: int, end: int) -> list:
+              numbers = []
+              number = start
+              while number <= end:
+                  numbers.append(number)
+                  number += 1
+              return numbers
+
+
+          if __name__ == "__main__":
+              print(numbers_between(3, 6))
+        hints:
+          - "Start with an empty list, `numbers = []`, and a counter that starts from `start`."
+          - "In a `while` loop that runs as long as the counter is at most `end`, append the counter and add 1 to it."
+          - "After the loop, `return numbers`. When `start` is greater than `end`, the loop never runs and the empty list is returned."
+        tests:
+          - call: numbers_between(3, 6)
+          - call: numbers_between(-2, 2)
+            hidden: true
+          - call: numbers_between(5, 5)
+            hidden: true
+          - call: numbers_between(7, 4)
+            hidden: true

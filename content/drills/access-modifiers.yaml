@@ -1,0 +1,330 @@
+topic: access-modifiers
+drills:
+  - type: runs
+    after: private-in-subclass
+    code: |
+      class Safe:
+          def __init__(self):
+              self.__gold = 100
+
+
+      class BigSafe(Safe):
+          def gold(self):
+              return self.__gold
+
+
+      print(BigSafe().gold())
+    why: "`__gold` is private to `Safe`. Inside `BigSafe`, `self.__gold` means `self._BigSafe__gold`, which doesn't exist, so Python stops with an `AttributeError`."
+
+  - type: predict
+    after: private-in-subclass
+    code: |
+      class Safe:
+          def __init__(self):
+              self.__gold = 100
+
+          def gold(self):
+              return self.__gold
+
+
+      class BigSafe(Safe):
+          def double(self):
+              return self.gold() * 2
+
+
+      print(BigSafe().double())
+    why: "The derived class can't touch `__gold`, but it can call the public method `gold`, which belongs to `Safe` and may use it."
+
+  - type: choice
+    after: private-in-subclass
+    prompt: "Inside the class `Locker`, what does Python turn `self.__code` into?"
+    choices:
+      - "`self._Locker__code`"
+      - "`self._code`"
+      - "`self.code`"
+      - "Nothing, it stays `self.__code`"
+    answer: 1
+    why: "Python hides a private attribute by renaming it: it puts an underscore and the class's name in front. That's why a derived class, with another name, can't find it."
+
+  - type: predict
+    after: private-in-subclass
+    code: |
+      class Base:
+          def __init__(self):
+              self.__x = 1
+
+          def base_x(self):
+              return self.__x
+
+
+      class Child(Base):
+          def __init__(self):
+              super().__init__()
+              self.__x = 2
+
+
+      print(Child().base_x())
+    why: "In `Child`, `self.__x` is `self._Child__x`, a different attribute from `Base`'s `_Base__x`. `base_x` is written in `Base`, so it reads `Base`'s own, which is still 1."
+
+  - type: runs
+    after: private-in-subclass
+    code: |
+      class Card:
+          def __init__(self, number):
+              self.__number = number
+
+
+      card = Card("1234")
+      print(card.__number)
+    why: "Clients can't reach a private attribute either: Python stops with an `AttributeError`."
+
+  - type: fill
+    after: protected
+    code: |
+      class Team:
+          def __init__(self):
+              self.[[_players]] = ["Ada", "Ben"]
+
+
+      class SoccerTeam(Team):
+          def size(self):
+              return len(self._players)
+
+
+      print(SoccerTeam().size())
+    why: "The derived class uses `self._players`, so the base class must create an attribute with exactly that name. One underscore makes it protected, and Python doesn't rename it."
+
+  - type: bug
+    after: protected
+    code: |
+      class Notebook:
+          def __init__(self):
+              self._notes = ["milk", "eggs"]
+
+
+      class Searchable(Notebook):
+          def has(self, word):
+              return word in self.__notes  # BUG
+
+
+      print(Searchable().has("eggs"))
+    fix: return word in self._notes
+    why: "The list is protected, with one underscore: `self._notes`. With two, Python looks for the private `_Searchable__notes`, which doesn't exist."
+
+  - type: runs
+    after: protected
+    code: |
+      class Note:
+          def __init__(self):
+              self._draft = "buy milk"
+
+
+      note = Note()
+      print(note._draft)
+    why: "Protected is only an agreement: Python lets a client use `_draft`. It runs, but code outside the class shouldn't rely on it."
+
+  - type: choice
+    after: protected
+    prompt: Which attribute is open to derived classes, but by agreement not to the class's clients?
+    choices:
+      - "`self.size`"
+      - "`self._size`"
+      - "`self.__size`"
+    answer: 2
+    why: "One underscore marks a protected attribute. No underscore is public, open to everyone, and two make it private, hidden from derived classes too."
+
+  - type: choice
+    after: protected
+    prompt: "A class keeps a balance that must never go below zero, and only its own methods should change it, not even a derived class. Which name fits best?"
+    choices:
+      - "`self.balance`"
+      - "`self._balance`"
+      - "`self.__balance`"
+    answer: 3
+    why: "When not even derived classes should touch the data directly, make it private. They can still use the class's public methods."
+
+  - type: predict
+    after: protected
+    code: |
+      class Stack:
+          def __init__(self):
+              self._items = []
+
+          def push(self, item):
+              self._items.append(item)
+
+
+      class PeekStack(Stack):
+          def peek(self):
+              return self._items[-1]
+
+
+      s = PeekStack()
+      s.push("a")
+      s.push("b")
+      print(s.peek())
+    why: "`_items` is protected, so the derived class can read it. The last item pushed is `b`."
+
+  - type: predict
+    after: protected-methods
+    code: |
+      class Text:
+          def _tidy(self, words):
+              return words.strip().lower()
+
+
+      class Title(Text):
+          def make(self, words):
+              return self._tidy(words) + "!"
+
+
+      print(Title().make("  the BIG day "))
+    why: "The derived class calls the protected helper `_tidy`, which removes the spaces around the text and makes it lowercase. Then `make` adds the exclamation mark."
+
+  - type: runs
+    after: protected-methods
+    code: |
+      class Text:
+          def __tidy(self, words):
+              return words.strip()
+
+
+      class Title(Text):
+          def make(self, words):
+              return self.__tidy(words)
+
+
+      print(Title().make(" hi "))
+    why: "`__tidy` is a private method of `Text`. In `Title`, `self.__tidy` means `self._Title__tidy`, which doesn't exist, so Python stops with an `AttributeError`."
+
+  - type: bug
+    after: protected-methods
+    code: |
+      class Price:
+          def _euros(self, cents):
+              return f"{cents / 100:.2f} eur"
+
+
+      class Ticket(Price):
+          def show(self, cents):
+              print("Ticket", self.__euros(cents))  # BUG
+
+
+      Ticket().show(1250)
+    fix: print("Ticket", self._euros(cents))
+    why: "The helper is protected, `_euros`, with one underscore. With two, Python looks for a private method of `Ticket`, which doesn't exist."
+
+  - type: predict
+    after: protected-methods
+    code: |
+      class Greeter:
+          def _word(self):
+              return "Hello"
+
+          def greet(self, name):
+              return self._word() + ", " + name
+
+
+      class FinnishGreeter(Greeter):
+          def _word(self):
+              return "Moi"
+
+
+      print(FinnishGreeter().greet("Aino"))
+    why: "A protected method can be overridden like any other. `greet` calls `self._word()`, and for a Finnish greeter that's the overriding version."
+
+  - type: boss
+    after: protected-methods
+    prompt: |
+      The class `Player` keeps its score in a protected attribute and changes it with its protected method `_add_points`, which never lets the score go below zero. Write a class `Striker` that inherits `Player`, with two methods: `goal()` adds 3 points and `foul()` takes away 2 points. Use `_add_points` for both. For example,
+
+      ```python fragment
+      kai = Striker("Kai")
+      kai.foul()
+      kai.goal()
+      kai.goal()
+      kai.foul()
+      print(kai)
+      ```
+
+      should print:
+
+      ```
+      Kai: 4 points
+      ```
+    seed: |
+      class Player:
+          def __init__(self, name):
+              self.name = name
+              self._score = 0
+
+          def _add_points(self, points):
+              self._score += points
+              if self._score < 0:
+                  self._score = 0
+
+          def __str__(self):
+              return f"{self.name}: {self._score} points"
+
+
+      # Write the class Striker here.
+
+
+      if __name__ == "__main__":
+          kai = Striker("Kai")
+          kai.goal()
+          print(kai)
+    solution: |
+      class Player:
+          def __init__(self, name):
+              self.name = name
+              self._score = 0
+
+          def _add_points(self, points):
+              self._score += points
+              if self._score < 0:
+                  self._score = 0
+
+          def __str__(self):
+              return f"{self.name}: {self._score} points"
+
+
+      class Striker(Player):
+          def goal(self):
+              self._add_points(3)
+
+          def foul(self):
+              self._add_points(-2)
+
+
+      if __name__ == "__main__":
+          kai = Striker("Kai")
+          kai.goal()
+          print(kai)
+    hints:
+      - "`Striker` needs only the two methods. It inherits the constructor and `__str__`."
+      - "`goal` calls `self._add_points(3)`, and `foul` calls it with a negative number."
+    require:
+      - pattern: class\s+Striker\s*\(\s*Player\s*\)
+        message: "`Striker` should inherit `Player`."
+      - pattern: self\._add_points\(
+        min: 2
+        message: "Change the score with the protected helper, `self._add_points(...)`, in both methods."
+    tests:
+      - call: |
+          kai = Striker("Kai")
+          kai.foul()
+          kai.goal()
+          kai.goal()
+          kai.foul()
+          print(kai)
+      - call: |
+          mo = Striker("Mo")
+          mo.goal()
+          mo.foul()
+          mo.foul()
+          print(mo)
+          mo.goal()
+          mo.goal()
+          print(mo)
+        hidden: true

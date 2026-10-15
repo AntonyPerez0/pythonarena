@@ -1,0 +1,361 @@
+topic: interview
+drills:
+  - type: predict
+    code: |
+      class Dog:
+          tricks = []
+
+          def __init__(self, name):
+              self.name = name
+
+
+      rex = Dog("Rex")
+      fido = Dog("Fido")
+      rex.tricks.append("sit")
+      print(fido.tricks)
+    why: "`tricks` is a class attribute: one list that every dog shares. A list for each dog belongs in `__init__`, as `self.tricks = []`."
+
+  - type: predict
+    code: |
+      class Car:
+          wheels = 4
+
+
+      a = Car()
+      b = Car()
+      a.wheels = 3
+      Car.wheels = 6
+      print(a.wheels, b.wheels)
+    why: "`a.wheels = 3` gives `a` an attribute of its own, which hides the class attribute. `b` has none, so it still reads the class's value, which is now 6."
+
+  - type: bug
+    code: |
+      class Counter:
+          def __init__(self):
+              self.count = 0
+
+          def add(self):
+              count = self.count + 1  # BUG
+
+
+      counter = Counter()
+      counter.add()
+      print(counter.count)
+    fix: self.count = self.count + 1
+    why: "Without `self.`, `count` is just a local variable of the method, and it's gone when the method ends. The object's attribute is always `self.count`."
+
+  - type: runs
+    code: |
+      class Greeter:
+          def hello():
+              print("hello")
+
+
+      Greeter().hello()
+    why: "Calling a method on an object passes the object itself as the first argument, so every method needs a first parameter for it, called `self` by convention."
+
+  - type: fill
+    code: |
+      class Point:
+          def [[__init__]](self, x, y):
+              self.x = x
+              self.y = y
+
+
+      p = Point(3, 4)
+      print(p.x + p.y)
+    why: "`__init__` runs when the object is created, with the arguments given to the class, and sets up the object's attributes."
+
+  - type: predict
+    code: |
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __str__(self):
+              return f"({self.x}, {self.y})"
+
+          def __repr__(self):
+              return f"Point({self.x}, {self.y})"
+
+
+      p = Point(1, 2)
+      print(p)
+      print([p])
+    why: "`print` uses `__str__`, the text for people. A list shows its items with `__repr__`, the text for programmers, which ideally looks like the code that makes the object."
+
+  - type: choice
+    prompt: What does this print?
+    code: |
+      class Coin:
+          def __init__(self, value):
+              self.value = value
+
+
+      print(Coin(5) == Coin(5))
+    choices:
+      - "True"
+      - "False"
+    answer: 2
+    verify: output
+    why: "Without an `__eq__` method of its own, `==` on two objects works like `is`: it asks whether they are the same object, and these are two different coins."
+
+  - type: fill
+    code: |
+      class Coin:
+          def __init__(self, value):
+              self.value = value
+
+          def [[__eq__]](self, other):
+              return self.value == other.value
+
+
+      print(Coin(5) == Coin(5))
+    why: "`a == b` calls `a.__eq__(b)`, so `__eq__` decides what equal means for your class, here the same value."
+
+  - type: predict
+    code: |
+      class Animal:
+          def speak(self):
+              return "..."
+
+
+      class Cat(Animal):
+          def speak(self):
+              return "Meow, not " + super().speak()
+
+
+      print(Cat().speak())
+    why: "`Cat` overrides `speak`, and `super().speak()` still calls the parent class's version of it from inside the new one."
+
+  - type: runs
+    code: |
+      class Animal:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Dog(Animal):
+          def __init__(self, name):
+              self.tricks = []
+
+
+      print(Dog("Rex").name)
+    why: "`Dog` has an `__init__` of its own, so the parent's `__init__` doesn't run and `name` is never set. Call it first with `super().__init__(name)`."
+
+  - type: predict
+    code: |
+      class Report:
+          def title(self):
+              return "Report"
+
+          def header(self):
+              return "== " + self.title() + " =="
+
+
+      class SalesReport(Report):
+          def title(self):
+              return "Sales"
+
+
+      print(SalesReport().header())
+    why: "`header` is inherited, but `self` is a `SalesReport`, so `self.title()` finds the subclass's version. This is how a parent class can leave details to its subclasses."
+
+  - type: predict
+    code: |
+      class Temperature:
+          def __init__(self, celsius):
+              self.celsius = celsius
+
+          @property
+          def fahrenheit(self):
+              return self.celsius * 9 / 5 + 32
+
+
+      t = Temperature(100)
+      print(t.fahrenheit)
+      t.celsius = 0
+      print(t.fahrenheit)
+    why: "A property is a method that is read like an attribute, without parentheses. It is worked out again every time it's read, so it follows the change to `celsius`."
+
+  - type: runs
+    code: |
+      class Box:
+          def __init__(self):
+              self._size = 1
+
+          @property
+          def size(self):
+              return self._size
+
+
+      box = Box()
+      box.size = 5
+    why: "A property without a setter can be read but not assigned. A method marked `@size.setter` would allow it, and could check the new value first."
+
+  - type: predict
+    code: |
+      def countdown(n):
+          while n > 0:
+              yield n
+              n -= 1
+
+
+      numbers = countdown(3)
+      print(next(numbers))
+      print(list(numbers))
+    why: "A function with `yield` returns a generator, which runs only as far as the next `yield` each time a value is asked for. `next` takes the 3, and `list` takes what's left."
+
+  - type: predict
+    code: |
+      squares = (n * n for n in range(3))
+      print(sum(squares))
+      print(sum(squares))
+    why: "A generator gives its values only once. The first `sum` uses them all up (0 + 1 + 4), so the second one finds nothing left and gives 0."
+
+  - type: choice
+    prompt: "`for item in thing:` works when the class of `thing` has which method?"
+    choices:
+      - "`__iter__`"
+      - "`__len__`"
+      - "`__str__`"
+    answer: 1
+    why: "`for` asks the object for an iterator with `__iter__`, then calls the iterator's `__next__` for each item until it raises `StopIteration`. A generator is the easiest way to write one."
+
+  - type: predict
+    code: |
+      def total(n):
+          if n == 0:
+              return 0
+          return n + total(n - 1)
+
+
+      print(total(4))
+    why: "Each call adds its own `n` to the total of the smaller problem, 4 + 3 + 2 + 1 + 0, and the base case `n == 0` stops the calls."
+
+  - type: bug
+    code: |
+      def factorial(n):
+          if n <= 1:
+              return 1
+          return n * factorial(n)  # BUG
+
+
+      print(factorial(5))
+    fix: return n * factorial(n - 1)
+    why: "A recursive call must work on a smaller problem, or it never reaches the base case. Here it calls itself with the same `n` until Python stops it with a `RecursionError`."
+
+  - type: boss
+    prompt: |
+      Write a class `Stack`: a pile where the last item put on it is the first one taken off. It has these methods:
+
+      - `push(item)` puts the item on top.
+      - `pop()` takes the top item off and returns it. On an empty stack, it returns `None`.
+      - `peek()` returns the top item without taking it off, or `None` on an empty stack.
+      - `__len__()`, so that `len(stack)` gives the number of items.
+
+      Every stack has its own items. The check runs:
+
+      ```python fragment
+      stack = Stack()
+      stack.push(1)
+      stack.push(2)
+      print(stack.pop(), stack.peek(), len(stack))
+      ```
+
+      and expects:
+
+      ```
+      2 1 1
+      ```
+    seed: |
+      class Stack:
+          def __init__(self):
+              self.items = []
+    solution: |
+      class Stack:
+          def __init__(self):
+              self.items = []
+
+          def push(self, item):
+              self.items.append(item)
+
+          def pop(self):
+              if len(self.items) == 0:
+                  return None
+              return self.items.pop()
+
+          def peek(self):
+              if len(self.items) == 0:
+                  return None
+              return self.items[-1]
+
+          def __len__(self):
+              return len(self.items)
+    hints:
+      - "Keep the items in the list `self.items`, with the top of the stack at the end of the list: `append` puts an item on top, and the list's own `pop()` takes the last item off."
+      - "`self.items[-1]` is the top item. Check `len(self.items) == 0` first in `pop` and `peek`, and return `None` then. `__len__` returns `len(self.items)`."
+    tests:
+      - call: |
+          stack = Stack()
+          stack.push(1)
+          stack.push(2)
+          print(stack.pop(), stack.peek(), len(stack))
+      - call: |
+          stack = Stack()
+          print(stack.pop(), stack.peek(), len(stack))
+        hidden: true
+      - call: |
+          a = Stack()
+          b = Stack()
+          a.push("x")
+          a.push("y")
+          print(len(a), len(b), b.peek())
+          print(a.pop(), a.pop(), a.pop())
+        hidden: true
+      - call: |
+          stack = Stack()
+          for word in ["one", "two", "three"]:
+              stack.push(word)
+          print(stack.peek(), len(stack))
+          stack.pop()
+          stack.push("four")
+          print(stack.pop(), stack.pop(), len(stack))
+        hidden: true
+
+  - type: boss
+    prompt: |
+      Write a recursive function `flatten(items)`. It gets a list whose items may be lists themselves, nested to any depth, and returns a new list with all the items that aren't lists, in order. `isinstance(item, list)` tells you whether an item is a list.
+
+      `flatten([1, [2, [3, 4]], 5])` returns:
+
+      ```
+      [1, 2, 3, 4, 5]
+      ```
+    seed: |
+      def flatten(items):
+          result = []
+          return result
+    solution: |
+      def flatten(items):
+          result = []
+          for item in items:
+              if isinstance(item, list):
+                  result += flatten(item)
+              else:
+                  result.append(item)
+          return result
+    hints:
+      - "Go through the items one by one. An item that isn't a list goes straight into the result."
+      - "An item that is a list is a smaller problem of the same kind: `flatten(item)` gives its items as a flat list, and `result += flatten(item)` adds them all to the result."
+    tests:
+      - call: flatten([1, [2, [3, 4]], 5])
+      - call: flatten([])
+        hidden: true
+      - call: flatten([[[]], []])
+        hidden: true
+      - call: flatten(["a", ["b"], [["c", ["d"]]], "e"])
+        hidden: true
+      - call: flatten([7, 8])
+        hidden: true

@@ -1,0 +1,599 @@
+id: own-modules
+summary: Modules of your own. Splitting a program into several files and importing them, type hints that tell a module's users what to pass and what comes back, and the full story of if __name__ == "__main__".
+steps:
+  - id: own-modules-files
+    slug: several-files
+    title: A program of several files
+    text: |
+      Any Python file is a module. Put some functions in a file of their own, and other files can import them exactly as they import `math`. As programs grow, splitting them into files by topic keeps each file short, and a module of useful functions can be reused in the next program too.
+
+      On this site, a program can have several files. The editor shows a tab for each one, and Python starts the program from `main.py`. Here the file `units.py` holds two conversion functions, and `main.py` imports it:
+
+      ```python run
+      import units
+
+      print(f"{units.km_to_miles(42.195):.1f} miles")
+      print(f"{units.celsius_to_fahrenheit(21):.1f} F")
+      # ==== units.py ====
+      def km_to_miles(km):
+          return km * 0.621371
+
+
+      def celsius_to_fahrenheit(celsius):
+          return celsius * 9 / 5 + 32
+      ```
+
+      ```output
+      26.2 miles
+      69.8 F
+      ```
+
+      The module's name is the file's name without `.py`: the file `units.py` is the module `units`. Python looks for it in the same folder as the program (on this site, all the files of a program are in the same folder), and then among the modules of the standard library.
+
+      Everything you learned about importing works for your own modules too. The `from` form brings in chosen names:
+
+      ```python run
+      from units import km_to_miles
+
+      distance = float(input("Distance in km: "))
+      print(f"That is {km_to_miles(distance):.1f} miles")
+      # ==== units.py ====
+      def km_to_miles(km):
+          return km * 0.621371
+
+
+      def celsius_to_fahrenheit(celsius):
+          return celsius * 9 / 5 + 32
+      ```
+
+      ```input
+      10
+      ```
+
+      ```output
+      Distance in km: 10
+      That is 6.2 miles
+      ```
+
+      ### No .py in the import
+
+      The import names the module, not the file. With `.py`, Python reads the dot as a module inside a module, and can't find one:
+
+      ```python run crash
+      import units.py
+
+      print(units.km_to_miles(5))
+      # ==== units.py ====
+      def km_to_miles(km):
+          return km * 0.621371
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          import units.py
+      ModuleNotFoundError: No module named 'units.py'; 'units' is not a package
+      ```
+
+      One more rule for naming your files: don't give a file the name of a standard module. A file called `random.py` next to your program would be imported instead of the real `random` module, and nothing random would work. This site doesn't allow such names, but on your own computer it's an easy mistake to make.
+
+      **Your turn:** `main.py` uses the functions in `shapes.py`, but it doesn't import the module, so it stops with a `NameError`. Add the import to `main.py` so the program prints:
+
+      ```
+      20
+      10.0
+      ```
+    seed:
+      main.py: |
+        print(shapes.rectangle_area(4, 5))
+        print(shapes.triangle_area(4, 5))
+      shapes.py: |
+        def rectangle_area(width, height):
+            return width * height
+
+
+        def triangle_area(base, height):
+            return base * height / 2
+    solution:
+      main.py: |
+        import shapes
+
+        print(shapes.rectangle_area(4, 5))
+        print(shapes.triangle_area(4, 5))
+      shapes.py: |
+        def rectangle_area(width, height):
+            return width * height
+
+
+        def triangle_area(base, height):
+            return base * height / 2
+    hints:
+      - "`main.py` refers to `shapes.rectangle_area`. Which name doesn't Python know, according to the error?"
+      - "Add `import shapes` as the first line of `main.py`, without `.py`."
+    require:
+      - pattern: \bimport\s+shapes\b|\bfrom\s+shapes\s+import\b
+        message: Import the module `shapes` in `main.py`.
+    tests:
+      - expect: |
+          20
+          10.0
+    more:
+      - task: |
+          `main.py` is ready, but the two functions in `money.py` are still empty. Write them:
+
+          - `with_tax(price, percent)` returns the price with the tax added: a tax of 24 percent makes 10.0 into 12.4.
+          - `round_up(amount)` returns the amount rounded up to a whole number, with `math.ceil`. A module can import other modules: put `import math` at the top of `money.py`.
+
+          For example:
+
+          ```
+          Price without tax: 10
+          With 24% tax: 12.40
+          Rounded up to whole euros: 13
+          ```
+        seed:
+          main.py: |
+            import money
+
+            price = float(input("Price without tax: "))
+            total = money.with_tax(price, 24)
+            print(f"With 24% tax: {total:.2f}")
+            print(f"Rounded up to whole euros: {money.round_up(total)}")
+          money.py: |
+            def with_tax(price, percent):
+                pass
+
+
+            def round_up(amount):
+                pass
+        solution:
+          main.py: |
+            import money
+
+            price = float(input("Price without tax: "))
+            total = money.with_tax(price, 24)
+            print(f"With 24% tax: {total:.2f}")
+            print(f"Rounded up to whole euros: {money.round_up(total)}")
+          money.py: |
+            import math
+
+
+            def with_tax(price, percent):
+                return price * (1 + percent / 100)
+
+
+            def round_up(amount):
+                return math.ceil(amount)
+        hints:
+          - "Adding 24 percent is multiplying by 1.24, which is `1 + percent / 100`."
+          - "`round_up` needs `math.ceil`, so `money.py` needs `import math` at its top. Imports in `main.py` don't reach into other files."
+        require:
+          - pattern: math\.ceil\s*\(|\bceil\s*\(
+            message: Round up with `math.ceil` in `money.py`.
+        tests:
+          - stdin: "10"
+          - stdin: "99.99"
+            hidden: true
+          - stdin: "0.5"
+            hidden: true
+          - stdin: "100"
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict:
+          main.py: |
+            import settings
+            from settings import greeting
+
+            print(settings.language)
+            print(greeting + ", " + settings.user)
+          settings.py: |
+            language = "Python"
+            user = "Ada"
+            greeting = "Hi"
+        hints:
+          - A module can hold variables as well as functions, and they're imported the same way.
+          - "`settings.language` is the variable `language` of the module `settings`. `greeting` was brought in with `from`, so it needs no prefix."
+
+  - id: own-modules-type-hints
+    slug: type-hints
+    title: Type hints
+    text: |
+      When you use a function from a module, you usually don't read its code. You read its first line, and that line should tell you what to pass and what you get back. That's what the **type hints** you met in part 4 are for, and with modules they earn their keep:
+
+      ```python fragment
+      def with_tax(price: float, percent: int) -> float:
+          return price * (1 + percent / 100)
+      ```
+
+      - `price: float` says the parameter `price` should be a float, and `percent: int` an integer.
+      - `-> float`, between the parentheses and the colon, says what the function returns. A function that returns nothing has `-> None`.
+      - A hint can also say what a list or a dictionary holds: `list[int]` is a list of integers, `dict[str, int]` a dictionary with string keys and integer values, and `tuple[int, int]` a tuple of two integers.
+
+      Here is a module with hints, and a program that uses it:
+
+      ```python run
+      import scores
+
+      points = [7, 9, 4, 10]
+      print(scores.best(points))
+      print(scores.passed(points, 5))
+      # ==== scores.py ====
+      def best(points: list[int]) -> int:
+          return max(points)
+
+
+      def passed(points: list[int], limit: int) -> int:
+          count = 0
+          for p in points:
+              if p >= limit:
+                  count += 1
+          return count
+      ```
+
+      ```output
+      10
+      3
+      ```
+
+      Reading only the first lines of `scores.py`, you know that both functions want a list of integers and return an integer, and that `passed` also wants a limit. Editors such as Visual Studio Code show these first lines when you type a module's name and a dot, so you don't even need to open the module's file. A module is written once and used by many programs, often by other people, so these few words in its first lines save a lot of reading.
+
+      ### When the hint is ignored
+
+      Python itself doesn't check the hints, as you saw in part 4. A call with the wrong type runs, and goes wrong only where the value is used. With modules, that place is in another file, and the traceback has a line for each file on the way:
+
+      ```python run crash
+      import money
+
+      print(money.with_tax("10", 24))
+      # ==== money.py ====
+      def with_tax(price: float, percent: int) -> float:
+          return price * (1 + percent / 100)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          print(money.with_tax("10", 24))
+                ~~~~~~~~~~~~~~^^^^^^^^^^
+        File "money.py", line 2, in with_tax
+          return price * (1 + percent / 100)
+                 ~~~~~~^~~~~~~~~~~~~~~~~~~~~
+      TypeError: can't multiply sequence by non-int of type 'float'
+      ```
+
+      Read it from the bottom: the error happened in `money.py`, on line 2, where a string met a multiplication. The line above names the call in `main.py` that got there. The hint `price: float` told the caller what to pass; the caller passed the string `"10"`. Separate checker programs (such as mypy) can find mistakes like this from the hints before the program runs, but Python doesn't.
+
+      **Your turn:** add type hints to the function: its parameter is a list of floats, and it returns a float.
+    fill: |
+      def average(numbers: [[list[float]]]) -> [[float]]:
+          return sum(numbers) / len(numbers)
+
+
+      print(average([2.5, 3.5, 4.0]))
+    hints:
+      - "A hint for a list of floats is written `list[float]`: the type of the container, and in square brackets the type of its items."
+      - "The return type goes after the arrow `->`. The average is a float."
+    require:
+      - pattern: numbers:\s*list\[float\]
+        message: "The parameter's hint should say a list of floats: `list[float]`."
+      - pattern: '->\s*float\s*:'
+        message: "The function returns a float, so its return hint is `-> float`."
+    tests:
+      - expect: "3.3333333333333335"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def count_letters(words: list[str]) -> dict[str, int]:
+              counts = {}
+              for word in words:
+                  if word in counts:
+                      counts[word] += 1
+                  else:
+                      counts[word] = 1
+              return counts
+
+
+          print(count_letters(["a", "b", "a"]))
+          print(count_letters("aba"))
+        hints:
+          - The first call matches the hints. The function counts how many times each item of the list comes up, in a dictionary.
+          - Python doesn't check type hints, so the second call runs too, with a string.
+          - "A `for` loop over a string goes through its characters: `a`, `b` and `a`."
+      - task: |
+          `main.py` is ready, and `grades.py` has the first lines of two functions, with type hints. Write their bodies:
+
+          - `grade(points: int) -> int` returns the grade for 0 to 100 points: below 50 is 0, then each 10 points up is a grade higher (50 to 59 is 1, 60 to 69 is 2, and so on), and 90 or more is 5.
+          - `describe(grade: int) -> str` returns `"failed"` for grade 0, `"passed"` for grades 1 and 2, `"good"` for 3 and 4, and `"excellent"` for 5.
+
+          For example:
+
+          ```
+          Points: 85
+          Grade 4: good
+          ```
+        seed:
+          main.py: |
+            import grades
+
+            points = int(input("Points: "))
+            result = grades.grade(points)
+            print(f"Grade {result}: {grades.describe(result)}")
+          grades.py: |
+            def grade(points: int) -> int:
+                pass
+
+
+            def describe(grade: int) -> str:
+                pass
+        solution:
+          main.py: |
+            import grades
+
+            points = int(input("Points: "))
+            result = grades.grade(points)
+            print(f"Grade {result}: {grades.describe(result)}")
+          grades.py: |
+            def grade(points: int) -> int:
+                if points < 50:
+                    return 0
+                if points >= 90:
+                    return 5
+                return (points - 40) // 10
+
+
+            def describe(grade: int) -> str:
+                if grade == 0:
+                    return "failed"
+                if grade <= 2:
+                    return "passed"
+                if grade <= 4:
+                    return "good"
+                return "excellent"
+        hints:
+          - "The hints say what each function returns: `grade` an integer, and `describe` a string."
+          - "In `grade`, handle below 50 and 90 or more first. Between them, an `if` and `elif` chain works, and so does `(points - 40) // 10`."
+          - "In `describe`, compare the grade from the smallest up and return the matching word."
+        tests:
+          - stdin: "85"
+          - stdin: "49"
+            hidden: true
+          - stdin: "50"
+            hidden: true
+          - stdin: "100"
+            hidden: true
+          - stdin: "72"
+            hidden: true
+          - stdin: "60"
+            hidden: true
+
+  - id: own-modules-main
+    slug: main-block
+    title: The main block, explained
+    text: |
+      Since part 4, the starter code of function tasks has ended with a block like this:
+
+      ```python fragment
+      if __name__ == "__main__":
+          print(mean([1, 2, 3]))
+      ```
+
+      Now that you write modules of your own, you can see what it does and why it's there.
+
+      ### Importing runs the module
+
+      When Python imports a module, it runs the module's file from top to bottom. A `def` only defines a function, but any other code at the top level of the file runs too. So test prints left in a module show up in every program that imports it:
+
+      ```python run
+      import tools
+
+      print("The main program starts")
+      print(tools.shout("hello"))
+      # ==== tools.py ====
+      def shout(text):
+          return text.upper() + "!"
+
+
+      print("Testing shout:", shout("test"))
+      ```
+
+      ```output
+      Testing shout: TEST!
+      The main program starts
+      HELLO!
+      ```
+
+      The first line isn't the main program's at all: it's the module's own test, run by the `import`.
+
+      ### The variable __name__
+
+      Python gives every module a variable called **`__name__`**. In the file Python started, the program itself, its value is `"__main__"`. In a module that was imported, it's the module's name:
+
+      ```python run
+      import tools
+
+      print("In main.py, __name__ is", __name__)
+      # ==== tools.py ====
+      print("In tools.py, __name__ is", __name__)
+      ```
+
+      ```output
+      In tools.py, __name__ is tools
+      In main.py, __name__ is __main__
+      ```
+
+      ### The main block
+
+      So `if __name__ == "__main__":` means "only when this file is the program that was started". Put a module's tests under it, and they run when you run the module's file itself, but stay quiet when another program imports it:
+
+      ```python run
+      import tools
+
+      print(tools.shout("hello"))
+      # ==== tools.py ====
+      def shout(text):
+          return text.upper() + "!"
+
+
+      if __name__ == "__main__":
+          print("Testing shout:", shout("test"))
+      ```
+
+      ```output
+      HELLO!
+      ```
+
+      The block is called the **main block**. It's a convention, not a rule of the language, but nearly every Python module that has code to test or run uses it.
+
+      ### And the checks on this site
+
+      The checks for function tasks do exactly what `import` does: they load your program as a module, so its `__name__` isn't `"__main__"` and the main block is skipped. Then they call your functions themselves. That's why your own test calls belong in the main block: there they help you while you write the function, and they don't get mixed into what the checks see. A test print outside the block would run at every check.
+
+      **Your turn:** the module `temperature.py` has two test prints at its top level, and they end up in the output of `main.py`. Move them under a main block, so they don't run when the module is imported and `main.py` prints only its own lines:
+
+      ```
+      Temperature in Celsius: -5
+      23.0 F
+      freezing
+      ```
+    seed:
+      main.py: |
+        import temperature
+
+        reading = float(input("Temperature in Celsius: "))
+        print(f"{temperature.to_fahrenheit(reading):.1f} F")
+        print(temperature.describe(reading))
+      temperature.py: |
+        def to_fahrenheit(celsius: float) -> float:
+            return celsius * 9 / 5 + 32
+
+
+        def describe(celsius: float) -> str:
+            if celsius < 0:
+                return "freezing"
+            if celsius < 20:
+                return "cool"
+            return "warm"
+
+
+        print(to_fahrenheit(100))
+        print(describe(25))
+    solution:
+      main.py: |
+        import temperature
+
+        reading = float(input("Temperature in Celsius: "))
+        print(f"{temperature.to_fahrenheit(reading):.1f} F")
+        print(temperature.describe(reading))
+      temperature.py: |
+        def to_fahrenheit(celsius: float) -> float:
+            return celsius * 9 / 5 + 32
+
+
+        def describe(celsius: float) -> str:
+            if celsius < 0:
+                return "freezing"
+            if celsius < 20:
+                return "cool"
+            return "warm"
+
+
+        if __name__ == "__main__":
+            print(to_fahrenheit(100))
+            print(describe(25))
+    hints:
+      - Check it and look at the output. The first two lines come from `temperature.py`, which runs when `main.py` imports it.
+      - "Add the line `if __name__ == \"__main__\":` above the two prints in `temperature.py`, and indent the prints under it. Keep the tests; just move them into the block."
+    require:
+      - pattern: if\s+__name__\s*==\s*["']__main__["']\s*:\n(\s+print\(.*\)\n){2}
+        raw: true
+        message: Keep the two test prints, indented under `if __name__ == "__main__":` in `temperature.py`.
+    tests:
+      - stdin: "-5"
+      - stdin: "21.5"
+        hidden: true
+      - stdin: "12"
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict:
+          main.py: |
+            import helper
+
+            print("main:", __name__)
+            helper.show()
+          helper.py: |
+            def show():
+                print("show:", __name__)
+
+
+            print("loading:", __name__)
+        hints:
+          - The `import` on the first line runs `helper.py` from top to bottom before anything else in `main.py`.
+          - "In `main.py`, the file Python started, `__name__` is `__main__`."
+          - "`show` is defined in `helper.py`, so the `__name__` it prints is that module's: `helper`."
+      - task: |
+          `main.py` is ready, and `textstats.py` is empty. Write the module:
+
+          - `word_count(text: str) -> int` returns the number of words in the text (the words are separated by spaces).
+          - `longest_word(text: str) -> str` returns the longest word, or the first of them if several are equally long.
+          - A main block at the end that tests both functions with a print each. It must not run when `main.py` imports the module.
+
+          For example:
+
+          ```
+          Text: the quick brown fox jumps
+          Words: 5
+          Longest word: quick
+          ```
+        seed:
+          main.py: |
+            import textstats
+
+            line = input("Text: ")
+            print("Words:", textstats.word_count(line))
+            print("Longest word:", textstats.longest_word(line))
+          textstats.py: |
+            # Write the functions word_count and longest_word here, and a main block that tests them.
+        solution:
+          main.py: |
+            import textstats
+
+            line = input("Text: ")
+            print("Words:", textstats.word_count(line))
+            print("Longest word:", textstats.longest_word(line))
+          textstats.py: |
+            # Write the functions word_count and longest_word here, and a main block that tests them.
+            def word_count(text: str) -> int:
+                return len(text.split())
+
+
+            def longest_word(text: str) -> str:
+                longest = ""
+                for word in text.split():
+                    if len(word) > len(longest):
+                        longest = word
+                return longest
+
+
+            if __name__ == "__main__":
+                print(word_count("one two three"))
+                print(longest_word("a bb ccc dd"))
+        hints:
+          - "`text.split()` gives the words as a list, so the word count is its length."
+          - For the longest word, go through the words and keep the longest so far. Replace it only when a word is strictly longer, so the first of equally long words stays.
+          - "End the file with `if __name__ == \"__main__\":` and two indented test prints."
+        require:
+          - pattern: if\s+__name__\s*==\s*["']__main__["']\s*[:]
+            raw: true
+            message: End `textstats.py` with a main block, `if __name__ == "__main__":`, that tests the functions.
+        tests:
+          - stdin: the quick brown fox jumps
+          - stdin: modules make programs easier to read
+            hidden: true
+          - stdin: one
+            hidden: true
+          - stdin: ab cd ef
+            hidden: true

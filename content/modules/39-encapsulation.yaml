@@ -1,0 +1,1229 @@
+id: encapsulation
+summary: Keeping objects in a sensible state. Private attributes with two underscores, getters and setters with `@property`, checking new values in a setter, and private helper methods.
+steps:
+  - id: encapsulation-private
+    slug: private-attributes
+    title: Private attributes
+    text: |
+      The code that creates objects of a class and uses them is called the class's **client**. A well-made class keeps its objects in a sensible state whatever the client does: a thermostat should never be set to 45 degrees, and a bank balance shouldn't change except by deposits and withdrawals. Keeping the attributes of an object acceptable at all times is called keeping its **integrity**.
+
+      A method can check a value before storing it. But as long as the attribute itself is in reach, the client can skip the method and change the attribute directly:
+
+      ```python run
+      class Thermostat:
+          def __init__(self):
+              self.target = 20
+
+          def set_target(self, degrees):
+              if 5 <= degrees <= 30:
+                  self.target = degrees
+
+
+      heater = Thermostat()
+      heater.set_target(45)
+      print(heater.target)
+      heater.target = 45
+      print(heater.target)
+      ```
+
+      ```output
+      20
+      45
+      ```
+
+      The method refused 45, and then the client set it anyway.
+
+      ### Two underscores make it private
+
+      An attribute whose name starts with two underscores, such as `__target`, is **private**: only the class's own methods can use it by that name. Code outside the class gets an error. To let the client see the value, the class offers a method that returns it:
+
+      ```python run crash
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          def set_target(self, degrees):
+              if 5 <= degrees <= 30:
+                  self.__target = degrees
+
+          def get_target(self):
+              return self.__target
+
+
+      heater = Thermostat()
+      heater.set_target(22)
+      print(heater.get_target())
+      print(heater.__target)
+      ```
+
+      ```output
+      22
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 16, in <module>
+          print(heater.__target)
+                ^^^^^^^^^^^^^^^
+      AttributeError: 'Thermostat' object has no attribute '__target'. Did you mean: 'get_target'?
+      ```
+
+      Inside the class, `self.__target` works as usual. Outside it, the attribute can't be reached by that name (Python even suggests the public method to use instead), so the only way to change the target is `set_target`, which checks the value.
+
+      Hiding an object's attributes and offering methods to use them is called **encapsulation**: the data is enclosed in a capsule, and the methods are the only way in. A nice side effect is that the class can later store its data differently (in a list instead of separate attributes, say) without breaking any client, as long as the methods stay the same.
+
+      ### Private, not secret
+
+      Python doesn't really lock the attribute away: it only stores it under a changed name, and there are ways around that you may find online. That's on purpose. Python trusts programmers to respect the two underscores and leave private attributes alone, and you should. In some other languages, such as Java, private attributes really can't be reached from outside.
+
+      The two underscores go only at the start of the name. A name with two underscores at both ends, like `__init__` or `__str__`, is one of Python's special methods, and it isn't private.
+
+      **Your turn:** make the counter's attribute private. Fill in the blanks so that the attribute is called `__count`, and the program prints:
+
+      ```
+      3
+      ```
+    fill: |
+      class Counter:
+          def __init__(self):
+              self.[[__count]] = 0
+
+          def add(self):
+              self.__count += 1
+
+          def value(self):
+              return self.[[__count]]
+
+
+      clicks = Counter()
+      clicks.add()
+      clicks.add()
+      clicks.add()
+      print(clicks.value())
+    hints:
+      - The attribute is used in all three methods, and its name must be the same in each of them.
+      - "A private attribute's name starts with two underscores: `self.__count`."
+    tests:
+      - expect: "3"
+    more:
+      - task: |
+          A travel card holds money for bus trips. Write the class `TravelCard` with two private attributes, `__balance` and `__trips`, both 0 when a card is created, and these methods:
+
+          - `load(self, amount)` adds the amount to the balance, but only if it's more than 0.
+          - `travel(self, price)` pays for a trip: if the balance is at least the price, it takes the price off the balance, adds one to the trips and returns `True`. Otherwise nothing changes and it returns `False`.
+          - `__str__(self)` returns a string such as `balance 7.5, trips 1`.
+
+          For example, this code:
+
+          ```python fragment
+          card = TravelCard()
+          card.load(10)
+          card.load(-50)
+          print(card.travel(2.5))
+          print(card.travel(9))
+          print(card)
+          ```
+
+          prints:
+
+          ```
+          True
+          False
+          balance 7.5, trips 1
+          ```
+        seed: |
+          class TravelCard:
+              pass
+
+
+          if __name__ == "__main__":
+              card = TravelCard()
+              card.load(10)
+              card.load(-50)
+              print(card.travel(2.5))
+              print(card.travel(9))
+              print(card)
+        solution: |
+          class TravelCard:
+              def __init__(self):
+                  self.__balance = 0
+                  self.__trips = 0
+
+              def load(self, amount):
+                  if amount > 0:
+                      self.__balance += amount
+
+              def travel(self, price):
+                  if self.__balance < price:
+                      return False
+                  self.__balance -= price
+                  self.__trips += 1
+                  return True
+
+              def __str__(self):
+                  return f"balance {self.__balance}, trips {self.__trips}"
+
+
+          if __name__ == "__main__":
+              card = TravelCard()
+              card.load(10)
+              card.load(-50)
+              print(card.travel(2.5))
+              print(card.travel(9))
+              print(card)
+        hints:
+          - "Create both attributes in `__init__` with two underscores at the start of their names: `self.__balance = 0`."
+          - "`load` only changes the balance when `amount > 0`."
+          - "In `travel`, return `False` first if `self.__balance < price`; otherwise change both attributes and return `True`."
+        require:
+          - pattern: self\.__balance\b
+            message: Keep the balance in a private attribute, `self.__balance`.
+          - pattern: self\.__trips\b
+            message: Keep the number of trips in a private attribute, `self.__trips`.
+        tests:
+          - call: |
+              card = TravelCard()
+              card.load(10)
+              card.load(-50)
+              print(card.travel(2.5))
+              print(card.travel(9))
+              print(card)
+          - call: |
+              card = TravelCard()
+              print(card.travel(1))
+              card.load(6)
+              card.load(0)
+              print(card.travel(3))
+              print(card.travel(3))
+              print(card.travel(3))
+              print(card)
+            hidden: true
+      - task: |
+          A shop serves customers in the order they arrive. Write the class `Queue`, which keeps the names of the waiting customers in a private list `__names`:
+
+          - `join(self, name)` adds a name to the end of the queue.
+          - `serve(self)` removes the first name from the queue and returns it. If the queue is empty, it returns `None`.
+          - `length(self)` returns the number of people waiting.
+
+          For example, this code:
+
+          ```python fragment
+          queue = Queue()
+          queue.join("Ada")
+          queue.join("Ben")
+          print(queue.serve())
+          print(queue.length())
+          print(queue.serve())
+          print(queue.serve())
+          ```
+
+          prints:
+
+          ```
+          Ada
+          1
+          Ben
+          None
+          ```
+        seed: |
+          class Queue:
+              pass
+
+
+          if __name__ == "__main__":
+              queue = Queue()
+              queue.join("Ada")
+              queue.join("Ben")
+              print(queue.serve())
+              print(queue.length())
+              print(queue.serve())
+              print(queue.serve())
+        solution: |
+          class Queue:
+              def __init__(self):
+                  self.__names = []
+
+              def join(self, name):
+                  self.__names.append(name)
+
+              def serve(self):
+                  if len(self.__names) == 0:
+                      return None
+                  return self.__names.pop(0)
+
+              def length(self):
+                  return len(self.__names)
+
+
+          if __name__ == "__main__":
+              queue = Queue()
+              queue.join("Ada")
+              queue.join("Ben")
+              print(queue.serve())
+              print(queue.length())
+              print(queue.serve())
+              print(queue.serve())
+        hints:
+          - "Create the private list in `__init__`: `self.__names = []`."
+          - "`pop(0)` removes the first item of a list and returns it."
+          - "Check for an empty list first in `serve`, and return `None` in that case."
+        require:
+          - pattern: self\.__names\b
+            message: Keep the names in a private list, `self.__names`.
+        tests:
+          - call: |
+              queue = Queue()
+              queue.join("Ada")
+              queue.join("Ben")
+              print(queue.serve())
+              print(queue.length())
+              print(queue.serve())
+              print(queue.serve())
+          - call: |
+              queue = Queue()
+              print(queue.length())
+              print(queue.serve())
+              for name in ["Kim", "Lou", "Max"]:
+                  queue.join(name)
+              print(queue.length())
+              print(queue.serve())
+              queue.join("Noa")
+              print(queue.serve(), queue.serve(), queue.serve())
+              print(queue.length())
+            hidden: true
+
+  - id: encapsulation-getters
+    slug: getters
+    title: Getters with @property
+    text: |
+      A method that gives the value of a private attribute is called a **getter**, and a method that changes it a **setter**. With ordinary methods, the client has to write `heater.get_target()`, with parentheses. Python has a neater way: a **property**.
+
+      ### The @property decorator
+
+      A line that starts with `@`, just above a `def`, is a **decorator**. It changes how the method is used. With the decorator `@property`, the method is used like an attribute, without parentheses:
+
+      ```python run
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          @property
+          def target(self):
+              return self.__target
+
+
+      heater = Thermostat()
+      print(heater.target)
+      ```
+
+      ```output
+      20
+      ```
+
+      The getter is named after the attribute, without the underscores. The client writes `heater.target` as if it were an attribute, but what runs is the method, which returns the private `__target`.
+
+      A property with only a getter is **read-only**. Trying to assign to it is an error:
+
+      ```python run crash
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          @property
+          def target(self):
+              return self.__target
+
+
+      heater = Thermostat()
+      heater.target = 45
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          heater.target = 45
+          ^^^^^^^^^^^^^
+      AttributeError: property 'target' of 'Thermostat' object has no setter
+      ```
+
+      The next step adds a setter, so the client can change the target too.
+
+      ### Properties that are calculated
+
+      A getter doesn't need an attribute of its own. It can work out its value every time it's asked:
+
+      ```python run
+      class Temperature:
+          def __init__(self, celsius):
+              self.__celsius = celsius
+
+          @property
+          def celsius(self):
+              return self.__celsius
+
+          @property
+          def fahrenheit(self):
+              return self.__celsius * 9 / 5 + 32
+
+
+      today = Temperature(25)
+      print(today.celsius)
+      print(today.fahrenheit)
+      ```
+
+      ```output
+      25
+      77.0
+      ```
+
+      The object stores only degrees Celsius, but the client can't tell `celsius` from `fahrenheit`: both look like attributes. That's encapsulation at work. The class decides what it stores, and could change that later without the client noticing.
+
+      ### No parentheses
+
+      A property is used without parentheses. With them, Python first gets the value (here the number 20) and then tries to call that number like a function:
+
+      ```python run crash
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          @property
+          def target(self):
+              return self.__target
+
+
+      heater = Thermostat()
+      print(heater.target())
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          print(heater.target())
+                ~~~~~~~~~~~~~^^
+      TypeError: 'int' object is not callable
+      ```
+
+      **Your turn:** fill in the blank so that `name` is a property, and the program prints:
+
+      ```
+      Grace
+      ```
+    fill: |
+      class Student:
+          def __init__(self, name):
+              self.__name = name
+
+          @[[property]]
+          def name(self):
+              return self.__name
+
+
+      student = Student("Grace")
+      print(student.name)
+    hints:
+      - The line above the method is a decorator. Which one makes a method usable like an attribute?
+      - "The decorator is `@property`; the `@` is already there."
+    tests:
+      - expect: Grace
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Box:
+              def __init__(self, width, height):
+                  self.__width = width
+                  self.__height = height
+
+              @property
+              def width(self):
+                  return self.__width
+
+              @property
+              def area(self):
+                  return self.__width * self.__height
+
+
+          box = Box(3, 5)
+          print(box.width)
+          print(box.area)
+          print(box.area + box.width)
+        hints:
+          - "`box.width` runs the getter `width`, which returns the private width."
+          - "`box.area` has no attribute of its own: the getter calculates 3 * 5 every time."
+      - task: |
+          Write the class `Duration`, which stores a length of time as a whole number of seconds in a private attribute. Its constructor takes the total number of seconds. It has these read-only properties:
+
+          - `total_seconds`: the total number of seconds
+          - `hours`: the full hours in it
+          - `minutes`: the full minutes left over after the hours
+          - `seconds`: the seconds left over after the minutes
+
+          It also has `__str__`, which returns a string such as `1 h 2 min 5 s`. For example, this code:
+
+          ```python fragment
+          film = Duration(3725)
+          print(film.total_seconds)
+          print(film.hours, film.minutes, film.seconds)
+          print(film)
+          ```
+
+          prints:
+
+          ```
+          3725
+          1 2 5
+          1 h 2 min 5 s
+          ```
+        seed: |
+          class Duration:
+              def __init__(self, total_seconds):
+                  self.__total = total_seconds
+
+
+          if __name__ == "__main__":
+              film = Duration(3725)
+              print(film.total_seconds)
+              print(film.hours, film.minutes, film.seconds)
+              print(film)
+        solution: |
+          class Duration:
+              def __init__(self, total_seconds):
+                  self.__total = total_seconds
+
+              @property
+              def total_seconds(self):
+                  return self.__total
+
+              @property
+              def hours(self):
+                  return self.__total // 3600
+
+              @property
+              def minutes(self):
+                  return self.__total % 3600 // 60
+
+              @property
+              def seconds(self):
+                  return self.__total % 60
+
+              def __str__(self):
+                  return f"{self.hours} h {self.minutes} min {self.seconds} s"
+
+
+          if __name__ == "__main__":
+              film = Duration(3725)
+              print(film.total_seconds)
+              print(film.hours, film.minutes, film.seconds)
+              print(film)
+        hints:
+          - "Each property is a method with `@property` above it, which returns a number calculated from `self.__total`."
+          - "An hour is 3600 seconds, so the hours are `self.__total // 3600`. The seconds left over are `self.__total % 60`."
+          - "For the minutes, first take what's left after the full hours (`self.__total % 3600`), then divide that by 60 with `//`."
+        require:
+          - pattern: '@property'
+            min: 4
+            raw: true
+            message: Write the four values as properties, each with `@property` above it.
+        tests:
+          - call: |
+              film = Duration(3725)
+              print(film.total_seconds)
+              print(film.hours, film.minutes, film.seconds)
+              print(film)
+          - call: |
+              short = Duration(59)
+              print(short)
+              print(Duration(7200))
+              print(Duration(86399))
+              print(Duration(600).minutes)
+            hidden: true
+
+  - id: encapsulation-setters
+    slug: setters
+    title: Setters that check the value
+    text: |
+      To let the client change a property with an ordinary assignment, add a **setter**: a second method with the same name, with the decorator `@name.setter` above it. The setter gets the new value as a parameter, so it can check the value before storing it:
+
+      ```python run
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          @property
+          def target(self):
+              return self.__target
+
+          @target.setter
+          def target(self, degrees):
+              if 5 <= degrees <= 30:
+                  self.__target = degrees
+
+
+      heater = Thermostat()
+      heater.target = 23
+      print(heater.target)
+      heater.target = 45
+      print(heater.target)
+      ```
+
+      ```output
+      23
+      23
+      ```
+
+      For the client, `heater.target = 23` looks just like assigning to an attribute. Behind the scenes the setter runs, and it quietly ignores 45.
+
+      The getter has to come first. `@property` creates the property called `target`, and `@target.setter` then adds a setter to it. With the setter first, Python stops at the decorator with `NameError: name 'target' is not defined`, because no `target` exists yet.
+
+      ### Saying no out loud
+
+      Ignoring a bad value hides the mistake: the client thinks the heater is set to 45. It's usually better to **raise** an exception, as you did in part 6. A `ValueError` is the usual one for a value that isn't acceptable:
+
+      ```python run crash
+      class Thermostat:
+          def __init__(self):
+              self.__target = 20
+
+          @property
+          def target(self):
+              return self.__target
+
+          @target.setter
+          def target(self, degrees):
+              if degrees < 5 or degrees > 30:
+                  raise ValueError("The target must be from 5 to 30 degrees")
+              self.__target = degrees
+
+
+      heater = Thermostat()
+      heater.target = 23
+      print(heater.target)
+      heater.target = 45
+      ```
+
+      ```output
+      23
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 19, in <module>
+          heater.target = 45
+          ^^^^^^^^^^^^^
+        File "main.py", line 12, in target
+          raise ValueError("The target must be from 5 to 30 degrees")
+      ValueError: The target must be from 5 to 30 degrees
+      ```
+
+      The client can catch the error with `try` and `except ValueError` and decide what to do, for example ask the user again.
+
+      ### The setter in `__init__`
+
+      The value given to the constructor needs the same check. Instead of writing the check twice, let `__init__` use the setter: `self.target = degrees`, without the underscores, assigns through the property and so runs the setter.
+
+      ```python fragment
+      class Thermostat:
+          def __init__(self, degrees):
+              self.target = degrees  # runs the setter, which checks the value
+      ```
+
+      Now `Thermostat(45)` raises the same `ValueError`, and no thermostat can ever start with a bad target.
+
+      One trap: inside the setter, store the value in the private attribute, `self.__target = degrees`. Writing `self.target = degrees` there would call the setter again, which would call itself again, and so on, until Python stops with a `RecursionError`.
+
+      **Your turn:** a product's price must never be negative. Fill in the blanks so that `price` has a setter that raises a `ValueError`, and the program prints:
+
+      ```
+      35
+      Error: The price can't be negative
+      35
+      ```
+    fill: |
+      class Product:
+          def __init__(self, name, price):
+              self.name = name
+              self.__price = price
+
+          @property
+          def price(self):
+              return self.__price
+
+          @[[price]].setter
+          def price(self, price):
+              if price < 0:
+                  raise [[ValueError]]("The price can't be negative")
+              self.__price = price
+
+
+      lamp = Product("Lamp", 40)
+      lamp.price = 35
+      print(lamp.price)
+      try:
+          lamp.price = -5
+      except ValueError as error:
+          print("Error:", error)
+      print(lamp.price)
+    hints:
+      - "A setter's decorator is the property's name, a dot and `setter`."
+      - "The decorator is `@price.setter`, and the error to raise is a `ValueError`, which the `except` below catches."
+    tests:
+      - expect: |
+          35
+          Error: The price can't be negative
+          35
+    more:
+      - task: |
+          Write the class `Book`. Its constructor takes a title and a rating:
+
+          - The title is read-only: a property `title` with a getter only.
+          - The rating is a property `rating` with a getter and a setter. A rating must be a whole number from 1 to 5; for any other value the setter raises `ValueError("The rating must be from 1 to 5")`.
+          - The constructor must check the rating too, so it should use the setter.
+
+          For example, this code:
+
+          ```python fragment
+          book = Book("Small Gods", 4)
+          book.rating = 5
+          print(book.title, book.rating)
+          try:
+              book.rating = 9
+          except ValueError as error:
+              print(error)
+          print(book.rating)
+          ```
+
+          prints:
+
+          ```
+          Small Gods 5
+          The rating must be from 1 to 5
+          5
+          ```
+        seed: |
+          class Book:
+              def __init__(self, title, rating):
+                  self.__title = title
+                  self.__rating = rating
+
+
+          if __name__ == "__main__":
+              book = Book("Small Gods", 4)
+              book.rating = 5
+              print(book.title, book.rating)
+              try:
+                  book.rating = 9
+              except ValueError as error:
+                  print(error)
+              print(book.rating)
+        solution: |
+          class Book:
+              def __init__(self, title, rating):
+                  self.__title = title
+                  self.rating = rating
+
+              @property
+              def title(self):
+                  return self.__title
+
+              @property
+              def rating(self):
+                  return self.__rating
+
+              @rating.setter
+              def rating(self, rating):
+                  if rating < 1 or rating > 5:
+                      raise ValueError("The rating must be from 1 to 5")
+                  self.__rating = rating
+
+
+          if __name__ == "__main__":
+              book = Book("Small Gods", 4)
+              book.rating = 5
+              print(book.title, book.rating)
+              try:
+                  book.rating = 9
+              except ValueError as error:
+                  print(error)
+              print(book.rating)
+        hints:
+          - "Write a getter for each attribute (`@property`), and a setter for the rating only (`@rating.setter`, after its getter)."
+          - "In the setter, raise the error when `rating < 1 or rating > 5`; otherwise store the value in `self.__rating`."
+          - "In `__init__`, write `self.rating = rating` without underscores, so the setter checks the starting rating too."
+        tests:
+          - call: |
+              book = Book("Small Gods", 4)
+              book.rating = 5
+              print(book.title, book.rating)
+              try:
+                  book.rating = 9
+              except ValueError as error:
+                  print(error)
+              print(book.rating)
+          - call: |
+              try:
+                  Book("Rain Atlas", 0)
+                  print("created")
+              except ValueError as error:
+                  print(error)
+              book = Book("Field Notes", 1)
+              print(book.rating)
+              try:
+                  book.rating = 6
+              except ValueError as error:
+                  print(error)
+              book.rating = 3
+              print(book.rating)
+            hidden: true
+          - call: |
+              book = Book("Dawn", 2)
+              try:
+                  book.title = "Dusk"
+              except AttributeError:
+                  print("the title is read-only")
+              print(book.title)
+            hidden: true
+      - task: |
+          Write the class `Temperature`. It stores degrees Celsius in a private attribute, and its constructor takes degrees Celsius. It has two properties, each with a getter and a setter:
+
+          - `celsius`: nothing can be colder than -273.15 degrees, so for a lower value the setter raises `ValueError("Below absolute zero")`. The constructor uses this setter too.
+          - `fahrenheit`: the getter returns `celsius * 9 / 5 + 32`. The setter turns the Fahrenheit value it gets into Celsius, `(fahrenheit - 32) * 5 / 9`, and stores it through the `celsius` setter, so the same check applies.
+
+          For example, this code:
+
+          ```python fragment
+          water = Temperature(25)
+          print(water.fahrenheit)
+          water.fahrenheit = 212
+          print(water.celsius)
+          try:
+              water.celsius = -300
+          except ValueError as error:
+              print(error)
+          ```
+
+          prints:
+
+          ```
+          77.0
+          100.0
+          Below absolute zero
+          ```
+        seed: |
+          class Temperature:
+              def __init__(self, celsius):
+                  pass
+
+
+          if __name__ == "__main__":
+              water = Temperature(25)
+              print(water.fahrenheit)
+              water.fahrenheit = 212
+              print(water.celsius)
+              try:
+                  water.celsius = -300
+              except ValueError as error:
+                  print(error)
+        solution: |
+          class Temperature:
+              def __init__(self, celsius):
+                  self.celsius = celsius
+
+              @property
+              def celsius(self):
+                  return self.__celsius
+
+              @celsius.setter
+              def celsius(self, degrees):
+                  if degrees < -273.15:
+                      raise ValueError("Below absolute zero")
+                  self.__celsius = degrees
+
+              @property
+              def fahrenheit(self):
+                  return self.celsius * 9 / 5 + 32
+
+              @fahrenheit.setter
+              def fahrenheit(self, degrees):
+                  self.celsius = (degrees - 32) * 5 / 9
+
+
+          if __name__ == "__main__":
+              water = Temperature(25)
+              print(water.fahrenheit)
+              water.fahrenheit = 212
+              print(water.celsius)
+              try:
+                  water.celsius = -300
+              except ValueError as error:
+                  print(error)
+        hints:
+          - "Start with the `celsius` property: a getter that returns `self.__celsius`, and a setter that checks the value before storing it in `self.__celsius`."
+          - "`__init__` and the `fahrenheit` setter both store their value with `self.celsius = ...` (no underscores), so the `celsius` setter checks it."
+          - "The `fahrenheit` setter is one line: `self.celsius = (degrees - 32) * 5 / 9`."
+        require:
+          - pattern: '@celsius\.setter'
+            raw: true
+            message: Give `celsius` a setter with `@celsius.setter`.
+          - pattern: '@fahrenheit\.setter'
+            raw: true
+            message: Give `fahrenheit` a setter with `@fahrenheit.setter`.
+        tests:
+          - call: |
+              water = Temperature(25)
+              print(water.fahrenheit)
+              water.fahrenheit = 212
+              print(water.celsius)
+              try:
+                  water.celsius = -300
+              except ValueError as error:
+                  print(error)
+          - call: |
+              cold = Temperature(-40)
+              print(cold.fahrenheit)
+              cold.fahrenheit = 50
+              print(cold.celsius)
+              try:
+                  cold.fahrenheit = -500
+              except ValueError as error:
+                  print(error)
+              print(cold.celsius)
+            hidden: true
+          - call: |
+              try:
+                  Temperature(-274)
+              except ValueError as error:
+                  print(error)
+              print(Temperature(-273.15).celsius)
+              print(Temperature(30).fahrenheit)
+            hidden: true
+
+  - id: encapsulation-private-methods
+    slug: private-methods
+    title: Private methods
+    text: |
+      Methods can be private too, with the same two underscores at the start of the name. The idea is a bit different from private attributes, though. A private method is a **helper**: it does part of the class's own work, and the client has no reason to call it.
+
+      Here a private method checks whether a username is acceptable. Both the setter and, through the setter, the constructor use it, so the rule is written only once:
+
+      ```python run crash
+      class User:
+          def __init__(self, username):
+              self.username = username
+
+          def __valid(self, name):
+              return 3 <= len(name) <= 12 and " " not in name
+
+          @property
+          def username(self):
+              return self.__username
+
+          @username.setter
+          def username(self, name):
+              if not self.__valid(name):
+                  raise ValueError(f"Not a valid username: {name}")
+              self.__username = name
+
+
+      user = User("pixel_cat")
+      user.username = "pixelcat2"
+      print(user.username)
+      user.username = "my cat"
+      ```
+
+      ```output
+      pixelcat2
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 22, in <module>
+          user.username = "my cat"
+          ^^^^^^^^^^^^^
+        File "main.py", line 15, in username
+          raise ValueError(f"Not a valid username: {name}")
+      ValueError: Not a valid username: my cat
+      ```
+
+      Inside the class the private method is called like any other method, with `self.` in front: `self.__valid(name)`. From outside, `user.__valid("abc")` stops with `AttributeError: 'User' object has no attribute '__valid'`, just as a private attribute would.
+
+      ### Do I need a private method?
+
+      Private methods are less common than private attributes. A few rules of thumb:
+
+      - A helper that several methods need, such as the check above, saves you from writing the same code twice.
+      - A long method reads better when parts of it move into helpers with good names.
+      - Make a method private when the client has no need to call it, and especially when calling it at the wrong moment could break the object's state.
+
+      Here the scores are set up by a private method. The constructor uses it, and so does `new_game`, which first prints the final scores. If `__reset` were public, a client could wipe the scores in the middle of a game:
+
+      ```python run
+      class Scoreboard:
+          def __init__(self, players):
+              self.__players = players
+              self.__reset()
+
+          def __reset(self):
+              self.__points = {}
+              for player in self.__players:
+                  self.__points[player] = 0
+
+          def score(self, player, points):
+              self.__points[player] += points
+
+          def new_game(self):
+              print("Final scores:", self.__points)
+              self.__reset()
+
+
+      board = Scoreboard(["Ann", "Bo"])
+      board.score("Ann", 3)
+      board.score("Bo", 5)
+      board.new_game()
+      board.score("Ann", 1)
+      board.new_game()
+      ```
+
+      ```output
+      Final scores: {'Ann': 3, 'Bo': 5}
+      Final scores: {'Ann': 1, 'Bo': 0}
+      ```
+
+      ### Who sees what
+
+      Each part of a program sees its own set of names. A method sees its own local variables, and every attribute and method of its class, private ones included. The client sees only the public attributes and methods. And a method's local variables are invisible to the other methods, so two methods can both have a variable called `total` without getting in each other's way.
+
+      **Your turn:** a door lock opens with a four-digit code. Fill in the blanks: the private method that checks a code is called `__correct`, and `open` uses it. The program should print:
+
+      ```
+      Wrong code
+      Door open
+      ```
+    fill: |
+      class Lock:
+          def __init__(self, code):
+              self.__code = code
+
+          def [[__correct]](self, attempt):
+              return attempt == self.__code
+
+          def open(self, attempt):
+              if self.[[__correct]](attempt):
+                  print("Door open")
+              else:
+                  print("Wrong code")
+
+
+      lock = Lock("4711")
+      lock.open("1234")
+      lock.open("4711")
+    hints:
+      - The two blanks are the same name, once where the method is defined and once where it's called.
+      - "The method's name is `__correct`, with two underscores, and inside the class it's called as `self.__correct(...)`."
+    tests:
+      - expect: |
+          Wrong code
+          Door open
+    more:
+      - task: |
+          A shopping list should treat `"Milk"`, `"milk"` and `" milk "` as the same item. Write the class `ShoppingList` with a private list of items and these methods:
+
+          - a private method `__clean(self, item)`, which returns the item with the spaces at both ends removed and in lowercase;
+          - `add(self, item)`, which adds the cleaned item, unless it's already on the list;
+          - `has(self, item)`, which returns `True` if the cleaned item is on the list;
+          - `__str__(self)`, which returns the items separated by a comma and a space, in the order they were added.
+
+          For example, this code:
+
+          ```python fragment
+          groceries = ShoppingList()
+          groceries.add("Milk")
+          groceries.add("  eggs ")
+          groceries.add("MILK")
+          print(groceries)
+          print(groceries.has(" Eggs"))
+          print(groceries.has("bread"))
+          ```
+
+          prints:
+
+          ```
+          milk, eggs
+          True
+          False
+          ```
+        seed: |
+          class ShoppingList:
+              pass
+
+
+          if __name__ == "__main__":
+              groceries = ShoppingList()
+              groceries.add("Milk")
+              groceries.add("  eggs ")
+              groceries.add("MILK")
+              print(groceries)
+              print(groceries.has(" Eggs"))
+              print(groceries.has("bread"))
+        solution: |
+          class ShoppingList:
+              def __init__(self):
+                  self.__items = []
+
+              def __clean(self, item):
+                  return item.strip().lower()
+
+              def add(self, item):
+                  item = self.__clean(item)
+                  if item not in self.__items:
+                      self.__items.append(item)
+
+              def has(self, item):
+                  return self.__clean(item) in self.__items
+
+              def __str__(self):
+                  return ", ".join(self.__items)
+
+
+          if __name__ == "__main__":
+              groceries = ShoppingList()
+              groceries.add("Milk")
+              groceries.add("  eggs ")
+              groceries.add("MILK")
+              print(groceries)
+              print(groceries.has(" Eggs"))
+              print(groceries.has("bread"))
+        hints:
+          - "`__clean` can be one line with two string methods: `strip()` removes the spaces at both ends, `lower()` makes it lowercase."
+          - "Both `add` and `has` call `self.__clean(item)` first, then work with the cleaned item and the `in` operator."
+          - "`\", \".join(self.__items)` makes the string for `__str__`."
+        require:
+          - pattern: def\s+__clean\s*\(
+            message: Write the private helper method `__clean`.
+          - pattern: self\.__clean\s*\(
+            min: 2
+            message: Use `self.__clean(...)` in both `add` and `has`.
+        tests:
+          - call: |
+              groceries = ShoppingList()
+              groceries.add("Milk")
+              groceries.add("  eggs ")
+              groceries.add("MILK")
+              print(groceries)
+              print(groceries.has(" Eggs"))
+              print(groceries.has("bread"))
+          - call: |
+              party = ShoppingList()
+              print(party.has("cake"))
+              for item in ["Cake ", "juice", " CAKE", "Napkins", "juice"]:
+                  party.add(item)
+              print(party)
+              print(party.has("NAPKINS"))
+            hidden: true
+      - task: |
+          A robot moves on a board of 10 by 10 squares, where both `x` and `y` go from 0 to 9. It starts at (0, 0). Write the class `Robot` with:
+
+          - a private method `__move(self, dx, dy)`, which moves the robot by `dx` steps along x and `dy` steps along y, but only if it stays on the board. Otherwise the robot stays where it is.
+          - four public methods that use `__move`: `north` (y goes up by one), `south` (y goes down by one), `east` (x goes up by one) and `west` (x goes down by one).
+          - `__str__`, which returns the position, such as `(2, 1)`.
+
+          For example, this code:
+
+          ```python fragment
+          robot = Robot()
+          robot.west()
+          robot.east()
+          robot.east()
+          robot.north()
+          print(robot)
+          ```
+
+          prints:
+
+          ```
+          (2, 1)
+          ```
+        seed: |
+          class Robot:
+              def __init__(self):
+                  self.__x = 0
+                  self.__y = 0
+
+              def __str__(self):
+                  return f"({self.__x}, {self.__y})"
+
+
+          if __name__ == "__main__":
+              robot = Robot()
+              robot.west()
+              robot.east()
+              robot.east()
+              robot.north()
+              print(robot)
+        solution: |
+          class Robot:
+              def __init__(self):
+                  self.__x = 0
+                  self.__y = 0
+
+              def __move(self, dx, dy):
+                  new_x = self.__x + dx
+                  new_y = self.__y + dy
+                  if 0 <= new_x <= 9 and 0 <= new_y <= 9:
+                      self.__x = new_x
+                      self.__y = new_y
+
+              def north(self):
+                  self.__move(0, 1)
+
+              def south(self):
+                  self.__move(0, -1)
+
+              def east(self):
+                  self.__move(1, 0)
+
+              def west(self):
+                  self.__move(-1, 0)
+
+              def __str__(self):
+                  return f"({self.__x}, {self.__y})"
+
+
+          if __name__ == "__main__":
+              robot = Robot()
+              robot.west()
+              robot.east()
+              robot.east()
+              robot.north()
+              print(robot)
+        hints:
+          - "In `__move`, work out the new position in two local variables first, and only store it if both coordinates are from 0 to 9."
+          - "Each public method is one line that calls the helper, for example `self.__move(0, 1)` for north."
+          - "West from (0, 0) would be x = -1, which is off the board, so the robot stays put."
+        require:
+          - pattern: def\s+__move\s*\(
+            message: Write the private helper method `__move`.
+          - pattern: self\.__move\s*\(
+            min: 4
+            message: Let all four directions use `self.__move(...)`.
+        tests:
+          - call: |
+              robot = Robot()
+              robot.west()
+              robot.east()
+              robot.east()
+              robot.north()
+              print(robot)
+          - call: |
+              robot = Robot()
+              robot.south()
+              print(robot)
+              for i in range(12):
+                  robot.north()
+                  robot.east()
+              print(robot)
+              robot.south()
+              robot.west()
+              robot.west()
+              print(robot)
+            hidden: true

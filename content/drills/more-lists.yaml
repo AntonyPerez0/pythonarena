@@ -1,0 +1,225 @@
+topic: more-lists
+drills:
+  - type: predict
+    after: any-type
+    code: |
+      names = ["bob", "Cid", "ann", "Ada"]
+      names.sort()
+      print(names)
+    why: "Strings are sorted character by character, and every capital letter comes before every small letter, so `Ada` and `Cid` come first."
+
+  - type: predict
+    after: any-type
+    code: |
+      temps = [1.5, 2.5, 5.0]
+      print(max(temps))
+      print(sum(temps) / len(temps))
+    why: "`max`, `sum` and `len` work on a list of floats just as on integers. The sum is 9.0 and there are 3 items, so the mean is 3.0."
+
+  - type: runs
+    after: any-type
+    code: |
+      values = [10, "9", 8]
+      values.sort()
+      print(values)
+    why: "`\"9\"` is a string, and to sort the list Python would have to compare it with the numbers. It stops with a `TypeError`."
+
+  - type: predict
+    after: function-bugs
+    code: |
+      def has_zero(numbers):
+          for number in numbers:
+              if number == 0:
+                  return True
+              else:
+                  return False
+
+
+      print(has_zero([5, 0, 3]))
+    why: "The first number, 5, isn't zero, so the `else` branch returns `False` right away and the loop never reaches the 0. `return False` belongs after the loop."
+
+  - type: predict
+    after: function-bugs
+    code: |
+      def count_above(numbers, number):
+          count = 0
+          for number in numbers:
+              if number > number:
+                  count += 1
+          return count
+
+
+      print(count_above([1, 5, 9], 4))
+    why: "The loop variable has the same name as the parameter, so the limit 4 is lost. `number > number` compares each number with itself, which is never true."
+
+  - type: bug
+    after: function-bugs
+    code: |
+      def total(numbers):
+          result = 0
+          for number in prices:  # BUG
+              result += number
+          return result
+
+
+      prices = [5, 10]
+      print(total([1, 2, 3]))
+    fix: "for number in numbers:"
+    why: "The function uses the main program's `prices` instead of its own parameter, so it ignores the list it's given. When the checks call it without the main program, `prices` doesn't even exist."
+
+  - type: choice
+    after: function-bugs
+    prompt: "A function checks whether a word is in a list. Where should its `return False` go?"
+    choices:
+      - "In an `else` branch inside the loop"
+      - "After the loop, once every word has been checked"
+      - "Before the loop"
+    answer: 2
+    why: "One match is enough to return `True` inside the loop, but `False` is only certain after every word has been checked."
+
+  - type: predict
+    after: lists-in-lists
+    code: |
+      data = [[1, 2], [3, 4, 5]]
+      print(len(data))
+      print(data[1][-1])
+      print(data[0] + data[1])
+    why: "`data` has two items, both lists. `data[1][-1]` is the last item of the second list, and `+` joins two lists into one."
+
+  - type: runs
+    after: lists-in-lists
+    code: |
+      teams = [["Ana", "Ben"], ["Cleo"]]
+      print(teams[1][1])
+    why: "`teams[1]` is `[\"Cleo\"]`, which has only index 0, so `teams[1][1]` stops with an `IndexError`."
+
+  - type: fill
+    after: lists-in-lists
+    code: |
+      people = [
+          ["Ada", 36],
+          ["Alan", 41],
+      ]
+      print(people[1][[[0]]])
+    why: "`people[1]` is `[\"Alan\", 41]`, and the name is at index 0 of it."
+
+  - type: choice
+    after: matrices
+    prompt: "`m` is a matrix, a list of rows. Which expression gives the number on row 2, column 0?"
+    choices:
+      - "`m[2][0]`"
+      - "`m[0][2]`"
+      - "`m[2, 0]`"
+    answer: 1
+    why: "The first index picks the row, a list, and the second picks an item of that row."
+
+  - type: predict
+    after: matrices
+    code: |
+      grid = [[1, 2], [3, 4]]
+      for row in grid:
+          for number in row:
+              number += 1
+      print(grid)
+    why: "`number += 1` changes only the variable `number`. To change the matrix, use indexes: `grid[i][j] += 1`."
+
+  - type: bug
+    after: matrices
+    code: |
+      def column_sum(matrix, column):
+          total = 0
+          for row in matrix:
+              total += row[0]  # BUG
+          return total
+
+
+      print(column_sum([[1, 2], [3, 4]], 1))
+    fix: "total += row[column]"
+    why: "A column is the same index in every row. `row[0]` always takes the first column, whatever column was asked for."
+
+  - type: predict
+    after: matrices
+    code: |
+      m = [[1, 2, 3], [4, 5, 6]]
+      total = 0
+      for row in m:
+          total += row[1]
+      print(total)
+    why: "The loop takes the item at index 1 of each row, which is the middle column: 2 + 5."
+
+  - type: predict
+    after: game-board
+    code: |
+      board = [[0, 1], [1, 1]]
+      for row in board:
+          for square in row:
+              if square == 1:
+                  print("#", end="")
+              else:
+                  print(".", end="")
+          print()
+    why: "`end=\"\"` keeps the squares of a row on one line, and the `print()` after the inner loop ends each row."
+
+  - type: boss
+    after: matrices
+    prompt: |
+      Write a function `row_sums(matrix)` that returns a list with the sum of each row of the matrix. For example, `row_sums([[1, 2], [3, 4], [5, 6]])` returns `[3, 7, 11]`.
+    seed: |
+      def row_sums(matrix: list) -> list:
+          pass
+
+
+      if __name__ == "__main__":
+          print(row_sums([[1, 2], [3, 4], [5, 6]]))
+    solution: |
+      def row_sums(matrix: list) -> list:
+          sums = []
+          for row in matrix:
+              sums.append(sum(row))
+          return sums
+
+
+      if __name__ == "__main__":
+          print(row_sums([[1, 2], [3, 4], [5, 6]]))
+    hints:
+      - A `for` loop over the matrix gets one row at a time, and each row is a list of numbers.
+      - "`sum(row)` adds up one row. `append` it to a result list and return the list after the loop."
+    tests:
+      - call: row_sums([[1, 2], [3, 4], [5, 6]])
+      - call: row_sums([[10, -2, 7]])
+        hidden: true
+      - call: row_sums([[0, 0], [4, 4], [1, 9]])
+        hidden: true
+
+  - type: boss
+    after: game-board
+    prompt: |
+      In a board game, `0` is an empty square and other numbers are pieces. Write a function `count_pieces(board, piece)` that returns how many squares of the board hold `piece`. For example, `count_pieces([[1, 0, 2], [2, 2, 0]], 2)` returns `3`.
+    seed: |
+      def count_pieces(board: list, piece: int) -> int:
+          pass
+
+
+      if __name__ == "__main__":
+          print(count_pieces([[1, 0, 2], [2, 2, 0]], 2))
+    solution: |
+      def count_pieces(board: list, piece: int) -> int:
+          count = 0
+          for row in board:
+              for square in row:
+                  if square == piece:
+                      count += 1
+          return count
+
+
+      if __name__ == "__main__":
+          print(count_pieces([[1, 0, 2], [2, 2, 0]], 2))
+    hints:
+      - Go through the rows with one loop and the squares of each row with a second loop inside it.
+      - "Add 1 to a counter whenever a square equals `piece`. (`row.count(piece)` counts one row in one go, too.)"
+    tests:
+      - call: count_pieces([[1, 0, 2], [2, 2, 0]], 2)
+      - call: count_pieces([[1, 0, 2], [2, 2, 0]], 1)
+        hidden: true
+      - call: count_pieces([[1, 1], [1, 1], [1, 1]], 2)
+        hidden: true

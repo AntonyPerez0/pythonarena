@@ -1,0 +1,1226 @@
+id: inheritance
+summary: Classes that build on other classes. A base class holds what several classes share, and derived classes inherit it, add their own attributes and methods, override methods, call the base class's version with super(), and form class hierarchies that isinstance can check.
+steps:
+  - id: inheritance-base-class
+    slug: base-class
+    title: Inheriting from a base class
+    text: |
+      Some classes turn out to be almost the same. Say you're writing a small adventure game with wizards and knights. Both have a name and health points, both can take damage, and both print the same way. Only one thing differs: a wizard casts spells and a knight raises a shield. Written as two separate classes, much of the code is there twice:
+
+      ```python fragment
+      class Wizard:
+          def __init__(self, name, health):
+              self.name = name
+              self.health = health
+
+          def take_damage(self, amount):
+              self.health -= amount
+
+          def cast_spell(self):
+              return f"{self.name} casts a fireball!"
+
+
+      class Knight:
+          def __init__(self, name, health):
+              self.name = name
+              self.health = health
+
+          def take_damage(self, amount):
+              self.health -= amount
+
+          def raise_shield(self):
+              return f"{self.name} raises a shield."
+      ```
+
+      Code that is written twice has to be fixed twice, and sooner or later one copy gets fixed and the other doesn't. Merging the two into one class with every method isn't a good answer either: then every knight could cast spells.
+
+      ### A base class and derived classes
+
+      **Inheritance** solves this. You write what the classes share once, in a **base class**, and each special class **inherits** everything from it and adds only what is its own. To make a class inherit another, write the base class's name in parentheses after the new class's name:
+
+      ```python run
+      class Character:
+          def __init__(self, name, health):
+              self.name = name
+              self.health = health
+
+          def take_damage(self, amount):
+              self.health -= amount
+
+          def __str__(self):
+              return f"{self.name} ({self.health} health)"
+
+
+      class Wizard(Character):
+          def cast_spell(self):
+              return f"{self.name} casts a fireball!"
+
+
+      class Knight(Character):
+          def raise_shield(self):
+              return f"{self.name} raises a shield."
+
+
+      elva = Wizard("Elva", 30)
+      bram = Knight("Bram", 50)
+      bram.take_damage(12)
+      print(elva)
+      print(bram)
+      print(elva.cast_spell())
+      print(bram.raise_shield())
+      ```
+
+      ```output
+      Elva (30 health)
+      Bram (38 health)
+      Elva casts a fireball!
+      Bram raises a shield.
+      ```
+
+      `Wizard` and `Knight` are **derived classes** of `Character`. (You'll also hear *subclass* or *child class* for a derived class, and *superclass* or *parent class* for the base class.) Neither has a constructor of its own, so `Wizard("Elva", 30)` runs the constructor it inherits from `Character`. `take_damage` and `__str__` are written once, but they work for both. And `cast_spell` can use `self.name`, because every wizard got its name from that same constructor.
+
+      ### Inheritance goes one way
+
+      A derived class gets everything its base class has, but not the other way around. A plain `Character` has no `cast_spell`:
+
+      ```python run crash
+      class Character:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Wizard(Character):
+          def cast_spell(self):
+              return f"{self.name} casts a fireball!"
+
+
+      elva = Wizard("Elva")
+      print(elva.cast_spell())
+      pip = Character("Pip")
+      print(pip.cast_spell())
+      ```
+
+      ```output
+      Elva casts a fireball!
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 14, in <module>
+          print(pip.cast_spell())
+                ^^^^^^^^^^^^^^
+      AttributeError: 'Character' object has no attribute 'cast_spell'
+      ```
+
+      Two derived classes don't share their own methods either: a knight can't cast spells. A quick test of a design is the words "is a". A wizard is a character, so `Wizard(Character)` makes sense. A character isn't always a wizard, so the spells belong in `Wizard` only.
+
+      **Your turn:** a truck is a vehicle that can carry a load. Fill in the blank so that `Truck` inherits `Vehicle`, and the program prints:
+
+      ```
+      TRK-42, 6 wheels
+      TRK-42 carries 12 tons
+      ```
+    fill: |
+      class Vehicle:
+          def __init__(self, plate, wheels):
+              self.plate = plate
+              self.wheels = wheels
+
+          def __str__(self):
+              return f"{self.plate}, {self.wheels} wheels"
+
+
+      class Truck([[Vehicle]]):
+          def load(self, tons):
+              return f"{self.plate} carries {tons} tons"
+
+
+      if __name__ == "__main__":
+          truck = Truck("TRK-42", 6)
+          print(truck)
+          print(truck.load(12))
+    hints:
+      - The base class's name goes in the parentheses after the new class's name.
+      - "`Truck` should inherit `Vehicle`, so the line is `class Truck(Vehicle):`."
+    tests:
+      - expect: |
+          TRK-42, 6 wheels
+          TRK-42 carries 12 tons
+    more:
+      - task: |
+          A healer is a character who can heal others. Write a class `Healer` that inherits `Character`, with one method of its own: `heal(other)` adds 10 to the health of the character `other`. Don't write a constructor or a `__str__` for `Healer`: it inherits them. For example,
+
+          ```python fragment
+          iris = Healer("Iris", 20)
+          tom = Character("Tom", 15)
+          iris.heal(tom)
+          iris.heal(tom)
+          print(tom)
+          print(iris)
+          ```
+
+          should print:
+
+          ```
+          Tom (35 health)
+          Iris (20 health)
+          ```
+        seed: |
+          class Character:
+              def __init__(self, name, health):
+                  self.name = name
+                  self.health = health
+
+              def take_damage(self, amount):
+                  self.health -= amount
+
+              def __str__(self):
+                  return f"{self.name} ({self.health} health)"
+
+
+          # Write the class Healer here.
+
+
+          if __name__ == "__main__":
+              iris = Healer("Iris", 20)
+              tom = Character("Tom", 15)
+              iris.heal(tom)
+              print(tom)
+        solution: |
+          class Character:
+              def __init__(self, name, health):
+                  self.name = name
+                  self.health = health
+
+              def take_damage(self, amount):
+                  self.health -= amount
+
+              def __str__(self):
+                  return f"{self.name} ({self.health} health)"
+
+
+          class Healer(Character):
+              def heal(self, other):
+                  other.health += 10
+
+
+          if __name__ == "__main__":
+              iris = Healer("Iris", 20)
+              tom = Character("Tom", 15)
+              iris.heal(tom)
+              print(tom)
+        hints:
+          - "Start with the class line: `class Healer(Character):`. Its only method is `heal`, with the parameters `self` and `other`."
+          - "`other` is another character object, so its health is `other.health`. Add 10 to it with `+=`."
+          - The healer's own health doesn't change, and `heal` doesn't need to return anything.
+        require:
+          - pattern: class\s+Healer\s*\(\s*Character\s*\)
+            message: "`Healer` should inherit `Character`: `class Healer(Character):`."
+          - pattern: def\s+__init__
+            max: 1
+            message: "`Healer` inherits its constructor from `Character`, so it doesn't need one of its own."
+        tests:
+          - call: |
+              iris = Healer("Iris", 20)
+              tom = Character("Tom", 15)
+              iris.heal(tom)
+              iris.heal(tom)
+              print(tom)
+              print(iris)
+          - call: |
+              mae = Healer("Mae", 8)
+              rook = Character("Rook", 40)
+              rook.take_damage(25)
+              mae.heal(rook)
+              mae.heal(mae)
+              print(rook)
+              print(mae)
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Counter:
+              def __init__(self):
+                  self.value = 0
+
+              def add(self):
+                  self.value += 1
+
+
+          class StepCounter(Counter):
+              def add_many(self, times):
+                  for i in range(times):
+                      self.add()
+
+
+          steps = StepCounter()
+          steps.add()
+          steps.add_many(3)
+          print(steps.value)
+          plain = Counter()
+          plain.add()
+          print(plain.value)
+        hints:
+          - "`StepCounter` has no constructor of its own, so a new step counter starts from `Counter`'s constructor, with `value` 0."
+          - "`add_many(3)` calls the inherited `add` three times. Count every `add` that runs on `steps`."
+          - "`plain` is a different object, with its own `value`."
+
+  - id: inheritance-overriding
+    slug: overriding
+    title: Overriding methods
+    text: |
+      A derived class can also change a method it inherits. Write a method with the same name in the derived class, and objects of that class use the new version instead. This is called **overriding** the method.
+
+      Say knights wear armor that stops half of every hit:
+
+      ```python run
+      class Character:
+          def __init__(self, name, health):
+              self.name = name
+              self.health = health
+
+          def take_damage(self, amount):
+              self.health -= amount
+
+          def __str__(self):
+              return f"{self.name} ({self.health} health)"
+
+
+      class Knight(Character):
+          def take_damage(self, amount):
+              # The armor stops half of every hit.
+              self.health -= amount // 2
+
+
+      bram = Knight("Bram", 50)
+      pip = Character("Pip", 50)
+      bram.take_damage(20)
+      pip.take_damage(20)
+      print(bram)
+      print(pip)
+      ```
+
+      ```output
+      Bram (40 health)
+      Pip (30 health)
+      ```
+
+      When you call a method, Python first looks for it in the object's own class, and only if it isn't there, in the base class. `bram` is a `Knight`, and `Knight` has its own `take_damage`, so that's the one that runs. `pip` is a plain `Character`, so the original runs. `__str__` isn't overridden, so both use the one in `Character`. It's a method like any other, though: a derived class can override `__str__` too.
+
+      ### The base class calls the new version
+
+      Overriding reaches further than the calls you write yourself. When a method of the base class calls `self.something()`, and the object belongs to a derived class that overrides `something`, the overriding version runs:
+
+      ```python run
+      class Greeter:
+          def greeting(self, name):
+              return f"Hello, {name}."
+
+          def greet_all(self, names):
+              for name in names:
+                  print(self.greeting(name))
+
+
+      class PirateGreeter(Greeter):
+          def greeting(self, name):
+              return f"Ahoy, {name}!"
+
+
+      friendly = Greeter()
+      pirate = PirateGreeter()
+      friendly.greet_all(["Ada", "Linus"])
+      pirate.greet_all(["Ada", "Linus"])
+      ```
+
+      ```output
+      Hello, Ada.
+      Hello, Linus.
+      Ahoy, Ada!
+      Ahoy, Linus!
+      ```
+
+      `greet_all` is written only once, in `Greeter`. When it runs for `pirate`, `self` is the pirate greeter, so `self.greeting(name)` finds the pirate's version. This is a handy way to design classes: the base class does the general work and leaves one small method for each derived class to do in its own way.
+
+      ### Get the name exactly right
+
+      An overriding method must have exactly the same name as the method it replaces. If you misspell it, Python doesn't complain: it just adds a new method that nobody calls, and the old one keeps running. When an override seems to be ignored, check the spelling first.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Animal:
+          def sound(self):
+              return "..."
+
+          def speak(self):
+              return "It says " + self.sound()
+
+
+      class Cow(Animal):
+          def sound(self):
+              return "moo"
+
+
+      class Fish(Animal):
+          pass
+
+
+      daisy = Cow()
+      goldie = Fish()
+      print(daisy.speak())
+      print(goldie.speak())
+      print(daisy.sound())
+    hints:
+      - "`speak` is only in `Animal`, but it calls `self.sound()`. Which `sound` that is depends on the object."
+      - "`daisy` is a `Cow`, and `Cow` overrides `sound`. `Fish` doesn't, so a fish uses the one in `Animal`."
+    more:
+      - task: |
+          The class `Ticket` works out a ticket's price with the method `final_price`, and its `__str__` uses that method. Write a class `StudentTicket` that inherits `Ticket` and overrides `final_price`: a student ticket costs 5 euros less than the normal price, but never less than 0. For example,
+
+          ```python fragment
+          concert = StudentTicket("Concert", 25)
+          museum = StudentTicket("Museum", 4)
+          print(concert)
+          print(museum)
+          print(concert.final_price())
+          ```
+
+          should print:
+
+          ```
+          Concert: 20 euros
+          Museum: 0 euros
+          20
+          ```
+        seed: |
+          class Ticket:
+              def __init__(self, event, price):
+                  self.event = event
+                  self.price = price
+
+              def final_price(self):
+                  return self.price
+
+              def __str__(self):
+                  return f"{self.event}: {self.final_price()} euros"
+
+
+          # Write the class StudentTicket here.
+
+
+          if __name__ == "__main__":
+              concert = StudentTicket("Concert", 25)
+              print(concert)
+        solution: |
+          class Ticket:
+              def __init__(self, event, price):
+                  self.event = event
+                  self.price = price
+
+              def final_price(self):
+                  return self.price
+
+              def __str__(self):
+                  return f"{self.event}: {self.final_price()} euros"
+
+
+          class StudentTicket(Ticket):
+              def final_price(self):
+                  if self.price < 5:
+                      return 0
+                  return self.price - 5
+
+
+          if __name__ == "__main__":
+              concert = StudentTicket("Concert", 25)
+              print(concert)
+        hints:
+          - "`StudentTicket` needs only one method, `final_price(self)`, with the same name as the one it replaces. The constructor and `__str__` are inherited."
+          - "Return `self.price - 5`, except when the price is below 5: then return 0."
+          - "You don't need a `__str__` of your own: `Ticket`'s `__str__` calls `self.final_price()`, and for a student ticket that's your version."
+        require:
+          - pattern: class\s+StudentTicket\s*\(\s*Ticket\s*\)
+            message: "`StudentTicket` should inherit `Ticket`: `class StudentTicket(Ticket):`."
+        tests:
+          - call: |
+              concert = StudentTicket("Concert", 25)
+              museum = StudentTicket("Museum", 4)
+              print(concert)
+              print(museum)
+              print(concert.final_price())
+          - call: |
+              opera = StudentTicket("Opera", 60)
+              zoo = StudentTicket("Zoo", 5)
+              normal = Ticket("Opera", 60)
+              print(opera)
+              print(zoo)
+              print(normal)
+            hidden: true
+      - task: |
+          The class `WordFilter` goes through a list of words in `filter` and keeps the ones that its method `keeps` says yes to. On its own it keeps every word. Write two classes that inherit `WordFilter` and override only `keeps`:
+
+          - `ShortWords` keeps the words of at most 4 letters.
+          - `LongWords` keeps the words of at least 8 letters.
+
+          For example,
+
+          ```python fragment
+          words = ["cat", "elephant", "dog", "giraffe", "hippopotamus"]
+          short = ShortWords()
+          long = LongWords()
+          print(short.filter(words))
+          print(long.filter(words))
+          ```
+
+          should print:
+
+          ```
+          ['cat', 'dog']
+          ['elephant', 'hippopotamus']
+          ```
+        seed: |
+          class WordFilter:
+              def keeps(self, word):
+                  return True
+
+              def filter(self, words):
+                  result = []
+                  for word in words:
+                      if self.keeps(word):
+                          result.append(word)
+                  return result
+
+
+          # Write the classes ShortWords and LongWords here.
+
+
+          if __name__ == "__main__":
+              words = ["cat", "elephant", "dog", "giraffe", "hippopotamus"]
+              short = ShortWords()
+              print(short.filter(words))
+        solution: |
+          class WordFilter:
+              def keeps(self, word):
+                  return True
+
+              def filter(self, words):
+                  result = []
+                  for word in words:
+                      if self.keeps(word):
+                          result.append(word)
+                  return result
+
+
+          class ShortWords(WordFilter):
+              def keeps(self, word):
+                  return len(word) <= 4
+
+
+          class LongWords(WordFilter):
+              def keeps(self, word):
+                  return len(word) >= 8
+
+
+          if __name__ == "__main__":
+              words = ["cat", "elephant", "dog", "giraffe", "hippopotamus"]
+              short = ShortWords()
+              print(short.filter(words))
+        hints:
+          - "Each class needs only `keeps(self, word)`, returning `True` for a word it keeps and `False` for the others. `filter` is inherited, and it calls your `keeps`."
+          - "A comparison is already `True` or `False`, so `keeps` can return it directly: `return len(word) <= 4`."
+        require:
+          - pattern: class\s+ShortWords\s*\(\s*WordFilter\s*\)
+            message: "`ShortWords` should inherit `WordFilter`."
+          - pattern: class\s+LongWords\s*\(\s*WordFilter\s*\)
+            message: "`LongWords` should inherit `WordFilter`."
+          - pattern: def\s+filter\b
+            max: 1
+            message: Override only `keeps`; the classes inherit `filter` from `WordFilter`.
+        tests:
+          - call: |
+              words = ["cat", "elephant", "dog", "giraffe", "hippopotamus"]
+              short = ShortWords()
+              long = LongWords()
+              print(short.filter(words))
+              print(long.filter(words))
+          - call: |
+              words = ["tree", "pinecone", "oak", "birch", "sycamore", "elm", "evergreen"]
+              print(ShortWords().filter(words))
+              print(LongWords().filter(words))
+              print(WordFilter().filter(words))
+            hidden: true
+
+  - id: inheritance-super
+    slug: super
+    title: Calling the base class with super()
+    text: |
+      So far the derived classes had no constructor of their own: they used the one they inherited. Often, though, a derived class needs attributes of its own. A wizard needs mana, the energy that spells use up, so `Wizard` needs a constructor that takes the mana too. But a constructor in `Wizard` overrides the one in `Character`, like any other method, and then the base class's constructor doesn't run at all:
+
+      ```python run crash
+      class Character:
+          def __init__(self, name, health):
+              self.name = name
+              self.health = health
+
+          def __str__(self):
+              return f"{self.name} ({self.health} health)"
+
+
+      class Wizard(Character):
+          def __init__(self, name, health, mana):
+              self.mana = mana
+
+
+      elva = Wizard("Elva", 30, 100)
+      print(elva)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 16, in <module>
+          print(elva)
+          ~~~~~^^^^^^
+        File "main.py", line 7, in __str__
+          return f"{self.name} ({self.health} health)"
+                    ^^^^^^^^^
+      AttributeError: 'Wizard' object has no attribute 'name'
+      ```
+
+      The wizard was created, but only `self.mana` was ever set: nothing gave it a name. Copying the two lines from `Character`'s constructor would work, but that's the very repetition inheritance was meant to remove.
+
+      ### super()
+
+      **`super()`** gives you the base class's version of a method. A derived class's constructor calls the base class's constructor with `super().__init__(...)`, and then sets only its own attributes:
+
+      ```python fragment
+      class Wizard(Character):
+          def __init__(self, name, health, mana):
+              super().__init__(name, health)
+              self.mana = mana
+      ```
+
+      `super().__init__(name, health)` runs `Character`'s constructor for this wizard, and that sets `name` and `health`. Leave `self` out of the parentheses: as with any method call, Python passes it for you.
+
+      ### Extending a method instead of replacing it
+
+      `super()` works with any method, not only the constructor. An overriding method can call the base class's version and add something to it. Below, the wizard's `__str__` takes the text from `Character`'s `__str__` and adds the mana. A knight's armor stops the first few points of every hit, and the knight's `take_damage` lets the base class subtract what's left:
+
+      ```python run
+      class Character:
+          def __init__(self, name, health):
+              self.name = name
+              self.health = health
+
+          def take_damage(self, amount):
+              self.health -= amount
+
+          def __str__(self):
+              return f"{self.name} ({self.health} health)"
+
+
+      class Wizard(Character):
+          def __init__(self, name, health, mana):
+              super().__init__(name, health)
+              self.mana = mana
+
+          def __str__(self):
+              return super().__str__() + f", {self.mana} mana"
+
+
+      class Knight(Character):
+          def __init__(self, name, health, armor):
+              super().__init__(name, health)
+              self.armor = armor
+
+          def take_damage(self, amount):
+              if amount > self.armor:
+                  super().take_damage(amount - self.armor)
+
+
+      elva = Wizard("Elva", 30, 100)
+      bram = Knight("Bram", 50, 5)
+      bram.take_damage(12)
+      bram.take_damage(3)
+      print(elva)
+      print(bram)
+      ```
+
+      ```output
+      Elva (30 health), 100 mana
+      Bram (43 health)
+      ```
+
+      The hit of 12 does 7 damage after the armor, and the hit of 3 does none. Notice the difference between `super().__str__()` and `self.__str__()`. Inside the wizard's `__str__`, `self.__str__()` would call the wizard's own `__str__` again, which would call itself again, and so on until Python stops with an error. `super()` goes straight to the base class's version.
+
+      **Your turn:** fill in the blank so that an episode's constructor lets the base class `Video` set the title and the length, and the program prints:
+
+      ```
+      S2: The Long Night (52 min)
+      2
+      ```
+    fill: |
+      class Video:
+          def __init__(self, title, minutes):
+              self.title = title
+              self.minutes = minutes
+
+          def __str__(self):
+              return f"{self.title} ({self.minutes} min)"
+
+
+      class Episode(Video):
+          def __init__(self, title, minutes, season):
+              [[super().__init__]](title, minutes)
+              self.season = season
+
+          def __str__(self):
+              return f"S{self.season}: " + super().__str__()
+
+
+      if __name__ == "__main__":
+          episode = Episode("The Long Night", 52, 2)
+          print(episode)
+          print(episode.season)
+    hints:
+      - The base class's constructor is called through `super()`, and a constructor's name is `__init__`.
+      - "Type `super().__init__` into the blank. The arguments `(title, minutes)` are already there, without `self`."
+    tests:
+      - expect: |
+          S2: The Long Night (52 min)
+          2
+    more:
+      - task: |
+          A live recording is a song that was played at some venue. Write a class `LiveSong` that inherits `Song`. Its constructor takes a title, an artist and a venue, and lets `Song`'s constructor set the title and the artist. Its `__str__` returns what `Song`'s `__str__` returns, followed by ` (live at VENUE)`. Use `super()` for both. For example,
+
+          ```python fragment
+          song = LiveSong("Blue Moon", "The Owls", "Cafe Aurora")
+          print(song)
+          print(song.venue)
+          ```
+
+          should print:
+
+          ```
+          Blue Moon by The Owls (live at Cafe Aurora)
+          Cafe Aurora
+          ```
+        seed: |
+          class Song:
+              def __init__(self, title, artist):
+                  self.title = title
+                  self.artist = artist
+
+              def __str__(self):
+                  return f"{self.title} by {self.artist}"
+
+
+          # Write the class LiveSong here.
+
+
+          if __name__ == "__main__":
+              song = LiveSong("Blue Moon", "The Owls", "Cafe Aurora")
+              print(song)
+        solution: |
+          class Song:
+              def __init__(self, title, artist):
+                  self.title = title
+                  self.artist = artist
+
+              def __str__(self):
+                  return f"{self.title} by {self.artist}"
+
+
+          class LiveSong(Song):
+              def __init__(self, title, artist, venue):
+                  super().__init__(title, artist)
+                  self.venue = venue
+
+              def __str__(self):
+                  return super().__str__() + f" (live at {self.venue})"
+
+
+          if __name__ == "__main__":
+              song = LiveSong("Blue Moon", "The Owls", "Cafe Aurora")
+              print(song)
+        hints:
+          - "The constructor is `def __init__(self, title, artist, venue):`. Its first line hands the title and the artist to the base class: `super().__init__(title, artist)`."
+          - Then the constructor sets the one attribute of its own, `self.venue`.
+          - "In `__str__`, `super().__str__()` gives the text `Song` would print. Add ` (live at ...)` to it with `+`."
+        require:
+          - pattern: class\s+LiveSong\s*\(\s*Song\s*\)
+            message: "`LiveSong` should inherit `Song`: `class LiveSong(Song):`."
+          - pattern: super\(\)\.__init__\(
+            message: Let `Song`'s constructor set the title and the artist with `super().__init__(...)`.
+          - pattern: super\(\)\.__str__\(
+            message: "Build the text on `Song`'s version: `super().__str__()`."
+        tests:
+          - call: |
+              song = LiveSong("Blue Moon", "The Owls", "Cafe Aurora")
+              print(song)
+              print(song.venue)
+          - call: |
+              encore = LiveSong("Night Train", "Pia Rand", "the Old Mill")
+              studio = Song("Night Train", "Pia Rand")
+              print(encore)
+              print(encore.title)
+              print(studio)
+            hidden: true
+      - task: |
+          A bank account lets its owner withdraw money when there's enough of it. Write a class `FeeAccount` that inherits `BankAccount`, for accounts where every withdrawal costs a fee:
+
+          - The constructor takes the owner, the balance and the fee, and uses `BankAccount`'s constructor for the owner and the balance.
+          - `withdraw(amount)` takes the amount plus the fee from the balance. Like the original, it returns `True` when that worked, and when the balance isn't enough, it takes nothing and returns `False`. Let `BankAccount`'s `withdraw` do the work.
+
+          For example,
+
+          ```python fragment
+          account = FeeAccount("Mia", 100, 2)
+          print(account.withdraw(30))
+          print(account)
+          print(account.withdraw(68))
+          print(account)
+          ```
+
+          should print:
+
+          ```
+          True
+          Mia: 68 euros
+          False
+          Mia: 68 euros
+          ```
+        seed: |
+          class BankAccount:
+              def __init__(self, owner, balance):
+                  self.owner = owner
+                  self.balance = balance
+
+              def withdraw(self, amount):
+                  if amount > self.balance:
+                      return False
+                  self.balance -= amount
+                  return True
+
+              def __str__(self):
+                  return f"{self.owner}: {self.balance} euros"
+
+
+          # Write the class FeeAccount here.
+
+
+          if __name__ == "__main__":
+              account = FeeAccount("Mia", 100, 2)
+              print(account.withdraw(30))
+              print(account)
+        solution: |
+          class BankAccount:
+              def __init__(self, owner, balance):
+                  self.owner = owner
+                  self.balance = balance
+
+              def withdraw(self, amount):
+                  if amount > self.balance:
+                      return False
+                  self.balance -= amount
+                  return True
+
+              def __str__(self):
+                  return f"{self.owner}: {self.balance} euros"
+
+
+          class FeeAccount(BankAccount):
+              def __init__(self, owner, balance, fee):
+                  super().__init__(owner, balance)
+                  self.fee = fee
+
+              def withdraw(self, amount):
+                  return super().withdraw(amount + self.fee)
+
+
+          if __name__ == "__main__":
+              account = FeeAccount("Mia", 100, 2)
+              print(account.withdraw(30))
+              print(account)
+        hints:
+          - "The constructor calls `super().__init__(owner, balance)` and then stores the fee in `self.fee`."
+          - "`withdraw` can hand the whole job to the base class: withdrawing 30 with a fee of 2 is the same as a plain withdrawal of 32."
+          - "Return what the base class's version returns: `return super().withdraw(...)`, with the amount plus the fee in the parentheses."
+        require:
+          - pattern: class\s+FeeAccount\s*\(\s*BankAccount\s*\)
+            message: "`FeeAccount` should inherit `BankAccount`."
+          - pattern: super\(\)\.__init__\(
+            message: Let `BankAccount`'s constructor set the owner and the balance with `super().__init__(...)`.
+          - pattern: super\(\)\.withdraw\(
+            message: "Let `BankAccount`'s `withdraw` do the work: call it with `super().withdraw(...)`."
+        tests:
+          - call: |
+              account = FeeAccount("Mia", 100, 2)
+              print(account.withdraw(30))
+              print(account)
+              print(account.withdraw(68))
+              print(account)
+          - call: |
+              account = FeeAccount("Ole", 50, 5)
+              print(account.withdraw(45))
+              print(account)
+              print(account.withdraw(0))
+              print(account.fee)
+            hidden: true
+          - call: |
+              plain = BankAccount("Ana", 20)
+              print(plain.withdraw(20))
+              print(plain)
+            hidden: true
+
+  - id: inheritance-isinstance
+    slug: isinstance
+    title: Class hierarchies and isinstance
+    text: |
+      Inheritance can go on for more than one level. A derived class can be the base class of another class, and a base class can have many derived classes. Together they form a **class hierarchy**, which you can draw like a family tree. Here bicycles and cars are vehicles, and an electric car is a special kind of car:
+
+      ```text
+      Vehicle
+          Bicycle
+          Car
+              ElectricCar
+      ```
+
+      An `ElectricCar` inherits everything from `Car`, including everything `Car` inherited from `Vehicle`:
+
+      ```python run
+      class Vehicle:
+          def __init__(self, name):
+              self.name = name
+
+          def describe(self):
+              return f"{self.name} moves"
+
+
+      class Bicycle(Vehicle):
+          def describe(self):
+              return f"{self.name} is pedaled"
+
+
+      class Car(Vehicle):
+          def honk(self):
+              return f"{self.name}: beep beep"
+
+
+      class ElectricCar(Car):
+          def __init__(self, name, battery):
+              super().__init__(name)
+              self.battery = battery
+
+          def charge(self):
+              self.battery = 100
+
+
+      spark = ElectricCar("Spark", 35)
+      print(spark.describe())
+      print(spark.honk())
+      spark.charge()
+      print(spark.battery)
+      ```
+
+      ```output
+      Spark moves
+      Spark: beep beep
+      100
+      ```
+
+      To find `describe`, Python looks in `ElectricCar`, then in `Car`, then in `Vehicle`, and uses the first one it finds. `super().__init__(name)` in `ElectricCar` runs the constructor `Car` inherited, the one in `Vehicle`.
+
+      ### isinstance
+
+      Sometimes a program needs to know what kind of object it has. The function **`isinstance(value, class)`** tells you: it returns `True` if the value is an object of that class, or of a class derived from it. It fits the "is a" test: an electric car is a car, and it's a vehicle too. A list can hold objects of different classes of one hierarchy, and `isinstance` picks out the ones you need:
+
+      ```python run
+      class Vehicle:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Bicycle(Vehicle):
+          pass
+
+
+      class Car(Vehicle):
+          pass
+
+
+      class ElectricCar(Car):
+          pass
+
+
+      spark = ElectricCar("Spark")
+      print(isinstance(spark, ElectricCar))
+      print(isinstance(spark, Car))
+      print(isinstance(spark, Vehicle))
+      print(isinstance(spark, Bicycle))
+
+      garage = [Car("Rusty"), Bicycle("Fixie"), spark, ElectricCar("Volt")]
+      for vehicle in garage:
+          if isinstance(vehicle, Car):
+              print(vehicle.name, "needs a parking space")
+      ```
+
+      ```output
+      True
+      True
+      True
+      False
+      Rusty needs a parking space
+      Spark needs a parking space
+      Volt needs a parking space
+      ```
+
+      The electric cars count as cars, so they need a parking space too. The bicycle is a vehicle but not a car, so it's left out. Checking `type(vehicle) == Car` instead would leave out the electric cars as well: `type` gives only the object's own class, while `isinstance` follows the hierarchy.
+
+      `isinstance` works with Python's own types too:
+
+      ```python repl
+      >>> isinstance(42, int)
+      True
+      >>> isinstance("42", int)
+      False
+      >>> isinstance([1, 2], list)
+      True
+      ```
+
+      Every class you write is part of a hierarchy as well. A class with no base class in parentheses inherits Python's built-in class `object`. That's where the methods you never wrote come from, such as the plain `__str__` that prints an object's address.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Media:
+          pass
+
+
+      class Video(Media):
+          pass
+
+
+      class Movie(Video):
+          pass
+
+
+      class Song(Media):
+          pass
+
+
+      film = Movie()
+      tune = Song()
+      print(isinstance(film, Video))
+      print(isinstance(film, Song))
+      print(isinstance(film, Media))
+      print(isinstance(tune, Video))
+    hints:
+      - "Draw the hierarchy: `Video` and `Song` are derived from `Media`, and `Movie` is derived from `Video`."
+      - "`isinstance` is `True` for the object's own class and for every class above it in the hierarchy: a movie is a video and a media item, but not a song."
+    more:
+      - task: |
+          A media library holds movies, clips and songs. Movies and clips are both videos. Write a function `video_titles(items)` that gets a list of these objects and returns a list of the titles of all the videos, in the order they are in the list. For example,
+
+          ```python fragment
+          items = [Movie("Arrival"), Song("Yellow"), Clip("Cat on a piano"), Video("Holiday 2025")]
+          print(video_titles(items))
+          ```
+
+          should print:
+
+          ```
+          ['Arrival', 'Cat on a piano', 'Holiday 2025']
+          ```
+        seed: |
+          class Media:
+              def __init__(self, title):
+                  self.title = title
+
+
+          class Video(Media):
+              pass
+
+
+          class Movie(Video):
+              pass
+
+
+          class Clip(Video):
+              pass
+
+
+          class Song(Media):
+              pass
+
+
+          def video_titles(items):
+              pass
+
+
+          if __name__ == "__main__":
+              items = [Movie("Arrival"), Song("Yellow"), Clip("Cat on a piano")]
+              print(video_titles(items))
+        solution: |
+          class Media:
+              def __init__(self, title):
+                  self.title = title
+
+
+          class Video(Media):
+              pass
+
+
+          class Movie(Video):
+              pass
+
+
+          class Clip(Video):
+              pass
+
+
+          class Song(Media):
+              pass
+
+
+          def video_titles(items):
+              titles = []
+              for item in items:
+                  if isinstance(item, Video):
+                      titles.append(item.title)
+              return titles
+
+
+          if __name__ == "__main__":
+              items = [Movie("Arrival"), Song("Yellow"), Clip("Cat on a piano")]
+              print(video_titles(items))
+        hints:
+          - Go through the list with a `for` loop and collect the titles of the right items into a new list.
+          - "Movies and clips are videos, so one check is enough: `isinstance(item, Video)` is `True` for all three kinds of video."
+          - "`type(item) == Video` wouldn't do: it's `False` for a movie."
+        require:
+          - pattern: \bisinstance\s*\(
+            message: "Check each item's kind with `isinstance`."
+        tests:
+          - call: |
+              items = [Movie("Arrival"), Song("Yellow"), Clip("Cat on a piano"), Video("Holiday 2025")]
+              print(video_titles(items))
+          - call: |
+              items = [Song("Clocks"), Song("Fix You"), Clip("Goal!"), Song("Viva"), Movie("Up")]
+              print(video_titles(items))
+              print(video_titles([Song("Paradise")]))
+            hidden: true
+      - task: |
+          Build a small class hierarchy of your own on top of `Character`:
+
+          - `Wizard` inherits `Character`. Its constructor takes a name, health and mana. Its method `spell_cost()` returns 10. Its method `cast_spell()` uses up `spell_cost()` mana and returns `NAME casts a spell`. If the wizard has less mana than a spell costs, nothing is used up and it returns `NAME is out of mana`. A wizard prints as a character does, followed by `, MANA mana`.
+          - `Archmage` inherits `Wizard`. An archmage's spells cost only 5 mana: override `spell_cost()`, and nothing else.
+
+          For example,
+
+          ```python fragment
+          ozma = Archmage("Ozma", 40, 12)
+          print(ozma.cast_spell())
+          print(ozma.cast_spell())
+          print(ozma.cast_spell())
+          print(ozma)
+          print(isinstance(ozma, Character))
+          ```
+
+          should print:
+
+          ```
+          Ozma casts a spell
+          Ozma casts a spell
+          Ozma is out of mana
+          Ozma (40 health), 2 mana
+          True
+          ```
+        seed: |
+          class Character:
+              def __init__(self, name, health):
+                  self.name = name
+                  self.health = health
+
+              def __str__(self):
+                  return f"{self.name} ({self.health} health)"
+
+
+          # Write the classes Wizard and Archmage here.
+
+
+          if __name__ == "__main__":
+              ozma = Archmage("Ozma", 40, 12)
+              print(ozma.cast_spell())
+              print(ozma)
+        solution: |
+          class Character:
+              def __init__(self, name, health):
+                  self.name = name
+                  self.health = health
+
+              def __str__(self):
+                  return f"{self.name} ({self.health} health)"
+
+
+          class Wizard(Character):
+              def __init__(self, name, health, mana):
+                  super().__init__(name, health)
+                  self.mana = mana
+
+              def spell_cost(self):
+                  return 10
+
+              def cast_spell(self):
+                  if self.mana < self.spell_cost():
+                      return f"{self.name} is out of mana"
+                  self.mana -= self.spell_cost()
+                  return f"{self.name} casts a spell"
+
+              def __str__(self):
+                  return super().__str__() + f", {self.mana} mana"
+
+
+          class Archmage(Wizard):
+              def spell_cost(self):
+                  return 5
+
+
+          if __name__ == "__main__":
+              ozma = Archmage("Ozma", 40, 12)
+              print(ozma.cast_spell())
+              print(ozma)
+        hints:
+          - "Write `Wizard` first and try it on its own: a constructor that calls `super().__init__(name, health)` and sets `self.mana`, then `spell_cost`, `cast_spell` and `__str__`."
+          - "In `cast_spell`, compare `self.mana` with `self.spell_cost()`, not with 10: then an archmage's own `spell_cost` is used automatically."
+          - "`__str__` can return `super().__str__() + f\", {self.mana} mana\"`."
+          - "`Archmage` needs only one method: `spell_cost`, returning 5. It inherits the constructor, `cast_spell` and `__str__` from `Wizard`."
+        require:
+          - pattern: class\s+Wizard\s*\(\s*Character\s*\)
+            message: "`Wizard` should inherit `Character`."
+          - pattern: class\s+Archmage\s*\(\s*Wizard\s*\)
+            message: "`Archmage` should inherit `Wizard`."
+          - pattern: def\s+cast_spell\b
+            max: 1
+            message: "Write `cast_spell` only once, in `Wizard`; `Archmage` overrides only `spell_cost`."
+        tests:
+          - call: |
+              ozma = Archmage("Ozma", 40, 12)
+              print(ozma.cast_spell())
+              print(ozma.cast_spell())
+              print(ozma.cast_spell())
+              print(ozma)
+              print(isinstance(ozma, Character))
+          - call: |
+              elva = Wizard("Elva", 30, 25)
+              print(elva.cast_spell())
+              print(elva.cast_spell())
+              print(elva.cast_spell())
+              print(elva)
+              print(elva.spell_cost())
+              print(isinstance(elva, Archmage))
+            hidden: true
+          - call: |
+              rune = Archmage("Rune", 12, 5)
+              print(rune.cast_spell())
+              print(rune.cast_spell())
+              print(rune)
+              print(isinstance(rune, Wizard))
+            hidden: true

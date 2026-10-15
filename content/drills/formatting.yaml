@@ -1,0 +1,152 @@
+topic: formatting
+drills:
+  - type: predict
+    after: sep-and-end
+    code: |
+      print("a", "b", sep="")
+      print("a", "b")
+    why: "`sep=\"\"` puts nothing between the values. Without `sep`, `print` puts a space between them."
+
+  - type: predict
+    after: sep-and-end
+    code: |
+      print("x", end="-")
+      print("y")
+    why: "`end=\"-\"` ends the first line with a dash instead of a line break, so `y` is printed on the same line."
+
+  - type: runs
+    after: sep-and-end
+    code: |
+      total = 5
+      print("Total: " + total)
+    why: "`+` joins only strings, so a string plus a number is a `TypeError`. Use `str(total)`, a comma or an f-string."
+
+  - type: fill
+    after: sep-and-end
+    code: |
+      print(1, 2, 3, sep=[["+"‖'+']])
+    why: "`sep` is a string that goes between the values: `\"+\"` gives `1+2+3`."
+
+  - type: predict
+    after: sep-and-end
+    code: |
+      for i in range(3):
+          print(i, end=" ")
+      print("end")
+    why: "Each number ends with a space instead of a line break, so all of them and `end` share one line."
+
+  - type: choice
+    after: sep-and-end
+    prompt: "What does the `sep` argument of `print` change?"
+    choices:
+      - What is printed between the values
+      - What is printed at the end of the line
+      - How many decimals numbers have
+    answer: 1
+    why: "`sep` is the separator between the values, a space unless you choose another. The end of the line is set with `end`."
+
+  - type: predict
+    after: decimals
+    code: |
+      x = 2 / 3
+      print(f"{x:.2f}")
+    why: "`.2f` shows two decimals, and the last one is rounded: 0.666... becomes 0.67."
+
+  - type: predict
+    after: decimals
+    code: |
+      print(f"{5:.1f}")
+    why: "A format specifier can add decimals too: the whole number 5 is shown as `5.0`."
+
+  - type: bug
+    after: decimals
+    code: |
+      price = 3.14159
+      print(f"Price: {price:2f}")  # BUG
+    fix: 'print(f"Price: {price:.2f}")'
+    why: "Without the dot, `2` is a width and not the number of decimals, so `f` shows its default 6 decimals: `3.141590`."
+
+  - type: predict
+    after: decimals
+    code: |
+      price = 2.5
+      print(f"{price}:.2f")
+      print(f"{price:.2f}")
+    why: "The specifier works only inside the braces. Outside them, `:.2f` is just text in the string."
+
+  - type: runs
+    after: decimals
+    code: |
+      amount = "3.5"
+      print(f"{amount:.1f}")
+    why: "`amount` is a string, and decimals only make sense for numbers, so Python stops with a `ValueError`. Convert input with `float` first."
+
+  - type: predict
+    after: widths
+    code: |
+      word = "hi"
+      print(f"[{word:5}]")
+    why: "With a width of 5, the two letters are followed by three spaces. Strings go to the left of their space."
+
+  - type: predict
+    after: widths
+    code: |
+      n = 7
+      print(f"[{n:3}]")
+    why: "Numbers go to the right of their space, so the 7 has two spaces before it."
+
+  - type: choice
+    after: widths
+    prompt: What does this print?
+    code: |
+      word = "ab"
+      print(f"[{word:^6}]")
+    choices:
+      - "`[  ab  ]`"
+      - "`[ab    ]`"
+      - "`[    ab]`"
+    answer: 1
+    verify: output
+    why: "`^` puts the value in the middle of its space: two spaces on each side."
+
+  - type: predict
+    after: widths
+    code: |
+      print(f"[{3.14159:8.3f}]")
+    why: "The width 8 comes before the dot and the 3 decimals after it. `3.142` has 5 characters, so 3 spaces go before it."
+
+  - type: boss
+    after: widths
+    prompt: |
+      Write the function `print_receipt(items: list, prices: list)`, which prints each item in a column of 10 characters (aligned to the left) and its price in a column of 8 (aligned to the right, with two decimals), and then a last line `Total` with the sum of the prices, in the same columns. For example, `print_receipt(["Tea", "Bun"], [2.5, 1.75])` prints:
+
+      ```
+      Tea           2.50
+      Bun           1.75
+      Total         4.25
+      ```
+    seed: |
+      def print_receipt(items: list, prices: list):
+          pass
+
+
+      if __name__ == "__main__":
+          print_receipt(["Tea", "Bun"], [2.5, 1.75])
+    solution: |
+      def print_receipt(items: list, prices: list):
+          for i in range(len(items)):
+              print(f"{items[i]:<10}{prices[i]:8.2f}")
+          print(f"{'Total':<10}{sum(prices):8.2f}")
+
+
+      if __name__ == "__main__":
+          print_receipt(["Tea", "Bun"], [2.5, 1.75])
+    hints:
+      - "Go through the indexes with `range(len(items))` and print `{items[i]:<10}` followed by `{prices[i]:8.2f}`."
+      - "The total line uses the same specifiers, with `'Total'` in place of the item and `sum(prices)` in place of the price."
+    tests:
+      - call: print_receipt(["Tea", "Bun"], [2.5, 1.75])
+      - call: print_receipt(["Soup", "Bread", "Salad"], [6.9, 2, 11.45])
+        hidden: true
+      - call: print_receipt(["Water"], [1])
+        hidden: true

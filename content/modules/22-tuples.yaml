@@ -1,0 +1,493 @@
+id: tuples
+summary: Tuples are lists that can't change. What they are, what they are for, using them as dictionary keys, and tuples without parentheses for returning several values, unpacking and swapping.
+steps:
+  - id: tuples-basics
+    slug: basics
+    title: What a tuple is
+    text: |
+      A **tuple** is a lot like a list: an ordered group of values that you can index, slice, loop over and measure with `len`. There are two differences. You write a tuple with parentheses `( )` instead of square brackets, and a tuple can't change after it's made.
+
+      ```python run
+      point = (3, 7)
+      print(point)
+      print("x:", point[0])
+      print("y:", point[1])
+
+      colors = ("red", "green", "blue")
+      print(len(colors), colors[-1])
+      print("green" in colors)
+      for color in colors[1:]:
+          print(color)
+      ```
+
+      ```output
+      (3, 7)
+      x: 3
+      y: 7
+      3 blue
+      True
+      green
+      blue
+      ```
+
+      Python shows a tuple in parentheses, and a slice of a tuple is a tuple too.
+
+      ### A tuple can't change
+
+      Tuples are immutable, like strings and numbers. Assigning to an index stops the program:
+
+      ```python run crash
+      point = (3, 7)
+      point[0] = 4
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          point[0] = 4
+          ~~~~~^^^
+      TypeError: 'tuple' object does not support item assignment
+      ```
+
+      A tuple has none of the methods that change a list either: no `append`, `remove` or `sort`.
+
+      ```python repl
+      >>> colors = ("red", "green")
+      >>> colors.append("blue")
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      AttributeError: 'tuple' object has no attribute 'append'
+      ```
+
+      Functions that only read work fine: `len`, `min`, `max`, `sum` and `sorted` (which returns a new list). When a tuple needs to be different, make a new tuple and give it to the variable:
+
+      ```python repl
+      >>> point = (3, 7)
+      >>> point = (4, point[1])
+      >>> point
+      (4, 7)
+      ```
+
+      ### Lists of tuples
+
+      A tuple suits a small record whose parts belong together, such as a name and a year. A list can hold many such tuples:
+
+      ```python run
+      pioneers = [("Ada", 1815), ("Alan", 1912), ("Grace", 1906)]
+      for pioneer in pioneers:
+          print(f"{pioneer[0]} was born in {pioneer[1]}")
+      ```
+
+      ```output
+      Ada was born in 1815
+      Alan was born in 1912
+      Grace was born in 1906
+      ```
+
+      The list can grow and shrink as people are added or removed, but each record stays the way it was made.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      sizes = ("S", "M", "L", "XL")
+      print(sizes[1])
+      print(len(sizes))
+      print(sizes[-2:])
+      print("XS" in sizes)
+    hints:
+      - Indexing, `len` and `in` work on a tuple just as on a list.
+      - "`sizes[-2:]` is a slice of the last two items. A slice of a tuple is a tuple, so Python shows it in parentheses."
+      - "`in` on a tuple compares whole items, and none of the four items is `\"XS\"`."
+    more:
+      - task: |
+          The shop now closes at 18, but the program stops with a `TypeError`. A tuple can't change, so give the variable a new tuple instead of changing the old one. The program should print:
+
+          ```
+          Open from 9 to 18
+          ```
+        seed: |
+          opening_hours = (9, 17)
+          opening_hours[1] = 18
+          print(f"Open from {opening_hours[0]} to {opening_hours[1]}")
+        solution: |
+          opening_hours = (9, 17)
+          opening_hours = (opening_hours[0], 18)
+          print(f"Open from {opening_hours[0]} to {opening_hours[1]}")
+        hints:
+          - "`opening_hours[1] = 18` tries to change an item of the tuple, which Python doesn't allow."
+          - "Make a new tuple with the old opening hour and the new closing hour: `opening_hours = (opening_hours[0], 18)`. (`(9, 18)` works too.)"
+        require:
+          - pattern: \bopening_hours\s*=\s*\(
+            min: 2
+            message: Keep the first line, and give `opening_hours` a new tuple on the second line.
+        tests:
+          - expect: Open from 9 to 18
+      - task: |
+          The lengths of some videos are stored as tuples of hours and minutes: `(1, 30)` is one hour and 30 minutes. Write a function `total_minutes(durations)` that takes a list of such tuples and returns their total length in minutes.
+
+          For example, `total_minutes([(1, 30), (0, 45), (2, 0)])` returns `255`.
+        seed: |
+          def total_minutes(durations: list) -> int:
+              pass
+
+
+          if __name__ == "__main__":
+              print(total_minutes([(1, 30), (0, 45), (2, 0)]))
+        solution: |
+          def total_minutes(durations: list) -> int:
+              total = 0
+              for duration in durations:
+                  total += duration[0] * 60 + duration[1]
+              return total
+
+
+          if __name__ == "__main__":
+              print(total_minutes([(1, 30), (0, 45), (2, 0)]))
+        hints:
+          - Go through the list with a `for` loop. On each round the loop variable is one tuple, such as `(1, 30)`.
+          - "The hours are at index 0 and the minutes at index 1. In minutes, one tuple is `duration[0] * 60 + duration[1]`."
+          - Add each one to a total that starts at 0, and return it after the loop.
+        tests:
+          - call: total_minutes([(1, 30), (0, 45), (2, 0)])
+          - call: total_minutes([(0, 5)])
+            hidden: true
+          - call: total_minutes([(3, 15), (1, 59), (0, 1)])
+            hidden: true
+          - call: total_minutes([])
+            hidden: true
+
+  - id: tuples-purpose
+    slug: why-tuples
+    title: What tuples are for
+    text: |
+      If a list can do everything a tuple can, and more, why have tuples at all? Because a tuple says something about the data.
+
+      A list is a collection that may grow and shrink, usually of things of the same kind: the guests, the scores, the words. A tuple is a fixed group of values that belong together and only make sense together: the x and y of a point, the red, green and blue of a color, the year, month and day of a date. A point always has exactly two coordinates. Nobody should append a third one to it, and with a tuple, nobody can.
+
+      A function that works with such values gives back a new tuple instead of changing the old one:
+
+      ```python run
+      def move(point: tuple, dx: int, dy: int) -> tuple:
+          return (point[0] + dx, point[1] + dy)
+
+
+      start = (2, 5)
+      end = move(start, 3, -1)
+      print(start, end)
+      ```
+
+      ```output
+      (2, 5) (5, 4)
+      ```
+
+      `move` can't change `start` by accident, so there are no side effects to worry about: the original point is safe.
+
+      ### Tuples as dictionary keys
+
+      Because a tuple can't change, it can be a dictionary key, which a list can't. This makes a dictionary a handy map of a grid. The key is a pair of a row and a column, and only the squares that have something on them need to be stored:
+
+      ```python run
+      treasures = {}
+      treasures[(2, 3)] = "gold"
+      treasures[(0, 1)] = "map"
+
+      print(treasures)
+      print(treasures[(2, 3)])
+      print((1, 1) in treasures)
+      ```
+
+      ```output
+      {(2, 3): 'gold', (0, 1): 'map'}
+      gold
+      False
+      ```
+
+      With a list as the key, as in `treasures[[2, 3]] = "gold"`, Python would stop with the `TypeError` about an unhashable type from the dictionaries module.
+
+      Here the dictionary also counts how often each square of a grid was visited, with the counting pattern from the dictionaries module:
+
+      ```python run
+      steps = [(0, 0), (0, 1), (0, 0), (1, 1), (0, 0)]
+      visits = {}
+      for square in steps:
+          if square not in visits:
+              visits[square] = 0
+          visits[square] += 1
+      print(visits)
+      ```
+
+      ```output
+      {(0, 0): 3, (0, 1): 1, (1, 1): 1}
+      ```
+
+      **Your turn:** the treasures of a map are in a dictionary whose keys are `(row, column)` tuples. Complete the program: it asks for a row and a column, as whole numbers, and prints what's in that square, or `Nothing here` if the square isn't a key. Use the prompts `Row: ` and `Column: `. An example run:
+
+      ```
+      Row: 2
+      Column: 3
+      gold
+      ```
+    seed: |
+      treasures = {(2, 3): "gold", (0, 1): "map", (4, 4): "ruby"}
+    solution: |
+      treasures = {(2, 3): "gold", (0, 1): "map", (4, 4): "ruby"}
+
+      row = int(input("Row: "))
+      column = int(input("Column: "))
+      square = (row, column)
+      if square in treasures:
+          print(treasures[square])
+      else:
+          print("Nothing here")
+    hints:
+      - "Read both numbers with `int(input(...))`, then put them in a tuple: `square = (row, column)`."
+      - "Check whether the tuple is a key with `in`, and if it is, print `treasures[square]`."
+      - "The numbers have to be integers: the key `(2, 3)` isn't the same as `(\"2\", \"3\")`."
+    tests:
+      - stdin: |
+          2
+          3
+      - stdin: |
+          3
+          2
+      - stdin: |
+          4
+          4
+        hidden: true
+      - stdin: |
+          0
+          1
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def flip(point: tuple) -> tuple:
+              return (point[1], point[0])
+
+
+          corner = (1, 8)
+          other = flip(corner)
+          print(other)
+          print(corner)
+          board = {corner: "X", other: "O"}
+          print(board[(8, 1)])
+        hints:
+          - "`flip` makes a new tuple with the two values the other way around. `corner` itself can't change."
+          - The dictionary has two tuple keys, `(1, 8)` and `(8, 1)`. Which value is stored under `(8, 1)`?
+      - task: |
+          Write a function `count_visits(squares)` that takes a list of `(row, column)` tuples and returns a dictionary in which each different square is a key and the value is how many times it's in the list.
+
+          For example, `count_visits([(0, 0), (1, 2), (0, 0)])` returns `{(0, 0): 2, (1, 2): 1}`.
+        seed: |
+          def count_visits(squares: list) -> dict:
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_visits([(0, 0), (1, 2), (0, 0)]))
+        solution: |
+          def count_visits(squares: list) -> dict:
+              visits = {}
+              for square in squares:
+                  if square not in visits:
+                      visits[square] = 0
+                  visits[square] += 1
+              return visits
+
+
+          if __name__ == "__main__":
+              print(count_visits([(0, 0), (1, 2), (0, 0)]))
+        hints:
+          - A tuple can be a key, so each square tuple can be used as it is.
+          - "Use the counting pattern: if the square isn't a key yet, give it the value 0, then add one."
+        tests:
+          - call: count_visits([(0, 0), (1, 2), (0, 0)])
+          - call: count_visits([(5, 5)])
+            hidden: true
+          - call: count_visits([(1, 2), (2, 1), (1, 2), (2, 1), (1, 2)])
+            hidden: true
+
+  - id: tuples-unpacking
+    slug: without-parentheses
+    title: Tuples without parentheses
+    text: |
+      It's the commas that make a tuple, not the parentheses. Values separated by commas are a tuple even without them:
+
+      ```python repl
+      >>> numbers = 1, 2, 3
+      >>> numbers
+      (1, 2, 3)
+      >>> single = 5,
+      >>> single
+      (5,)
+      ```
+
+      A tuple of one value needs its comma too: `(5)` is just the number 5 in parentheses.
+
+      ### Returning several values
+
+      A function returns one value, but that value can be a tuple. So a function can give back several values by returning them separated by commas:
+
+      ```python run
+      def to_minutes(total_seconds: int) -> tuple:
+          return total_seconds // 60, total_seconds % 60
+
+
+      result = to_minutes(135)
+      print(result)
+
+      minutes, seconds = to_minutes(135)
+      print(f"{minutes} min {seconds} s")
+      ```
+
+      ```output
+      (2, 15)
+      2 min 15 s
+      ```
+
+      ### Unpacking
+
+      `minutes, seconds = to_minutes(135)` is called **unpacking**: the values of the tuple on the right go into the variables on the left, in order. The number of variables has to match the number of values:
+
+      ```python run crash
+      point = (3, 7, 1)
+      x, y = point
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          x, y = point
+          ^^^^
+      ValueError: too many values to unpack (expected 2, got 3)
+      ```
+
+      Unpacking works in a `for` loop too. A loop over a list of tuples can unpack each one right away. That's what happens in `for key, value in d.items()`: `items()` gives each pair of the dictionary as a tuple.
+
+      ```python run
+      pioneers = [("Ada", 1815), ("Alan", 1912), ("Grace", 1906)]
+      for name, year in pioneers:
+          print(name, year)
+
+      ages = {"Ada": 36, "Max": 41}
+      print(list(ages.items()))
+      ```
+
+      ```output
+      Ada 1815
+      Alan 1912
+      Grace 1906
+      [('Ada', 36), ('Max', 41)]
+      ```
+
+      ### Swapping two values
+
+      To swap the values of two variables, you would normally need a helper variable, because the first assignment overwrites one of the values:
+
+      ```python fragment
+      helper = a
+      a = b
+      b = helper
+      ```
+
+      With a tuple it takes one line. Python first makes a tuple of the values on the right, and only then unpacks it into the variables on the left:
+
+      ```python run
+      a = 1
+      b = 2
+      a, b = b, a
+      print(a, b)
+      ```
+
+      ```output
+      2 1
+      ```
+
+      **Your turn:** fill in the blank so the loop unpacks each tuple into the variables `name` and `score`, and the program prints:
+
+      ```
+      Ada: 92 points
+      Max: 78 points
+      Lin: 85 points
+      ```
+    fill: |
+      results = [("Ada", 92), ("Max", 78), ("Lin", 85)]
+      for [[name, score‖(name, score)]] in results:
+          print(f"{name}: {score} points")
+    hints:
+      - Each item of the list is a tuple of two values, so the loop needs two variables.
+      - "Write the two variable names, separated by a comma: `name, score`."
+    tests:
+      - expect: |
+          Ada: 92 points
+          Max: 78 points
+          Lin: 85 points
+    more:
+      - task: |
+          Write a function `share(amount, people)` that shares `amount` sweets equally between `people` people. It returns two values: how many whole sweets each person gets, and how many are left over.
+
+          For example, `share(17, 5)` returns `(3, 2)`: everyone gets 3, and 2 are left.
+        seed: |
+          def share(amount: int, people: int) -> tuple:
+              pass
+
+
+          if __name__ == "__main__":
+              each, left = share(17, 5)
+              print(each, left)
+        solution: |
+          def share(amount: int, people: int) -> tuple:
+              return amount // people, amount % people
+
+
+          if __name__ == "__main__":
+              each, left = share(17, 5)
+              print(each, left)
+        hints:
+          - "`//` gives the whole part of a division, and `%` gives what's left over."
+          - "Return both, separated by a comma: `return amount // people, amount % people`."
+        tests:
+          - call: share(17, 5)
+          - call: share(20, 4)
+            hidden: true
+          - call: share(3, 7)
+            hidden: true
+      - task: |
+          Write a function `best_and_worst(results)` that takes a list of `(name, score)` tuples and returns two values: the name with the highest score and the name with the lowest score. No two scores are the same.
+
+          For example, `best_and_worst([("Ada", 92), ("Max", 78), ("Lin", 85)])` returns `('Ada', 'Max')`.
+        seed: |
+          def best_and_worst(results: list) -> tuple:
+              pass
+
+
+          if __name__ == "__main__":
+              best, worst = best_and_worst([("Ada", 92), ("Max", 78), ("Lin", 85)])
+              print(best, worst)
+        solution: |
+          def best_and_worst(results: list) -> tuple:
+              best_name, best_score = results[0]
+              worst_name, worst_score = results[0]
+              for name, score in results:
+                  if score > best_score:
+                      best_name, best_score = name, score
+                  if score < worst_score:
+                      worst_name, worst_score = name, score
+              return best_name, worst_name
+
+
+          if __name__ == "__main__":
+              best, worst = best_and_worst([("Ada", 92), ("Max", 78), ("Lin", 85)])
+              print(best, worst)
+        hints:
+          - Start with the first tuple as both the best and the worst so far. Unpacking gives its name and score in one line.
+          - "Go through the tuples with `for name, score in results:` and update the best when a score is higher, and the worst when it's lower."
+          - "Return both names, separated by a comma: `return best_name, worst_name`."
+        tests:
+          - call: best_and_worst([("Ada", 92), ("Max", 78), ("Lin", 85)])
+          - call: best_and_worst([("Kim", 40), ("Bo", 75)])
+            hidden: true
+          - call: best_and_worst([("Cy", 10), ("Di", 30), ("Ed", 20), ("Fa", 5)])
+            hidden: true
+          - call: best_and_worst([("Solo", 50)])
+            hidden: true

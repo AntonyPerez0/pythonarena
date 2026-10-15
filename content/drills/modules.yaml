@@ -1,0 +1,162 @@
+topic: modules
+drills:
+  - type: predict
+    after: import
+    code: |
+      import math
+
+      print(math.sqrt(16))
+    why: "`math.sqrt` always gives a float, even when the square root is a whole number, so it prints `4.0`."
+
+  - type: runs
+    after: import
+    code: |
+      import math
+
+      print(sqrt(9))
+    why: "After `import math`, the module's functions are reached through its name: `math.sqrt(9)`. Plain `sqrt` is a `NameError`."
+
+  - type: predict
+    after: import
+    code: |
+      import math
+
+      print(math.floor(3.99))
+      print(math.ceil(3.01))
+    why: "`floor` always rounds down and `ceil` always rounds up, however close the number is to the next whole number."
+
+  - type: fill
+    after: import
+    code: |
+      import math
+
+      print(math.[[ceil]](7 / 2))
+    why: "7 / 2 is 3.5, and rounding it up gives 4. The function that rounds up is `math.ceil`."
+
+  - type: runs
+    after: import
+    code: |
+      import Math
+
+      print(Math.pi)
+    why: "Module names are case sensitive like everything else in Python. The module is `math` in small letters, so `import Math` stops with a `ModuleNotFoundError`."
+
+  - type: predict
+    after: import
+    code: |
+      import math
+
+      print(math.ceil(-1.5))
+    why: "Rounding up means toward the larger number, and -1 is larger than -1.5."
+
+  - type: bug
+    after: from-import
+    code: |
+      from math import pi  # BUG
+      print(math.pi * 2)
+    fix: import math
+    why: "`from math import pi` brings in `pi` but not the name `math`, so `math.pi` is a `NameError`. Either import the module, or use plain `pi`."
+
+  - type: choice
+    after: from-import
+    prompt: After which line can a program call `floor(2.5)`, without `math.` in front?
+    choices:
+      - "`import math`"
+      - "`from math import floor`"
+      - "`import floor`"
+    answer: 2
+    why: "`from math import floor` brings the name `floor` into the program. `import math` needs `math.floor`, and there's no module called `floor`."
+
+  - type: runs
+    after: from-import
+    code: |
+      from math import floor, ceil
+
+      print(floor(2.5) + ceil(2.5))
+    why: "Both names are imported, separated by a comma, so it runs and prints 5 (2 + 3)."
+
+  - type: predict
+    after: from-import
+    code: |
+      pi = 3
+      from math import *
+
+      print(pi == 3)
+    why: "The star import brings in every name of `math`, and `math.pi` replaces the variable `pi`. That's why the star form is risky."
+
+  - type: predict
+    after: contents
+    code: |
+      import string
+
+      print(string.digits[3:6])
+    why: "`string.digits` is the string `0123456789`, and the slice `[3:6]` takes the characters at indexes 3, 4 and 5."
+
+  - type: choice
+    after: contents
+    prompt: Which call gives a list of the names in the module `math`?
+    choices:
+      - "`dir(math)`"
+      - "`list(math)`"
+      - "`math.names()`"
+    answer: 1
+    why: "`dir` lists the names an object or a module has. The documentation then tells what each one does."
+
+  - type: predict
+    after: contents
+    code: |
+      import string
+
+      print("!" in string.punctuation)
+      print("a" in string.digits)
+    why: "`string.punctuation` holds the punctuation characters, `!` among them. `string.digits` holds only the digits 0 to 9."
+
+  - type: bug
+    after: contents
+    prompt: The program should count the capital letters in the word. One line has a bug. Which one?
+    code: |
+      import string
+
+      word = "Hello"
+      capitals = 0
+      for character in word:
+          if character in string.ascii_lowercase:  # BUG
+              capitals += 1
+      print(capitals)
+    fix: "if character in string.ascii_uppercase:"
+    why: "`ascii_lowercase` holds the small letters, so the program counted those. The capitals are in `string.ascii_uppercase`."
+
+  - type: boss
+    after: contents
+    prompt: |
+      Write a function `distance(x1, y1, x2, y2)` that returns the distance between the points (x1, y1) and (x2, y2). It's the square root of `(x2 - x1) ** 2 + (y2 - y1) ** 2`; take the square root with the `math` module.
+
+      `distance(0, 0, 3, 4)` returns `5.0`.
+    seed: |
+      def distance(x1, y1, x2, y2):
+          pass
+
+
+      if __name__ == "__main__":
+          print(distance(0, 0, 3, 4))
+    solution: |
+      import math
+
+
+      def distance(x1, y1, x2, y2):
+          return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+
+      if __name__ == "__main__":
+          print(distance(0, 0, 3, 4))
+    hints:
+      - Import the `math` module at the top of the program.
+      - "Return `math.sqrt(...)` of the sum of the two squared differences."
+    tests:
+      - call: distance(0, 0, 3, 4)
+      - call: distance(1, 1, 4, 5)
+        hidden: true
+      - call: distance(2, 3, 2, 3)
+        hidden: true
+      - call: distance(-1, 0, 1, 0)
+        hidden: true

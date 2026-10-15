@@ -1,0 +1,197 @@
+topic: more-comprehensions
+drills:
+  - type: predict
+    after: strings-and-objects
+    code: |
+      print("".join([c.upper() for c in "abc"]))
+    why: "The comprehension makes the list `['A', 'B', 'C']`, and `join` glues it into one string with nothing between the letters."
+
+  - type: predict
+    after: strings-and-objects
+    code: |
+      print([c for c in "a b"])
+    why: "A comprehension over a string goes through every character, and the space is a character too."
+
+  - type: runs
+    after: strings-and-objects
+    code: |
+      print("-".join([1, 2]))
+    why: "`join` accepts only strings. Convert the numbers first: `\"-\".join([str(n) for n in [1, 2]])`."
+
+  - type: fill
+    after: strings-and-objects
+    code: |
+      print([[" "‖' ']].join(["to", "be"]))
+    why: "`join` is called on the glue, the string that goes between the pieces. Here it's a space."
+
+  - type: bug
+    after: strings-and-objects
+    code: |
+      sentence = "big red dog"
+      print([w.upper() for w in sentence])  # BUG
+    fix: print([w.upper() for w in sentence.split()])
+    why: "Going through a string gives its characters one by one. To go word by word, split the sentence first."
+
+  - type: predict
+    after: strings-and-objects
+    code: |
+      class Pet:
+          def __init__(self, name, age):
+              self.name = name
+              self.age = age
+
+
+      pets = [Pet("Rex", 3), Pet("Tom", 12)]
+      print([p.name for p in pets if p.age > 5])
+    why: "Only Tom is older than 5, and the expression takes his name attribute."
+
+  - type: predict
+    after: dictionaries
+    code: |
+      print({w: len(w) for w in ["hi", "hey"]})
+    why: "Each word becomes a key, with its length as the value."
+
+  - type: predict
+    after: dictionaries
+    code: |
+      print({n % 3: n for n in [1, 2, 3, 4]})
+    why: "4 gives the key 1 again, so its value replaces the 1 from before. The key keeps its first place in the dictionary."
+
+  - type: choice
+    after: dictionaries
+    prompt: What does this program print?
+    code: |
+      print({x: x * 2 for x in range(3)})
+    choices:
+      - "`{0: 0, 1: 2, 2: 4}`"
+      - "`[0, 2, 4]`"
+      - "`{0, 2, 4}`"
+    answer: 1
+    verify: output
+    why: "Curly brackets with `key: value` make a dictionary: each x is a key, and x * 2 its value."
+
+  - type: runs
+    after: dictionaries
+    code: |
+      lengths = [w: len(w) for w in ["a"]]
+    why: "A key and a value with a colon only work in curly brackets. In square brackets, Python can't read it."
+
+  - type: fill
+    after: dictionaries
+    code: |
+      codes = {"a": 1, "b": 2}
+      inverted = {v: k for k, v in codes.[[items()]]}
+      print(inverted)
+    why: "`items()` gives the keys and the values together, so the comprehension can swap them."
+
+  - type: bug
+    after: dictionaries
+    code: |
+      stock = {"pens": 4, "cups": 0}
+      empty = [name for name, amount in stock if amount == 0]  # BUG
+      print(empty)
+    fix: empty = [name for name, amount in stock.items() if amount == 0]
+    why: "Going through a dictionary gives only its keys. To get the keys and the values as pairs, go through `stock.items()`."
+
+  - type: predict
+    after: sets
+    code: |
+      print(len({c for c in "banana"}))
+    why: "A set holds each value only once, so only the different letters b, a and n are in it."
+
+  - type: predict
+    after: sets
+    code: |
+      print(sorted({n % 4 for n in [5, 9, 6, 13]}))
+    why: "The remainders are 1, 1, 2 and 1. The set keeps 1 and 2 once each, and `sorted` makes a sorted list of them."
+
+  - type: runs
+    after: sets
+    code: |
+      letters = {"a", "b", "c"}
+      print(letters[1])
+    why: "A set has no order, so it has no indexes either. `sorted(letters)[1]` would work."
+
+  - type: choice
+    after: sets
+    prompt: What is `{}` in Python?
+    choices:
+      - An empty dictionary
+      - An empty set
+      - An empty list
+    answer: 1
+    why: "`{}` is an empty dictionary. An empty set is written `set()`."
+
+  - type: boss
+    after: dictionaries
+    prompt: |
+      Write a function `invert(codes)` that gets a dictionary and returns a new dictionary with the keys and values swapped. Use a dictionary comprehension.
+
+      For example, `invert({"FI": "Finland", "SE": "Sweden"})` returns:
+
+      ```
+      {'Finland': 'FI', 'Sweden': 'SE'}
+      ```
+    seed: |
+      def invert(codes):
+          pass
+
+
+      if __name__ == "__main__":
+          print(invert({"FI": "Finland", "SE": "Sweden"}))
+    solution: |
+      def invert(codes):
+          return {value: key for key, value in codes.items()}
+
+
+      if __name__ == "__main__":
+          print(invert({"FI": "Finland", "SE": "Sweden"}))
+    hints:
+      - "Go through the keys and values together with `codes.items()`."
+      - "In the new dictionary, the old value is the key: `{value: key for key, value in ...}`."
+    require:
+      - pattern: \{[^\n]*\bfor\b
+        message: Build the new dictionary with a dictionary comprehension.
+    tests:
+      - call: 'invert({"FI": "Finland", "SE": "Sweden"})'
+      - call: 'invert({1: "one", 2: "two", 3: "three"})'
+        hidden: true
+      - call: invert({})
+        hidden: true
+
+  - type: boss
+    after: dictionaries
+    prompt: |
+      Write a function `letter_counts(word)` that returns a dictionary with each different letter of `word` as a key and the number of times it appears as the value, in the order the letters first appear. Use a dictionary comprehension.
+
+      For example, `letter_counts("hello")` returns:
+
+      ```
+      {'h': 1, 'e': 1, 'l': 2, 'o': 1}
+      ```
+    seed: |
+      def letter_counts(word):
+          pass
+
+
+      if __name__ == "__main__":
+          print(letter_counts("hello"))
+    solution: |
+      def letter_counts(word):
+          return {c: word.count(c) for c in word}
+
+
+      if __name__ == "__main__":
+          print(letter_counts("hello"))
+    hints:
+      - "Go through the letters of the word. Each letter is a key, so a repeated letter is in the dictionary only once."
+      - "The string method `count` tells how many times a letter appears: `word.count(c)`."
+    require:
+      - pattern: \{[^\n]*\bfor\b
+        message: Build the dictionary with a dictionary comprehension.
+    tests:
+      - call: letter_counts("hello")
+      - call: letter_counts("banana")
+        hidden: true
+      - call: letter_counts("")
+        hidden: true

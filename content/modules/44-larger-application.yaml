@@ -1,0 +1,1877 @@
+id: larger-application
+summary: Building a bigger program out of classes that each have one job. Application logic first, then a text user interface that delegates to it, objects as the values of a dictionary, a class for the data of one entry, and a class that reads the data from a file and saves it back.
+steps:
+  - id: larger-application-logic
+    slug: logic
+    title: Start with the application logic
+    text: |
+      Your programs are getting bigger. A program of a few hundred lines has more details than anyone can keep in mind at once, unless it's organized into parts.
+
+      One of the oldest ideas in programming helps here: **separation of concerns**. Divide the program into parts so that each part takes care of one concern, one area of the work. Functions are one way to do this, and classes are another. With classes, the idea is often put as the **single responsibility principle**: each class, and the objects made from it, should have one job in the program.
+
+      Most applications have at least three different jobs:
+
+      - the **application logic**: the data the program is about, and the rules for handling it
+      - the **user interface**: everything the user sees and types
+      - **storage**: saving the data, for example in a file, so that it's still there the next time the program runs
+
+      Each of these is a responsibility of its own, so each gets a class of its own. This module builds one application this way, step by step: a log for a bird watcher, which records where each species of bird has been seen.
+
+      ### Start with the logic
+
+      Where to start is up to you, but the logic is often a good place. It's the heart of the program, and it can be tested without any user interface. The log needs to record a sighting, a species seen at a place, and to tell where a species has been seen. A dictionary fits well: the species is the key, and its value is a list of places.
+
+      ```python run
+      class BirdLog:
+          def __init__(self):
+              self.__sightings = {}
+
+          def add_sighting(self, species, place):
+              if species not in self.__sightings:
+                  self.__sightings[species] = []
+              self.__sightings[species].append(place)
+
+          def places(self, species):
+              if species not in self.__sightings:
+                  return None
+              return self.__sightings[species]
+
+
+      log = BirdLog()
+      log.add_sighting("robin", "park")
+      log.add_sighting("heron", "lake")
+      log.add_sighting("robin", "garden")
+      print(log.places("robin"))
+      print(log.places("heron"))
+      print(log.places("eagle"))
+      ```
+
+      ```output
+      ['park', 'garden']
+      ['lake']
+      None
+      ```
+
+      `places` returns `None` for a species that isn't in the log. The lines at the end are only there to test the class.
+
+      ### Test as you go
+
+      Try out every new method as soon as you have written it, with a few lines like the ones above. If something's wrong, you know where to look: in the code you just wrote. If you write fifty lines before you test anything, the bug could be anywhere in them. Once the class works, delete the test lines, or move them under `if __name__ == "__main__":`.
+
+      ### Logic returns, it doesn't print
+
+      `BirdLog` never prints anything and never asks for input. It returns its answers, and leaves it to the user interface to decide how to show them. That's not a detail. The same logic class can then serve a text interface, a web page or a program that tests it, without a single change.
+
+      **Your turn:** add the method `species_at(place)` to `BirdLog`. It returns a list of the species that have been seen at the given place, in the order they were added to the log, each species only once. For a place where no birds have been seen, it returns an empty list. For example,
+
+      ```python fragment
+      log = BirdLog()
+      log.add_sighting("robin", "park")
+      log.add_sighting("heron", "lake")
+      log.add_sighting("magpie", "park")
+      log.add_sighting("robin", "park")
+      print(log.species_at("park"))
+      print(log.species_at("lake"))
+      print(log.species_at("forest"))
+      ```
+
+      should print:
+
+      ```
+      ['robin', 'magpie']
+      ['heron']
+      []
+      ```
+    seed: |
+      class BirdLog:
+          def __init__(self):
+              self.__sightings = {}
+
+          def add_sighting(self, species, place):
+              if species not in self.__sightings:
+                  self.__sightings[species] = []
+              self.__sightings[species].append(place)
+
+          def places(self, species):
+              if species not in self.__sightings:
+                  return None
+              return self.__sightings[species]
+
+
+      if __name__ == "__main__":
+          log = BirdLog()
+          log.add_sighting("robin", "park")
+          log.add_sighting("heron", "lake")
+          print(log.species_at("park"))
+    solution: |
+      class BirdLog:
+          def __init__(self):
+              self.__sightings = {}
+
+          def add_sighting(self, species, place):
+              if species not in self.__sightings:
+                  self.__sightings[species] = []
+              self.__sightings[species].append(place)
+
+          def places(self, species):
+              if species not in self.__sightings:
+                  return None
+              return self.__sightings[species]
+
+          def species_at(self, place):
+              found = []
+              for species in self.__sightings:
+                  if place in self.__sightings[species]:
+                      found.append(species)
+              return found
+
+
+      if __name__ == "__main__":
+          log = BirdLog()
+          log.add_sighting("robin", "park")
+          log.add_sighting("heron", "lake")
+          print(log.species_at("park"))
+    hints:
+      - "Go through the species in the dictionary with a `for` loop, and collect the right ones into a new list."
+      - "A species belongs in the list if `place in self.__sightings[species]`: its list of places has the place in it."
+      - Each species is a key only once, so a loop over the keys adds it only once, however many times it was seen there.
+    tests:
+      - call: |
+          log = BirdLog()
+          log.add_sighting("robin", "park")
+          log.add_sighting("heron", "lake")
+          log.add_sighting("magpie", "park")
+          log.add_sighting("robin", "park")
+          print(log.species_at("park"))
+          print(log.species_at("lake"))
+          print(log.species_at("forest"))
+      - call: |
+          log = BirdLog()
+          print(log.species_at("lake"))
+          log.add_sighting("swan", "river")
+          log.add_sighting("duck", "lake")
+          log.add_sighting("swan", "lake")
+          log.add_sighting("coot", "lake")
+          log.add_sighting("duck", "lake")
+          print(log.species_at("lake"))
+          print(log.species_at("river"))
+        hidden: true
+    more:
+      - task: |
+          Write the logic class of a scoreboard for a quiz night. A `Scoreboard` keeps each team's total points, and has these methods:
+
+          - `add_points(team, points)` adds points to the team's total. A team that isn't on the board yet starts from 0.
+          - `points(team)` returns the team's total, and 0 for a team that isn't on the board.
+          - `leader()` returns the name of the team with the most points. If two teams have the most, it's the one that came on the board first. When the board is empty, it returns `None`.
+
+          For example,
+
+          ```python fragment
+          board = Scoreboard()
+          print(board.leader())
+          board.add_points("Owls", 5)
+          board.add_points("Foxes", 7)
+          board.add_points("Owls", 4)
+          print(board.points("Owls"))
+          print(board.points("Bears"))
+          print(board.leader())
+          ```
+
+          should print:
+
+          ```
+          None
+          9
+          0
+          Owls
+          ```
+        seed: |
+          # Write the class Scoreboard here.
+
+
+          if __name__ == "__main__":
+              board = Scoreboard()
+              board.add_points("Owls", 5)
+              print(board.points("Owls"))
+              print(board.leader())
+        solution: |
+          class Scoreboard:
+              def __init__(self):
+                  self.__points = {}
+
+              def add_points(self, team, points):
+                  if team not in self.__points:
+                      self.__points[team] = 0
+                  self.__points[team] += points
+
+              def points(self, team):
+                  if team not in self.__points:
+                      return 0
+                  return self.__points[team]
+
+              def leader(self):
+                  best = None
+                  for team in self.__points:
+                      if best is None or self.__points[team] > self.__points[best]:
+                          best = team
+                  return best
+
+
+          if __name__ == "__main__":
+              board = Scoreboard()
+              board.add_points("Owls", 5)
+              print(board.points("Owls"))
+              print(board.leader())
+        hints:
+          - "Keep the points in a dictionary in a private attribute: the team is the key, and its total the value."
+          - "`add_points` works like `add_sighting`: create the key with 0 if it's missing, then add with `+=`."
+          - "In `leader`, keep the best team so far in a variable that starts as `None`. Go through the teams, and replace the best one when it's still `None` or the team has more points. With `>` (not `>=`), a tie keeps the team that came first."
+        tests:
+          - call: |
+              board = Scoreboard()
+              print(board.leader())
+              board.add_points("Owls", 5)
+              board.add_points("Foxes", 7)
+              board.add_points("Owls", 4)
+              print(board.points("Owls"))
+              print(board.points("Bears"))
+              print(board.leader())
+          - call: |
+              board = Scoreboard()
+              board.add_points("Ravens", 3)
+              board.add_points("Wolves", 8)
+              board.add_points("Ravens", 5)
+              print(board.leader())
+              board.add_points("Hares", 12)
+              print(board.leader())
+              print(board.points("Ravens"))
+              print(board.points("Wolves"))
+            hidden: true
+      - task: |
+          The method `undone` of `TodoList` prints the tasks that aren't done yet. But showing things to the user is the user interface's job, and a logic class that prints can't be used anywhere else. Change `undone` so that it **returns** the tasks that aren't done, as a list in the order they were added, and prints nothing. For example,
+
+          ```python fragment
+          todo = TodoList()
+          todo.add("wash the car")
+          todo.add("call grandma")
+          todo.add("water the plants")
+          todo.mark_done("call grandma")
+          print(todo.undone())
+          ```
+
+          should print:
+
+          ```
+          ['wash the car', 'water the plants']
+          ```
+        seed: |
+          class TodoList:
+              def __init__(self):
+                  self.__tasks = {}
+
+              def add(self, task):
+                  self.__tasks[task] = False
+
+              def mark_done(self, task):
+                  if task in self.__tasks:
+                      self.__tasks[task] = True
+
+              def undone(self):
+                  for task in self.__tasks:
+                      if not self.__tasks[task]:
+                          print(task)
+
+
+          if __name__ == "__main__":
+              todo = TodoList()
+              todo.add("wash the car")
+              todo.add("call grandma")
+              todo.mark_done("call grandma")
+              print(todo.undone())
+        solution: |
+          class TodoList:
+              def __init__(self):
+                  self.__tasks = {}
+
+              def add(self, task):
+                  self.__tasks[task] = False
+
+              def mark_done(self, task):
+                  if task in self.__tasks:
+                      self.__tasks[task] = True
+
+              def undone(self):
+                  tasks = []
+                  for task in self.__tasks:
+                      if not self.__tasks[task]:
+                          tasks.append(task)
+                  return tasks
+
+
+          if __name__ == "__main__":
+              todo = TodoList()
+              todo.add("wash the car")
+              todo.add("call grandma")
+              todo.mark_done("call grandma")
+              print(todo.undone())
+        hints:
+          - "Instead of printing each task, collect the tasks into a new list."
+          - "Start with an empty list, `append` each task that isn't done, and `return` the list after the loop."
+        tests:
+          - call: |
+              todo = TodoList()
+              todo.add("wash the car")
+              todo.add("call grandma")
+              todo.add("water the plants")
+              todo.mark_done("call grandma")
+              todo.undone()
+          - call: |
+              todo = TodoList()
+              todo.undone()
+            hidden: true
+          - call: |
+              todo = TodoList()
+              todo.add("pay rent")
+              todo.add("buy bread")
+              todo.mark_done("pay rent")
+              todo.mark_done("buy bread")
+              print(todo.undone())
+              todo.add("fix the bike")
+              todo.mark_done("walk the dog")
+              todo.undone()
+            hidden: true
+
+  - id: larger-application-interface
+    slug: user-interface
+    title: A text user interface
+    text: |
+      With the logic working, the application needs a user interface. A simple one is text: the program asks for a command, carries it out, and asks for the next one, until the user wants to quit. The user interface gets a class of its own, `BirdLogApp`. It creates a `BirdLog` and keeps it in a private attribute.
+
+      ```python run
+      class BirdLog:
+          def __init__(self):
+              self.__sightings = {}
+
+          def add_sighting(self, species, place):
+              if species not in self.__sightings:
+                  self.__sightings[species] = []
+              self.__sightings[species].append(place)
+
+          def places(self, species):
+              if species not in self.__sightings:
+                  return None
+              return self.__sightings[species]
+
+
+      class BirdLogApp:
+          def __init__(self):
+              self.__log = BirdLog()
+
+          def help(self):
+              print("commands:")
+              print("1 add a sighting")
+              print("2 search")
+              print("0 quit")
+
+          def add_sighting(self):
+              species = input("species: ")
+              place = input("place: ")
+              self.__log.add_sighting(species, place)
+
+          def search(self):
+              species = input("species: ")
+              places = self.__log.places(species)
+              if places is None:
+                  print("not seen yet")
+                  return
+              for place in places:
+                  print(place)
+
+          def execute(self):
+              self.help()
+              while True:
+                  print()
+                  command = input("command: ")
+                  if command == "0":
+                      break
+                  elif command == "1":
+                      self.add_sighting()
+                  elif command == "2":
+                      self.search()
+                  else:
+                      self.help()
+
+
+      if __name__ == "__main__":
+          app = BirdLogApp()
+          app.execute()
+      ```
+
+      ```input
+      1
+      robin
+      park
+      1
+      robin
+      garden
+      2
+      robin
+      2
+      eagle
+      0
+      ```
+
+      ```output
+      commands:
+      1 add a sighting
+      2 search
+      0 quit
+
+      command: 1
+      species: robin
+      place: park
+
+      command: 1
+      species: robin
+      place: garden
+
+      command: 2
+      species: robin
+      park
+      garden
+
+      command: 2
+      species: eagle
+      not seen yet
+
+      command: 0
+      ```
+
+      Look at how the work is shared:
+
+      - `execute` is the main loop. It reads a command and **delegates**: it calls the method that handles that command, and does nothing else.
+      - `add_sighting` and `search` each handle one command. They ask the user for what they need, call `BirdLog`'s methods, and print the results.
+      - `help` prints the list of commands, at the start and whenever the user types something the app doesn't know.
+      - The user interface never touches the dictionary of sightings. Storing a sighting is `BirdLog`'s job.
+
+      Everything could have been written into one long `while` loop, and the program would even be a bit shorter. But each new command would make that loop longer and harder to follow. With a method for each command, you know where to look: to change how searching works, you go to `search`, and nothing else is affected. Adding a command takes three small changes: a line in `help`, a new method, and an `elif` in `execute`.
+
+      Both classes have a method called `add_sighting`, and that's fine. `BirdLogApp`'s asks the user, while `BirdLog`'s stores the data. They never get mixed up, since each one is called on an object of its own class.
+
+      **Your turn:** the pantry app works, but its `execute` does everything itself. Move the code of each command into a method of its own: `add_item()` for command 1 and `check()` for command 2. Then `execute` only reads the command and calls the right method. The app should work exactly as before, for example:
+
+      ```
+      command (1 add, 2 check, 0 quit): 1
+      item: rice
+      amount: 2
+      command (1 add, 2 check, 0 quit): 1
+      item: rice
+      amount: 3
+      command (1 add, 2 check, 0 quit): 2
+      item: rice
+      rice: 5
+      command (1 add, 2 check, 0 quit): 2
+      item: salt
+      salt: 0
+      command (1 add, 2 check, 0 quit): 0
+      ```
+    seed: |
+      class Pantry:
+          def __init__(self):
+              self.__items = {}
+
+          def add(self, item, amount):
+              if item not in self.__items:
+                  self.__items[item] = 0
+              self.__items[item] += amount
+
+          def amount(self, item):
+              if item not in self.__items:
+                  return 0
+              return self.__items[item]
+
+
+      class PantryApp:
+          def __init__(self):
+              self.__pantry = Pantry()
+
+          def execute(self):
+              while True:
+                  command = input("command (1 add, 2 check, 0 quit): ")
+                  if command == "0":
+                      break
+                  elif command == "1":
+                      item = input("item: ")
+                      amount = int(input("amount: "))
+                      self.__pantry.add(item, amount)
+                  elif command == "2":
+                      item = input("item: ")
+                      print(f"{item}: {self.__pantry.amount(item)}")
+
+
+      if __name__ == "__main__":
+          app = PantryApp()
+          app.execute()
+    solution: |
+      class Pantry:
+          def __init__(self):
+              self.__items = {}
+
+          def add(self, item, amount):
+              if item not in self.__items:
+                  self.__items[item] = 0
+              self.__items[item] += amount
+
+          def amount(self, item):
+              if item not in self.__items:
+                  return 0
+              return self.__items[item]
+
+
+      class PantryApp:
+          def __init__(self):
+              self.__pantry = Pantry()
+
+          def add_item(self):
+              item = input("item: ")
+              amount = int(input("amount: "))
+              self.__pantry.add(item, amount)
+
+          def check(self):
+              item = input("item: ")
+              print(f"{item}: {self.__pantry.amount(item)}")
+
+          def execute(self):
+              while True:
+                  command = input("command (1 add, 2 check, 0 quit): ")
+                  if command == "0":
+                      break
+                  elif command == "1":
+                      self.add_item()
+                  elif command == "2":
+                      self.check()
+
+
+      if __name__ == "__main__":
+          app = PantryApp()
+          app.execute()
+    hints:
+      - "Write `def add_item(self):` in `PantryApp`, and move the three lines of command 1 into it. Do the same for command 2 with `def check(self):`."
+      - "In `execute`, the branches become one line each: `self.add_item()` and `self.check()`."
+      - "The methods use the pantry through `self.__pantry`, just as the loop did."
+    require:
+      - pattern: def\s+add_item\s*\(\s*self\s*\)
+        message: "Write the method `add_item(self)` for command 1."
+      - pattern: def\s+check\s*\(\s*self\s*\)
+        message: "Write the method `check(self)` for command 2."
+      - pattern: self\.add_item\(\)
+        message: "`execute` should call `self.add_item()` for command 1."
+      - pattern: self\.check\(\)
+        message: "`execute` should call `self.check()` for command 2."
+    tests:
+      - stdin: |
+          1
+          rice
+          2
+          1
+          rice
+          3
+          2
+          rice
+          2
+          salt
+          0
+      - stdin: |
+          2
+          oats
+          1
+          oats
+          10
+          1
+          beans
+          4
+          2
+          beans
+          2
+          oats
+          0
+        hidden: true
+    more:
+      - task: |
+          `BirdLog` now has the method `species_at(place)` from the previous step. Add a command to the user interface: `3 species at a place` asks for a place and prints each species seen there on a line of its own, or `no birds seen here` if there are none. Add the command to `help` too, between commands 2 and 0. Keep to the structure: a method of its own for the new command, and a new branch in `execute`. For example:
+
+          ```
+          commands:
+          1 add a sighting
+          2 search
+          3 species at a place
+          0 quit
+
+          command: 1
+          species: robin
+          place: park
+
+          command: 1
+          species: heron
+          place: lake
+
+          command: 1
+          species: magpie
+          place: park
+
+          command: 3
+          place: park
+          robin
+          magpie
+
+          command: 3
+          place: forest
+          no birds seen here
+
+          command: 0
+          ```
+        seed: |
+          class BirdLog:
+              def __init__(self):
+                  self.__sightings = {}
+
+              def add_sighting(self, species, place):
+                  if species not in self.__sightings:
+                      self.__sightings[species] = []
+                  self.__sightings[species].append(place)
+
+              def places(self, species):
+                  if species not in self.__sightings:
+                      return None
+                  return self.__sightings[species]
+
+              def species_at(self, place):
+                  found = []
+                  for species in self.__sightings:
+                      if place in self.__sightings[species]:
+                          found.append(species)
+                  return found
+
+
+          class BirdLogApp:
+              def __init__(self):
+                  self.__log = BirdLog()
+
+              def help(self):
+                  print("commands:")
+                  print("1 add a sighting")
+                  print("2 search")
+                  print("0 quit")
+
+              def add_sighting(self):
+                  species = input("species: ")
+                  place = input("place: ")
+                  self.__log.add_sighting(species, place)
+
+              def search(self):
+                  species = input("species: ")
+                  places = self.__log.places(species)
+                  if places is None:
+                      print("not seen yet")
+                      return
+                  for place in places:
+                      print(place)
+
+              def execute(self):
+                  self.help()
+                  while True:
+                      print()
+                      command = input("command: ")
+                      if command == "0":
+                          break
+                      elif command == "1":
+                          self.add_sighting()
+                      elif command == "2":
+                          self.search()
+                      else:
+                          self.help()
+
+
+          if __name__ == "__main__":
+              app = BirdLogApp()
+              app.execute()
+        solution: |
+          class BirdLog:
+              def __init__(self):
+                  self.__sightings = {}
+
+              def add_sighting(self, species, place):
+                  if species not in self.__sightings:
+                      self.__sightings[species] = []
+                  self.__sightings[species].append(place)
+
+              def places(self, species):
+                  if species not in self.__sightings:
+                      return None
+                  return self.__sightings[species]
+
+              def species_at(self, place):
+                  found = []
+                  for species in self.__sightings:
+                      if place in self.__sightings[species]:
+                          found.append(species)
+                  return found
+
+
+          class BirdLogApp:
+              def __init__(self):
+                  self.__log = BirdLog()
+
+              def help(self):
+                  print("commands:")
+                  print("1 add a sighting")
+                  print("2 search")
+                  print("3 species at a place")
+                  print("0 quit")
+
+              def add_sighting(self):
+                  species = input("species: ")
+                  place = input("place: ")
+                  self.__log.add_sighting(species, place)
+
+              def search(self):
+                  species = input("species: ")
+                  places = self.__log.places(species)
+                  if places is None:
+                      print("not seen yet")
+                      return
+                  for place in places:
+                      print(place)
+
+              def species_at(self):
+                  place = input("place: ")
+                  found = self.__log.species_at(place)
+                  if len(found) == 0:
+                      print("no birds seen here")
+                      return
+                  for species in found:
+                      print(species)
+
+              def execute(self):
+                  self.help()
+                  while True:
+                      print()
+                      command = input("command: ")
+                      if command == "0":
+                          break
+                      elif command == "1":
+                          self.add_sighting()
+                      elif command == "2":
+                          self.search()
+                      elif command == "3":
+                          self.species_at()
+                      else:
+                          self.help()
+
+
+          if __name__ == "__main__":
+              app = BirdLogApp()
+              app.execute()
+        hints:
+          - "Three changes: a line `print(\"3 species at a place\")` in `help`, a new method in `BirdLogApp`, and an `elif command == \"3\":` branch in `execute` that calls it."
+          - "The new method asks for the place with `input(\"place: \")` and gets the species from the logic: `self.__log.species_at(place)`."
+          - "The logic returns an empty list when nothing was seen there. Check `len(found) == 0` first and print `no birds seen here`; otherwise print each species with a loop."
+        require:
+          - pattern: self\.__log\.species_at\(
+            message: "Get the species from the logic class: `self.__log.species_at(place)`."
+        tests:
+          - stdin: |
+              1
+              robin
+              park
+              1
+              heron
+              lake
+              1
+              magpie
+              park
+              3
+              park
+              3
+              forest
+              0
+          - stdin: |
+              3
+              lake
+              1
+              swan
+              river
+              1
+              swan
+              lake
+              2
+              swan
+              3
+              lake
+              7
+              0
+            hidden: true
+      - task: |
+          The quiz night's `Scoreboard` from the previous step is ready. Write its text user interface, the class `ScoreboardApp`. Its method `execute` first prints the commands, `commands: 1 add points, 2 show a team, 3 leader, 0 quit`, and then reads commands until the user types 0:
+
+          - `1` asks for a team and points, and adds them. If the points aren't a whole number, it prints `points must be a whole number` and adds nothing.
+          - `2` asks for a team and prints its points, as `Owls: 5 points`.
+          - `3` prints `leader: ` and the leading team, or `no teams yet`.
+          - Any other command prints the commands again.
+
+          Give each command a method of its own. For example:
+
+          ```
+          commands: 1 add points, 2 show a team, 3 leader, 0 quit
+          command: 3
+          no teams yet
+          command: 1
+          team: Owls
+          points: 5
+          command: 1
+          team: Foxes
+          points: ten
+          points must be a whole number
+          command: 1
+          team: Foxes
+          points: 7
+          command: 2
+          team: Owls
+          Owls: 5 points
+          command: 3
+          leader: Foxes
+          command: 0
+          ```
+        seed: |
+          class Scoreboard:
+              def __init__(self):
+                  self.__points = {}
+
+              def add_points(self, team, points):
+                  if team not in self.__points:
+                      self.__points[team] = 0
+                  self.__points[team] += points
+
+              def points(self, team):
+                  if team not in self.__points:
+                      return 0
+                  return self.__points[team]
+
+              def leader(self):
+                  best = None
+                  for team in self.__points:
+                      if best is None or self.__points[team] > self.__points[best]:
+                          best = team
+                  return best
+
+
+          class ScoreboardApp:
+              def __init__(self):
+                  self.__board = Scoreboard()
+
+              def execute(self):
+                  pass
+
+
+          if __name__ == "__main__":
+              app = ScoreboardApp()
+              app.execute()
+        solution: |
+          class Scoreboard:
+              def __init__(self):
+                  self.__points = {}
+
+              def add_points(self, team, points):
+                  if team not in self.__points:
+                      self.__points[team] = 0
+                  self.__points[team] += points
+
+              def points(self, team):
+                  if team not in self.__points:
+                      return 0
+                  return self.__points[team]
+
+              def leader(self):
+                  best = None
+                  for team in self.__points:
+                      if best is None or self.__points[team] > self.__points[best]:
+                          best = team
+                  return best
+
+
+          class ScoreboardApp:
+              def __init__(self):
+                  self.__board = Scoreboard()
+
+              def help(self):
+                  print("commands: 1 add points, 2 show a team, 3 leader, 0 quit")
+
+              def add_points(self):
+                  team = input("team: ")
+                  try:
+                      points = int(input("points: "))
+                  except ValueError:
+                      print("points must be a whole number")
+                      return
+                  self.__board.add_points(team, points)
+
+              def show(self):
+                  team = input("team: ")
+                  print(f"{team}: {self.__board.points(team)} points")
+
+              def leader(self):
+                  leader = self.__board.leader()
+                  if leader is None:
+                      print("no teams yet")
+                  else:
+                      print("leader:", leader)
+
+              def execute(self):
+                  self.help()
+                  while True:
+                      command = input("command: ")
+                      if command == "0":
+                          break
+                      elif command == "1":
+                          self.add_points()
+                      elif command == "2":
+                          self.show()
+                      elif command == "3":
+                          self.leader()
+                      else:
+                          self.help()
+
+
+          if __name__ == "__main__":
+              app = ScoreboardApp()
+              app.execute()
+        hints:
+          - "Follow `BirdLogApp`: a `help` method, one method for each command, and an `execute` with a `while True` loop that reads `input(\"command: \")` and calls the right method."
+          - "Checking the points is the user interface's job. Put `int(input(\"points: \"))` inside `try`, and in `except ValueError:` print the message and `return` before anything is added."
+          - "The logic's `leader()` returns `None` for an empty board; check that with `is None` before printing the leader."
+        require:
+          - pattern: self\.__board\.add_points\(
+            message: "Add the points through the logic class: `self.__board.add_points(...)`."
+          - pattern: self\.__board\.leader\(
+            message: "Ask the logic class for the leader: `self.__board.leader()`."
+        tests:
+          - stdin: |
+              3
+              1
+              Owls
+              5
+              1
+              Foxes
+              ten
+              1
+              Foxes
+              7
+              2
+              Owls
+              3
+              0
+          - stdin: |
+              2
+              Bears
+              1
+              Bears
+              2.5
+              hello
+              1
+              Bears
+              4
+              1
+              Lynx
+              4
+              1
+              Bears
+              -1
+              3
+              2
+              Bears
+              0
+            hidden: true
+
+  - id: larger-application-objects
+    slug: objects-in-dictionary
+    title: Objects in a dictionary
+    text: |
+      The values of a dictionary can be any values, objects of your own classes too. Here each species in the log is a `Species` object, which keeps a list of the places where it was seen:
+
+      ```python run
+      class Species:
+          def __init__(self, name):
+              self.name = name
+              self.places = []
+
+          def add_place(self, place):
+              self.places.append(place)
+
+          def __str__(self):
+              return f"{self.name}: {', '.join(self.places)}"
+
+
+      sightings = [("robin", "park"), ("heron", "lake"), ("robin", "garden")]
+      log = {}
+      for name, place in sightings:
+          if name not in log:
+              log[name] = Species(name)
+          log[name].add_place(place)
+
+      for name in log:
+          print(log[name])
+      ```
+
+      ```output
+      robin: park, garden
+      heron: lake
+      ```
+
+      The loop first makes sure the species has an object: if the name isn't a key yet, it creates a new `Species` and puts it in the dictionary. After that `if`, the object is surely there, either just created or made on an earlier round. `log[name].add_place(place)` does two things in one line: `log[name]` gets the object from the dictionary, and `.add_place(place)` calls its method. It could be written in two lines too:
+
+      ```python fragment
+      species = log[name]
+      species.add_place(place)
+      ```
+
+      The variable `species` doesn't hold a copy. It refers to the very object that's in the dictionary, so the place is added to that object.
+
+      ### A class for the data of one entry
+
+      In the earlier steps, each species was just a list of places. Now the bird watcher wants to write a note about a species too. A list of places and a note are the data of one entry in the log, so they get a class of their own, and `BirdLog` keeps `Species` objects in its dictionary:
+
+      ```python run
+      class Species:
+          def __init__(self, name):
+              self.__name = name
+              self.__places = []
+              self.__note = None
+
+          def places(self):
+              return self.__places
+
+          def note(self):
+              return self.__note
+
+          def add_place(self, place):
+              self.__places.append(place)
+
+          def set_note(self, note):
+              self.__note = note
+
+
+      class BirdLog:
+          def __init__(self):
+              self.__species = {}
+
+          def __get_species(self, name):
+              if name not in self.__species:
+                  self.__species[name] = Species(name)
+              return self.__species[name]
+
+          def add_sighting(self, name, place):
+              self.__get_species(name).add_place(place)
+
+          def add_note(self, name, note):
+              self.__get_species(name).set_note(note)
+
+          def get(self, name):
+              if name not in self.__species:
+                  return None
+              return self.__species[name]
+
+
+      log = BirdLog()
+      log.add_sighting("robin", "park")
+      log.add_sighting("robin", "garden")
+      log.add_note("robin", "red breast, sings at dawn")
+      log.add_note("owl", "heard, not seen")
+      robin = log.get("robin")
+      print(robin.places())
+      print(robin.note())
+      print(log.get("owl").places())
+      print(log.get("eagle"))
+      ```
+
+      ```output
+      ['park', 'garden']
+      red breast, sings at dawn
+      []
+      None
+      ```
+
+      The private helper `__get_species` finds the object for a name, and creates it first if needed, so `add_sighting` and `add_note` don't both repeat that `if`. `get` returns the whole `Species` object, or `None` for a name that isn't in the log.
+
+      Change one part at a time, and test it before you go on. Here the logic changed, so its test lines came first. The user interface changes only a little: `search` now gets a `Species` object and asks it for the places and the note, and a new command asks for a note and calls `add_note`.
+
+      ```python fragment
+      def search(self):
+          name = input("species: ")
+          species = self.__log.get(name)
+          if species is None:
+              print("not seen yet")
+              return
+          for place in species.places():
+              print(place)
+          if species.note() is not None:
+              print("note:", species.note())
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Counter:
+          def __init__(self):
+              self.count = 0
+
+          def add(self):
+              self.count += 1
+
+
+      votes = {}
+      for dish in ["soup", "pie", "soup", "salad", "soup"]:
+          if dish not in votes:
+              votes[dish] = Counter()
+          votes[dish].add()
+
+      pie = votes["pie"]
+      pie.add()
+      for dish in votes:
+          print(dish, votes[dish].count)
+    hints:
+      - "Each dish gets one `Counter` object, created the first time the dish comes up. Every vote adds one to that dish's counter."
+      - "`pie` refers to the same object that's in the dictionary, so `pie.add()` adds one more to the pie's count."
+      - "The dictionary keeps the order in which the keys were added: soup, pie, salad."
+    more:
+      - task: |
+          A recipe box app needs a class for the data of one recipe. Write the class `Recipe`. Its constructor takes the recipe's name, and it has these methods:
+
+          - `ingredients()` returns the list of ingredients, an empty list at first.
+          - `minutes()` returns the cooking time in minutes, and `None` until it has been set.
+          - `add_ingredient(ingredient)` adds an ingredient to the list.
+          - `set_minutes(minutes)` sets the cooking time.
+          - `__str__` returns text such as `pancakes (ingredients: 2, time: 20 min)`, or `time: unknown` when the time hasn't been set.
+
+          For example,
+
+          ```python fragment
+          pancakes = Recipe("pancakes")
+          print(pancakes)
+          print(pancakes.ingredients())
+          print(pancakes.minutes())
+          pancakes.add_ingredient("flour")
+          pancakes.add_ingredient("milk")
+          pancakes.set_minutes(20)
+          print(pancakes.ingredients())
+          print(pancakes.minutes())
+          print(pancakes)
+          ```
+
+          should print:
+
+          ```
+          pancakes (ingredients: 0, time: unknown)
+          []
+          None
+          ['flour', 'milk']
+          20
+          pancakes (ingredients: 2, time: 20 min)
+          ```
+        seed: |
+          # Write the class Recipe here.
+
+
+          if __name__ == "__main__":
+              pancakes = Recipe("pancakes")
+              pancakes.add_ingredient("flour")
+              print(pancakes)
+        solution: |
+          class Recipe:
+              def __init__(self, name):
+                  self.__name = name
+                  self.__ingredients = []
+                  self.__minutes = None
+
+              def ingredients(self):
+                  return self.__ingredients
+
+              def minutes(self):
+                  return self.__minutes
+
+              def add_ingredient(self, ingredient):
+                  self.__ingredients.append(ingredient)
+
+              def set_minutes(self, minutes):
+                  self.__minutes = minutes
+
+              def __str__(self):
+                  if self.__minutes is None:
+                      time = "unknown"
+                  else:
+                      time = f"{self.__minutes} min"
+                  return f"{self.__name} (ingredients: {len(self.__ingredients)}, time: {time})"
+
+
+          if __name__ == "__main__":
+              pancakes = Recipe("pancakes")
+              pancakes.add_ingredient("flour")
+              print(pancakes)
+        hints:
+          - "The constructor sets three attributes: the name, an empty list of ingredients, and the minutes as `None`. Make them private, as in `Species`."
+          - "A method can't have the same name as an attribute of the object, so call the attributes `self.__ingredients` and `self.__minutes`: then the methods `ingredients()` and `minutes()` can return them."
+          - "In `__str__`, choose the time text first with an `if`: `\"unknown\"` when the minutes are `None`, else `f\"{self.__minutes} min\"`."
+        tests:
+          - call: |
+              pancakes = Recipe("pancakes")
+              print(pancakes)
+              print(pancakes.ingredients())
+              print(pancakes.minutes())
+              pancakes.add_ingredient("flour")
+              pancakes.add_ingredient("milk")
+              pancakes.set_minutes(20)
+              print(pancakes.ingredients())
+              print(pancakes.minutes())
+              print(pancakes)
+          - call: |
+              soup = Recipe("tomato soup")
+              for ingredient in ["tomatoes", "onion", "garlic", "basil"]:
+                  soup.add_ingredient(ingredient)
+              print(soup)
+              soup.set_minutes(35)
+              print(soup)
+              print(soup.minutes())
+              print(Recipe("toast"))
+            hidden: true
+      - task: |
+          Now write the logic class `RecipeBox`, which keeps `Recipe` objects in a dictionary, with the recipe's name as the key. `Recipe` is ready in the starter code. A `RecipeBox` has these methods:
+
+          - `add_ingredient(name, ingredient)` adds an ingredient to the recipe of that name, creating the recipe first if the box doesn't have it yet.
+          - `set_minutes(name, minutes)` sets the recipe's time, creating the recipe first if needed.
+          - `get(name)` returns the `Recipe` object, or `None` if there's no recipe of that name.
+          - `quick(limit)` returns a list of the names of the recipes whose time is set and is at most `limit` minutes, in the order they were added.
+
+          For example,
+
+          ```python fragment
+          box = RecipeBox()
+          box.add_ingredient("pancakes", "flour")
+          box.add_ingredient("pancakes", "milk")
+          box.set_minutes("pancakes", 20)
+          box.set_minutes("soup", 45)
+          box.add_ingredient("salad", "lettuce")
+          print(box.get("pancakes"))
+          print(box.get("salad"))
+          print(box.get("pizza"))
+          print(box.quick(30))
+          ```
+
+          should print:
+
+          ```
+          pancakes (ingredients: 2, time: 20 min)
+          salad (ingredients: 1, time: unknown)
+          None
+          ['pancakes']
+          ```
+        seed: |
+          class Recipe:
+              def __init__(self, name):
+                  self.__name = name
+                  self.__ingredients = []
+                  self.__minutes = None
+
+              def ingredients(self):
+                  return self.__ingredients
+
+              def minutes(self):
+                  return self.__minutes
+
+              def add_ingredient(self, ingredient):
+                  self.__ingredients.append(ingredient)
+
+              def set_minutes(self, minutes):
+                  self.__minutes = minutes
+
+              def __str__(self):
+                  if self.__minutes is None:
+                      time = "unknown"
+                  else:
+                      time = f"{self.__minutes} min"
+                  return f"{self.__name} (ingredients: {len(self.__ingredients)}, time: {time})"
+
+
+          # Write the class RecipeBox here.
+
+
+          if __name__ == "__main__":
+              box = RecipeBox()
+              box.add_ingredient("pancakes", "flour")
+              print(box.get("pancakes"))
+        solution: |
+          class Recipe:
+              def __init__(self, name):
+                  self.__name = name
+                  self.__ingredients = []
+                  self.__minutes = None
+
+              def ingredients(self):
+                  return self.__ingredients
+
+              def minutes(self):
+                  return self.__minutes
+
+              def add_ingredient(self, ingredient):
+                  self.__ingredients.append(ingredient)
+
+              def set_minutes(self, minutes):
+                  self.__minutes = minutes
+
+              def __str__(self):
+                  if self.__minutes is None:
+                      time = "unknown"
+                  else:
+                      time = f"{self.__minutes} min"
+                  return f"{self.__name} (ingredients: {len(self.__ingredients)}, time: {time})"
+
+
+          class RecipeBox:
+              def __init__(self):
+                  self.__recipes = {}
+
+              def __recipe(self, name):
+                  if name not in self.__recipes:
+                      self.__recipes[name] = Recipe(name)
+                  return self.__recipes[name]
+
+              def add_ingredient(self, name, ingredient):
+                  self.__recipe(name).add_ingredient(ingredient)
+
+              def set_minutes(self, name, minutes):
+                  self.__recipe(name).set_minutes(minutes)
+
+              def get(self, name):
+                  if name not in self.__recipes:
+                      return None
+                  return self.__recipes[name]
+
+              def quick(self, limit):
+                  names = []
+                  for name in self.__recipes:
+                      minutes = self.__recipes[name].minutes()
+                      if minutes is not None and minutes <= limit:
+                          names.append(name)
+                  return names
+
+
+          if __name__ == "__main__":
+              box = RecipeBox()
+              box.add_ingredient("pancakes", "flour")
+              print(box.get("pancakes"))
+        hints:
+          - "Keep the recipes in a dictionary in a private attribute. A private helper method that returns the recipe of a name, creating it first if it's missing, saves you from writing that `if` twice."
+          - "`add_ingredient` gets the recipe object and calls its own `add_ingredient`; `set_minutes` does the same with `set_minutes`."
+          - "In `quick`, ask each recipe for its `minutes()`. Check that it isn't `None` before you compare it with the limit: `None <= 30` would stop with a `TypeError`."
+        require:
+          - pattern: \bRecipe\s*\(\s*name\s*\)
+            message: "Create a recipe object with `Recipe(name)` when the box doesn't have the recipe yet."
+        tests:
+          - call: |
+              box = RecipeBox()
+              box.add_ingredient("pancakes", "flour")
+              box.add_ingredient("pancakes", "milk")
+              box.set_minutes("pancakes", 20)
+              box.set_minutes("soup", 45)
+              box.add_ingredient("salad", "lettuce")
+              print(box.get("pancakes"))
+              print(box.get("salad"))
+              print(box.get("pizza"))
+              print(box.quick(30))
+          - call: |
+              box = RecipeBox()
+              print(box.quick(60))
+              box.set_minutes("omelet", 10)
+              box.set_minutes("stew", 90)
+              box.set_minutes("toast", 5)
+              box.add_ingredient("omelet", "eggs")
+              box.add_ingredient("omelet", "cheese")
+              print(box.quick(10))
+              print(box.quick(100))
+              omelet = box.get("omelet")
+              print(omelet.ingredients())
+              omelet.add_ingredient("chives")
+              print(box.get("omelet"))
+            hidden: true
+
+  - id: larger-application-files
+    slug: files
+    title: Reading and saving the data
+    text: |
+      A bird log that forgets everything when the program ends isn't much use. The data should be saved in a file, and read back the next time the program starts. Handling the file is a responsibility of its own, so it gets a class of its own too.
+
+      The file has one line for each species: the species first, then the places, separated by semicolons:
+
+      ```text
+      robin;park;garden
+      magpie;park
+      ```
+
+      ### Taking the rest of a list
+
+      When a line is split at the semicolons, the first part is the species and all the other parts are places, however many there are. Python can take a list apart this way, with a **starred assignment**: a `*` in front of the last variable gives it a list of all the items that are left over.
+
+      ```python repl
+      >>> species, *places = "robin;park;garden".split(";")
+      >>> species
+      'robin'
+      >>> places
+      ['park', 'garden']
+      >>> first, second, *rest = [1, 2, 3, 4, 5]
+      >>> rest
+      [3, 4, 5]
+      >>> species, *places = ["heron"]
+      >>> places
+      []
+      ```
+
+      ### A class for the file
+
+      `FileHandler` gets the file's name in its constructor. `load` reads the file into a dictionary of the same shape that `BirdLog` uses, and `save` writes such a dictionary back. The first time the program runs there's no file yet, so `load` catches the `FileNotFoundError` and returns an empty dictionary: an empty log is the right start. Before the class goes into the application, it's tested on its own:
+
+      ```file birds.txt
+      robin;park;garden
+      magpie;park
+      ```
+
+      ```python run
+      class FileHandler:
+          def __init__(self, filename):
+              self.__filename = filename
+
+          def load(self):
+              data = {}
+              try:
+                  with open(self.__filename) as file:
+                      for line in file:
+                          species, *places = line.strip().split(";")
+                          data[species] = places
+              except FileNotFoundError:
+                  pass
+              return data
+
+          def save(self, data):
+              with open(self.__filename, "w") as file:
+                  for species, places in data.items():
+                      file.write(";".join([species] + places) + "\n")
+
+
+      handler = FileHandler("birds.txt")
+      data = handler.load()
+      print(data)
+      data["robin"].append("forest")
+      data["heron"] = ["lake"]
+      handler.save(data)
+
+      with open("birds.txt") as file:
+          for line in file:
+              print(line.strip())
+      ```
+
+      ```output
+      {'robin': ['park', 'garden'], 'magpie': ['park']}
+      robin;park;garden;forest
+      magpie;park
+      heron;lake
+      ```
+
+      `[species] + places` makes one list of the species and its places, and `";".join(...)` puts semicolons between them.
+
+      ### Into the application
+
+      The application reads the file once, when it starts, and keeps the data in its objects while it runs. When the user quits, it writes all of the data back, replacing what was in the file. This is usually the simplest way to work with a file: changing a file line by line in place is much harder. `BirdLog` gets one more method, `all_data()`, which returns its dictionary of sightings, and the user interface gets a `quit` method that saves:
+
+      ```python fragment
+      class BirdLogApp:
+          def __init__(self, storage):
+              self.__log = BirdLog()
+              self.__storage = storage
+              for species, places in self.__storage.load().items():
+                  for place in places:
+                      self.__log.add_sighting(species, place)
+
+          def quit(self):
+              self.__storage.save(self.__log.all_data())
+
+          # help, add_sighting and search as before. In execute,
+          # command 0 calls self.quit() before the break.
+
+
+      if __name__ == "__main__":
+          app = BirdLogApp(FileHandler("birds.txt"))
+          app.execute()
+      ```
+
+      Notice that the app doesn't create its `FileHandler` itself: it gets one as a parameter. The name of the file is no concern of the user interface, so it's decided outside it. To keep the log in another file, or to test the app with a test file, you pass it another handler and don't change a line of `BirdLogApp`. This is called **dependency injection**: an object gets the things it depends on from outside.
+
+      **Your turn:** fill in the blank so that each line of the gift list file is split into a name and a list of gift ideas, and the program prints:
+
+      ```
+      {'Mia': ['scarf', 'puzzle'], 'Leo': ['kite'], 'Ole': []}
+      ```
+
+      The file `gifts.txt` holds:
+
+      ```text
+      Mia;scarf;puzzle
+      Leo;kite
+      Ole
+      ```
+    fill: |
+      class GiftFile:
+          def __init__(self, filename):
+              self.__filename = filename
+
+          def load(self):
+              gifts = {}
+              with open(self.__filename) as file:
+                  for line in file:
+                      name, [[*ideas]] = line.strip().split(";")
+                      gifts[name] = ideas
+              return gifts
+
+
+      if __name__ == "__main__":
+          handler = GiftFile("gifts.txt")
+          print(handler.load())
+    hints:
+      - "The name is the first part of the line, and the variable `ideas` should get a list of all the other parts."
+      - "A `*` in front of the last variable gives it the rest of the list: the blank is `*ideas`."
+    tests:
+      - files:
+          gifts.txt: |
+            Mia;scarf;puzzle
+            Leo;kite
+            Ole
+      - files:
+          gifts.txt: |
+            Grandpa;slippers;tea;crossword book
+            Ava;paints
+        hidden: true
+    more:
+      - task: |
+          `GiftFile` can load a gift list from a file. Add the method `save(gifts)`, which writes a dictionary of the same shape back to the file, replacing what was there: one line for each person, the name first and then the gift ideas, with semicolons between them. A person with no ideas gets a line with just the name. For example, after
+
+          ```python fragment
+          handler = GiftFile("gifts.txt")
+          handler.save({"Mia": ["scarf", "puzzle"], "Leo": ["kite"], "Ole": []})
+          ```
+
+          the file `gifts.txt` should hold:
+
+          ```text
+          Mia;scarf;puzzle
+          Leo;kite
+          Ole
+          ```
+        seed: |
+          class GiftFile:
+              def __init__(self, filename):
+                  self.__filename = filename
+
+              def load(self):
+                  gifts = {}
+                  try:
+                      with open(self.__filename) as file:
+                          for line in file:
+                              name, *ideas = line.strip().split(";")
+                              gifts[name] = ideas
+                  except FileNotFoundError:
+                      pass
+                  return gifts
+
+
+          if __name__ == "__main__":
+              handler = GiftFile("gifts.txt")
+              handler.save({"Mia": ["scarf", "puzzle"], "Leo": ["kite"]})
+              print(handler.load())
+        solution: |
+          class GiftFile:
+              def __init__(self, filename):
+                  self.__filename = filename
+
+              def load(self):
+                  gifts = {}
+                  try:
+                      with open(self.__filename) as file:
+                          for line in file:
+                              name, *ideas = line.strip().split(";")
+                              gifts[name] = ideas
+                  except FileNotFoundError:
+                      pass
+                  return gifts
+
+              def save(self, gifts):
+                  with open(self.__filename, "w") as file:
+                      for name, ideas in gifts.items():
+                          file.write(";".join([name] + ideas) + "\n")
+
+
+          if __name__ == "__main__":
+              handler = GiftFile("gifts.txt")
+              handler.save({"Mia": ["scarf", "puzzle"], "Leo": ["kite"]})
+              print(handler.load())
+        hints:
+          - "Open the file for writing with `with open(self.__filename, \"w\") as file:`. The mode `\"w\"` replaces what was in the file."
+          - "Go through the dictionary with `for name, ideas in gifts.items():` and write one line for each person."
+          - "`[name] + ideas` is one list of the name and the ideas, and `\";\".join(...)` puts semicolons between them. Remember the `\"\\n\"` at the end of each line."
+        tests:
+          - call: |
+              handler = GiftFile("gifts.txt")
+              handler.save({"Mia": ["scarf", "puzzle"], "Leo": ["kite"], "Ole": []})
+            writes: [gifts.txt]
+          - files:
+              gifts.txt: |
+                Ava;paints
+                Grandpa;slippers
+            call: |
+              handler = GiftFile("gifts.txt")
+              gifts = handler.load()
+              gifts["Grandpa"].append("tea")
+              gifts["Sam"] = ["yo-yo", "comic"]
+              handler.save(gifts)
+              print(handler.load())
+            writes: [gifts.txt]
+            hidden: true
+      - task: |
+          Put the gift list application together. The logic class `GiftList` and the storage class `GiftFile` are ready in the starter code. Write the user interface, `GiftApp`:
+
+          - The constructor gets a `GiftFile` as its parameter `storage`, and adds every idea that `storage.load()` gives to the `GiftList`.
+          - `execute` first prints `commands: 1 add an idea, 2 show ideas, 0 quit`, and then reads commands until the user types 0.
+          - `1` asks for a name and an idea, and adds the idea.
+          - `2` asks for a name and prints that person's ideas, one on each line, or `no ideas yet`.
+          - `0` saves all the data with `storage.save(...)` and quits. Any other command prints the commands again.
+
+          For example, when `gifts.txt` holds
+
+          ```text
+          Mia;scarf;puzzle
+          Leo;kite
+          ```
+
+          a run could go like this:
+
+          ```
+          commands: 1 add an idea, 2 show ideas, 0 quit
+          command: 2
+          name: Mia
+          scarf
+          puzzle
+          command: 1
+          name: Leo
+          idea: yo-yo
+          command: 2
+          name: Leo
+          kite
+          yo-yo
+          command: 2
+          name: Ana
+          no ideas yet
+          command: 0
+          ```
+
+          and after it, `gifts.txt` holds:
+
+          ```text
+          Mia;scarf;puzzle
+          Leo;kite;yo-yo
+          ```
+        seed: |
+          class GiftList:
+              def __init__(self):
+                  self.__ideas = {}
+
+              def add_idea(self, name, idea):
+                  if name not in self.__ideas:
+                      self.__ideas[name] = []
+                  self.__ideas[name].append(idea)
+
+              def ideas(self, name):
+                  if name not in self.__ideas:
+                      return None
+                  return self.__ideas[name]
+
+              def all_data(self):
+                  return self.__ideas
+
+
+          class GiftFile:
+              def __init__(self, filename):
+                  self.__filename = filename
+
+              def load(self):
+                  gifts = {}
+                  try:
+                      with open(self.__filename) as file:
+                          for line in file:
+                              name, *ideas = line.strip().split(";")
+                              gifts[name] = ideas
+                  except FileNotFoundError:
+                      pass
+                  return gifts
+
+              def save(self, gifts):
+                  with open(self.__filename, "w") as file:
+                      for name, ideas in gifts.items():
+                          file.write(";".join([name] + ideas) + "\n")
+
+
+          class GiftApp:
+              def __init__(self, storage):
+                  self.__gifts = GiftList()
+                  self.__storage = storage
+
+              def execute(self):
+                  pass
+
+
+          if __name__ == "__main__":
+              app = GiftApp(GiftFile("gifts.txt"))
+              app.execute()
+        solution: |
+          class GiftList:
+              def __init__(self):
+                  self.__ideas = {}
+
+              def add_idea(self, name, idea):
+                  if name not in self.__ideas:
+                      self.__ideas[name] = []
+                  self.__ideas[name].append(idea)
+
+              def ideas(self, name):
+                  if name not in self.__ideas:
+                      return None
+                  return self.__ideas[name]
+
+              def all_data(self):
+                  return self.__ideas
+
+
+          class GiftFile:
+              def __init__(self, filename):
+                  self.__filename = filename
+
+              def load(self):
+                  gifts = {}
+                  try:
+                      with open(self.__filename) as file:
+                          for line in file:
+                              name, *ideas = line.strip().split(";")
+                              gifts[name] = ideas
+                  except FileNotFoundError:
+                      pass
+                  return gifts
+
+              def save(self, gifts):
+                  with open(self.__filename, "w") as file:
+                      for name, ideas in gifts.items():
+                          file.write(";".join([name] + ideas) + "\n")
+
+
+          class GiftApp:
+              def __init__(self, storage):
+                  self.__gifts = GiftList()
+                  self.__storage = storage
+                  for name, ideas in self.__storage.load().items():
+                      for idea in ideas:
+                          self.__gifts.add_idea(name, idea)
+
+              def help(self):
+                  print("commands: 1 add an idea, 2 show ideas, 0 quit")
+
+              def add_idea(self):
+                  name = input("name: ")
+                  idea = input("idea: ")
+                  self.__gifts.add_idea(name, idea)
+
+              def show(self):
+                  name = input("name: ")
+                  ideas = self.__gifts.ideas(name)
+                  if ideas is None:
+                      print("no ideas yet")
+                      return
+                  for idea in ideas:
+                      print(idea)
+
+              def quit(self):
+                  self.__storage.save(self.__gifts.all_data())
+
+              def execute(self):
+                  self.help()
+                  while True:
+                      command = input("command: ")
+                      if command == "0":
+                          self.quit()
+                          break
+                      elif command == "1":
+                          self.add_idea()
+                      elif command == "2":
+                          self.show()
+                      else:
+                          self.help()
+
+
+          if __name__ == "__main__":
+              app = GiftApp(GiftFile("gifts.txt"))
+              app.execute()
+        hints:
+          - "In the constructor, go through `self.__storage.load().items()` and add each idea with `self.__gifts.add_idea(name, idea)`. That needs a loop inside a loop: one for the people and one for each person's ideas."
+          - "Write a method for each command, as in `BirdLogApp`, and an `execute` with a `while True` loop that calls them."
+          - "The method for command 0 saves with `self.__storage.save(self.__gifts.all_data())`. Call it before the `break`."
+        require:
+          - pattern: self\.__storage\.load\(\)
+            message: "Load the data in the constructor with `self.__storage.load()`."
+          - pattern: self\.__storage\.save\(
+            message: "Save the data with `self.__storage.save(...)` when the user quits."
+        tests:
+          - files:
+              gifts.txt: |
+                Mia;scarf;puzzle
+                Leo;kite
+            stdin: |
+              2
+              Mia
+              1
+              Leo
+              yo-yo
+              2
+              Leo
+              2
+              Ana
+              0
+            writes: [gifts.txt]
+          - stdin: |
+              2
+              Kim
+              1
+              Kim
+              board game
+              5
+              1
+              Kim
+              mittens
+              2
+              Kim
+              0
+            writes: [gifts.txt]
+            hidden: true
+          - files:
+              gifts.txt: |
+                Ava;paints
+            stdin: |
+              1
+              Ben
+              socks
+              1
+              Ava
+              brushes
+              0
+            writes: [gifts.txt]
+            hidden: true

@@ -1,0 +1,693 @@
+id: variables
+summary: More about variables. Changing a variable's value, integers and floating point numbers next to strings, combining text and numbers when printing, and f-strings, the simplest way to put values into text.
+steps:
+  - id: variables-changing
+    slug: changing-values
+    title: Changing a value
+    text: |
+      A variable is created the first time a value is stored in it, with `name = value`. In the last module most values came from `input`. A value written straight into the code works the same way, and a new value can be built from other variables:
+
+      ```python run
+      first = "Ada"
+      last = "Lovelace"
+      full_name = first + " " + last
+      print(full_name)
+      ```
+
+      ```output
+      Ada Lovelace
+      ```
+
+      A value written into the code is the same on every run. Programmers call this **hard-coding** the value.
+
+      ### A variable can vary
+
+      As its name says, the value of a variable can change. Each assignment replaces the old value, and the variable always holds the latest one:
+
+      ```python run
+      status = "waiting"
+      print(status)
+      status = "running"
+      print(status)
+      status = "done"
+      print(status)
+      ```
+
+      ```output
+      waiting
+      running
+      done
+      ```
+
+      ### A new value from the old one
+
+      The new value can be built from the old value of the same variable:
+
+      ```python run
+      message = input("Message: ")
+      message = message + "!!!"
+      print(message)
+      message = ">> " + message
+      print(message)
+      ```
+
+      ```input
+      Hello
+      ```
+
+      ```output
+      Message: Hello
+      Hello!!!
+      >> Hello!!!
+      ```
+
+      `message = message + "!!!"` would be nonsense in mathematics, but remember that `=` is an instruction, not a claim. Python first works out the right side with the value `message` has right now, `"Hello" + "!!!"`, and only then stores the result back in `message`.
+
+      ### Each line uses the value of that moment
+
+      Python runs the lines in order, and each line uses the values the variables have when that line runs. Changing a variable later doesn't change anything that was already built from it:
+
+      ```python run
+      pet = "cat"
+      sentence = "My " + pet + " is asleep."
+      pet = "dog"
+      print(sentence)
+      print(pet)
+      ```
+
+      ```output
+      My cat is asleep.
+      dog
+      ```
+
+      `sentence` was built while `pet` was still `"cat"`. From then on it's a finished string: it doesn't remember which variables its parts came from.
+
+      **Your turn:** fill in the blank so the program adds a title to the name the user types. If the user types `Ada`, the run looks like this:
+
+      ```
+      Name: Ada
+      Ada the Great
+      ```
+    fill: |
+      name = input("Name: ")
+      name = [[name]] + " the Great"
+      print(name)
+    hints:
+      - The new value is the old value of the same variable with some text joined to its end.
+      - "Type the variable's name into the blank: `name = name + \" the Great\"`."
+    tests:
+      - stdin: Ada
+      - stdin: Grace
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          food = "rice"
+          meal = food + " and beans"
+          food = "pasta"
+          print(meal)
+          print(food)
+        hints:
+          - "`meal` is built on line 2, while `food` is still `rice`."
+          - Changing `food` on line 3 doesn't change `meal`, which is already a finished string.
+      - task: |
+          Write a program that asks for a name and then gives it titles, one at a time. Use a single variable `name`: print it, put `Dr. ` in front of it and print it again, then add ` PhD` to its end and print it a third time. If the user types `Ada`, the run looks like this:
+
+          ```
+          Name: Ada
+          Ada
+          Dr. Ada
+          Dr. Ada PhD
+          ```
+        seed: |
+          name = input("Name: ")
+        solution: |
+          name = input("Name: ")
+          print(name)
+          name = "Dr. " + name
+          print(name)
+          name = name + " PhD"
+          print(name)
+        hints:
+          - "Print, change, print, change, print: the program has three `print(name)` lines with an assignment between each two."
+          - "To put text in front, join it before the old value: `name = \"Dr. \" + name`."
+          - "To add text to the end, join it after the old value: `name = name + \" PhD\"`."
+        require:
+          - pattern: print\s*\(\s*name\s*\)
+            min: 3
+            max: 3
+            message: Print the variable itself each time, with `print(name)`, and change `name` between the prints.
+        tests:
+          - stdin: Ada
+          - stdin: Grace
+            hidden: true
+
+  - id: variables-integers
+    slug: integers
+    title: Numbers and strings
+    text: |
+      Variables can hold numbers as well as strings. A whole number, such as `-15`, `0` or `2026`, is called an **integer**. You write it without quotes:
+
+      ```python run
+      year = 2026
+      print(year)
+      print(year + 1)
+      ```
+
+      ```output
+      2026
+      2027
+      ```
+
+      ### "100" is not 100
+
+      With quotes, `"100"` is a string: three characters that happen to be digits. Printed, the two look the same, but Python treats them differently:
+
+      ```python run
+      number = 100
+      text = "100"
+      print(number)
+      print(text)
+      print(number + number)
+      print(text + text)
+      ```
+
+      ```output
+      100
+      100
+      200
+      100100
+      ```
+
+      For numbers, `+` adds. For strings, it joins. What an operator does depends on the **type** of the values it works on: whether they are integers, strings or something else. Python's short name for the integer type is `int`, and for the string type it's `str`.
+
+      ### A look in the interpreter
+
+      Python also has an **interactive interpreter**: you type one line after its `>>>` prompt, and Python runs it and shows the value right away. It shows a string with its quotes, so you can tell the string `'34'` from the number `34`:
+
+      ```python repl
+      >>> 3 + 4
+      7
+      >>> "3" + "4"
+      '34'
+      ```
+
+      ### Not every operation works for every type
+
+      Dividing a string by a number makes no sense, and Python says so:
+
+      ```python run crash
+      price = "100"
+      print(price / 2)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(price / 2)
+                ~~~~~~^~~
+      TypeError: unsupported operand type(s) for /: 'str' and 'int'
+      ```
+
+      A `TypeError` means that an operation got values of a type it can't work with. The last line says that `/` doesn't work on a `str` and an `int` (the values an operator works on are its **operands**). The `~` and `^` marks show the calculation that failed. The fix here is to drop the quotes, so that `price` holds a number.
+
+      Keep in mind that what `input` gives you is always a string, even when the user types digits. The next module shows how to turn it into a number.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      x = 7
+      y = "7"
+      print(x + x)
+      print(y + y)
+      print(x + 3)
+    hints:
+      - "`x` holds the integer 7, and `y` holds a string, because of the quotes."
+      - "`+` adds two integers but joins two strings: `\"7\" + \"7\"` is the string `77`."
+    more:
+      - task: |
+          The program should print the number of fruits in the basket, 12, but it prints 57. Fix it.
+
+          ```
+          12
+          ```
+        seed: |
+          apples = "5"
+          pears = "7"
+          print(apples + pears)
+        solution: |
+          apples = 5
+          pears = 7
+          print(apples + pears)
+        hints:
+          - The quotes make both values strings, and `+` joins strings.
+          - Remove the quotes around the numbers, so `+` adds them.
+        forbid:
+          - pattern: \b12\b
+            raw: true
+            message: "Let Python add the numbers: fix the variables instead of printing 12 directly."
+        tests:
+          - expect: "12"
+      - task: |
+          At the zoo, a ticket costs 12 for an adult and 7 for a child. The variables hold the number of adults and children in a family. Add two lines that print the number of tickets and then the total price, both calculated from the variables:
+
+          ```
+          5
+          50
+          ```
+        seed: |
+          adults = 3
+          children = 2
+        solution: |
+          adults = 3
+          children = 2
+          print(adults + children)
+          print(adults * 12 + children * 7)
+        hints:
+          - The number of tickets is the number of adults plus the number of children.
+          - The total price is the adults times 12 plus the children times 7. Multiplication comes before addition, so no parentheses are needed.
+          - "`print(adults * 12 + children * 7)`"
+        require:
+          - pattern: \badults\b
+            min: 3
+            message: Calculate both results with the variable `adults`.
+          - pattern: \bchildren\b
+            min: 3
+            message: Calculate both results with the variable `children`.
+        forbid:
+          - pattern: \b50\b
+            raw: true
+            message: Let Python calculate the total instead of typing 50.
+        tests:
+          - expect: |
+              5
+              50
+
+  - id: variables-combining
+    slug: combining-values
+    title: Combining values when printing
+    text: |
+      A program often prints text and a number on the same line. Joining them with `+` seems natural, but it doesn't work:
+
+      ```python run crash
+      score = 7 * 6
+      print("Your score: " + score)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print("Your score: " + score)
+                ~~~~~~~~~~~~~~~^~~~~~~
+      TypeError: can only concatenate str (not "int") to str
+      ```
+
+      To concatenate is to join strings. `+` can join a string to a string, but not an integer to a string. Python won't guess whether you meant to add or to join, so it stops.
+
+      ### Turning a number into a string with str
+
+      `str` converts a value into a string: `str(42)` is the string `"42"`. Commands like `str` and `print`, which take a value in parentheses and do something with it, are called **functions**. And a string joins happily with another string:
+
+      ```python run
+      score = 7 * 6
+      print("Your score: " + str(score))
+      ```
+
+      ```output
+      Your score: 42
+      ```
+
+      ### Commas
+
+      The other way is the one from the previous module: commas. `print` accepts values of any type separated by commas and puts a space between each two:
+
+      ```python run
+      score = 7 * 6
+      level = 3
+      print("Your score:", score)
+      print("Level", level, "of", 10)
+      ```
+
+      ```output
+      Your score: 42
+      Level 3 of 10
+      ```
+
+      The automatic spaces are handy, but sometimes they get in the way. Then joining with `str` gives you full control:
+
+      ```python run
+      number = 42
+      print("Order #", number)
+      print("Order #" + str(number))
+      ```
+
+      ```output
+      Order # 42
+      Order #42
+      ```
+
+      ### Staying on the same line with end
+
+      Every `print` ends its line, so the next `print` starts on a new one. You can change that. Inside the parentheses, `end=""` tells `print` to end with an empty string instead of a line break, so the next `print` carries on where this one stopped:
+
+      ```python run
+      print("Loading", end="")
+      print("...", end="")
+      print(" done")
+      ```
+
+      ```output
+      Loading... done
+      ```
+
+      Whatever string you give to `end` is printed in place of the line break: with `end=" "`, the line ends with a space and the next `print` continues after it.
+
+      **Your turn:** fill in the blank so the program prints the line below. `points` holds an integer, so it can't be joined to a string as it is.
+
+      ```
+      Points: 60
+      ```
+    fill: |
+      points = 15 * 4
+      print("Points: " + [[str]](points))
+    hints:
+      - "`+` can only join a string to another string. Which function turns a number into a string?"
+      - "`str(points)` is the string `\"60\"`."
+    tests:
+      - expect: "Points: 60"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          count = 3
+          print("I have", count, "cats")
+          print("I have " + str(count) + " cats")
+          print(count, "!")
+          print(str(count) + "!")
+        hints:
+          - Commas in `print` put a space between the values, whatever their types.
+          - "`str(count)` is the string `3`, and `+` joins it with nothing in between."
+      - task: |
+          Change the program so that it prints the whole countdown on one line, with a space between the parts, as shown below. Keep the four `print` commands.
+
+          ```
+          3... 2... 1... Go!
+          ```
+        seed: |
+          print("3...")
+          print("2...")
+          print("1...")
+          print("Go!")
+        solution: |
+          print("3...", end=" ")
+          print("2...", end=" ")
+          print("1...", end=" ")
+          print("Go!")
+        hints:
+          - Each `print` ends its line. Which extra setting changes what a `print` puts at the end?
+          - "Give the first three a space instead of the line break: `print(\"3...\", end=\" \")`."
+          - The last `print` should end its line as usual, so it stays as it is.
+        require:
+          - pattern: \bprint\s*\(
+            min: 4
+            max: 4
+            message: Keep the four `print` commands and change how they end.
+          - pattern: \bend\s*=
+            min: 3
+            message: "Use `end=` in the first three `print` commands."
+        tests:
+          - expect: 3... 2... 1... Go!
+
+  - id: variables-f-strings
+    slug: f-strings
+    title: F-strings
+    text: |
+      Joining with `+` and `str` works, but long lines get clumsy, and commas add spaces you don't always want. An **f-string** is often the simplest way to put values into text. Write `f` right before the opening quote, and put a variable's name in curly brackets `{ }` inside the string. Python puts the variable's value in its place:
+
+      ```python run
+      item = "pencils"
+      count = 12
+      print(f"You ordered {count} {item}.")
+      ```
+
+      ```output
+      You ordered 12 pencils.
+      ```
+
+      The f stands for "formatted". The values can be of any type, so no `str` is needed. Everything outside the brackets is printed exactly as it is written, so you decide where every space goes.
+
+      ### Several values, and calculations
+
+      An f-string can have as many brackets as you need, and a bracket can hold a calculation as well as a variable:
+
+      ```python run
+      name = "Ada"
+      price = 3
+      count = 12
+      print(f"{name} buys {count} pencils at {price} each.")
+      print(f"That's {count * price} in all.")
+      ```
+
+      ```output
+      Ada buys 12 pencils at 3 each.
+      That's 36 in all.
+      ```
+
+      ### Compared with commas
+
+      Here is the first example with commas instead. The automatic spaces put a space before the full stop, and there's no simple way to get rid of it:
+
+      ```python run
+      item = "pencils"
+      count = 12
+      print("You ordered", count, item, ".")
+      ```
+
+      ```output
+      You ordered 12 pencils .
+      ```
+
+      Commas are fine for a quick look at some values. When the output has to look exactly right, an f-string is usually the easiest choice.
+
+      ### The missing f
+
+      Without the `f`, the string is an ordinary string, and the brackets are printed as they are:
+
+      ```python run
+      city = "Oslo"
+      print("Welcome to {city}!")
+      print(f"Welcome to {city}!")
+      ```
+
+      ```output
+      Welcome to {city}!
+      Welcome to Oslo!
+      ```
+
+      There's no error message: Python can't know that you meant an f-string. If you see curly brackets in your output, check for the `f`.
+
+      An f-string makes a string like any other, so you can also store it in a variable: `label = f"{count} {item}"`.
+
+      **Your turn:** fill in the blank so the program greets the user. If the user types `Ada`, the run looks like this:
+
+      ```
+      Name: Ada
+      Hello, Ada!
+      ```
+    fill: |
+      name = input("Name: ")
+      print([[f]]"Hello, {name}!")
+    hints:
+      - Without anything in the blank, the program prints `{name}` as it is.
+      - "One letter right before the opening quote turns the string into an f-string: `f`."
+    tests:
+      - stdin: Ada
+      - stdin: Grace
+        hidden: true
+    more:
+      - task: |
+          The last line prints extra spaces around the parentheses. Rewrite it with an f-string, so that a run looks like this:
+
+          ```
+          Name: Ada
+          Age: 36
+          Ada (36 years)
+          ```
+        seed: |
+          name = input("Name: ")
+          age = input("Age: ")
+          print(name, "(", age, "years )")
+        solution: |
+          name = input("Name: ")
+          age = input("Age: ")
+          print(f"{name} ({age} years)")
+        hints:
+          - Each comma in `print` adds a space. An f-string prints only the spaces you write.
+          - "Write the whole line as one f-string, with the two variables in curly brackets: `f\"{name} (...)\"`."
+          - "The round parentheses are just characters inside the string: `f\"{name} ({age} years)\"`."
+        require:
+          - pattern: \bf["']
+            raw: true
+            message: Print the line with an f-string.
+        tests:
+          - stdin: |
+              Ada
+              36
+          - stdin: |
+              Linus
+              57
+            hidden: true
+      - task: |
+          A notebook costs 4 and the customer buys 3 of them. The program asks for the product's name; the price and the amount are already in variables. Add one `print` with an f-string, so that a run looks like this:
+
+          ```
+          Product: notebook
+          3 x notebook = 12 euros
+          ```
+
+          Calculate the total inside the f-string, from the variables.
+        seed: |
+          product = input("Product: ")
+          price = 4
+          amount = 3
+        solution: |
+          product = input("Product: ")
+          price = 4
+          amount = 3
+          print(f"{amount} x {product} = {amount * price} euros")
+        hints:
+          - "The line has three values in it: the amount, the product and the total. Each one goes in curly brackets."
+          - "The total is a calculation in brackets: `{amount * price}`."
+          - "The `x` and the `=` are just characters of the text, outside the brackets."
+        require:
+          - pattern: \bf["']
+            raw: true
+            message: Print the line with an f-string.
+        forbid:
+          - pattern: \b12\b
+            raw: true
+            message: Let Python calculate the total from the variables instead of typing 12.
+        tests:
+          - stdin: notebook
+          - stdin: pen
+            hidden: true
+
+  - id: variables-floats
+    slug: floats
+    title: Floating point numbers
+    text: |
+      Whole numbers aren't enough for prices, measurements or averages. A number with a decimal point, such as `2.5`, `-0.75` or `3.0`, is a **floating point number**, or a **float** for short. Python's name for the type is `float`.
+
+      Floats work in calculations just like integers do. This program calculates the mean of three temperatures:
+
+      ```python run
+      monday = 12.5
+      tuesday = 14.0
+      wednesday = 9.25
+      mean = (monday + tuesday + wednesday) / 3
+      print(f"Mean temperature: {mean}")
+      ```
+
+      ```output
+      Mean temperature: 11.916666666666666
+      ```
+
+      The parentheses matter. Division comes before addition, so without them Python would divide only `wednesday` by 3 and add that to the other two.
+
+      ### Division gives a float
+
+      The result of `/` is always a float, even when the numbers divide evenly:
+
+      ```python repl
+      >>> 7 / 2
+      3.5
+      >>> 6 / 3
+      2.0
+      >>> 1.5 + 1.5
+      3.0
+      ```
+
+      `2.0` is the same amount as `2`, but it's a float, so Python shows it with a decimal point. The next module looks at the types of results more closely.
+
+      ### A point, not a comma
+
+      Python writes decimals with a point. A comma separates values, so `print(2,5)` prints two numbers, not two and a half:
+
+      ```python run
+      print(2.5)
+      print(2,5)
+      ```
+
+      ```output
+      2.5
+      2 5
+      ```
+
+      ### Floats aren't always exact
+
+      A computer stores a float in binary with a fixed number of digits, so most decimal fractions are stored as a very close approximation. Usually you never notice, but now and then it shows in the last digit:
+
+      ```python repl
+      >>> 0.1 + 0.2
+      0.30000000000000004
+      ```
+
+      That isn't a mistake in your program: almost every programming language does the same. A later module shows how to round numbers when you print them.
+
+      **Your turn:** fill in the blank so the program prints the average of the two scores:
+
+      ```
+      Average: 8.25
+      ```
+    fill: |
+      first = 7.5
+      second = 9.0
+      average = (first + second) / [[2]]
+      print(f"Average: {average}")
+    hints:
+      - The average of two numbers is their sum divided by how many numbers there are.
+      - "There are two scores, so divide by `2`."
+    tests:
+      - expect: "Average: 8.25"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          print(9 / 2)
+          print(10 / 5)
+          print(2.5 * 2)
+          print(0.5 + 1)
+        hints:
+          - "`/` always gives a float, even when the division is even: a float is shown with a decimal point."
+          - When a float takes part in a calculation, the result is a float too, so `2.5 * 2` is shown as `5.0`.
+      - task: |
+          A runner's three lap times, in seconds, are in variables. Add lines that calculate the total time and the mean lap time from the variables and print them with f-strings:
+
+          ```
+          Total: 187.5 seconds
+          Mean: 62.5 seconds
+          ```
+        seed: |
+          lap1 = 61.25
+          lap2 = 63.5
+          lap3 = 62.75
+        solution: |
+          lap1 = 61.25
+          lap2 = 63.5
+          lap3 = 62.75
+          total = lap1 + lap2 + lap3
+          mean = total / 3
+          print(f"Total: {total} seconds")
+          print(f"Mean: {mean} seconds")
+        hints:
+          - Store the sum of the three laps in a variable, such as `total`.
+          - The mean is the total divided by the number of laps, 3.
+          - "Print each result with an f-string: `print(f\"Total: {total} seconds\")`."
+        forbid:
+          - pattern: 187\.5|\b62\.5\b
+            raw: true
+            message: Let Python calculate the results from the variables instead of typing them.
+        tests:
+          - expect: |
+              Total: 187.5 seconds
+              Mean: 62.5 seconds

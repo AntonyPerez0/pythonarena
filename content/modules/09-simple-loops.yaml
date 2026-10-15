@@ -1,0 +1,999 @@
+id: simple-loops
+summary: "Repeating code with a while True loop and leaving it with break. Loops that count, helper variables that keep a count or a total, debugging prints inside loops, and building a string piece by piece."
+steps:
+  - id: simple-loops-while-true
+    slug: while-true
+    title: Repeating with while True
+    text: |
+      So far every line of a program has run at most once. But programs often need to do the same thing many times: ask for one more number, play one more round. A **loop** repeats a block of code. The simplest loop in Python is `while True`, and the command `break` ends it:
+
+      ```python run
+      while True:
+          word = input("Say something (bye to quit): ")
+          if word == "bye":
+              break
+          print(f"You said: {word}")
+      print("Goodbye!")
+      ```
+
+      ```input
+      hello
+      loops are fun
+      bye
+      ```
+
+      ```output
+      Say something (bye to quit): hello
+      You said: hello
+      Say something (bye to quit): loops are fun
+      You said: loops are fun
+      Say something (bye to quit): bye
+      Goodbye!
+      ```
+
+      Here is how it works:
+
+      - `while True:` starts the loop, and the indented lines after it are the loop's block.
+      - When Python gets to the end of the block, it jumps back to the `while` line and runs the block again. One run through the block is called an **iteration**.
+      - `break` ends the loop at once. Python goes on from the first line after the loop's block, here the `print("Goodbye!")`.
+
+      The `break` is inside an `if`, so the loop ends only when the user types `bye`. On that iteration the last line of the block never runs, because the loop has already ended.
+
+      ### A loop that never ends
+
+      If no `break` can ever run, the loop goes on forever. This is called an **infinite loop**. Here the number is read before the loop, so its value never changes inside it:
+
+      ```python fragment
+      number = int(input("Type a number, 0 to quit: "))
+      while True:
+          if number == 0:
+              break
+          print(number * 2)
+      ```
+
+      With any number other than 0, this prints the same result again and again, without end. (On this site, a program that runs for more than a few seconds is stopped.) The fix is to move the `input` line inside the loop, so that each iteration reads a new number. Every `while True` loop needs a `break` that will run sooner or later.
+
+      ### Asking until the answer is acceptable
+
+      A loop is also the way to ask again until the user types something the program can use:
+
+      ```python run
+      while True:
+          age = int(input("Your age: "))
+          if age >= 0:
+              break
+          print("An age can't be negative. Try again.")
+      print(f"Thanks! You are {age}.")
+      ```
+
+      ```input
+      -5
+      31
+      ```
+
+      ```output
+      Your age: -5
+      An age can't be negative. Try again.
+      Your age: 31
+      Thanks! You are 31.
+      ```
+
+      Notice the order inside the loop: read the input, stop if it's fine, and only then print the complaint. The complaint is printed only when the loop didn't stop.
+
+      **Your turn:** fill in the blanks, so the program keeps asking for commands until the user types `quit`:
+
+      ```
+      Command: jump
+      Running jump...
+      Command: run
+      Running run...
+      Command: quit
+      Shutting down.
+      ```
+    fill: |
+      [[while]] True:
+          command = input("Command: ")
+          if command == "quit":
+              [[break]]
+          print(f"Running {command}...")
+      print("Shutting down.")
+    hints:
+      - The first line starts a loop that repeats until something ends it.
+      - "The loop starts with `while True:`, and the command that ends it is `break`."
+    tests:
+      - stdin: |
+          jump
+          run
+          quit
+      - stdin: quit
+        hidden: true
+      - stdin: |
+          fly
+          quit
+        hidden: true
+    more:
+      - task: |
+          Write a program for a café. It keeps asking what the customer would like and answers each order, until the customer types `nothing`. Then it says goodbye.
+
+          ```
+          What would you like? tea
+          One tea coming up!
+          What would you like? cake
+          One cake coming up!
+          What would you like? nothing
+          Thank you, see you again!
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          while True:
+              order = input("What would you like? ")
+              if order == "nothing":
+                  break
+              print(f"One {order} coming up!")
+          print("Thank you, see you again!")
+        hints:
+          - "Start with `while True:` and read the order inside the loop, so each iteration asks again."
+          - "Check for `nothing` right after reading, and `break` if that's what was typed. Otherwise print the answer with an f-string."
+          - The goodbye line comes after the loop, at the left edge.
+        require:
+          - pattern: \bwhile\s+True\b
+            message: Use a `while True` loop.
+          - pattern: \bbreak\b
+            message: End the loop with `break`.
+        tests:
+          - stdin: |
+              tea
+              cake
+              nothing
+          - stdin: nothing
+            hidden: true
+          - stdin: |
+              coffee
+              water
+              muffin
+              nothing
+            hidden: true
+      - task: |
+          Write a program that turns minutes into hours and minutes. It keeps asking for minutes until the user types 0, and then prints `Bye!`
+
+          ```
+          Minutes (0 to quit): 135
+          2 h 15 min
+          Minutes (0 to quit): 59
+          0 h 59 min
+          Minutes (0 to quit): 0
+          Bye!
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          while True:
+              minutes = int(input("Minutes (0 to quit): "))
+              if minutes == 0:
+                  break
+              print(f"{minutes // 60} h {minutes % 60} min")
+          print("Bye!")
+        hints:
+          - "Read the number inside a `while True` loop and `break` when it's 0."
+          - "The whole hours are `minutes // 60`, and the minutes left over are `minutes % 60`."
+          - "Print both in one f-string: `f\"{minutes // 60} h {minutes % 60} min\"`."
+        require:
+          - pattern: \bwhile\s+True\b
+            message: Use a `while True` loop.
+        tests:
+          - stdin: |
+              135
+              59
+              0
+          - stdin: |
+              60
+              0
+            hidden: true
+          - stdin: |
+              1000
+              7
+              121
+              0
+            hidden: true
+
+  - id: simple-loops-counting
+    slug: counting
+    title: Loops that count
+    text: |
+      A loop doesn't have to read input. Often a variable changes a little on every iteration, and the loop stops when the variable reaches a limit:
+
+      ```python run
+      number = 1
+      while True:
+          print(number)
+          number += 1
+          if number > 5:
+              break
+      print("Done!")
+      ```
+
+      ```output
+      1
+      2
+      3
+      4
+      5
+      Done!
+      ```
+
+      Follow it through: `number` starts at 1. Each iteration prints it and adds one to it. After printing 5, `number` becomes 6, the condition `number > 5` is true, and `break` ends the loop.
+
+      The variable can change in other ways too. Remember `-=` and `*=` from part 1: `seconds -= 3` is short for `seconds = seconds - 3`, and `n *= 2` doubles `n`. Here is a countdown in steps of 3:
+
+      ```python run
+      seconds = 10
+      while True:
+          if seconds < 0:
+              break
+          print(seconds)
+          seconds -= 3
+      print("Liftoff!")
+      ```
+
+      ```output
+      10
+      7
+      4
+      1
+      Liftoff!
+      ```
+
+      After 1 comes -2, which is below 0, so the loop stops before printing it.
+
+      ### Where the check goes
+
+      In the first loop the check comes after the `print`, in the second one before it. Where you put the `if` with the `break` decides which values get printed. Here the check comes right after the variable changes, but before the `print`:
+
+      ```python run
+      number = 1
+      while True:
+          number += 1
+          if number > 5:
+              break
+          print(number)
+      ```
+
+      ```output
+      2
+      3
+      4
+      5
+      ```
+
+      Now the first value printed is 2, because `number` grows before it's printed for the first time. When a loop prints one value too many or too few, follow the variable one iteration at a time, on paper or with a `print`, and you'll see where the check should go.
+
+      One more thing: the variable must change inside the loop. Leave out `number += 1`, and `number > 5` never becomes true, so the loop never ends.
+
+      **Your turn:** fill in the blanks, so the program prints four laps and then ends the race:
+
+      ```
+      Lap 1
+      Lap 2
+      Lap 3
+      Lap 4
+      Race over!
+      ```
+    fill: |
+      lap = 1
+      while True:
+          print(f"Lap {lap}")
+          if lap == [[4]]:
+              break
+          lap [[+=]] 1
+      print("Race over!")
+    hints:
+      - The loop should stop right after it prints the last lap.
+      - "The check compares `lap` with the number of the last lap, 4. After it, `lap += 1` moves on to the next lap."
+    tests:
+      - expect: |
+          Lap 1
+          Lap 2
+          Lap 3
+          Lap 4
+          Race over!
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          n = 1
+          while True:
+              n *= 2
+              if n > 20:
+                  break
+              print(n)
+          print("end", n)
+        hints:
+          - "`n *= 2` doubles `n`, so it goes 2, 4, 8 and so on."
+          - The check comes before the `print`, so a value over 20 is never printed inside the loop.
+          - After the loop, `n` still holds the value that ended it.
+      - task: |
+          Write a program that asks for a number and prints its multiplication table, from 1 to 10 times the number:
+
+          ```
+          Number: 7
+          7 x 1 = 7
+          7 x 2 = 14
+          7 x 3 = 21
+          7 x 4 = 28
+          7 x 5 = 35
+          7 x 6 = 42
+          7 x 7 = 49
+          7 x 8 = 56
+          7 x 9 = 63
+          7 x 10 = 70
+          ```
+        seed: |
+          number = int(input("Number: "))
+        solution: |
+          number = int(input("Number: "))
+          factor = 1
+          while True:
+              print(f"{number} x {factor} = {number * factor}")
+              factor += 1
+              if factor > 10:
+                  break
+        hints:
+          - "You need a second variable that counts from 1 to 10. Set it to 1 before the loop."
+          - "Each iteration prints one line, `f\"{number} x {factor} = {number * factor}\"`, and adds one to the counter."
+          - Stop the loop with `break` once the counter has gone past 10.
+        require:
+          - pattern: \bwhile\s+True\b
+            message: Use a `while True` loop.
+          - pattern: \bprint\s*\(
+            max: 1
+            message: Print the lines with one `print` inside the loop.
+        tests:
+          - stdin: "7"
+          - stdin: "3"
+            hidden: true
+          - stdin: "12"
+            hidden: true
+
+  - id: simple-loops-helper-variables
+    slug: helper-variables
+    title: "Helper variables: counting and summing"
+    text: |
+      Variables that keep track of something while a loop runs are called **helper variables**. A typical one counts things, and another adds up a total:
+
+      ```python run
+      items = 0
+      total = 0
+      while True:
+          price = int(input("Price (0 to finish): "))
+          if price == 0:
+              break
+          items += 1
+          total += price
+      print(f"{items} items, total {total} euros")
+      ```
+
+      ```input
+      3
+      12
+      5
+      0
+      ```
+
+      ```output
+      Price (0 to finish): 3
+      Price (0 to finish): 12
+      Price (0 to finish): 5
+      Price (0 to finish): 0
+      3 items, total 20 euros
+      ```
+
+      Both helpers get their starting value, 0, before the loop, and each iteration updates them. The 0 that ends the loop isn't counted, because the `break` comes before the updates.
+
+      ### Start before the loop
+
+      Where the starting value is set matters. If it is set inside the loop, the helper starts over on every iteration:
+
+      ```python run
+      while True:
+          count = 0
+          word = input("Word (stop to finish): ")
+          if word == "stop":
+              break
+          count += 1
+      print(f"You typed {count} words.")
+      ```
+
+      ```input
+      sun
+      moon
+      stop
+      ```
+
+      ```output
+      Word (stop to finish): sun
+      Word (stop to finish): moon
+      Word (stop to finish): stop
+      You typed 0 words.
+      ```
+
+      On the last iteration, `count = 0` runs once more just before the `break`, so the count is lost. Move that line above `while True:`, and the program says 2.
+
+      ### Remembering how the loop ended
+
+      A loop can have more than one `break`. A helper variable can remember which one ended it, so that the code after the loop knows what happened:
+
+      ```python run
+      guesses = 0
+      while True:
+          guess = int(input("Guess the number: "))
+          guesses += 1
+          if guess == 7:
+              found = True
+              break
+          if guesses == 3:
+              found = False
+              break
+          print("Wrong, try again.")
+      if found:
+          print(f"Right! It took you {guesses} guesses.")
+      else:
+          print("Out of guesses. The number was 7.")
+      ```
+
+      ```input
+      4
+      7
+      ```
+
+      ```output
+      Guess the number: 4
+      Wrong, try again.
+      Guess the number: 7
+      Right! It took you 2 guesses.
+      ```
+
+      `found` holds `True` or `False`, so it can be the condition of an `if` all by itself.
+
+      **Your turn:** fill in the blanks, so the program adds up the minutes of exercise the user types:
+
+      ```
+      Minutes of exercise (0 to finish): 30
+      Minutes of exercise (0 to finish): 45
+      Minutes of exercise (0 to finish): 0
+      Total: 75 minutes
+      ```
+    fill: |
+      total = [[0]]
+      while True:
+          minutes = int(input("Minutes of exercise (0 to finish): "))
+          if minutes == 0:
+              break
+          total [[+=]] minutes
+      print(f"Total: {total} minutes")
+    hints:
+      - Before the first number, nothing has been added yet.
+      - "The total starts at `0`, and `total += minutes` adds each number to it."
+    tests:
+      - stdin: |
+          30
+          45
+          0
+      - stdin: "0"
+        hidden: true
+      - stdin: |
+          10
+          20
+          15
+          5
+          0
+        hidden: true
+    more:
+      - task: |
+          Write a program that reads daily temperatures until the user types `end`, and then prints how many of the days were below zero, out of all the days.
+
+          ```
+          Temperature: 3
+          Temperature: -2
+          Temperature: -7
+          Temperature: 1
+          Temperature: end
+          Frosty days: 2 of 4
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          days = 0
+          frosty = 0
+          while True:
+              text = input("Temperature: ")
+              if text == "end":
+                  break
+              temperature = int(text)
+              days += 1
+              if temperature < 0:
+                  frosty += 1
+          print(f"Frosty days: {frosty} of {days}")
+        hints:
+          - "Read the input as a string first and compare it with `\"end\"`. Only after that, convert it with `int(...)`."
+          - You need two helper variables, both starting at 0 before the loop. One counts every day, the other only the days below zero.
+          - "Inside the loop, `days += 1` runs for every temperature, and `frosty += 1` only inside `if temperature < 0:`."
+        tests:
+          - stdin: |
+              3
+              -2
+              -7
+              1
+              end
+          - stdin: |
+              5
+              end
+            hidden: true
+          - stdin: |
+              -1
+              -1
+              -1
+              end
+            hidden: true
+          - stdin: |
+              0
+              12
+              -3
+              end
+            hidden: true
+      - task: |
+          Write a program for a savings goal of 100 euros. It keeps asking for deposits and prints the amount saved after each one. As soon as the savings reach at least 100, it prints how many deposits it took.
+
+          ```
+          Deposit: 40
+          Saved so far: 40
+          Deposit: 35
+          Saved so far: 75
+          Deposit: 30
+          Saved so far: 105
+          Goal reached! Deposits made: 3
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          saved = 0
+          deposits = 0
+          while True:
+              deposit = int(input("Deposit: "))
+              saved += deposit
+              deposits += 1
+              print(f"Saved so far: {saved}")
+              if saved >= 100:
+                  break
+          print(f"Goal reached! Deposits made: {deposits}")
+        hints:
+          - "Two helper variables start at 0 before the loop: the amount saved and the number of deposits."
+          - Each iteration reads a deposit, adds it to the savings, counts it and prints the amount saved.
+          - "The check `if saved >= 100: break` comes after the `print`, so the last amount is printed too."
+        tests:
+          - stdin: |
+              40
+              35
+              30
+          - stdin: "100"
+            hidden: true
+          - stdin: |
+              10
+              20
+              30
+              39
+              1
+            hidden: true
+
+  - id: simple-loops-debugging
+    slug: debugging-loops
+    title: Debugging loops with print
+    text: |
+      In a loop the same lines run many times, with different values each time, so a bug can hide in any one of the iterations. Debugging prints are especially useful here: a `print` inside the loop shows what happens on every iteration.
+
+      This program should print the average of the numbers typed, but for 4 and 8 it prints 4.0 instead of 6.0:
+
+      ```python run
+      total = 0
+      count = 0
+      while True:
+          number = int(input("Number (0 to finish): "))
+          count += 1
+          if number == 0:
+              break
+          total += number
+      print(f"Average: {total / count}")
+      ```
+
+      ```input
+      4
+      8
+      0
+      ```
+
+      ```output
+      Number (0 to finish): 4
+      Number (0 to finish): 8
+      Number (0 to finish): 0
+      Average: 4.0
+      ```
+
+      Add a debugging print at the end of the loop's block, and another one right after the loop. Give each value a label, so you can tell them apart:
+
+      ```python run
+      total = 0
+      count = 0
+      while True:
+          number = int(input("Number (0 to finish): "))
+          count += 1
+          if number == 0:
+              break
+          total += number
+          print("number:", number, "count:", count, "total:", total)
+      print("after the loop, count:", count, "total:", total)
+      print(f"Average: {total / count}")
+      ```
+
+      ```input
+      4
+      8
+      0
+      ```
+
+      ```output
+      Number (0 to finish): 4
+      number: 4 count: 1 total: 4
+      Number (0 to finish): 8
+      number: 8 count: 2 total: 12
+      Number (0 to finish): 0
+      after the loop, count: 3 total: 12
+      Average: 4.0
+      ```
+
+      The values are right during the loop, but after it `count` is 3: the 0 that ends the input was counted too, because `count += 1` comes before the check. Moving that line below the `if` fixes the program. Then the debugging prints can go.
+
+      ### The order of the checks
+
+      Another common source of bugs in loops is the order of the `if` statements that `break`. On each iteration Python checks them from top to bottom, and the first `break` that runs ends the loop, so the checks below it never get a say. Suppose a loop checks "was that the last allowed attempt?" before it checks "was the answer right?". Then a right answer on the last attempt counts as a failure. Printing each condition with a label, such as `print("right answer:", answer == "Rome")`, shows which check ended the loop.
+
+      When you debug a loop, keep the number of iterations small at first: two or three are usually enough to see the problem, and the printed lines are still easy to read.
+
+      **Your turn:** the user has three attempts to answer the quiz, but a right answer on the third attempt says `No more attempts.` Find the bug (debugging prints help) and fix it:
+
+      ```
+      What is the capital of Italy? Milan
+      Try again.
+      What is the capital of Italy? Naples
+      Try again.
+      What is the capital of Italy? Rome
+      Correct!
+      ```
+    seed: |
+      attempts = 0
+      while True:
+          answer = input("What is the capital of Italy? ")
+          attempts += 1
+          if attempts == 3:
+              print("No more attempts.")
+              break
+          if answer == "Rome":
+              print("Correct!")
+              break
+          print("Try again.")
+    solution: |
+      attempts = 0
+      while True:
+          answer = input("What is the capital of Italy? ")
+          attempts += 1
+          if answer == "Rome":
+              print("Correct!")
+              break
+          if attempts == 3:
+              print("No more attempts.")
+              break
+          print("Try again.")
+    hints:
+      - "Add `print(\"attempts:\", attempts, \"right:\", answer == \"Rome\")` after `attempts += 1` and run the example. What happens on the third iteration?"
+      - On the third attempt both conditions are true, and the one that comes first wins.
+      - Check the answer first and the number of attempts after it. Swap the two `if` statements, each with its own block.
+    tests:
+      - stdin: |
+          Milan
+          Naples
+          Rome
+      - stdin: Rome
+        hidden: true
+      - stdin: |
+          Turin
+          Venice
+          Florence
+        hidden: true
+      - stdin: |
+          Pisa
+          Rome
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          x = 1
+          total = 0
+          while True:
+              total += x
+              print("x:", x, "total:", total)
+              if total > 10:
+                  break
+              x += 2
+        hints:
+          - "Follow the two variables one iteration at a time: first `total` grows by `x`, then the line is printed."
+          - "`x` grows by 2 after the check: it is 1, then 3, then 5 and so on."
+          - The loop stops after the first line where the total is over 10.
+      - task: |
+          This program should tell how long the longest word was, but it always says 0. Find the bug and fix it, so it prints:
+
+          ```
+          Word (end to finish): sun
+          Word (end to finish): banana
+          Word (end to finish): kiwi
+          Word (end to finish): end
+          The longest word has 6 characters.
+          ```
+        seed: |
+          while True:
+              longest = 0
+              word = input("Word (end to finish): ")
+              if word == "end":
+                  break
+              if len(word) > longest:
+                  longest = len(word)
+          print(f"The longest word has {longest} characters.")
+        solution: |
+          longest = 0
+          while True:
+              word = input("Word (end to finish): ")
+              if word == "end":
+                  break
+              if len(word) > longest:
+                  longest = len(word)
+          print(f"The longest word has {longest} characters.")
+        hints:
+          - "Print `longest` at the start of each iteration. What is it every time?"
+          - The helper variable is set back to 0 on every iteration, the last one too.
+          - Move `longest = 0` above the loop, so it's set only once.
+        tests:
+          - stdin: |
+              sun
+              banana
+              kiwi
+              end
+          - stdin: |
+              strawberry
+              fig
+              end
+            hidden: true
+          - stdin: |
+              a
+              bb
+              ccc
+              end
+            hidden: true
+
+  - id: simple-loops-building-strings
+    slug: building-strings
+    title: Building strings in a loop
+    text: |
+      A helper variable doesn't have to hold a number. A string can grow in a loop too: start with the **empty string** `""` and add to it with `+=`, which joins strings just as `+` does:
+
+      ```python run
+      stars = ""
+      count = 0
+      while True:
+          stars += "*"
+          count += 1
+          if count == 5:
+              break
+      print(stars)
+      ```
+
+      ```output
+      *****
+      ```
+
+      Each iteration adds one `*` to the end of `stars`, and the whole string is printed once, after the loop.
+
+      ### Collecting input
+
+      In the same way, a program can collect what the user types:
+
+      ```python run
+      guests = ""
+      while True:
+          name = input("Guest (done to finish): ")
+          if name == "done":
+              break
+          guests += name + ", "
+      print("Guests: " + guests)
+      ```
+
+      ```input
+      Ada
+      Alan
+      Grace
+      done
+      ```
+
+      ```output
+      Guest (done to finish): Ada
+      Guest (done to finish): Alan
+      Guest (done to finish): Grace
+      Guest (done to finish): done
+      Guests: Ada, Alan, Grace,
+      ```
+
+      Almost: the list ends with a comma (and a space you can't see). One way to avoid it is to put the separator before each name instead of after it, except for the first name:
+
+      ```python run
+      guests = ""
+      while True:
+          name = input("Guest (done to finish): ")
+          if name == "done":
+              break
+          if guests == "":
+              guests = name
+          else:
+              guests += ", " + name
+      print("Guests: " + guests)
+      ```
+
+      ```input
+      Ada
+      Alan
+      Grace
+      done
+      ```
+
+      ```output
+      Guest (done to finish): Ada
+      Guest (done to finish): Alan
+      Guest (done to finish): Grace
+      Guest (done to finish): done
+      Guests: Ada, Alan, Grace
+      ```
+
+      `guests == ""` is true only for the first name, while nothing has been added yet.
+
+      ### Numbers into the string
+
+      `+` joins only strings, so a number must be converted with `str` before it's added:
+
+      ```python repl
+      >>> row = ""
+      >>> row += str(1) + " "
+      >>> row += str(2) + " "
+      >>> row
+      '1 2 '
+      ```
+
+      Without `str`, Python stops with the `TypeError` you saw earlier: `can only concatenate str (not "int") to str`.
+
+      **Your turn:** write a program that asks for a number and prints a countdown from it on one line, followed by `Liftoff!`:
+
+      ```
+      Count down from: 5
+      5 4 3 2 1 Liftoff!
+      ```
+    seed: |
+      number = int(input("Count down from: "))
+    solution: |
+      number = int(input("Count down from: "))
+      line = ""
+      while True:
+          if number == 0:
+              break
+          line += str(number) + " "
+          number -= 1
+      print(line + "Liftoff!")
+    hints:
+      - "Start with an empty string, `line = \"\"`, before the loop, and print it only once, after the loop."
+      - "Each iteration adds the number and a space: `line += str(number) + \" \"`. Then `number -= 1` counts down."
+      - "Stop with `break` when the number reaches 0, and print `line + \"Liftoff!\"` at the end."
+    require:
+      - pattern: \bwhile\s+True\b
+        message: Use a `while True` loop.
+      - pattern: \bprint\s*\(
+        max: 1
+        message: Build the whole line in a string and print it once, after the loop.
+    tests:
+      - stdin: "5"
+      - stdin: "1"
+        hidden: true
+      - stdin: "12"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for items for a shopping list until the user types `done`, and then prints them on one line, separated by commas. There's no comma after the last item. If the user typed no items at all, it prints `The list is empty.`
+
+          ```
+          Item: milk
+          Item: bread
+          Item: eggs
+          Item: done
+          Shopping list: milk, bread, eggs
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          items = ""
+          while True:
+              item = input("Item: ")
+              if item == "done":
+                  break
+              if items == "":
+                  items = item
+              else:
+                  items += ", " + item
+          if items == "":
+              print("The list is empty.")
+          else:
+              print("Shopping list: " + items)
+        hints:
+          - "Collect the items in a string that starts as `\"\"` before the loop."
+          - "Add the first item as it is, and every later one with `\", \"` in front of it. `items == \"\"` tells you whether it's the first."
+          - After the loop, the string is still empty only if no items were typed.
+        tests:
+          - stdin: |
+              milk
+              bread
+              eggs
+              done
+          - stdin: done
+            hidden: true
+          - stdin: |
+              apples
+              done
+            hidden: true
+          - stdin: |
+              tea
+              honey
+              lemons
+              ginger
+              done
+            hidden: true
+      - task: |
+          Write a program that asks for a height and draws a staircase of `#` characters: the first row has one, and each row has one more than the row before.
+
+          ```
+          Height: 4
+          #
+          ##
+          ###
+          ####
+          ```
+        seed: |
+          height = int(input("Height: "))
+        solution: |
+          height = int(input("Height: "))
+          row = ""
+          while True:
+              if len(row) == height:
+                  break
+              row += "#"
+              print(row)
+        hints:
+          - Each row is the row before it with one more `#`. So keep the current row in a string, and add one character per iteration.
+          - "Start with `row = \"\"`, then on each iteration add a `#` and print the row."
+          - "The loop is done when the row is as long as the height: `len(row) == height`. Check that before adding."
+        require:
+          - pattern: \bwhile\s+True\b
+            message: Use a `while True` loop.
+        tests:
+          - stdin: "4"
+          - stdin: "1"
+            hidden: true
+          - stdin: "7"
+            hidden: true

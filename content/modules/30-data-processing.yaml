@@ -1,0 +1,651 @@
+id: data-processing
+summary: Reading data files with the standard library. CSV files with the csv module, JSON files with the json module, and finding the right module in the documentation, with statistics and difflib as examples.
+steps:
+  - id: data-processing-csv
+    slug: csv-module
+    title: The csv module
+    text: |
+      In part 6 you read CSV files by splitting each line yourself. That works until a value contains the separator itself, which happens more often than you'd think. The standard library's **`csv`** module reads CSV files properly. Here is the pets file from part 6 again, read with it:
+
+      ```file pets.csv
+      Rex;dog;4
+      Misty;cat;11
+      Bubbles;fish;1
+      ```
+
+      ```python run
+      import csv
+
+      with open("pets.csv") as file:
+          for row in csv.reader(file, delimiter=";"):
+              print(row)
+      ```
+
+      ```output
+      ['Rex', 'dog', '4']
+      ['Misty', 'cat', '11']
+      ['Bubbles', 'fish', '1']
+      ```
+
+      `csv.reader(file, delimiter=";")` goes through the file one line at a time, and gives each line as a list of its values, already without the line break at the end, so there's nothing to strip. The **delimiter** is the character between the values. Leave it out and the reader assumes a comma: the C in CSV stands for comma, after all, although semicolons are common too.
+
+      ### The values are strings
+
+      As with `split`, every value is a string. Convert numbers yourself before calculating with them:
+
+      ```file pets.csv
+      Rex;dog;4
+      Misty;cat;11
+      Bubbles;fish;1
+      ```
+
+      ```python run
+      import csv
+
+      total = 0
+      with open("pets.csv") as file:
+          for row in csv.reader(file, delimiter=";"):
+              name = row[0]
+              age = int(row[2])
+              total += age
+              print(f"{name} is {age}")
+      print("Total age:", total)
+      ```
+
+      ```output
+      Rex is 4
+      Misty is 11
+      Bubbles is 1
+      Total age: 16
+      ```
+
+      ### Why not split?
+
+      A value that contains the delimiter is put in double quotes. Spreadsheet programs do this when they save a CSV file. `split` doesn't know about quotes, but the csv module does:
+
+      ```file books.csv
+      "Python, the basics",Ada Lovelace,2026
+      Short stories,"King, Stephen",2019
+      ```
+
+      ```python run
+      import csv
+
+      with open("books.csv") as file:
+          for line in file:
+              print(line.strip().split(","))
+
+      with open("books.csv") as file:
+          for row in csv.reader(file):
+              print(row)
+      ```
+
+      ```output
+      ['"Python', ' the basics"', 'Ada Lovelace', '2026']
+      ['Short stories', '"King', ' Stephen"', '2019']
+      ['Python, the basics', 'Ada Lovelace', '2026']
+      ['Short stories', 'King, Stephen', '2019']
+      ```
+
+      Split cuts the titles and names in two and keeps the quotes. The reader gives three clean values per line.
+
+      `csv.reader` works on anything that gives lines of text, not only on an open file. A list of strings will do, which is handy for trying it out:
+
+      ```python repl
+      >>> import csv
+      >>> lines = ['Ada;"Lovelace; Countess";1815']
+      >>> for row in csv.reader(lines, delimiter=";"):
+      ...     print(row)
+      ...
+      ['Ada', 'Lovelace; Countess', '1815']
+      ```
+
+      **Your turn:** the file `scores.csv` has a name and a score on each line, separated by a semicolon. Fill in the blanks so the program prints each line as in the example:
+
+      ```text
+      Ada;12
+      Linus;9
+      ```
+
+      ```
+      Ada scored 12
+      Linus scored 9
+      ```
+    fill: |
+      import csv
+
+      with open("scores.csv") as file:
+          for row in csv.[[reader]](file, delimiter=[[";"‖';']]):
+              print(row[0], "scored", row[1])
+    hints:
+      - The function of the `csv` module that reads the rows is the one this step is about.
+      - "Type `reader` into the first blank. The delimiter is a string of one character: `\";\"`."
+    tests:
+      - files:
+          scores.csv: |
+            Ada;12
+            Linus;9
+      - files:
+          scores.csv: |
+            Grace;15
+            Guido;11
+            Margaret;14
+        hidden: true
+    more:
+      - task: |
+          The file `weather.csv` has a date and the day's highest temperature on each line, separated by a semicolon. Write a program that reads it with the `csv` module and prints the warmest day and its temperature. If several days share the highest temperature, print the first of them. For example, for this file:
+
+          ```text
+          2026-07-12;24
+          2026-07-13;29
+          2026-07-14;27
+          ```
+
+          the program prints:
+
+          ```
+          Warmest: 2026-07-13, 29 degrees
+          ```
+        seed: |
+          import csv
+
+        solution: |
+          import csv
+
+          warmest_day = ""
+          warmest = 0
+          first = True
+          with open("weather.csv") as file:
+              for row in csv.reader(file, delimiter=";"):
+                  temperature = int(row[1])
+                  if first or temperature > warmest:
+                      warmest_day = row[0]
+                      warmest = temperature
+                      first = False
+          print(f"Warmest: {warmest_day}, {warmest} degrees")
+        hints:
+          - "Read the rows with `csv.reader(file, delimiter=\";\")`. The date is `row[0]` and the temperature `int(row[1])`."
+          - Keep the best day so far and its temperature in two variables, and replace them when a row is warmer.
+          - "Temperatures can be below zero, so don't start the best temperature at 0: take the first row as the best so far."
+        require:
+          - pattern: csv\.reader
+            message: Read the file with `csv.reader`.
+        tests:
+          - files:
+              weather.csv: |
+                2026-07-12;24
+                2026-07-13;29
+                2026-07-14;27
+          - files:
+              weather.csv: |
+                2026-01-05;-12
+                2026-01-06;-3
+                2026-01-07;-8
+                2026-01-08;-3
+            hidden: true
+          - files:
+              weather.csv: |
+                2026-08-01;31
+            hidden: true
+      - task: |
+          The file `products.csv` has a product's name, its price and how many are in stock on each line, separated by commas. Some names have a comma in them, and those are in double quotes. Write a function `stock_value(filename)` that reads the file with the `csv` module and returns the total value of the stock: the sum of price times count over all the lines. For example, for this file the function returns `40.0`:
+
+          ```text
+          "Pencils, box of 12",4.50,4
+          Eraser,0.75,8
+          "Notebook, A5",2.50,6
+          ```
+        seed: |
+          import csv
+
+
+          def stock_value(filename):
+              pass
+
+
+          if __name__ == "__main__":
+              print(stock_value("products.csv"))
+        solution: |
+          import csv
+
+
+          def stock_value(filename):
+              total = 0
+              with open(filename) as file:
+                  for row in csv.reader(file):
+                      total += float(row[1]) * int(row[2])
+              return total
+
+
+          if __name__ == "__main__":
+              print(stock_value("products.csv"))
+        hints:
+          - The values are separated by commas, which is what `csv.reader` assumes, so it needs no delimiter here. It also removes the quotes around the names.
+          - "The price is a float and the count an integer: `float(row[1]) * int(row[2])`. Add it to a total, and return the total after the loop."
+        require:
+          - pattern: csv\.reader
+            message: Read the file with `csv.reader`, which understands the quotes.
+        tests:
+          - call: stock_value("products.csv")
+            files:
+              products.csv: |
+                "Pencils, box of 12",4.50,4
+                Eraser,0.75,8
+                "Notebook, A5",2.50,6
+          - call: stock_value("shop.csv")
+            files:
+              shop.csv: |
+                "Tea, green",3.25,4
+                "Mugs, set of 2",12.00,1
+                Spoon,1.50,2
+            hidden: true
+
+  - id: data-processing-json
+    slug: json-files
+    title: Reading JSON files
+    text: |
+      **JSON** (JavaScript Object Notation) is the most common format for data that programs pass to each other: web services send their answers in it, and many apps save their settings in it. To a Python programmer it looks familiar, because it's written almost exactly like lists and dictionaries:
+
+      ```file games.json
+      [
+          {
+              "name": "Chess",
+              "players": 2,
+              "tags": ["strategy", "classic"]
+          },
+          {
+              "name": "Uno",
+              "players": 4,
+              "tags": ["cards", "family"]
+          }
+      ]
+      ```
+
+      The standard library's **`json`** module turns JSON text into Python data. `json.loads(text)` (load from a string) takes the text and gives the list or dictionary it describes:
+
+      ```python run
+      import json
+
+      with open("games.json") as file:
+          text = file.read()
+
+      games = json.loads(text)
+      print(games)
+      ```
+
+      ```output
+      [{'name': 'Chess', 'players': 2, 'tags': ['strategy', 'classic']}, {'name': 'Uno', 'players': 4, 'tags': ['cards', 'family']}]
+      ```
+
+      What comes out is an ordinary list of dictionaries, so everything you know about lists and dictionaries works on it. A JSON file can also be one dictionary, with lists and dictionaries nested inside it as deep as needed. Numbers become integers or floats, ready for calculating:
+
+      ```file team.json
+      {
+          "team": "Owls",
+          "players": [
+              {"name": "Ada", "goals": 3},
+              {"name": "Ben", "goals": 5}
+          ]
+      }
+      ```
+
+      ```python run
+      import json
+
+      with open("team.json") as file:
+          team = json.loads(file.read())
+
+      print("Team:", team["team"])
+      total = 0
+      for player in team["players"]:
+          print(f"{player['name']} scored {player['goals']}")
+          total += player["goals"]
+      print("Goals in all:", total)
+      ```
+
+      ```output
+      Team: Owls
+      Ada scored 3
+      Ben scored 5
+      Goals in all: 8
+      ```
+
+      (Inside the f-string the keys are in single quotes, because the f-string itself is in double quotes.) The module also has `json.load(file)`, without the s, which reads the open file directly.
+
+      ### JSON is not quite Python
+
+      A few things are written differently in JSON. Strings always have double quotes. True and false are `true` and `false` in small letters, and the missing value is `null`. The module translates them:
+
+      ```python repl
+      >>> import json
+      >>> json.loads('{"done": true, "score": 9.5, "note": null}')
+      {'done': True, 'score': 9.5, 'note': None}
+      ```
+
+      JSON's rules are strict, and text that breaks them stops the program with a `JSONDecodeError` that says where the problem is. Single quotes are the usual culprit:
+
+      ```python run crash
+      import json
+
+      data = json.loads("{'name': 'Ada'}")
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          data = json.loads("{'name': 'Ada'}")
+      json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      import json
+
+      text = '{"name": "Ada", "languages": ["Python", "C"], "active": true}'
+      person = json.loads(text)
+      print(person["name"])
+      print(person["languages"][1])
+      print(person["active"])
+      print(len(person))
+    hints:
+      - "`json.loads` gives a dictionary with three keys: `name`, `languages` and `active`."
+      - "`person[\"languages\"]` is a list, and index 1 is its second item."
+      - "JSON's `true` becomes Python's `True`, and the length of a dictionary is its number of keys."
+    more:
+      - task: |
+          The file `books.json` has a list of books, each with a title and a number of pages:
+
+          ```text
+          [
+              {"title": "Python Pocket Guide", "pages": 210},
+              {"title": "Data in Practice", "pages": 345}
+          ]
+          ```
+
+          Write a function `total_pages(filename)` that reads such a file with the `json` module and returns the total number of pages of all the books. For the file above it returns `555`.
+        seed: |
+          import json
+
+
+          def total_pages(filename):
+              pass
+
+
+          if __name__ == "__main__":
+              print(total_pages("books.json"))
+        solution: |
+          import json
+
+
+          def total_pages(filename):
+              with open(filename) as file:
+                  books = json.loads(file.read())
+              total = 0
+              for book in books:
+                  total += book["pages"]
+              return total
+
+
+          if __name__ == "__main__":
+              print(total_pages("books.json"))
+        hints:
+          - "Read the whole file with `file.read()` and give the text to `json.loads`. You get a list of dictionaries."
+          - "Loop over the list and add up `book[\"pages\"]`. The pages are already integers."
+        require:
+          - pattern: json\.loads?\s*\(
+            message: Read the file with the `json` module.
+        tests:
+          - call: total_pages("books.json")
+            files:
+              books.json: |
+                [
+                    {"title": "Python Pocket Guide", "pages": 210},
+                    {"title": "Data in Practice", "pages": 345}
+                ]
+          - call: total_pages("shelf.json")
+            files:
+              shelf.json: |
+                [
+                    {"title": "Short Poems", "pages": 64},
+                    {"title": "The Long Road", "pages": 512},
+                    {"title": "Maps of Nowhere", "pages": 98}
+                ]
+            hidden: true
+          - call: total_pages("empty.json")
+            files:
+              empty.json: "[]\n"
+            hidden: true
+      - task: |
+          A JSON file has a list of recipes, each with a name, a list of ingredients and the minutes it takes:
+
+          ```text
+          [
+              {"name": "Pancakes", "ingredients": ["flour", "milk", "eggs", "butter", "salt"], "minutes": 20},
+              {"name": "Tomato soup", "ingredients": ["tomatoes", "onion", "garlic", "stock", "cream", "basil"], "minutes": 35}
+          ]
+          ```
+
+          Write a program that asks for the name of the file, reads it with the `json` module and prints one line for each recipe, as in the example:
+
+          ```
+          File: recipes.json
+          Pancakes: 5 ingredients, 20 minutes
+          Tomato soup: 6 ingredients, 35 minutes
+          ```
+        seed: |
+          import json
+
+        solution: |
+          import json
+
+          filename = input("File: ")
+          with open(filename) as file:
+              recipes = json.loads(file.read())
+
+          for recipe in recipes:
+              count = len(recipe["ingredients"])
+              print(f"{recipe['name']}: {count} ingredients, {recipe['minutes']} minutes")
+        hints:
+          - "Ask for the file's name with `input(\"File: \")` and open the file of that name."
+          - "Each recipe is a dictionary. The number of ingredients is the length of the list `recipe[\"ingredients\"]`."
+          - "In an f-string in double quotes, write the keys in single quotes: `recipe['name']`."
+        require:
+          - pattern: json\.loads?\s*\(
+            message: Read the file with the `json` module.
+        tests:
+          - stdin: recipes.json
+            files:
+              recipes.json: |
+                [
+                    {"name": "Pancakes", "ingredients": ["flour", "milk", "eggs", "butter", "salt"], "minutes": 20},
+                    {"name": "Tomato soup", "ingredients": ["tomatoes", "onion", "garlic", "stock", "cream", "basil"], "minutes": 35}
+                ]
+          - stdin: dinner.json
+            files:
+              dinner.json: |
+                [
+                    {"name": "Omelette", "ingredients": ["eggs", "salt"], "minutes": 10},
+                    {"name": "Pasta", "ingredients": ["pasta", "tomatoes", "cheese"], "minutes": 25},
+                    {"name": "Salad", "ingredients": ["lettuce", "cucumber", "oil", "lemon"], "minutes": 15}
+                ]
+            hidden: true
+
+  - id: data-processing-finding-modules
+    slug: finding-modules
+    title: Finding the right module
+    text: |
+      Before you write a function, it's worth checking whether the standard library already has one. Its modules are listed by theme in Python's documentation, at [docs.python.org/3/library](https://docs.python.org/3/library/): text, numbers and mathematics, dates, files, data formats such as CSV and JSON, and much more. Beyond the standard library, thousands of modules written by other programmers are at the Python Package Index, [pypi.org](https://pypi.org), and on your own computer you install them with a tool called pip. This site runs only the standard library.
+
+      Here are two finds that save real work.
+
+      ### statistics
+
+      The **`statistics`** module calculates averages and more. `mean` is the ordinary average, and `median` the middle value when the values are in order:
+
+      ```python run
+      import statistics
+
+      lap_times = [12.5, 11.8, 13.1, 12.0, 30.2]
+      print(statistics.mean(lap_times))
+      print(statistics.median(lap_times))
+      ```
+
+      ```output
+      15.92
+      12.5
+      ```
+
+      One lap went badly (30.2 seconds), and it pulls the mean up. The median stays a typical lap time, which is why the median is often the better summary of data with outliers. With an even number of values, the median is the mean of the two middle ones.
+
+      ### difflib
+
+      The **`difflib`** module compares texts. Its function `get_close_matches(word, possibilities)` returns the strings of the list that look most like the word, the most similar first, and an empty list when nothing is close. Python's own "Did you mean" messages work in a similar way:
+
+      ```python run
+      from difflib import get_close_matches
+
+      commands = ["help", "start", "stop", "status", "quit"]
+      print(get_close_matches("hlep", commands))
+      print(get_close_matches("strat", commands))
+      print(get_close_matches("xyz", commands))
+      ```
+
+      ```output
+      ['help']
+      ['start', 'status']
+      []
+      ```
+
+      ### Reading a documentation entry
+
+      The documentation shows a function by its first line, followed by a description. The entry for this one starts with `difflib.get_close_matches(word, possibilities, n=3, cutoff=0.6)`. The parameters with `=` have a default value: you can leave them out, and then the function returns at most 3 matches (`n`) and only fairly close ones (`cutoff`). Most entries work like this, so knowing how to read one lets you use functions you have never seen before.
+
+      **Your turn:** fill in the blank so the program prints the middle value of the ages (27), not their average.
+    fill: |
+      import statistics
+
+      ages = [23, 31, 27, 45, 19]
+      print(statistics.[[median]](ages))
+    hints:
+      - The average of these ages is 29. The middle value, when they're in order, is what the task asks for.
+      - The function for the middle value is `median`.
+    tests:
+      - expect: "27"
+    more:
+      - task: |
+          Write a command prompt that helps with typos. It asks for commands until the command is `quit`, and then prints `Bye!`. A known command (one of the list `commands` in the starter code) is answered with `Running` and its name. An unknown one is answered with a suggestion from `get_close_matches`, its first match, or without one if there's no match. For example:
+
+          ```
+          Command: strat
+          Unknown command strat. Did you mean start?
+          Command: start
+          Running start
+          Command: xyz
+          Unknown command xyz.
+          Command: quit
+          Bye!
+          ```
+        seed: |
+          from difflib import get_close_matches
+
+          commands = ["help", "start", "stop", "status", "quit"]
+        solution: |
+          from difflib import get_close_matches
+
+          commands = ["help", "start", "stop", "status", "quit"]
+
+          while True:
+              command = input("Command: ")
+              if command == "quit":
+                  print("Bye!")
+                  break
+              if command in commands:
+                  print("Running", command)
+              else:
+                  matches = get_close_matches(command, commands)
+                  if len(matches) > 0:
+                      print(f"Unknown command {command}. Did you mean {matches[0]}?")
+                  else:
+                      print(f"Unknown command {command}.")
+        hints:
+          - Read commands in a `while True` loop, and leave it with `break` after printing `Bye!` for `quit`.
+          - Check `command in commands` first. Only an unknown command needs `get_close_matches(command, commands)`.
+          - The matches are a list, best first. If it isn't empty, suggest `matches[0]`.
+        tests:
+          - stdin: |
+              strat
+              start
+              xyz
+              quit
+          - stdin: |
+              hlep
+              help
+              stp
+              statsu
+              status
+              abc
+              quit
+            hidden: true
+          - stdin: quit
+            hidden: true
+      - task: |
+          The file `temperatures.csv` has a date and a temperature (a float) on each line, separated by a comma. Write a program that reads it with the `csv` module and prints the mean and the median of the temperatures with one decimal, using the `statistics` module. For example, for this file:
+
+          ```text
+          2026-03-01,4.5
+          2026-03-02,6.0
+          2026-03-03,5.5
+          2026-03-04,12.0
+          ```
+
+          the program prints:
+
+          ```
+          Mean: 7.0
+          Median: 5.8
+          ```
+        seed: |
+          import csv
+          import statistics
+
+        solution: |
+          import csv
+          import statistics
+
+          temperatures = []
+          with open("temperatures.csv") as file:
+              for row in csv.reader(file):
+                  temperatures.append(float(row[1]))
+
+          print(f"Mean: {statistics.mean(temperatures):.1f}")
+          print(f"Median: {statistics.median(temperatures):.1f}")
+        hints:
+          - Collect the temperatures into a list first, converting each one with `float(row[1])`.
+          - "Then give the whole list to `statistics.mean` and `statistics.median`, and print them with `:.1f` in an f-string."
+        require:
+          - pattern: csv\.reader
+            message: Read the file with `csv.reader`.
+          - pattern: statistics\.median|\bmedian\s*\(
+            raw: true
+            message: Calculate the median with the `statistics` module.
+        tests:
+          - files:
+              temperatures.csv: |
+                2026-03-01,4.5
+                2026-03-02,6.0
+                2026-03-03,5.5
+                2026-03-04,12.0
+          - files:
+              temperatures.csv: |
+                2026-01-10,-5.0
+                2026-01-11,-2.5
+                2026-01-12,1.0
+            hidden: true
+          - files:
+              temperatures.csv: |
+                2026-06-01,18.5
+                2026-06-02,21.0
+                2026-06-03,19.5
+                2026-06-04,30.0
+                2026-06-05,20.0
+            hidden: true

@@ -1,0 +1,789 @@
+id: functions-as-arguments
+summary: A function is a value you can hand to another function. Sorting with a key function, lambda expressions, sorting and picking your own objects with sorted, min and max, and writing functions of your own that take a function as an argument.
+steps:
+  - id: functions-as-arguments-key
+    slug: key-functions
+    title: Sorting with a key function
+    text: |
+      Python puts a list in order with the function `sorted`, which returns a new list, or with the method `sort`, which changes the list itself. Numbers go from smallest to largest and strings in alphabetical order. A list of tuples is sorted by the first item of each tuple, and by the second item when the first ones are equal:
+
+      ```python run
+      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15), ("cookies", 3.25)]
+
+      for snack in sorted(snacks):
+          print(snack)
+      ```
+
+      ```output
+      ('apples', 1.99)
+      ('cookies', 3.25)
+      ('nuts', 4.15)
+      ('pretzels', 2.49)
+      ```
+
+      That's alphabetical order by name. But what if you want the cheapest snack first?
+
+      ### A key function
+
+      `sorted` and `sort` accept a **key function**: a function that takes one item and returns the value to sort that item by. You write it like any other function, and hand it to `sorted` with `key=`:
+
+      ```python run
+      def price(snack):
+          return snack[1]
+
+
+      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15), ("cookies", 3.25)]
+
+      for snack in sorted(snacks, key=price):
+          print(snack)
+      ```
+
+      ```output
+      ('apples', 1.99)
+      ('pretzels', 2.49)
+      ('cookies', 3.25)
+      ('nuts', 4.15)
+      ```
+
+      `sorted` calls `price` once for each snack and puts the snacks in the order of the values it returns: 1.99, 2.49, 3.25, 4.15. The snacks themselves don't change. The key only decides their order.
+
+      ### The function itself, not its result
+
+      Look closely at `key=price`: there are no parentheses after `price`. A function's name on its own refers to the function, just as a variable's name refers to a list. So you can pass a function to another function like any other value, and the other function decides when to call it. With parentheses, Python would call `price` right away, before `sorted` even starts, and with no snack to give it:
+
+      ```python run crash
+      def price(snack):
+          return snack[1]
+
+
+      snacks = [("pretzels", 2.49), ("apples", 1.99)]
+      print(sorted(snacks, key=price()))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 6, in <module>
+          print(sorted(snacks, key=price()))
+                                   ~~~~~^^
+      TypeError: price() missing 1 required positional argument: 'snack'
+      ```
+
+      So give `key` the function's name, without parentheses.
+
+      ### Ready-made keys and reverse order
+
+      Any function that takes one argument can be a key, Python's own functions too: `key=len` sorts strings by their length. And `reverse=True` turns the order around, with `sorted` and `sort` alike:
+
+      ```python run
+      words = ["cherry", "fig", "banana", "kiwi"]
+      print(sorted(words, key=len))
+      print(sorted(words, key=len, reverse=True))
+
+      numbers = [3, 11, 7]
+      numbers.sort(reverse=True)
+      print(numbers)
+      ```
+
+      ```output
+      ['fig', 'kiwi', 'cherry', 'banana']
+      ['cherry', 'banana', 'kiwi', 'fig']
+      [11, 7, 3]
+      ```
+
+      Words of the same length, like `cherry` and `banana`, keep the order they had in the original list.
+
+      **Your turn:** the program should list some inventions from the oldest to the newest. Fill in the blank so that `sorted` sorts the tuples by year, using the function `year`. The program should print:
+
+      ```
+      printing press 1440
+      telescope 1608
+      telephone 1876
+      light bulb 1879
+      ```
+    fill: |
+      def year(invention):
+          return invention[1]
+
+
+      inventions = [("telephone", 1876), ("printing press", 1440), ("light bulb", 1879), ("telescope", 1608)]
+
+      for invention in sorted(inventions, key=[[year]]):
+          print(invention[0], invention[1])
+    hints:
+      - The key is the function that returns the year of one invention. Which function in the program does that?
+      - "Type only the function's name, `year`, without parentheses: `sorted` calls it itself, once for each tuple."
+    tests:
+      - expect: |
+          printing press 1440
+          telescope 1608
+          telephone 1876
+          light bulb 1879
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def last_letter(word):
+              return word[-1]
+
+
+          words = ["cherry", "fig", "mango", "pear"]
+          print(sorted(words, key=last_letter))
+          print(sorted(words, key=len, reverse=True))
+          print(words)
+        hints:
+          - "`last_letter` returns the last character of a word, so the first `sorted` orders the words by y, g, o and r."
+          - "The second one sorts by length, and `reverse=True` puts the longest word first."
+          - "`sorted` returns new lists, so `words` itself is still in its original order."
+      - task: |
+          Write a function `by_score(results)`. It gets a list of tuples, each holding a player's name and score, and returns a **new** list sorted by score, the highest score first. The list it was given must stay as it was. For example,
+
+          ```python fragment
+          results = [("Ada", 31), ("Ben", 45), ("Cleo", 12)]
+          print(by_score(results))
+          print(results)
+          ```
+
+          should print:
+
+          ```
+          [('Ben', 45), ('Ada', 31), ('Cleo', 12)]
+          [('Ada', 31), ('Ben', 45), ('Cleo', 12)]
+          ```
+        seed: |
+          def by_score(results):
+              pass
+
+
+          if __name__ == "__main__":
+              results = [("Ada", 31), ("Ben", 45), ("Cleo", 12)]
+              print(by_score(results))
+              print(results)
+        solution: |
+          def score(result):
+              return result[1]
+
+
+          def by_score(results):
+              return sorted(results, key=score, reverse=True)
+
+
+          if __name__ == "__main__":
+              results = [("Ada", 31), ("Ben", 45), ("Cleo", 12)]
+              print(by_score(results))
+              print(results)
+        hints:
+          - "`sorted` returns a new list and leaves the original alone. `sort` would change the caller's list."
+          - "Write a key function that returns the score, the second item of a tuple: `return result[1]`."
+          - "Pass that function with `key=`, and add `reverse=True` so the highest score comes first."
+        tests:
+          - call: |
+              results = [("Ada", 31), ("Ben", 45), ("Cleo", 12)]
+              print(by_score(results))
+              print(results)
+          - call: by_score([("Kim", 7), ("Lou", 19), ("Max", 3), ("Ned", 23)])
+            hidden: true
+          - call: by_score([("Solo", 1)])
+            hidden: true
+
+  - id: functions-as-arguments-lambda
+    slug: lambda
+    title: Lambda expressions
+    text: |
+      A key function like `price` is often needed in one place only. When just one function uses it, you can define it **inside** that function. It then exists only there and doesn't clutter the rest of the program:
+
+      ```python run
+      def cheapest_first(snacks):
+          def price(snack):
+              return snack[1]
+
+          return sorted(snacks, key=price)
+
+
+      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15)]
+      print(cheapest_first(snacks))
+      ```
+
+      ```output
+      [('apples', 1.99), ('pretzels', 2.49), ('nuts', 4.15)]
+      ```
+
+      ### A function without a name
+
+      For a function this small, Python has a shorter way to write it: a **lambda expression**. It makes a function right where you need it, without `def` and without a name:
+
+      ```python fragment
+      lambda snack: snack[1]
+      ```
+
+      This is the same function as `price` above. After the word `lambda` come the parameters, then a colon, then one expression. Calling the function gives the value of that expression. There's no `return`: the value is returned automatically. Since a lambda has no name, it's also called an **anonymous function**.
+
+      With a lambda, sorting fits on one line:
+
+      ```python run
+      snacks = [("pretzels", 2.49), ("apples", 1.99), ("nuts", 4.15)]
+      snacks.sort(key=lambda snack: snack[1])
+      print(snacks)
+
+      names = ["bea", "Cal", "ann", "Dot"]
+      print(sorted(names))
+      print(sorted(names, key=lambda name: name.lower()))
+      ```
+
+      ```output
+      [('apples', 1.99), ('pretzels', 2.49), ('nuts', 4.15)]
+      ['Cal', 'Dot', 'ann', 'bea']
+      ['ann', 'bea', 'Cal', 'Dot']
+      ```
+
+      The names show why a key is handy for words too. In Python's natural order every capital letter comes before every small letter, so `Cal` lands before `ann`. Sorting by the lowercase form of each name gives the order a person expects, and the names keep their capitals.
+
+      A lambda holds exactly one expression. Statements such as `return`, an `if` block or a loop don't fit in it:
+
+      ```python run crash
+      words = ["kiwi", "fig"]
+      print(sorted(words, key=lambda word: return len(word)))
+      ```
+
+      ```crash
+        File "main.py", line 2
+          print(sorted(words, key=lambda word: return len(word)))
+                                               ^^^^^^
+      SyntaxError: invalid syntax
+      ```
+
+      Leave out the `return`. When the work needs more than one expression, write a function with `def` instead.
+
+      ### min and max with a key
+
+      `min` and `max` take a `key` too. They compare the items by the values the key returns, but they return the item itself:
+
+      ```python repl
+      >>> temperatures = [("Mon", 14), ("Tue", 9), ("Wed", 17)]
+      >>> max(temperatures, key=lambda day: day[1])
+      ('Wed', 17)
+      >>> min(temperatures, key=lambda day: day[1])[0]
+      'Tue'
+      >>> max(["sky", "ocean", "river"], key=len)
+      'ocean'
+      ```
+
+      When several items share the best value, as `ocean` and `river` do, `min` and `max` return the first of them.
+
+      **Your turn:** fill in the two blanks so that the numbers are sorted by their last digit (the remainder when you divide by 10). Use a lambda expression whose parameter is `n`. The program should print:
+
+      ```
+      [30, 61, 42, 95, 17]
+      ```
+    fill: |
+      numbers = [42, 17, 30, 95, 61]
+      print(sorted(numbers, key=[[lambda]] n: [[n % 10]]))
+    hints:
+      - A function without a name starts with the word `lambda`.
+      - "After the colon comes the value to sort by. The last digit of `n` is the remainder of `n` divided by 10: `n % 10`."
+    tests:
+      - expect: "[30, 61, 42, 95, 17]"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          pets = [("Rex", 7), ("Mia", 2), ("Bo", 11)]
+          print(min(pets, key=lambda pet: pet[1]))
+          print(max(pets, key=lambda pet: len(pet[0]))[0])
+          print(sorted(pets, key=lambda pet: pet[0][-1]))
+        hints:
+          - "`min` compares the pets by their ages, `pet[1]`, but returns the whole tuple."
+          - "The second line compares the lengths of the names. Rex and Mia are both 3 letters long, and `max` returns the first of them; `[0]` then takes its name."
+          - "The last line sorts by the last letter of each name: x, a and o."
+      - task: |
+          Write a function `sort_by_last_name(names)` that gets a list of full names, such as `"Ada Lovelace"`, and returns a new list sorted by the last names. Use a lambda expression as the key. For example,
+
+          ```python fragment
+          print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+          ```
+
+          should print:
+
+          ```
+          ['Grace Hopper', 'Ada Lovelace', 'Alan Turing']
+          ```
+        seed: |
+          def sort_by_last_name(names):
+              pass
+
+
+          if __name__ == "__main__":
+              print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+        solution: |
+          def sort_by_last_name(names):
+              return sorted(names, key=lambda name: name.split()[-1])
+
+
+          if __name__ == "__main__":
+              print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+        hints:
+          - "The key gets one full name and must return its last name. `split()` cuts a name into a list of words."
+          - "The last word of a list is at index `-1`, so the key is `lambda name: name.split()[-1]`."
+          - Return what `sorted(names, key=...)` gives.
+        require:
+          - pattern: \blambda\b
+            message: Use a lambda expression as the key.
+        tests:
+          - call: print(sort_by_last_name(["Grace Hopper", "Alan Turing", "Ada Lovelace"]))
+          - call: sort_by_last_name(["Linus Torvalds", "Guido van Rossum", "Margaret Hamilton", "Tim Berners-Lee"])
+            hidden: true
+          - call: sort_by_last_name(["Zoe Adams", "Al Zane"])
+            hidden: true
+
+  - id: functions-as-arguments-objects
+    slug: own-objects
+    title: Sorting your own objects
+    text: |
+      Lists often hold objects of your own classes. Python doesn't know how to compare two such objects, so `sorted` on its own stops with an error:
+
+      ```python run crash
+      class Book:
+          def __init__(self, title, author, year):
+              self.title = title
+              self.author = author
+              self.year = year
+
+
+      books = [Book("Dune", "Frank Herbert", 1965), Book("Emma", "Jane Austen", 1815)]
+      print(sorted(books))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 9, in <module>
+          print(sorted(books))
+                ~~~~~~^^^^^^^
+      TypeError: '<' not supported between instances of 'Book' and 'Book'
+      ```
+
+      Sorting compares the items with `<`, and a `Book` has no `<`. You could add one with the operator overloading of part 10, but a book has no single natural order anyway: by title, by author or by year all make sense. A key function lets you choose, every time you sort.
+
+      ### A key that reads an attribute
+
+      The key function gets one object and returns the attribute to sort by. A named function and a lambda work equally well:
+
+      ```python run
+      class Book:
+          def __init__(self, title, author, year):
+              self.title = title
+              self.author = author
+              self.year = year
+
+          def __str__(self):
+              return f"{self.title} ({self.author}, {self.year})"
+
+
+      def by_year(book):
+          return book.year
+
+
+      books = [
+          Book("Dune", "Frank Herbert", 1965),
+          Book("Emma", "Jane Austen", 1815),
+          Book("Beloved", "Toni Morrison", 1987),
+      ]
+
+      print("By year:")
+      for book in sorted(books, key=by_year):
+          print(book)
+
+      print("By title:")
+      for book in sorted(books, key=lambda book: book.title):
+          print(book)
+      ```
+
+      ```output
+      By year:
+      Emma (Jane Austen, 1815)
+      Dune (Frank Herbert, 1965)
+      Beloved (Toni Morrison, 1987)
+      By title:
+      Beloved (Toni Morrison, 1987)
+      Dune (Frank Herbert, 1965)
+      Emma (Jane Austen, 1815)
+      ```
+
+      A key can call a method too, such as `key=lambda account: account.balance()`, when the value comes from a method instead of an attribute.
+
+      ### Best, worst and ties
+
+      `min` and `max` with a key return the whole object, so you can use any of its attributes afterwards. And when two objects have the same value, a key can return a **tuple** to settle the tie: tuples are compared item by item, so the second item counts only when the first items are equal. To sort a number from highest to lowest but names from A to Z, make the number negative in the key:
+
+      ```python run
+      class Player:
+          def __init__(self, name, points):
+              self.name = name
+              self.points = points
+
+
+      players = [Player("Uma", 12), Player("Leo", 20), Player("Ann", 12), Player("Kai", 7)]
+
+      print(max(players, key=lambda player: player.points).name)
+      print(min(players, key=lambda player: player.points).name)
+
+      for player in sorted(players, key=lambda player: (-player.points, player.name)):
+          print(player.name, player.points)
+      ```
+
+      ```output
+      Leo
+      Kai
+      Leo 20
+      Ann 12
+      Uma 12
+      Kai 7
+      ```
+
+      Uma and Ann both have 12 points, so their names decide: Ann comes first.
+
+      **Your turn:** fill in the blank so that the movies are listed from the shortest to the longest. The program should print:
+
+      ```
+      Up (96 min)
+      Alien (117 min)
+      Titanic (194 min)
+      ```
+    fill: |
+      class Movie:
+          def __init__(self, title, minutes):
+              self.title = title
+              self.minutes = minutes
+
+          def __str__(self):
+              return f"{self.title} ({self.minutes} min)"
+
+
+      movies = [Movie("Titanic", 194), Movie("Up", 96), Movie("Alien", 117)]
+      for movie in sorted(movies, key=lambda movie: [[movie.minutes]]):
+          print(movie)
+    hints:
+      - The key gets one `Movie` object and returns the value to sort it by, its length.
+      - "The length is the object's attribute `minutes`: `movie.minutes`."
+    tests:
+      - expect: |
+          Up (96 min)
+          Alien (117 min)
+          Titanic (194 min)
+    more:
+      - task: |
+          The class `Runner` holds a runner's name and finishing time in seconds. Write a function `fastest(runners)` that returns the **name** of the runner with the smallest time, as a string. For example,
+
+          ```python fragment
+          runners = [Runner("Ines", 312.5), Runner("Tom", 298.1), Runner("Sam", 305.0)]
+          print(fastest(runners))
+          ```
+
+          should print:
+
+          ```
+          Tom
+          ```
+        seed: |
+          class Runner:
+              def __init__(self, name, seconds):
+                  self.name = name
+                  self.seconds = seconds
+
+
+          def fastest(runners):
+              pass
+
+
+          if __name__ == "__main__":
+              runners = [Runner("Ines", 312.5), Runner("Tom", 298.1), Runner("Sam", 305.0)]
+              print(fastest(runners))
+        solution: |
+          class Runner:
+              def __init__(self, name, seconds):
+                  self.name = name
+                  self.seconds = seconds
+
+
+          def fastest(runners):
+              winner = min(runners, key=lambda runner: runner.seconds)
+              return winner.name
+
+
+          if __name__ == "__main__":
+              runners = [Runner("Ines", 312.5), Runner("Tom", 298.1), Runner("Sam", 305.0)]
+              print(fastest(runners))
+        hints:
+          - "`min` with a key finds the runner whose time is smallest, and returns the `Runner` object."
+          - "The key returns a runner's time: `key=lambda runner: runner.seconds`."
+          - "The function returns the name, so take `.name` of the object `min` gives you."
+        tests:
+          - call: |
+              runners = [Runner("Ines", 312.5), Runner("Tom", 298.1), Runner("Sam", 305.0)]
+              print(fastest(runners))
+          - call: fastest([Runner("Ana", 251.0), Runner("Bo", 260.4)])
+            hidden: true
+          - call: fastest([Runner("Cy", 400.0), Runner("Di", 399.9), Runner("Ed", 401.2)])
+            hidden: true
+      - task: |
+          Write a function `leaderboard(players)` that returns a new list of the `Player` objects sorted by points, the most points first. Players with equal points are listed in alphabetical order by name. The class has a `__repr__`, so a list of players prints readably. For example,
+
+          ```python fragment
+          players = [Player("Zed", 21), Player("Lia", 30), Player("Abe", 21), Player("Kim", 5)]
+          print(leaderboard(players))
+          ```
+
+          should print:
+
+          ```
+          [Lia (30), Abe (21), Zed (21), Kim (5)]
+          ```
+        seed: |
+          class Player:
+              def __init__(self, name, points):
+                  self.name = name
+                  self.points = points
+
+              def __repr__(self):
+                  return f"{self.name} ({self.points})"
+
+
+          def leaderboard(players):
+              pass
+
+
+          if __name__ == "__main__":
+              players = [Player("Zed", 21), Player("Lia", 30), Player("Abe", 21), Player("Kim", 5)]
+              print(leaderboard(players))
+        solution: |
+          class Player:
+              def __init__(self, name, points):
+                  self.name = name
+                  self.points = points
+
+              def __repr__(self):
+                  return f"{self.name} ({self.points})"
+
+
+          def leaderboard(players):
+              return sorted(players, key=lambda player: (-player.points, player.name))
+
+
+          if __name__ == "__main__":
+              players = [Player("Zed", 21), Player("Lia", 30), Player("Abe", 21), Player("Kim", 5)]
+              print(leaderboard(players))
+        hints:
+          - The order depends on two things, so let the key return a tuple of two values.
+          - "Points go from highest to lowest and names from A to Z. Making the points negative lets one ordinary sort do both: `(-player.points, player.name)`."
+          - Use `sorted`, not `sort`, so the caller's list keeps its order.
+        tests:
+          - call: |
+              players = [Player("Zed", 21), Player("Lia", 30), Player("Abe", 21), Player("Kim", 5)]
+              print(leaderboard(players))
+          - call: |
+              players = [Player("Bo", 3), Player("Al", 3), Player("Cy", 9)]
+              print(leaderboard(players))
+              print(players)
+            hidden: true
+          - call: print(leaderboard([Player("Max", 14), Player("Eva", 14), Player("Ian", 14)]))
+            hidden: true
+
+  - id: functions-as-arguments-own
+    slug: own-functions
+    title: Functions that take functions
+    text: |
+      `sorted`, `min` and `max` get a function as an argument and call it themselves. Your own functions can do the same. A parameter can hold a function just as it holds a number or a list, and you call it with parentheses, like any function:
+
+      ```python run
+      def apply_to_all(numbers, operation):
+          results = []
+          for number in numbers:
+              results.append(operation(number))
+          return results
+
+
+      def double(x):
+          return 2 * x
+
+
+      print(apply_to_all([1, 2, 3], double))
+      print(apply_to_all([1, 2, 3], lambda x: x * x))
+      print(apply_to_all([-4, 5, -6], abs))
+      ```
+
+      ```output
+      [2, 4, 6]
+      [1, 4, 9]
+      [4, 5, 6]
+      ```
+
+      `apply_to_all` doesn't know what `operation` does. It only expects a function that takes one number. Which function runs is up to the caller: a named one, a lambda or one of Python's own, such as `abs`, which gives a number without its minus sign. That makes one short function useful for many jobs.
+
+      The function you pass must accept the arguments it will be called with. Here `operation` gets two:
+
+      ```python run
+      def combine(a, b, operation):
+          return operation(a, b)
+
+
+      print(combine(12, 4, lambda x, y: x + y))
+      print(combine(12, 4, lambda x, y: x / y))
+      print(combine(12, 4, max))
+      ```
+
+      ```output
+      16
+      3.0
+      12
+      ```
+
+      ### A common slip
+
+      Pass the function, not the result of calling it. Here `double(5)` runs first and gives 10, so `operation` is the number 10, and Python can't call a number:
+
+      ```python run crash
+      def apply_to_all(numbers, operation):
+          results = []
+          for number in numbers:
+              results.append(operation(number))
+          return results
+
+
+      def double(x):
+          return 2 * x
+
+
+      print(apply_to_all([1, 2, 3], double(5)))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 12, in <module>
+          print(apply_to_all([1, 2, 3], double(5)))
+                ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+        File "main.py", line 4, in apply_to_all
+          results.append(operation(number))
+                         ~~~~~~~~~^^^^^^^^
+      TypeError: 'int' object is not callable
+      ```
+
+      "Not callable" means the value isn't a function. Write `double`, without parentheses.
+
+      ### A function as a rule
+
+      A function argument is a neat way to pass a **rule**: which items to keep, to count or to look for. A parameter can even have a function as its default value. Here the default is a lambda that says `True` to everything, so without a rule every item counts:
+
+      ```python run
+      def count_matching(items, condition=lambda item: True):
+          count = 0
+          for item in items:
+              if condition(item):
+                  count += 1
+          return count
+
+
+      words = ["sun", "moon", "star", "comet"]
+      print(count_matching(words))
+      print(count_matching(words, lambda word: len(word) == 4))
+      print(count_matching(words, lambda word: "o" in word))
+      ```
+
+      ```output
+      4
+      2
+      2
+      ```
+
+      **Your turn:** the function `keep` returns the items for which the function `wanted` returns `True`. Fill in the blank so that the program prints:
+
+      ```
+      [12, 20]
+      ['ant', 'cat']
+      ```
+    fill: |
+      def keep(items, wanted):
+          result = []
+          for item in items:
+              if [[wanted(item)]]:
+                  result.append(item)
+          return result
+
+
+      print(keep([5, 12, 8, 20], lambda n: n > 9))
+      print(keep(["ant", "bee", "cat"], lambda word: word != "bee"))
+    hints:
+      - "`wanted` is a function. Call it with the item to ask whether the item should be kept."
+      - "Calling it looks like any function call: `wanted(item)`. It returns `True` or `False`, which is just what the `if` needs."
+    tests:
+      - expect: |
+          [12, 20]
+          ['ant', 'cat']
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def twice(operation, value):
+              return operation(operation(value))
+
+
+          def add_three(x):
+              return x + 3
+
+
+          print(twice(add_three, 1))
+          print(twice(lambda x: x * 10, 2))
+          print(twice(lambda s: s + "!", "hey"))
+          print(twice(abs, -5))
+        hints:
+          - "`twice` calls `operation` on the value, then calls it again on the result."
+          - "`add_three` twice turns 1 into 4 and then 7. The second line multiplies by 10 two times, and the third adds an exclamation mark two times."
+          - "`abs(-5)` is 5, and `abs(5)` is still 5."
+      - task: |
+          Write a function `first_match(items, condition)` that returns the first item of the list for which the function `condition` returns `True`. If no item matches, it returns `None`. For example,
+
+          ```python fragment
+          print(first_match([3, 8, 5, 12], lambda n: n > 6))
+          print(first_match(["ant", "bee"], lambda word: word.startswith("c")))
+          ```
+
+          should print:
+
+          ```
+          8
+          None
+          ```
+        seed: |
+          def first_match(items, condition):
+              pass
+
+
+          if __name__ == "__main__":
+              print(first_match([3, 8, 5, 12], lambda n: n > 6))
+              print(first_match(["ant", "bee"], lambda word: word.startswith("c")))
+        solution: |
+          def first_match(items, condition):
+              for item in items:
+                  if condition(item):
+                      return item
+              return None
+
+
+          if __name__ == "__main__":
+              print(first_match([3, 8, 5, 12], lambda n: n > 6))
+              print(first_match(["ant", "bee"], lambda word: word.startswith("c")))
+        hints:
+          - Go through the items with a `for` loop and call `condition(item)` for each one.
+          - As soon as the condition returns `True`, return that item. The loop stops there.
+          - "If the loop ends without finding anything, return `None` after the loop."
+        tests:
+          - call: |
+              print(first_match([3, 8, 5, 12], lambda n: n > 6))
+              print(first_match(["ant", "bee"], lambda word: word.startswith("c")))
+          - call: |
+              def is_negative(number):
+                  return number < 0
+
+
+              print(first_match([4, 0, -2, -7], is_negative))
+              print(first_match([], is_negative))
+            hidden: true
+          - call: 'first_match(["kiwi", "plum", "melon", "grape"], lambda word: len(word) == 5)'
+            hidden: true

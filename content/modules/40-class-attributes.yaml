@@ -1,0 +1,1321 @@
+id: class-attributes
+summary: Values and methods that belong to the class itself. Class variables shared by all objects, class methods and static methods, default values for parameters (and the trap of a list as a default), and a larger program where several classes work together.
+steps:
+  - id: class-attributes-variables
+    slug: class-variables
+    title: Class variables
+    text: |
+      So far every object has had its own values for its attributes: two products, two prices. Sometimes a value belongs to the class as a whole and is shared by all its objects, such as a tax rate that's the same for every product. That's a **class variable**. You write it inside the class but outside any method, without `self.`:
+
+      ```python run
+      class Product:
+          tax_percent = 24
+
+          def __init__(self, name, price):
+              self.name = name
+              self.price = price
+
+          def total_price(self):
+              return self.price + self.price * Product.tax_percent / 100
+
+
+      print("Tax:", Product.tax_percent, "%")
+      bread = Product("Bread", 4)
+      lamp = Product("Lamp", 50)
+      print(bread.total_price(), lamp.total_price())
+
+      Product.tax_percent = 10
+      print(bread.total_price(), lamp.total_price())
+      ```
+
+      ```output
+      Tax: 24 %
+      4.96 62.0
+      4.4 55.0
+      ```
+
+      You reach a class variable through the class's name: `Product.tax_percent`. It exists as soon as the class does, before any object is created, which is why the first `print` works. There is only one `tax_percent`, so changing it once changes the total price of every product.
+
+      Attributes that each object has for itself, like `self.price`, are called **instance variables** (an object is an *instance* of its class). Any value can be a class variable, a list or a dictionary too.
+
+      ### Counting objects
+
+      A class variable can count how many objects have been created, and give each new object the next number:
+
+      ```python run
+      class Ticket:
+          sold = 0
+
+          def __init__(self, show):
+              Ticket.sold += 1
+              self.number = Ticket.sold
+              self.show = show
+
+          def __str__(self):
+              return f"Ticket {self.number}: {self.show}"
+
+
+      a = Ticket("Hamlet")
+      b = Ticket("Hamlet")
+      c = Ticket("Cats")
+      print(a)
+      print(c)
+      print("Tickets sold:", Ticket.sold)
+      ```
+
+      ```output
+      Ticket 1: Hamlet
+      Ticket 3: Cats
+      Tickets sold: 3
+      ```
+
+      `Ticket.sold` is shared, and `self.number` is each ticket's own copy of what it was at that moment.
+
+      ### Change it through the class
+
+      Inside a method, `self.sold` can *read* the class variable: when an object has no attribute of that name, Python looks in its class. But *assigning* to `self.sold` creates a new attribute in that one object, and the class variable doesn't change:
+
+      ```python run
+      class Ticket:
+          sold = 0
+
+          def __init__(self):
+              self.sold += 1
+
+
+      a = Ticket()
+      b = Ticket()
+      print(Ticket.sold, a.sold, b.sold)
+      ```
+
+      ```output
+      0 1 1
+      ```
+
+      Each ticket now has its own `sold`, and the shared count is still 0. To change a class variable, always go through the class's name: `Ticket.sold += 1`.
+
+      **Your turn:** every new club member should get the next member number. Fill in the blanks so the program prints:
+
+      ```
+      1 Ada
+      2 Linus
+      3 Grace
+      Members: 3
+      ```
+    fill: |
+      class Member:
+          count = 0
+
+          def __init__(self, name):
+              Member.[[count]] += 1
+              self.number = [[Member.count]]
+              self.name = name
+
+
+      members = [Member("Ada"), Member("Linus"), Member("Grace")]
+      for member in members:
+          print(member.number, member.name)
+      print("Members:", Member.count)
+    hints:
+      - "The shared counter is the class variable `count`, and you change it through the class's name."
+      - "First `Member.count += 1`, then give the new member the current count: `self.number = Member.count`."
+    tests:
+      - expect: |
+          1 Ada
+          2 Linus
+          3 Grace
+          Members: 3
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Lamp:
+              watts = 40
+
+              def __init__(self, room):
+                  self.room = room
+
+              def describe(self):
+                  return f"{self.room}: {Lamp.watts} W"
+
+
+          desk = Lamp("study")
+          hall = Lamp("hall")
+          print(desk.describe())
+          Lamp.watts = 60
+          print(desk.describe())
+          print(hall.describe())
+        hints:
+          - "`watts` is a class variable: there is only one, shared by both lamps."
+          - "After `Lamp.watts = 60`, every lamp's `describe` uses 60."
+      - task: |
+          Write the class `Coin`. It has two class variables:
+
+          - `values`, a dictionary of the value in cents of each kind of coin: `"penny"` is 1, `"nickel"` is 5, `"dime"` is 10 and `"quarter"` is 25;
+          - `minted`, the number of coins created so far, at first 0.
+
+          The constructor takes the kind of coin (one of the keys of `values`), stores it in the attribute `kind`, and adds one to `minted`. The method `cents(self)` returns the coin's value from the dictionary.
+
+          For example, this code:
+
+          ```python fragment
+          print(Coin.values["dime"])
+          purse = [Coin("quarter"), Coin("penny"), Coin("dime")]
+          total = 0
+          for coin in purse:
+              total += coin.cents()
+          print(total)
+          print(Coin.minted)
+          ```
+
+          prints:
+
+          ```
+          10
+          36
+          3
+          ```
+        seed: |
+          class Coin:
+              pass
+
+
+          if __name__ == "__main__":
+              print(Coin.values["dime"])
+              purse = [Coin("quarter"), Coin("penny"), Coin("dime")]
+              total = 0
+              for coin in purse:
+                  total += coin.cents()
+              print(total)
+              print(Coin.minted)
+        solution: |
+          class Coin:
+              values = {"penny": 1, "nickel": 5, "dime": 10, "quarter": 25}
+              minted = 0
+
+              def __init__(self, kind):
+                  self.kind = kind
+                  Coin.minted += 1
+
+              def cents(self):
+                  return Coin.values[self.kind]
+
+
+          if __name__ == "__main__":
+              print(Coin.values["dime"])
+              purse = [Coin("quarter"), Coin("penny"), Coin("dime")]
+              total = 0
+              for coin in purse:
+                  total += coin.cents()
+              print(total)
+              print(Coin.minted)
+        hints:
+          - "Both class variables go at the top of the class, outside any method: `values = {...}` and `minted = 0`."
+          - "In `__init__`, add one with the class's name: `Coin.minted += 1`."
+          - "`cents` looks up the coin's kind in the shared dictionary: `Coin.values[self.kind]`."
+        tests:
+          - call: |
+              print(Coin.values["dime"])
+              purse = [Coin("quarter"), Coin("penny"), Coin("dime")]
+              total = 0
+              for coin in purse:
+                  total += coin.cents()
+              print(total)
+              print(Coin.minted)
+          - call: |
+              print(Coin.minted)
+              print(Coin("nickel").cents())
+              print(Coin("quarter").cents() + Coin("quarter").cents())
+              print(Coin.minted)
+              print(Coin.values["penny"], Coin("penny").kind)
+            hidden: true
+
+  - id: class-attributes-methods
+    slug: class-methods
+    title: Class methods and static methods
+    text: |
+      Methods can belong to the class too. You call such a method through the class's name, without creating an object first.
+
+      A **class method** has the decorator `@classmethod` above it, and its first parameter is **`cls`** instead of `self`. Where `self` is the object, `cls` is the class itself, and Python fills it in for you just as it fills in `self`. A **static method** has the decorator `@staticmethod` and no such parameter at all: it's an ordinary function that lives in the class because it belongs with it.
+
+      ```python run
+      class Time:
+          def __init__(self, hours, minutes):
+              if not Time.valid(hours, minutes):
+                  raise ValueError(f"Not a valid time: {hours}:{minutes}")
+              self.hours = hours
+              self.minutes = minutes
+
+          @staticmethod
+          def valid(hours, minutes):
+              return 0 <= hours < 24 and 0 <= minutes < 60
+
+          @classmethod
+          def from_text(cls, text):
+              parts = text.split(":")
+              return cls(int(parts[0]), int(parts[1]))
+
+          @classmethod
+          def midnight(cls):
+              return cls(0, 0)
+
+          def __str__(self):
+              return f"{self.hours:02}:{self.minutes:02}"
+
+
+      print(Time.valid(25, 0))
+      lunch = Time.from_text("12:30")
+      print(lunch)
+      print(Time.midnight())
+      ```
+
+      ```output
+      False
+      12:30
+      00:00
+      ```
+
+      (In the f-string, `:02` writes a number with at least two digits, padding it with a zero.)
+
+      - `Time.valid(25, 0)` checks a time without creating any object. A program reading times from the user could check each one before creating a `Time`, and the constructor uses the same check, also through the class's name.
+      - `from_text` and `midnight` create new objects: `cls(...)` calls the class, exactly as `Time(...)` would. Class methods like these are a handy way to offer more than one way to create an object.
+
+      ### Which one to choose
+
+      Both kinds are called the same way, `Time.valid(...)` or `Time.from_text(...)`. The difference is what they get:
+
+      - an ordinary method gets the object (`self`), and is called on an object;
+      - a class method gets the class (`cls`), so it can create objects with `cls(...)` and use class variables as `cls.name`;
+      - a static method gets neither, so it can only use its own parameters.
+
+      A class method that works with a class variable:
+
+      ```python run
+      class Ticket:
+          sold = 0
+
+          def __init__(self):
+              Ticket.sold += 1
+
+          @classmethod
+          def sales_report(cls):
+              return f"{cls.sold} tickets sold"
+
+
+      Ticket()
+      Ticket()
+      print(Ticket.sales_report())
+      ```
+
+      ```output
+      2 tickets sold
+      ```
+
+      Calling an ordinary method through the class doesn't work, because there is no object to be its `self`. `Time.__str__()` would stop with `TypeError: Time.__str__() missing 1 required positional argument: 'self'`.
+
+      **Your turn:** fill in the blanks so that `Rectangle.square(side)` is a class method that creates a square, and the program prints:
+
+      ```
+      3 x 3
+      9
+      ```
+    fill: |
+      class Rectangle:
+          def __init__(self, width, height):
+              self.width = width
+              self.height = height
+
+          @[[classmethod]]
+          def square(cls, side):
+              return [[cls]](side, side)
+
+          def area(self):
+              return self.width * self.height
+
+          def __str__(self):
+              return f"{self.width} x {self.height}"
+
+
+      tile = Rectangle.square(3)
+      print(tile)
+      print(tile.area())
+    hints:
+      - "The method is called through the class, `Rectangle.square(3)`, and its first parameter is `cls`. Which decorator does it need?"
+      - "The decorator is `@classmethod`, and `cls(side, side)` creates the new object, just like `Rectangle(side, side)`."
+    tests:
+      - expect: |
+          3 x 3
+          9
+    more:
+      - task: |
+          A product code looks like `ABC-1234`: three capital letters, a dash and four digits. Write the class `Product`:
+
+          - a static method `valid_code(code)` that returns `True` if the code has exactly that shape, and `False` otherwise;
+          - a constructor that takes a code and a name, and raises `ValueError("Invalid code")` if the code isn't valid (use the static method). It stores them in the attributes `code` and `name`.
+
+          For example, this code:
+
+          ```python fragment
+          print(Product.valid_code("ABC-1234"))
+          print(Product.valid_code("AB-12345"))
+          lamp = Product("LMP-0042", "Desk lamp")
+          print(lamp.name)
+          ```
+
+          prints:
+
+          ```
+          True
+          False
+          Desk lamp
+          ```
+        seed: |
+          class Product:
+              pass
+
+
+          if __name__ == "__main__":
+              print(Product.valid_code("ABC-1234"))
+              print(Product.valid_code("AB-12345"))
+              lamp = Product("LMP-0042", "Desk lamp")
+              print(lamp.name)
+        solution: |
+          class Product:
+              def __init__(self, code, name):
+                  if not Product.valid_code(code):
+                      raise ValueError("Invalid code")
+                  self.code = code
+                  self.name = name
+
+              @staticmethod
+              def valid_code(code):
+                  if len(code) != 8 or code[3] != "-":
+                      return False
+                  for char in code[:3]:
+                      if char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                          return False
+                  for char in code[4:]:
+                      if char not in "0123456789":
+                          return False
+                  return True
+
+
+          if __name__ == "__main__":
+              print(Product.valid_code("ABC-1234"))
+              print(Product.valid_code("AB-12345"))
+              lamp = Product("LMP-0042", "Desk lamp")
+              print(lamp.name)
+        hints:
+          - "A valid code is 8 characters long and has a dash at index 3. Check that first and return `False` if not."
+          - "Then check the first three characters (`code[:3]`) one by one: each must be in `\"ABCDEFGHIJKLMNOPQRSTUVWXYZ\"`. Do the same for the last four (`code[4:]`) with the digits."
+          - "The constructor calls the check through the class, `Product.valid_code(code)`, and raises the error when it gives `False`."
+        require:
+          - pattern: '@staticmethod'
+            raw: true
+            message: Make `valid_code` a static method, with `@staticmethod` above it.
+        tests:
+          - call: |
+              print(Product.valid_code("ABC-1234"))
+              print(Product.valid_code("AB-12345"))
+              lamp = Product("LMP-0042", "Desk lamp")
+              print(lamp.name)
+          - call: |
+              for code in ["XYZ-0000", "xyz-0000", "XYZ-00a0", "XYZ_0000", "XYZ-00000", "XY1-0000", ""]:
+                  print(code, Product.valid_code(code))
+            hidden: true
+          - call: |
+              try:
+                  Product("toy-1", "Yo-yo")
+                  print("created")
+              except ValueError as error:
+                  print(error)
+              item = Product("TOY-0001", "Yo-yo")
+              print(item.code, item.name)
+            hidden: true
+      - task: |
+          Write the class `Order`. Each new order gets the next number from the class variable `next_number`, which starts at 1: the first order is number 1, the next number 2, and so on. The class has:
+
+          - a constructor that takes the customer's name, stores it in `customer`, and gives the order its `number`;
+          - a class method `start_numbering(cls, number)` that sets the number the next order will get;
+          - `__str__`, which returns a string such as `Order 1 for Ada`.
+
+          For example, this code:
+
+          ```python fragment
+          print(Order("Ada"))
+          print(Order("Ben"))
+          Order.start_numbering(100)
+          print(Order("Cy"))
+          print(Order.next_number)
+          ```
+
+          prints:
+
+          ```
+          Order 1 for Ada
+          Order 2 for Ben
+          Order 100 for Cy
+          101
+          ```
+        seed: |
+          class Order:
+              next_number = 1
+
+
+          if __name__ == "__main__":
+              print(Order("Ada"))
+              print(Order("Ben"))
+              Order.start_numbering(100)
+              print(Order("Cy"))
+              print(Order.next_number)
+        solution: |
+          class Order:
+              next_number = 1
+
+              def __init__(self, customer):
+                  self.customer = customer
+                  self.number = Order.next_number
+                  Order.next_number += 1
+
+              @classmethod
+              def start_numbering(cls, number):
+                  cls.next_number = number
+
+              def __str__(self):
+                  return f"Order {self.number} for {self.customer}"
+
+
+          if __name__ == "__main__":
+              print(Order("Ada"))
+              print(Order("Ben"))
+              Order.start_numbering(100)
+              print(Order("Cy"))
+              print(Order.next_number)
+        hints:
+          - "In `__init__`, first give the order the current `Order.next_number`, then add one to the class variable."
+          - "The class method changes the class variable through `cls`: `cls.next_number = number`."
+          - "Don't write `self.next_number += 1`: that would give the order an attribute of its own and leave the shared counter as it was."
+        require:
+          - pattern: '@classmethod'
+            raw: true
+            message: Make `start_numbering` a class method, with `@classmethod` above it.
+        tests:
+          - call: |
+              print(Order("Ada"))
+              print(Order("Ben"))
+              Order.start_numbering(100)
+              print(Order("Cy"))
+              print(Order.next_number)
+          - call: |
+              Order.start_numbering(7)
+              first = Order("Kim")
+              second = Order("Lou")
+              print(first.number, second.number)
+              print(first)
+              Order.start_numbering(1)
+              print(Order("Max"))
+              print(second)
+            hidden: true
+
+  - id: class-attributes-defaults
+    slug: default-values
+    title: Default values for parameters
+    text: |
+      In part 7 you gave a function's parameters **default values**, used whenever the caller leaves the argument out. Methods and constructors can have them too. They're handy when most objects start the same way:
+
+      ```python run
+      class Character:
+          def __init__(self, name, health=100, level=1):
+              self.name = name
+              self.health = health
+              self.level = level
+
+          def heal(self, amount=10):
+              self.health += amount
+
+          def __str__(self):
+              return f"{self.name}: health {self.health}, level {self.level}"
+
+
+      ana = Character("Ana")
+      bo = Character("Bo", 80)
+      cy = Character("Cy", level=5)
+      bo.heal()
+      bo.heal(5)
+      print(ana)
+      print(bo)
+      print(cy)
+      ```
+
+      ```output
+      Ana: health 100, level 1
+      Bo: health 95, level 1
+      Cy: health 100, level 5
+      ```
+
+      Arguments fill the parameters in order, so `Character("Bo", 80)` sets the health. To give a later parameter and skip an earlier one, name it: `Character("Cy", level=5)` is a **keyword argument**. Writing `Character("Cy", 5)` would set the health to 5, not the level.
+
+      Parameters with default values come after the ones without. `def __init__(self, health=100, name):` is a syntax error: `parameter without a default follows parameter with a default`.
+
+      ### The trap: a list as a default value
+
+      A default value is created only once, when Python reads the `def` line, not on every call. For a number or a string that never matters. For a list it does, because a list can change. Every object that gets the default ends up with *the same list*:
+
+      ```python run
+      class Backpack:
+          def __init__(self, owner, items=[]):
+              self.owner = owner
+              self.items = items
+
+          def pack(self, item):
+              self.items.append(item)
+
+
+      ana = Backpack("Ana")
+      bo = Backpack("Bo")
+      ana.pack("map")
+      print(bo.items)
+      print(ana.items is bo.items)
+      ```
+
+      ```output
+      ['map']
+      True
+      ```
+
+      Ana packed a map, and it turned up in Bo's backpack, because both backpacks refer to the one list that was made for the default.
+
+      The fix is to use `None` as the default, and create a new list inside the method when the caller didn't give one:
+
+      ```python run
+      class Backpack:
+          def __init__(self, owner, items=None):
+              self.owner = owner
+              if items is None:
+                  self.items = []
+              else:
+                  self.items = items
+
+          def pack(self, item):
+              self.items.append(item)
+
+
+      ana = Backpack("Ana")
+      bo = Backpack("Bo")
+      ana.pack("map")
+      print(bo.items)
+      print(Backpack("Cy", ["tent"]).items)
+      ```
+
+      ```output
+      []
+      ['tent']
+      ```
+
+      Now `self.items = []` runs on every call, so every backpack gets a list of its own. Never use a list (or a dictionary) as a default value; use `None` and create it in the method.
+
+      **Your turn:** a meeting lasts 60 minutes unless told otherwise. Fill in the blank so that `minutes` has the default value 60, and the program prints:
+
+      ```
+      Standup: 15 min
+      Planning: 60 min
+      ```
+    fill: |
+      class Meeting:
+          def __init__(self, title, [[minutes=60‖minutes = 60]]):
+              self.title = title
+              self.minutes = minutes
+
+          def __str__(self):
+              return f"{self.title}: {self.minutes} min"
+
+
+      print(Meeting("Standup", 15))
+      print(Meeting("Planning"))
+    hints:
+      - The blank is the second parameter, `minutes`, written together with its default value.
+      - "A default value is written with `=` after the parameter's name: `minutes=60`."
+    tests:
+      - expect: |
+          Standup: 15 min
+          Planning: 60 min
+    more:
+      - task: |
+          Two teams are created without any players, and then a player joins one of them, but she shows up in both teams. Fix the class so that every team gets a list of its own, while `Team("Blues", ["Kim"])` still starts with the players given. The program should print:
+
+          ```
+          Reds: Ada
+          Blues:
+          Greens: Kim, Lou
+          ```
+        seed: |
+          class Team:
+              def __init__(self, name, players=[]):
+                  self.name = name
+                  self.players = players
+
+              def join(self, player):
+                  self.players.append(player)
+
+              def __str__(self):
+                  return f"{self.name}: {', '.join(self.players)}"
+
+
+          reds = Team("Reds")
+          blues = Team("Blues")
+          greens = Team("Greens", ["Kim"])
+          reds.join("Ada")
+          greens.join("Lou")
+          print(reds)
+          print(blues)
+          print(greens)
+        solution: |
+          class Team:
+              def __init__(self, name, players=None):
+                  self.name = name
+                  if players is None:
+                      self.players = []
+                  else:
+                      self.players = players
+
+              def join(self, player):
+                  self.players.append(player)
+
+              def __str__(self):
+                  return f"{self.name}: {', '.join(self.players)}"
+
+
+          reds = Team("Reds")
+          blues = Team("Blues")
+          greens = Team("Greens", ["Kim"])
+          reds.join("Ada")
+          greens.join("Lou")
+          print(reds)
+          print(blues)
+          print(greens)
+        hints:
+          - "The default list `[]` is created only once, so every team without players of its own shares it."
+          - "Make the default `None` instead: `players=None`."
+          - "In `__init__`, if `players is None`, set `self.players = []`; otherwise use the list that was given."
+        forbid:
+          - pattern: =\s*\[\s*\]\s*[,)]
+            message: "Don't use a list as a default value: use `None` and create the list inside `__init__`."
+        tests:
+          - expect: |
+              Reds: Ada
+              Blues:
+              Greens: Kim, Lou
+      - task: |
+          Write the class `Alarm`. Its constructor takes the hour, the minute (by default 0) and a label (by default `"Alarm"`), and keeps them in the attributes `hour`, `minute` and `label`. The method `snooze(self, minutes=5)` moves the alarm later by the given number of minutes; when the minutes reach 60, the hour goes up by one (and after hour 23 comes hour 0). `__str__` returns a string such as `Wake up at 7:05`, with the minutes always written with two digits.
+
+          For example, this code:
+
+          ```python fragment
+          early = Alarm(7, label="Wake up")
+          print(early)
+          early.snooze()
+          print(early)
+          late = Alarm(23, 50)
+          late.snooze(15)
+          print(late)
+          ```
+
+          prints:
+
+          ```
+          Wake up at 7:00
+          Wake up at 7:05
+          Alarm at 0:05
+          ```
+        seed: |
+          class Alarm:
+              pass
+
+
+          if __name__ == "__main__":
+              early = Alarm(7, label="Wake up")
+              print(early)
+              early.snooze()
+              print(early)
+              late = Alarm(23, 50)
+              late.snooze(15)
+              print(late)
+        solution: |
+          class Alarm:
+              def __init__(self, hour, minute=0, label="Alarm"):
+                  self.hour = hour
+                  self.minute = minute
+                  self.label = label
+
+              def snooze(self, minutes=5):
+                  total = self.hour * 60 + self.minute + minutes
+                  self.hour = total // 60 % 24
+                  self.minute = total % 60
+
+              def __str__(self):
+                  return f"{self.label} at {self.hour}:{self.minute:02}"
+
+
+          if __name__ == "__main__":
+              early = Alarm(7, label="Wake up")
+              print(early)
+              early.snooze()
+              print(early)
+              late = Alarm(23, 50)
+              late.snooze(15)
+              print(late)
+        hints:
+          - "Give the defaults in the parameter list: `def __init__(self, hour, minute=0, label=\"Alarm\"):` and `def snooze(self, minutes=5):`."
+          - "In `snooze`, turn the time into minutes since midnight, add the snooze, then split it again: the hour is `total // 60 % 24` and the minute `total % 60`."
+          - "In `__str__`, `{self.minute:02}` writes the minutes with two digits."
+        tests:
+          - call: |
+              early = Alarm(7, label="Wake up")
+              print(early)
+              early.snooze()
+              print(early)
+              late = Alarm(23, 50)
+              late.snooze(15)
+              print(late)
+          - call: |
+              nap = Alarm(14, 30)
+              print(nap)
+              nap.snooze(30)
+              print(nap)
+              nap.snooze()
+              print(nap.hour, nap.minute)
+              gym = Alarm(6, 45, "Gym")
+              gym.snooze(75)
+              print(gym)
+            hidden: true
+
+  - id: class-attributes-example
+    slug: classes-together
+    title: Classes working together
+    text: |
+      To finish this part, here is a larger program where several classes work together: a small city bike system. Read it slowly, class by class. Everything in it is something you've already learned; the point is how the pieces fit.
+
+      - A `Bike` has a number. A class variable hands out the numbers, and the model has a default value.
+      - A `Station` has a fixed number of slots and a private list of the `Bike` objects docked there. `release` returns a bike, or `None` when the station is empty.
+      - A `Rider` has at most one bike at a time: the attribute `bike` is `None` while they walk.
+
+      ```python run
+      class Bike:
+          next_number = 1
+
+          def __init__(self, model="city"):
+              self.number = Bike.next_number
+              Bike.next_number += 1
+              self.model = model
+
+          def __str__(self):
+              return f"bike {self.number} ({self.model})"
+
+
+      class Station:
+          def __init__(self, name, slots):
+              self.__name = name
+              self.__slots = slots
+              self.__bikes = []
+
+          @property
+          def name(self):
+              return self.__name
+
+          def free_slots(self):
+              return self.__slots - len(self.__bikes)
+
+          def dock(self, bike):
+              if self.free_slots() == 0:
+                  return False
+              self.__bikes.append(bike)
+              return True
+
+          def release(self):
+              if len(self.__bikes) == 0:
+                  return None
+              return self.__bikes.pop(0)
+
+          def __str__(self):
+              return f"{self.__name}: bikes {len(self.__bikes)}, free {self.free_slots()}"
+
+
+      class Rider:
+          def __init__(self, name):
+              self.name = name
+              self.bike = None
+
+          def rent_from(self, station):
+              if self.bike is not None:
+                  return
+              self.bike = station.release()
+              if self.bike is None:
+                  print(f"{self.name}: no bikes at {station.name}")
+              else:
+                  print(f"{self.name} took {self.bike} at {station.name}")
+
+          def return_to(self, station):
+              if self.bike is not None and station.dock(self.bike):
+                  print(f"{self.name} left {self.bike} at {station.name}")
+                  self.bike = None
+
+
+      park = Station("Park", 2)
+      harbor = Station("Harbor", 1)
+      park.dock(Bike())
+      park.dock(Bike("cargo"))
+      print(park.dock(Bike()))
+
+      ada = Rider("Ada")
+      ben = Rider("Ben")
+      ada.rent_from(park)
+      ada.return_to(harbor)
+      ben.rent_from(harbor)
+      ada.rent_from(harbor)
+      print(park)
+      print(harbor)
+      ```
+
+      ```output
+      False
+      Ada took bike 1 (city) at Park
+      Ada left bike 1 (city) at Harbor
+      Ben took bike 1 (city) at Harbor
+      Ada: no bikes at Harbor
+      Park: bikes 1, free 1
+      Harbor: bikes 0, free 1
+      ```
+
+      Some things to notice:
+
+      - **Each class looks after its own data.** The rider never touches the station's list; it asks the station with `station.release()` and `station.dock(...)`. So the station alone decides whether there's room, and its list can stay private.
+      - **One object, many places.** Bike 1 is created once. It moves from the park's list to Ada, to the harbor's list, to Ben, but it's always the same object; only references to it move around.
+      - **`None` means "nothing here".** `release` returns `None` from an empty station, and `rent_from` checks for it before printing. The third bike made, number 3, never found room, so it exists in no list at all.
+      - **Methods take objects as arguments.** `rent_from(station)` works with any station, which is why one `Rider` class serves the whole city.
+
+      **Your turn:** the service van moves bikes from full stations to empty ones. Write the method `move_to(self, other, count)` in the class `Station`. It moves bikes one at a time from this station to the station `other`, until `count` bikes have moved, this station is out of bikes, or `other` is full. It returns the number of bikes it moved. Use `release` and `dock`.
+
+      For example, this code:
+
+      ```python fragment
+      depot = Station("Depot", 5)
+      corner = Station("Corner", 2)
+      for i in range(4):
+          depot.dock(Bike())
+      print(depot.move_to(corner, 3))
+      print(depot)
+      print(corner)
+      ```
+
+      prints:
+
+      ```
+      2
+      Depot: bikes 2, free 3
+      Corner: bikes 2, free 0
+      ```
+    seed: |
+      class Bike:
+          next_number = 1
+
+          def __init__(self, model="city"):
+              self.number = Bike.next_number
+              Bike.next_number += 1
+              self.model = model
+
+          def __str__(self):
+              return f"bike {self.number} ({self.model})"
+
+
+      class Station:
+          def __init__(self, name, slots):
+              self.__name = name
+              self.__slots = slots
+              self.__bikes = []
+
+          @property
+          def name(self):
+              return self.__name
+
+          def free_slots(self):
+              return self.__slots - len(self.__bikes)
+
+          def dock(self, bike):
+              if self.free_slots() == 0:
+                  return False
+              self.__bikes.append(bike)
+              return True
+
+          def release(self):
+              if len(self.__bikes) == 0:
+                  return None
+              return self.__bikes.pop(0)
+
+          def move_to(self, other, count):
+              pass
+
+          def __str__(self):
+              return f"{self.__name}: bikes {len(self.__bikes)}, free {self.free_slots()}"
+
+
+      if __name__ == "__main__":
+          depot = Station("Depot", 5)
+          corner = Station("Corner", 2)
+          for i in range(4):
+              depot.dock(Bike())
+          print(depot.move_to(corner, 3))
+          print(depot)
+          print(corner)
+    solution: |
+      class Bike:
+          next_number = 1
+
+          def __init__(self, model="city"):
+              self.number = Bike.next_number
+              Bike.next_number += 1
+              self.model = model
+
+          def __str__(self):
+              return f"bike {self.number} ({self.model})"
+
+
+      class Station:
+          def __init__(self, name, slots):
+              self.__name = name
+              self.__slots = slots
+              self.__bikes = []
+
+          @property
+          def name(self):
+              return self.__name
+
+          def free_slots(self):
+              return self.__slots - len(self.__bikes)
+
+          def dock(self, bike):
+              if self.free_slots() == 0:
+                  return False
+              self.__bikes.append(bike)
+              return True
+
+          def release(self):
+              if len(self.__bikes) == 0:
+                  return None
+              return self.__bikes.pop(0)
+
+          def move_to(self, other, count):
+              moved = 0
+              while moved < count and len(self.__bikes) > 0 and other.free_slots() > 0:
+                  other.dock(self.release())
+                  moved += 1
+              return moved
+
+          def __str__(self):
+              return f"{self.__name}: bikes {len(self.__bikes)}, free {self.free_slots()}"
+
+
+      if __name__ == "__main__":
+          depot = Station("Depot", 5)
+          corner = Station("Corner", 2)
+          for i in range(4):
+              depot.dock(Bike())
+          print(depot.move_to(corner, 3))
+          print(depot)
+          print(corner)
+    hints:
+      - "Count the bikes moved in a local variable, and keep going with a `while` loop as long as all three conditions allow it."
+      - "Inside `move_to`, this station's list is `self.__bikes`, and you can ask the other station for its room with `other.free_slots()`."
+      - "One move is `other.dock(self.release())`: the bike leaves this station and docks at the other."
+    tests:
+      - call: |
+          depot = Station("Depot", 5)
+          corner = Station("Corner", 2)
+          for i in range(4):
+              depot.dock(Bike())
+          print(depot.move_to(corner, 3))
+          print(depot)
+          print(corner)
+      - call: |
+          a = Station("A", 3)
+          b = Station("B", 10)
+          print(a.move_to(b, 2))
+          a.dock(Bike())
+          a.dock(Bike())
+          a.dock(Bike())
+          print(a.move_to(b, 2))
+          print(a)
+          print(b)
+          print(a.move_to(b, 5))
+          print(a)
+        hidden: true
+      - call: |
+          a = Station("A", 4)
+          b = Station("B", 4)
+          for i in range(4):
+              a.dock(Bike())
+          print(a.move_to(b, 0))
+          print(a.move_to(b, 4))
+          print(a, "|", b)
+          print(b.release() is not None)
+        hidden: true
+    more:
+      - task: |
+          The city wants an overview of all its stations. Write the class `Network`:
+
+          - `add(self, station)` adds a `Station` object to the network;
+          - `total_bikes(self)` returns the number of bikes at all the stations together;
+          - `busiest(self)` returns the station with the most bikes (the first one added, if several have the same number), or `None` if the network has no stations.
+
+          The class `Station` now has the method `bike_count()`, which returns the number of bikes docked at it. For example, this code:
+
+          ```python fragment
+          city = Network()
+          print(city.busiest())
+          park = Station("Park", 4)
+          harbor = Station("Harbor", 4)
+          city.add(park)
+          city.add(harbor)
+          park.dock(Bike())
+          harbor.dock(Bike())
+          harbor.dock(Bike())
+          print(city.total_bikes())
+          print(city.busiest())
+          ```
+
+          prints:
+
+          ```
+          None
+          3
+          Harbor: bikes 2, free 2
+          ```
+        seed: |
+          class Bike:
+              next_number = 1
+
+              def __init__(self, model="city"):
+                  self.number = Bike.next_number
+                  Bike.next_number += 1
+                  self.model = model
+
+
+          class Station:
+              def __init__(self, name, slots):
+                  self.__name = name
+                  self.__slots = slots
+                  self.__bikes = []
+
+              def bike_count(self):
+                  return len(self.__bikes)
+
+              def dock(self, bike):
+                  if len(self.__bikes) == self.__slots:
+                      return False
+                  self.__bikes.append(bike)
+                  return True
+
+              def __str__(self):
+                  return f"{self.__name}: bikes {len(self.__bikes)}, free {self.__slots - len(self.__bikes)}"
+
+
+          class Network:
+              pass
+
+
+          if __name__ == "__main__":
+              city = Network()
+              print(city.busiest())
+              park = Station("Park", 4)
+              harbor = Station("Harbor", 4)
+              city.add(park)
+              city.add(harbor)
+              park.dock(Bike())
+              harbor.dock(Bike())
+              harbor.dock(Bike())
+              print(city.total_bikes())
+              print(city.busiest())
+        solution: |
+          class Bike:
+              next_number = 1
+
+              def __init__(self, model="city"):
+                  self.number = Bike.next_number
+                  Bike.next_number += 1
+                  self.model = model
+
+
+          class Station:
+              def __init__(self, name, slots):
+                  self.__name = name
+                  self.__slots = slots
+                  self.__bikes = []
+
+              def bike_count(self):
+                  return len(self.__bikes)
+
+              def dock(self, bike):
+                  if len(self.__bikes) == self.__slots:
+                      return False
+                  self.__bikes.append(bike)
+                  return True
+
+              def __str__(self):
+                  return f"{self.__name}: bikes {len(self.__bikes)}, free {self.__slots - len(self.__bikes)}"
+
+
+          class Network:
+              def __init__(self):
+                  self.__stations = []
+
+              def add(self, station):
+                  self.__stations.append(station)
+
+              def total_bikes(self):
+                  total = 0
+                  for station in self.__stations:
+                      total += station.bike_count()
+                  return total
+
+              def busiest(self):
+                  best = None
+                  for station in self.__stations:
+                      if best is None or station.bike_count() > best.bike_count():
+                          best = station
+                  return best
+
+
+          if __name__ == "__main__":
+              city = Network()
+              print(city.busiest())
+              park = Station("Park", 4)
+              harbor = Station("Harbor", 4)
+              city.add(park)
+              city.add(harbor)
+              park.dock(Bike())
+              harbor.dock(Bike())
+              harbor.dock(Bike())
+              print(city.total_bikes())
+              print(city.busiest())
+        hints:
+          - "The network keeps its stations in a list, created empty in `__init__`."
+          - "`total_bikes` asks each station for its `bike_count()` and adds them up. The station's own list is private, so the network can't read it directly."
+          - "In `busiest`, start with `best = None`; take a station when `best is None` or when it has more bikes than `best`. An empty network then returns `None` by itself."
+        tests:
+          - call: |
+              city = Network()
+              print(city.busiest())
+              park = Station("Park", 4)
+              harbor = Station("Harbor", 4)
+              city.add(park)
+              city.add(harbor)
+              park.dock(Bike())
+              harbor.dock(Bike())
+              harbor.dock(Bike())
+              print(city.total_bikes())
+              print(city.busiest())
+          - call: |
+              city = Network()
+              print(city.total_bikes())
+              a = Station("A", 3)
+              b = Station("B", 3)
+              c = Station("C", 3)
+              for station in [a, b, c]:
+                  city.add(station)
+              print(city.busiest())
+              b.dock(Bike())
+              b.dock(Bike())
+              c.dock(Bike())
+              c.dock(Bike())
+              print(city.busiest())
+              print(city.busiest() is b)
+              print(city.total_bikes())
+            hidden: true
+      - task: |
+          New bikes arrive in batches. Add the class method `batch(cls, count, model="city")` to the class `Bike`. It creates `count` new bikes of the given model and returns them in a list. The bikes get their numbers from the class variable as usual.
+
+          For example, this code:
+
+          ```python fragment
+          first = Bike.batch(2)
+          more = Bike.batch(3, "cargo")
+          print(len(first), len(more))
+          for bike in more:
+              print(bike)
+          ```
+
+          prints:
+
+          ```
+          2 3
+          bike 3 (cargo)
+          bike 4 (cargo)
+          bike 5 (cargo)
+          ```
+        seed: |
+          class Bike:
+              next_number = 1
+
+              def __init__(self, model="city"):
+                  self.number = Bike.next_number
+                  Bike.next_number += 1
+                  self.model = model
+
+              def __str__(self):
+                  return f"bike {self.number} ({self.model})"
+
+
+          if __name__ == "__main__":
+              first = Bike.batch(2)
+              more = Bike.batch(3, "cargo")
+              print(len(first), len(more))
+              for bike in more:
+                  print(bike)
+        solution: |
+          class Bike:
+              next_number = 1
+
+              def __init__(self, model="city"):
+                  self.number = Bike.next_number
+                  Bike.next_number += 1
+                  self.model = model
+
+              @classmethod
+              def batch(cls, count, model="city"):
+                  bikes = []
+                  for i in range(count):
+                      bikes.append(cls(model))
+                  return bikes
+
+              def __str__(self):
+                  return f"bike {self.number} ({self.model})"
+
+
+          if __name__ == "__main__":
+              first = Bike.batch(2)
+              more = Bike.batch(3, "cargo")
+              print(len(first), len(more))
+              for bike in more:
+                  print(bike)
+        hints:
+          - "Put `@classmethod` above the method. Its parameters are `cls`, `count` and `model` with its default value."
+          - "Start with an empty list and loop `count` times with `range`."
+          - "Each round, `cls(model)` creates a new bike, which you append to the list. Return the list after the loop."
+        require:
+          - pattern: '@classmethod'
+            raw: true
+            message: Make `batch` a class method, with `@classmethod` above it.
+        tests:
+          - call: |
+              first = Bike.batch(2)
+              more = Bike.batch(3, "cargo")
+              print(len(first), len(more))
+              for bike in more:
+                  print(bike)
+          - call: |
+              print(Bike.batch(0))
+              Bike("tandem")
+              for bike in Bike.batch(2):
+                  print(bike)
+              print(Bike.batch(1, "electric")[0].number)
+              print(Bike.next_number)
+            hidden: true

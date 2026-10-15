@@ -1,0 +1,354 @@
+topic: object-references
+drills:
+  - type: predict
+    after: lists-of-objects
+    code: |
+      class Box:
+          def __init__(self, kg):
+              self.kg = kg
+
+
+      boxes = [Box(3), Box(5), Box(2)]
+      total = 0
+      for box in boxes:
+          total += box.kg
+      print(total)
+    why: "The loop visits each `Box` object and adds its `kg` attribute: 3 + 5 + 2 is 10."
+
+  - type: runs
+    after: lists-of-objects
+    code: |
+      class Box:
+          def __init__(self, kg):
+              self.kg = kg
+
+
+      a = Box(3)
+      b = Box(5)
+      print(a < b)
+    why: "Python doesn't know how to compare two `Box` objects, so it stops with a `TypeError`. Compare an attribute instead: `a.kg < b.kg`."
+
+  - type: fill
+    after: lists-of-objects
+    code: |
+      class Box:
+          def __init__(self, kg):
+              self.kg = kg
+
+
+      boxes = [Box(3), Box(8), Box(2)]
+      heaviest = boxes[0]
+      for box in boxes:
+          if box.kg > heaviest.[[kg]]:
+              heaviest = box
+      print(heaviest.kg)
+    why: "Compare the weights of the two boxes, `box.kg` and `heaviest.kg`. The heaviest box weighs 8."
+
+  - type: predict
+    after: lists-of-objects
+    code: |
+      class City:
+          def __init__(self, name, people):
+              self.name = name
+              self.people = people
+
+
+      cities = {"FI": City("Oulu", 215000), "SE": City("Lund", 95000)}
+      print(cities["SE"].name)
+    why: "`cities[\"SE\"]` is the `City` object stored under the key `SE`, and `.name` is its name."
+
+  - type: predict
+    after: same-object
+    code: |
+      class Lamp:
+          def __init__(self):
+              self.on = False
+
+
+      desk = Lamp()
+      reading = desk
+      reading.on = True
+      print(desk.on)
+    why: "`reading = desk` doesn't create a second lamp; it gives the same lamp a second name. Switching it on through one name switches it on for both."
+
+  - type: predict
+    after: same-object
+    code: |
+      class Lamp:
+          def __init__(self):
+              self.on = False
+
+
+      a = Lamp()
+      b = Lamp()
+      print(a == b)
+      print(a is b)
+    why: "Two calls to `Lamp()` create two objects. For your own classes, `==` is `True` only for the same object (unless the class defines what equal means), so both lines print `False`."
+
+  - type: predict
+    after: same-object
+    code: |
+      first = [1, 2]
+      second = [1, 2]
+      print(first == second)
+      print(first is second)
+    why: "The lists have equal contents, so `==` is `True`. They are still two separate lists, so `is` is `False`."
+
+  - type: predict
+    after: same-object
+    code: |
+      class Seat:
+          def __init__(self):
+              self.taken = False
+
+
+      seat = Seat()
+      row = [seat, seat, Seat()]
+      row[1].taken = True
+      print(row[0].taken, row[2].taken)
+    why: "Items 0 and 1 refer to the same seat, so taking item 1 takes item 0 as well. Item 2 is a different object."
+
+  - type: bug
+    after: same-object
+    code: |
+      class Score:
+          def __init__(self, points):
+              self.points = points
+
+
+      mine = Score(10)
+      yours = mine  # BUG
+      yours.points += 5
+      print(mine.points, yours.points)
+    fix: yours = Score(10)
+    why: "`yours = mine` makes one object with two names, so adding to `yours` changes `mine` too. A separate score needs its own `Score(...)` call."
+
+  - type: choice
+    after: same-object
+    prompt: What does `a is b` tell you?
+    choices:
+      - Whether `a` and `b` have equal contents
+      - Whether `a` and `b` refer to the very same object
+      - Whether `a` and `b` are of the same class
+    answer: 2
+    why: "`is` checks identity: whether both names refer to one object. `==` checks whether two values are equal."
+
+  - type: predict
+    after: objects-as-arguments
+    code: |
+      class Cup:
+          def __init__(self):
+              self.ml = 0
+
+
+      def fill(cup):
+          cup.ml += 200
+
+
+      mug = Cup()
+      fill(mug)
+      fill(mug)
+      print(mug.ml)
+    why: "The parameter `cup` refers to the same object as `mug`, so each call adds 200 to the mug: 400."
+
+  - type: predict
+    after: objects-as-arguments
+    code: |
+      class Cup:
+          def __init__(self, ml):
+              self.ml = ml
+
+
+      def replace(cup):
+          cup = Cup(500)
+
+
+      mug = Cup(100)
+      replace(mug)
+      print(mug.ml)
+    why: "Assigning a new object to the parameter only changes what the local name `cup` refers to. The caller's `mug` still refers to the old cup, with 100 ml."
+
+  - type: runs
+    after: objects-as-arguments
+    code: |
+      class Dog:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Vet:
+          def check(self, dog):
+              print("Checked", dog.name)
+
+
+      vet = Vet()
+      vet.check()
+    why: "`check` needs a dog in the parentheses. Python fills in `self` by itself, but `dog` is missing, so it stops with a `TypeError`."
+
+  - type: bug
+    after: comparing-objects
+    code: |
+      class Tower:
+          def __init__(self, height):
+              self.height = height
+
+          def taller_than(self, other):
+              return self.height > self.height  # BUG
+
+
+      print(Tower(30).taller_than(Tower(20)))
+    fix: return self.height > other.height
+    why: "The method compares the tower with itself, which is never `True`. The second height must be the other tower's, `other.height`."
+
+  - type: predict
+    after: comparing-objects
+    code: |
+      class Tower:
+          def __init__(self, height):
+              self.height = height
+
+          def taller_than(self, other):
+              return self.height > other.height
+
+
+      low = Tower(20)
+      high = Tower(35)
+      print(low.taller_than(high))
+      print(high.taller_than(low))
+    why: "In `low.taller_than(high)`, `self` is the low tower and `other` the high one, so 20 > 35 is `False`. Swapping them gives `True`."
+
+  - type: runs
+    after: comparing-objects
+    code: |
+      class Team:
+          def __init__(self):
+              self.wins = 3
+
+          def find_best(self, other):
+              self.best = max(self.wins, other.wins)
+
+          def show(self):
+              print(self.best)
+
+
+      Team().show()
+    why: "The attribute `best` is only created when `find_best` runs. This team never ran it, so `show` stops with an `AttributeError`. Helper values belong in local variables, and attributes in `__init__`."
+
+  - type: boss
+    after: comparing-objects
+    prompt: |
+      Write the method `older_than(self, other)` in the class `Tree`. It returns `True` when the tree was planted in an earlier year than the other tree, and `False` otherwise.
+
+      For example, this code:
+
+      ```python fragment
+      oak = Tree("oak", 1950)
+      birch = Tree("birch", 1987)
+      print(oak.older_than(birch))
+      print(birch.older_than(oak))
+      ```
+
+      prints:
+
+      ```
+      True
+      False
+      ```
+    seed: |
+      class Tree:
+          def __init__(self, kind, planted):
+              self.kind = kind
+              self.planted = planted
+
+          def older_than(self, other):
+              pass
+
+
+      if __name__ == "__main__":
+          oak = Tree("oak", 1950)
+          birch = Tree("birch", 1987)
+          print(oak.older_than(birch))
+          print(birch.older_than(oak))
+    solution: |
+      class Tree:
+          def __init__(self, kind, planted):
+              self.kind = kind
+              self.planted = planted
+
+          def older_than(self, other):
+              return self.planted < other.planted
+
+
+      if __name__ == "__main__":
+          oak = Tree("oak", 1950)
+          birch = Tree("birch", 1987)
+          print(oak.older_than(birch))
+          print(birch.older_than(oak))
+    hints:
+      - "An older tree was planted earlier, so its year is smaller."
+      - "Compare `self.planted` with `other.planted` and return the result of the comparison."
+    tests:
+      - call: |
+          oak = Tree("oak", 1950)
+          birch = Tree("birch", 1987)
+          print(oak.older_than(birch))
+          print(birch.older_than(oak))
+      - call: |
+          a = Tree("pine", 2001)
+          b = Tree("elm", 2001)
+          print(a.older_than(b))
+          print(Tree("yew", 1700).older_than(a))
+        hidden: true
+
+  - type: boss
+    after: objects-as-arguments
+    prompt: |
+      Write a function `total_weight(boxes)` that gets a list of `Box` objects and returns the sum of their weights (the attribute `kg`). For an empty list it returns 0.
+
+      For example, this code:
+
+      ```python fragment
+      print(total_weight([Box(3), Box(5), Box(2)]))
+      ```
+
+      prints:
+
+      ```
+      10
+      ```
+    seed: |
+      class Box:
+          def __init__(self, kg):
+              self.kg = kg
+
+
+      def total_weight(boxes):
+          pass
+
+
+      if __name__ == "__main__":
+          print(total_weight([Box(3), Box(5), Box(2)]))
+    solution: |
+      class Box:
+          def __init__(self, kg):
+              self.kg = kg
+
+
+      def total_weight(boxes):
+          total = 0
+          for box in boxes:
+              total += box.kg
+          return total
+
+
+      if __name__ == "__main__":
+          print(total_weight([Box(3), Box(5), Box(2)]))
+    hints:
+      - Start a total at 0 and go through the boxes with a `for` loop.
+      - "Add each box's weight, `box.kg`, to the total, and return the total after the loop."
+    tests:
+      - call: total_weight([Box(3), Box(5), Box(2)])
+      - call: total_weight([])
+        hidden: true
+      - call: total_weight([Box(12), Box(1)])
+        hidden: true

@@ -1,0 +1,4 @@
+# What the project needs. Install it into the virtual environment with:
+#   python -m pip install -r requirements.txt
+# (The database module, sqlite3, comes with Python itself.)
+pytest==9.1.1

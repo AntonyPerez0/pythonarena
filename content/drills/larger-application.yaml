@@ -1,0 +1,269 @@
+topic: larger-application
+drills:
+  - type: choice
+    after: logic
+    prompt: "An application has the classes `Library` (the books and the rules for lending them), `LibraryApp` (the text user interface) and `LibraryFile` (reading and saving). Which class should call `input`?"
+    choices:
+      - "`Library`"
+      - "`LibraryApp`"
+      - "`LibraryFile`"
+      - All three, whenever they need something
+    answer: 2
+    why: "Talking to the user is the user interface's job. The logic gets what it needs as parameters, and returns its answers."
+
+  - type: choice
+    after: logic
+    prompt: What does the single responsibility principle say?
+    choices:
+      - Each class should have one job in the program
+      - Each class should have only one method
+      - A program should have only one class
+    answer: 1
+    why: "A class can have many methods, but they should all serve the same one job, such as the logic, the user interface or the storage."
+
+  - type: predict
+    after: logic
+    code: |
+      class Shelf:
+          def __init__(self):
+              self.__books = {}
+
+          def add(self, title, year):
+              self.__books[title] = year
+
+          def year(self, title):
+              if title not in self.__books:
+                  return None
+              return self.__books[title]
+
+
+      shelf = Shelf()
+      shelf.add("Dune", 1965)
+      print(shelf.year("Dune"))
+      print(shelf.year("Emma"))
+    why: "`year` returns the year for a title on the shelf, and `None` for a title that isn't there. The logic returns its answers; printing them is up to the code that calls it."
+
+  - type: bug
+    after: user-interface
+    stdin: |
+      2
+      0
+    code: |
+      while True:
+          command = input("command: ")
+          if command == "0":
+              break
+          elif command == 2:  # BUG
+              print("searching")
+          else:
+              print("unknown command")
+    fix: 'elif command == "2":'
+    why: "`input` always gives a string, and the string `\"2\"` is never equal to the number `2`. Compare with `\"2\"`, as the line above does with `\"0\"`."
+
+  - type: predict
+    after: user-interface
+    stdin: |
+      x
+      0
+    code: |
+      while True:
+          command = input("command: ")
+          if command == "0":
+              break
+          elif command == "1":
+              print("adding")
+          else:
+              print("commands: 1 add, 0 quit")
+    why: "The loop handles one command per round: `x` is unknown, so the list of commands is printed, and `0` ends the loop. The typed commands show after the prompts."
+
+  - type: choice
+    after: user-interface
+    prompt: "In a well-organized text user interface, what does the main loop in `execute` do?"
+    choices:
+      - Reads a command and calls the method that handles it
+      - Handles every command itself, all inside the loop
+      - Stores the data in a dictionary of its own
+    answer: 1
+    why: "The loop only delegates. Each command has a method of its own, and the data belongs to the logic class."
+
+  - type: predict
+    after: objects-in-dictionary
+    code: |
+      class Tally:
+          def __init__(self):
+              self.count = 0
+
+
+      tallies = {}
+      for word in ["yes", "no", "yes"]:
+          if word not in tallies:
+              tallies[word] = Tally()
+          tallies[word].count += 1
+      print(tallies["yes"].count)
+      print(len(tallies))
+    why: "Each word gets one `Tally` object the first time it comes up. `yes` comes twice, so its count is 2, and the dictionary has two keys."
+
+  - type: predict
+    after: objects-in-dictionary
+    code: |
+      class Box:
+          def __init__(self):
+              self.items = []
+
+
+      boxes = {"red": Box(), "blue": Box()}
+      red = boxes["red"]
+      red.items.append("ball")
+      print(boxes["red"].items)
+      print(boxes["blue"].items)
+    why: "`red` refers to the same object that's in the dictionary, not a copy, so the ball goes into the red box in the dictionary. The blue box is another object."
+
+  - type: runs
+    after: objects-in-dictionary
+    code: |
+      class Tally:
+          def __init__(self):
+              self.count = 0
+
+
+      tallies = {}
+      tallies["yes"].count += 1
+      print(tallies["yes"].count)
+    why: "The dictionary has no key `yes` yet, so `tallies[\"yes\"]` stops with a `KeyError`. Create the object first: `if \"yes\" not in tallies: tallies[\"yes\"] = Tally()`."
+
+  - type: fill
+    after: objects-in-dictionary
+    code: |
+      class Player:
+          def __init__(self, name):
+              self.name = name
+              self.goals = 0
+
+
+      players = {}
+      for scorer in ["Ana", "Bo", "Ana"]:
+          if scorer not in players:
+              players[scorer] = [[Player(scorer)]]
+          players[scorer].goals += 1
+      print(players["Ana"].goals)
+    why: "A missing scorer gets a new `Player` object, created with the scorer's name. After that, every goal adds one to that object's `goals`."
+
+  - type: predict
+    after: files
+    code: |
+      name, *rest = "Ada;Grace;Linus".split(";")
+      print(name)
+      print(rest)
+    why: "`name` gets the first part, and the `*` gives `rest` a list of everything that's left."
+
+  - type: predict
+    after: files
+    code: |
+      first, *rest = ["only"]
+      print(first)
+      print(rest)
+    why: "With nothing left over, the starred variable gets an empty list."
+
+  - type: runs
+    after: files
+    code: |
+      name, ideas = "Mia;scarf;puzzle".split(";")
+      print(ideas)
+    why: "The split gives three parts, but there are only two variables, so Python stops with a `ValueError`. Write `name, *ideas = ...` to collect the rest into a list."
+
+  - type: bug
+    after: files
+    code: |
+      data = {"robin": ["park"], "heron": ["lake", "river"]}
+      with open("birds.txt", "w") as file:
+          for species, places in data.items():
+              file.write(";".join([species] + places))  # BUG
+      with open("birds.txt") as file:
+          print(file.read())
+    fix: file.write(";".join([species] + places) + "\n")
+    why: "`write` doesn't add a line break by itself. Without `\"\\n\"` at the end, both species end up on the same line, and the file can't be read back correctly."
+
+  - type: choice
+    after: files
+    prompt: How does the bird log application use its file?
+    choices:
+      - It reads the whole file when it starts, and writes all the data back when the user quits
+      - It opens the file again for every command
+      - It changes only the lines that changed, in place
+    answer: 1
+    why: "Reading once and writing everything back at the end is the simplest way to keep data in a file. While the program runs, the data lives in its objects."
+
+  - type: boss
+    after: files
+    prompt: |
+      Write the logic class `Glossary`, which keeps words and their translations. A word can have several translations. It has these methods:
+
+      - `add(word, translation)` adds a translation for the word. The same translation isn't added twice.
+      - `translations(word)` returns the list of the word's translations, in the order they were added, or an empty list for a word the glossary doesn't have.
+
+      For example,
+
+      ```python fragment
+      glossary = Glossary()
+      glossary.add("cat", "kissa")
+      glossary.add("cat", "katti")
+      glossary.add("cat", "kissa")
+      print(glossary.translations("cat"))
+      print(glossary.translations("dog"))
+      ```
+
+      should print:
+
+      ```
+      ['kissa', 'katti']
+      []
+      ```
+    seed: |
+      # Write the class Glossary here.
+
+
+      if __name__ == "__main__":
+          glossary = Glossary()
+          glossary.add("cat", "kissa")
+          print(glossary.translations("cat"))
+    solution: |
+      class Glossary:
+          def __init__(self):
+              self.__words = {}
+
+          def add(self, word, translation):
+              if word not in self.__words:
+                  self.__words[word] = []
+              if translation not in self.__words[word]:
+                  self.__words[word].append(translation)
+
+          def translations(self, word):
+              if word not in self.__words:
+                  return []
+              return self.__words[word]
+
+
+      if __name__ == "__main__":
+          glossary = Glossary()
+          glossary.add("cat", "kissa")
+          print(glossary.translations("cat"))
+    hints:
+      - "Keep a dictionary in a private attribute: the word is the key, and a list of translations the value."
+      - "In `add`, create an empty list for a new word first. Then append the translation only if it's `not in` the list yet."
+    tests:
+      - call: |
+          glossary = Glossary()
+          glossary.add("cat", "kissa")
+          glossary.add("cat", "katti")
+          glossary.add("cat", "kissa")
+          print(glossary.translations("cat"))
+          print(glossary.translations("dog"))
+      - call: |
+          glossary = Glossary()
+          glossary.add("hello", "hei")
+          glossary.add("hello", "moi")
+          glossary.add("thanks", "kiitos")
+          print(glossary.translations("hello"))
+          print(glossary.translations("thanks"))
+          print(glossary.translations("bye"))
+        hidden: true

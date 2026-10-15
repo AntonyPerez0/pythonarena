@@ -1,0 +1,1137 @@
+id: errors
+summary: Handling errors. Checking input before using it, catching exceptions with try and except, handling several kinds of exceptions, how exceptions move from a function to its caller, and raising exceptions of your own.
+steps:
+  - id: errors-validation
+    slug: validation
+    title: Checking input before using it
+    text: |
+      Errors come in two kinds. A **syntax error** means Python can't read the program at all, so none of it runs; the very first module showed some. A **runtime error** happens while the program is running: a line that is perfectly good Python fails with certain data. Such a program can work a hundred times and fail the hundred and first, when someone types something unexpected. Runtime errors are what this module is about.
+
+      Many of them come from **input** a program didn't expect:
+
+      - a number outside what makes sense, such as a negative price or month 13;
+      - text where a number was expected;
+      - an empty string where a name was expected;
+      - the name of a file that doesn't exist;
+      - an index past the end of a list or a string.
+
+      ### Checking values with if
+
+      The first defense is to check a value before using it. This is called **input validation**:
+
+      ```python run
+      tickets = int(input("How many tickets? "))
+      if tickets >= 1 and tickets <= 10:
+          print(f"Total: {tickets * 15} euros")
+      else:
+          print("You can buy 1 to 10 tickets at a time.")
+      ```
+
+      ```input
+      12
+      ```
+
+      ```output
+      How many tickets? 12
+      You can buy 1 to 10 tickets at a time.
+      ```
+
+      ### A loop that asks again
+
+      Instead of giving up, a program can keep asking until the input is valid. The loop ends with `break` only when the value passes the check:
+
+      ```python run
+      while True:
+          month = int(input("Month (1-12): "))
+          if month >= 1 and month <= 12:
+              break
+          print("There's no such month.")
+      print("You chose month", month)
+      ```
+
+      ```input
+      0
+      13
+      7
+      ```
+
+      ```output
+      Month (1-12): 0
+      There's no such month.
+      Month (1-12): 13
+      There's no such month.
+      Month (1-12): 7
+      You chose month 7
+      ```
+
+      Strings get checked the same way: `if name == "":` notices an empty name, and `len(password) < 8` a password that's too short.
+
+      ### When the input isn't a number at all
+
+      The checks above work only once `int` has converted the input. If the user types `two`, the conversion itself fails, and the program stops before it ever gets to the `if`:
+
+      ```python run crash
+      tickets = int(input("How many tickets? "))
+      if tickets >= 1 and tickets <= 10:
+          print(f"Total: {tickets * 15} euros")
+      else:
+          print("You can buy 1 to 10 tickets at a time.")
+      ```
+
+      ```input
+      two
+      ```
+
+      ```output
+      How many tickets? two
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          tickets = int(input("How many tickets? "))
+      ValueError: invalid literal for int() with base 10: 'two'
+      ```
+
+      A `ValueError` means a value of the right type (here a string) has contents that don't work: `int` can't make a whole number out of `two`. An `if` can't prevent this, but the next step shows how a program can catch the error and carry on.
+
+      **Your turn:** fill in the blanks so the program accepts a rating from 1 to 5 stars and rejects anything else. A run looks like this:
+
+      ```
+      Rating (1-5): 4
+      Thanks for rating us 4
+      ```
+    fill: |
+      rating = int(input("Rating (1-5): "))
+      if rating >= 1 [[and]] rating <= [[5]]:
+          print("Thanks for rating us", rating)
+      else:
+          print("Please give 1 to 5 stars.")
+    hints:
+      - Both conditions must be true at the same time, so they're joined with the word for that.
+      - "The upper limit is 5 stars: `rating >= 1 and rating <= 5`."
+    tests:
+      - stdin: "4"
+      - stdin: "0"
+        hidden: true
+      - stdin: "6"
+        hidden: true
+      - stdin: "5"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a new password until it's valid, and then prints `Password saved`. A valid password has at least 8 characters and no spaces. A password that's too short gets the message `Too short`; one with a space in it gets `No spaces, please`. (Check the length first.)
+
+          A run looks like this:
+
+          ```
+          New password: cat
+          Too short
+          New password: my secret pw
+          No spaces, please
+          New password: Tr0ub4dor
+          Password saved
+          ```
+        seed: |
+          password = input("New password: ")
+        solution: |
+          while True:
+              password = input("New password: ")
+              if len(password) < 8:
+                  print("Too short")
+              elif " " in password:
+                  print("No spaces, please")
+              else:
+                  break
+          print("Password saved")
+        hints:
+          - "Put the `input` inside a `while True:` loop, so a new password is asked for every round."
+          - "Check `len(password) < 8` first, then `\" \" in password` with an `elif`."
+          - When neither problem is found, `break` out of the loop and print the message after it.
+        tests:
+          - stdin: |
+              cat
+              my secret pw
+              Tr0ub4dor
+          - stdin: |
+              short
+              1234567
+              12345678
+            hidden: true
+          - stdin: |
+              a b c d e f g
+              correcthorse
+            hidden: true
+      - task: |
+          Write a function `is_valid_date(day, month)` that returns `True` if the day and month make a real date in a year that isn't a leap year, and `False` if they don't. The starter code has the number of days in each month in a list.
+
+          Check the month before you use it as an index: a month like 13 would stop the program with an `IndexError`, and month 0 would quietly give index -1, which is December.
+
+          For example, `is_valid_date(31, 1)` returns `True`, and `is_valid_date(30, 2)` returns `False`.
+        seed: |
+          def is_valid_date(day, month):
+              days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+
+          if __name__ == "__main__":
+              print(is_valid_date(31, 1))
+              print(is_valid_date(30, 2))
+        solution: |
+          def is_valid_date(day, month):
+              days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+              if month < 1 or month > 12:
+                  return False
+              return day >= 1 and day <= days_in_month[month - 1]
+
+
+          if __name__ == "__main__":
+              print(is_valid_date(31, 1))
+              print(is_valid_date(30, 2))
+        hints:
+          - "First check the month: if it's below 1 or above 12, return `False` straight away."
+          - "January is at index 0, so a month's number of days is `days_in_month[month - 1]`."
+          - "The date is valid when the day is at least 1 and at most that number of days."
+        tests:
+          - call: is_valid_date(31, 1)
+          - call: is_valid_date(30, 2)
+          - call: is_valid_date(31, 4)
+            hidden: true
+          - call: is_valid_date(15, 13)
+            hidden: true
+          - call: is_valid_date(1, 0)
+            hidden: true
+          - call: is_valid_date(28, 2)
+            hidden: true
+          - call: is_valid_date(0, 5)
+            hidden: true
+          - call: is_valid_date(31, 12)
+            hidden: true
+
+  - id: errors-try-except
+    slug: try-except
+    title: Catching errors with try and except
+    text: |
+      An error that happens while a program runs is called an **exception**. Python *raises* the exception, and unless something *handles* it, the program stops and prints a traceback. A program can prepare for an exception with **`try`** and **`except`**:
+
+      ```python run
+      try:
+          tickets = int(input("How many tickets? "))
+          print(f"Total: {tickets * 15} euros")
+      except ValueError:
+          print("That's not a whole number.")
+      print("Thank you!")
+      ```
+
+      ```input
+      two
+      ```
+
+      ```output
+      How many tickets? two
+      That's not a whole number.
+      Thank you!
+      ```
+
+      Python runs the `try` block. If a line in it raises a `ValueError`, the rest of the `try` block is skipped and the `except ValueError` block runs instead. After that the program carries on below the whole structure, as if nothing had happened. When no exception happens, the `except` block is skipped.
+
+      The `except` line names the kind of exception it handles. Any other kind still stops the program, which is good: an error you didn't expect should show up, not be hidden.
+
+      ### A fallback value
+
+      Sometimes the best reaction to bad input is a sensible default:
+
+      ```python run
+      text = input("Font size: ")
+      try:
+          size = int(text)
+      except ValueError:
+          size = 12
+      print("Using font size", size)
+      ```
+
+      ```input
+      big
+      ```
+
+      ```output
+      Font size: big
+      Using font size 12
+      ```
+
+      Keep the `try` block small, with only the lines that can fail in the way you expect. Then it's clear what the `except` is for.
+
+      ### Asking until the input is good
+
+      Together with a loop, `try` and `except` can keep asking until the user types a number. In a function, `return` ends the loop as soon as the conversion succeeds:
+
+      ```python run
+      def read_int(prompt):
+          while True:
+              try:
+                  return int(input(prompt))
+              except ValueError:
+                  print("Please type a whole number.")
+
+
+      year = read_int("Year: ")
+      print("In ten years it will be", year + 10)
+      ```
+
+      ```input
+      twenty
+      20.5
+      2030
+      ```
+
+      ```output
+      Year: twenty
+      Please type a whole number.
+      Year: 20.5
+      Please type a whole number.
+      Year: 2030
+      In ten years it will be 2040
+      ```
+
+      ### Doing nothing with pass
+
+      Sometimes there's nothing to do about an exception except skip the bad value. An `except` block can't be empty, so it gets `pass`, the statement that does nothing:
+
+      ```python run
+      total = 0
+      for text in ["5", "abc", "12", "", "3"]:
+          try:
+              total += int(text)
+          except ValueError:
+              pass
+      print(total)
+      ```
+
+      ```output
+      20
+      ```
+
+      **Your turn:** fill in the blanks so the program prints the price with 24 % tax added, or `Not a price` when the input isn't a number. A run looks like this:
+
+      ```
+      Price: 10
+      With tax: 12.40
+      ```
+    fill: |
+      [[try]]:
+          price = float(input("Price: "))
+          print(f"With tax: {price * 1.24:.2f}")
+      [[except]] ValueError:
+          print("Not a price")
+    hints:
+      - The block that might fail starts with one keyword, and the block that handles the failure with another.
+      - "They are `try` and `except`."
+    tests:
+      - stdin: "10"
+      - stdin: ten
+        hidden: true
+      - stdin: "2.5"
+        hidden: true
+    more:
+      - task: |
+          In many countries a decimal number is written with a comma, like `72,5`, but `float` only accepts a point. Write a function `read_decimal(prompt)` that asks for a number with the given prompt until the user types one, and returns it as a `float`. It accepts both `72.5` and `72,5`. After anything that isn't a number, it prints `Not a number, try again` and asks again.
+
+          With this main program
+
+          ```python fragment
+          weight = read_decimal("Weight in kg: ")
+          print(weight)
+          ```
+
+          a run looks like this:
+
+          ```
+          Weight in kg: heavy
+          Not a number, try again
+          Weight in kg: 72,5
+          72.5
+          ```
+        seed: |
+          def read_decimal(prompt):
+              pass
+
+
+          if __name__ == "__main__":
+              weight = read_decimal("Weight in kg: ")
+              print(weight)
+        solution: |
+          def read_decimal(prompt):
+              while True:
+                  text = input(prompt)
+                  try:
+                      return float(text.replace(",", "."))
+                  except ValueError:
+                      print("Not a number, try again")
+
+
+          if __name__ == "__main__":
+              weight = read_decimal("Weight in kg: ")
+              print(weight)
+        hints:
+          - "Use a `while True:` loop with `input(prompt)` inside it, and try to convert the text in a `try` block."
+          - "Before converting, swap a comma for a point: `text.replace(\",\", \".\")`."
+          - "`return` the converted number inside the `try` block. In the `except ValueError:` block, print the message, and the loop asks again."
+        tests:
+          - call: |
+              print(read_decimal("Weight in kg: "))
+            stdin: |
+              heavy
+              72,5
+          - call: |
+              read_decimal("Height: ")
+            stdin: |
+              1.8.2
+              tall
+              1.82
+            hidden: true
+          - call: |
+              read_decimal("Price: ")
+            stdin: "3"
+            hidden: true
+      - task: |
+          Write a program that adds up whole numbers the user types, until the user types `done`. Anything that isn't a whole number is skipped with the message `Skipped: ` and the text. At the end the program prints the sum.
+
+          A run looks like this:
+
+          ```
+          Number: 4
+          Number: four
+          Skipped: four
+          Number: 10
+          Number: done
+          Sum: 14
+          ```
+        seed: |
+          total = 0
+        solution: |
+          total = 0
+          while True:
+              text = input("Number: ")
+              if text == "done":
+                  break
+              try:
+                  total += int(text)
+              except ValueError:
+                  print("Skipped:", text)
+          print("Sum:", total)
+        hints:
+          - "Read the input in a `while True:` loop and `break` when the text is `done`."
+          - Convert and add inside a `try` block. A `ValueError` means the text wasn't a whole number.
+          - "In the `except ValueError:` block, print `Skipped:` and the text. Print the sum after the loop."
+        tests:
+          - stdin: |
+              4
+              four
+              10
+              done
+          - stdin: |
+              -3
+              2.5
+              8
+              x
+              done
+            hidden: true
+          - stdin: done
+            hidden: true
+
+  - id: errors-kinds
+    slug: kinds-of-errors
+    title: Different kinds of errors
+    text: |
+      Each kind of error has its own exception, and its name tells what went wrong. Here are the ones you'll meet most often, in the Python interpreter:
+
+      ```python repl
+      >>> int("3.5")
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: invalid literal for int() with base 10: '3.5'
+      >>> "Age: " + 30
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      TypeError: can only concatenate str (not "int") to str
+      >>> [1, 2, 3][5]
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      IndexError: list index out of range
+      >>> {"a": 1}["b"]
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      KeyError: 'b'
+      >>> 10 / 0
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ZeroDivisionError: division by zero
+      ```
+
+      - **ValueError**: a value of the right type, but with contents that don't work, such as `int("3.5")` or `float("1,5")`.
+      - **TypeError**: a value of the wrong type, such as adding a number to a string, or `len(42)`.
+      - **IndexError**: an index that a list or a string doesn't have.
+      - **KeyError**: a key that a dictionary doesn't have.
+      - **ZeroDivisionError**: dividing by zero, as in the average of an empty list, `sum(numbers) / len(numbers)`.
+      - **FileNotFoundError**: opening a file that doesn't exist. (Its cousin **PermissionError** means the program isn't allowed to open the file.)
+
+      ### Several except blocks
+
+      One `try` can have several `except` blocks, one for each kind of error it is ready for. Python checks them in order and runs the first one that matches. Only one of them runs:
+
+      ```python run
+      colors = ["red", "green", "blue"]
+      try:
+          index = int(input("Which color (0-2)? "))
+          print("You picked", colors[index])
+      except ValueError:
+          print("That's not a number.")
+      except IndexError:
+          print("There's no color with that number.")
+      ```
+
+      ```input
+      5
+      ```
+
+      ```output
+      Which color (0-2)? 5
+      There's no color with that number.
+      ```
+
+      A missing file is handled the same way. Print a message of your own that says what happened:
+
+      ```python run
+      try:
+          with open("settings.txt") as file:
+              print(file.read())
+      except FileNotFoundError:
+          print("No settings.txt, using the default settings.")
+      ```
+
+      ```output
+      No settings.txt, using the default settings.
+      ```
+
+      ### A bare except hides mistakes
+
+      `except:` without a name catches every exception there is. That's tempting, but it also catches the mistakes in your own code:
+
+      ```python run
+      numbers = [4, 8, 15]
+      try:
+          total = 0
+          for number in numbers:
+              totl += number
+          print("Average:", total / len(numbers))
+      except:
+          print("Something went wrong with the numbers.")
+      ```
+
+      ```output
+      Something went wrong with the numbers.
+      ```
+
+      The numbers are fine. The real problem is the misspelled `totl`, a `NameError`, and the message hides it. Without the `try`, Python would have pointed straight at the line. So name the exceptions you expect, and let real bugs show their traceback.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      values = ["10", "x", "0", "4"]
+      for value in values:
+          try:
+              print(20 // int(value))
+          except ValueError:
+              print("not a number")
+          except ZeroDivisionError:
+              print("zero")
+    hints:
+      - Go through the list one value at a time. Each round has its own `try`, so one error doesn't stop the loop.
+      - "`int(\"x\")` raises a `ValueError`, and `20 // 0` a `ZeroDivisionError`. The other two values divide normally."
+    more:
+      - task: |
+          Write a program that asks for the name of a file of numbers, one per line, and prints their average. It must not crash, whatever the file:
+
+          - a file that doesn't exist: print `No file called ` and the name;
+          - a line that isn't a number: print `The file has a line that isn't a number`;
+          - an empty file (no numbers, so the average divides by zero): print `The file is empty`.
+
+          With this `weights.txt`
+
+          ```text
+          70
+          73
+          ```
+
+          a run looks like this:
+
+          ```
+          File: weights.txt
+          Average: 71.5
+          ```
+        seed: |
+          filename = input("File: ")
+        solution: |
+          filename = input("File: ")
+          try:
+              numbers = []
+              with open(filename) as file:
+                  for line in file:
+                      numbers.append(float(line))
+              print("Average:", sum(numbers) / len(numbers))
+          except FileNotFoundError:
+              print("No file called", filename)
+          except ValueError:
+              print("The file has a line that isn't a number")
+          except ZeroDivisionError:
+              print("The file is empty")
+        hints:
+          - Read the numbers into a list with `float`, and print `sum(numbers) / len(numbers)`. All of that goes in one `try` block.
+          - "Add one `except` block for each error: `FileNotFoundError`, `ValueError` and `ZeroDivisionError`."
+          - Print your own message in each block. Don't print the exception itself.
+        tests:
+          - stdin: weights.txt
+            files:
+              weights.txt: |
+                70
+                73
+          - stdin: weight.txt
+            files:
+              weights.txt: |
+                70
+                73
+            hidden: true
+          - stdin: data.txt
+            files:
+              data.txt: |
+                5
+                five
+                6
+            hidden: true
+          - stdin: empty.txt
+            files:
+              empty.txt: ""
+            hidden: true
+          - stdin: temps.txt
+            files:
+              temps.txt: |
+                -2.5
+                0
+                4
+            hidden: true
+      - task: |
+          Write a function `to_minutes(text)` that turns a time like `08:30` into the number of minutes since midnight (here 510). If the text isn't a valid time, it returns -1 instead. Invalid texts include `8h30` (no colon, so the split gives only one piece), `ab:30` (not numbers), `24:00` and `12:60` (hours must be 0 to 23 and minutes 0 to 59).
+
+          Let `int` and the index raise their exceptions, and catch them, instead of checking every character yourself.
+
+          For example, `to_minutes("08:30")` returns `510` and `to_minutes("8h30")` returns `-1`.
+        seed: |
+          def to_minutes(text):
+              pass
+
+
+          if __name__ == "__main__":
+              print(to_minutes("08:30"))
+              print(to_minutes("8h30"))
+        solution: |
+          def to_minutes(text):
+              try:
+                  parts = text.split(":")
+                  hours = int(parts[0])
+                  minutes = int(parts[1])
+              except ValueError:
+                  return -1
+              except IndexError:
+                  return -1
+              if hours < 0 or hours > 23 or minutes < 0 or minutes > 59:
+                  return -1
+              return hours * 60 + minutes
+
+
+          if __name__ == "__main__":
+              print(to_minutes("08:30"))
+              print(to_minutes("8h30"))
+        hints:
+          - "`text.split(\":\")` gives the hours and the minutes as strings. Convert both with `int` inside a `try` block."
+          - "`8h30` splits into one piece, so `parts[1]` raises an `IndexError`. `ab` raises a `ValueError` in `int`. Return -1 from both `except` blocks."
+          - After the `try`, check the ranges of the hours and the minutes, and return `hours * 60 + minutes` when they're fine.
+        tests:
+          - call: to_minutes("08:30")
+          - call: to_minutes("8h30")
+          - call: to_minutes("23:59")
+            hidden: true
+          - call: to_minutes("ab:30")
+            hidden: true
+          - call: to_minutes("24:00")
+            hidden: true
+          - call: to_minutes("12:60")
+            hidden: true
+          - call: to_minutes("00:00")
+            hidden: true
+          - call: to_minutes("7:5")
+            hidden: true
+
+  - id: errors-passing
+    slug: passing-errors
+    title: How errors move from function to function
+    text: |
+      When an exception happens inside a function and the function doesn't handle it, the function stops right there, and the exception moves on to the code that called the function. If that code doesn't handle it either, it moves on to that code's caller, and so on. If nothing on the way handles it, the program stops, and the traceback lists every call on the way:
+
+      ```python run crash
+      def average(numbers):
+          return sum(numbers) / len(numbers)
+
+
+      def report(name, numbers):
+          print(name, "average:", average(numbers))
+
+
+      report("Week 1", [3, 5, 7])
+      report("Week 2", [])
+      ```
+
+      ```output
+      Week 1 average: 5.0
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 10, in <module>
+          report("Week 2", [])
+          ~~~~~~^^^^^^^^^^^^^^
+        File "main.py", line 6, in report
+          print(name, "average:", average(numbers))
+                                  ~~~~~~~^^^^^^^^^
+        File "main.py", line 2, in average
+          return sum(numbers) / len(numbers)
+                 ~~~~~~~~~~~~~^~~~~~~~~~~~~~
+      ZeroDivisionError: division by zero
+      ```
+
+      Read it from the bottom up: the error happened in `average` on line 2, which was called by `report` on line 6, which was called by the main program on line 10. The line that's really wrong is often one of the callers: here it's the main program, which asked for the average of an empty list.
+
+      ### Handling it where you know what to do
+
+      So an exception can be handled in a different place from where it happens, and often the right place is the caller. A function that reads a file can't know whether a missing file is a disaster or just means there's no data yet, but the code that calls it does:
+
+      ```python run
+      def read_numbers(filename):
+          numbers = []
+          with open(filename) as file:
+              for line in file:
+                  numbers.append(int(line))
+          return numbers
+
+
+      try:
+          savings = read_numbers("savings.txt")
+      except FileNotFoundError:
+          savings = []
+      print("Savings:", savings)
+      ```
+
+      ```output
+      Savings: []
+      ```
+
+      There's no `savings.txt`, so `open` raises a `FileNotFoundError` inside `read_numbers`. The function stops at once (it never gets to its `return`), and the exception arrives at the `try` around the call, whose `except` decides what to do.
+
+      ### What doesn't run
+
+      When an exception leaves a `try` block, the rest of the block is skipped, including any later calls:
+
+      ```python run
+      def check(value):
+          print("Checking", value)
+          number = int(value)
+          print("Valid:", number)
+          return number
+
+
+      try:
+          check("12")
+          check("twelve")
+          check("7")
+      except ValueError:
+          print("Stopped at an invalid value")
+      print("Done")
+      ```
+
+      ```output
+      Checking 12
+      Valid: 12
+      Checking twelve
+      Stopped at an invalid value
+      Done
+      ```
+
+      `check("twelve")` stops at `int`, so it never prints `Valid:`, and `check("7")` is never called at all. To check every value whatever happens, the `try` would go inside a loop, around each call.
+
+      **Your turn:** the function `load_scores(filename)` reads whole numbers from a file. Add error handling to the main program, not to the function: a missing file prints `Could not find ` and the file name, and a line that isn't a whole number prints `Bad data in ` and the file name. A run with a good file looks like this:
+
+      ```
+      Scores file: scores.txt
+      Best score: 87
+      ```
+    seed: |
+      def load_scores(filename):
+          scores = []
+          with open(filename) as file:
+              for line in file:
+                  scores.append(int(line))
+          return scores
+
+
+      filename = input("Scores file: ")
+      scores = load_scores(filename)
+      print("Best score:", max(scores))
+    solution: |
+      def load_scores(filename):
+          scores = []
+          with open(filename) as file:
+              for line in file:
+                  scores.append(int(line))
+          return scores
+
+
+      filename = input("Scores file: ")
+      try:
+          scores = load_scores(filename)
+          print("Best score:", max(scores))
+      except FileNotFoundError:
+          print("Could not find", filename)
+      except ValueError:
+          print("Bad data in", filename)
+    hints:
+      - The exceptions happen inside `load_scores`, but they move on to the line that calls it. Put that call in a `try` block.
+      - "Put the `print` in the `try` block too, since it needs `scores`. Then add `except FileNotFoundError:` and `except ValueError:` blocks."
+    require:
+      - pattern: except\s+FileNotFoundError
+        message: Handle a missing file with `except FileNotFoundError:`.
+      - pattern: except\s+ValueError
+        message: Handle a line that isn't a number with `except ValueError:`.
+    tests:
+      - stdin: scores.txt
+        files:
+          scores.txt: |
+            72
+            87
+            65
+      - stdin: score.txt
+        files:
+          scores.txt: |
+            72
+            87
+        hidden: true
+      - stdin: round2.txt
+        files:
+          round2.txt: |
+            50
+            fifty
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def half(text):
+              return int(text) // 2
+
+
+          for text in ["8", "x", "5"]:
+              try:
+                  print(half(text))
+              except ValueError:
+                  print("skip", text)
+          print("end")
+        hints:
+          - The `ValueError` from `int` inside `half` moves on to the `try` around the call.
+          - "The `try` is inside the loop, so after `x` is skipped, the loop goes on with `5`. `5 // 2` is 2."
+      - task: |
+          The starter code has `read_numbers(filename)`, which returns the numbers of a file as a list and raises a `FileNotFoundError` if the file doesn't exist. Write `total_of_files(filenames)`, which gets a list of file names and returns the sum of all the numbers in all of them. A file that doesn't exist counts as 0. Handle the error in `total_of_files`, and don't change `read_numbers`.
+
+          With `a.txt` holding `3` and `4` on two lines and `b.txt` holding `10`, `total_of_files(["a.txt", "b.txt", "c.txt"])` returns `17`.
+        seed: |
+          def read_numbers(filename):
+              numbers = []
+              with open(filename) as file:
+                  for line in file:
+                      numbers.append(int(line))
+              return numbers
+
+
+          def total_of_files(filenames):
+              pass
+
+
+          if __name__ == "__main__":
+              print(total_of_files(["a.txt", "b.txt", "c.txt"]))
+        solution: |
+          def read_numbers(filename):
+              numbers = []
+              with open(filename) as file:
+                  for line in file:
+                      numbers.append(int(line))
+              return numbers
+
+
+          def total_of_files(filenames):
+              total = 0
+              for filename in filenames:
+                  try:
+                      total += sum(read_numbers(filename))
+                  except FileNotFoundError:
+                      pass
+              return total
+
+
+          if __name__ == "__main__":
+              print(total_of_files(["a.txt", "b.txt", "c.txt"]))
+        hints:
+          - Go through the file names with a loop, and add `sum(read_numbers(filename))` to a total.
+          - The `try` goes inside the loop, around the call, so a missing file skips only that one file.
+          - "There's nothing to do for a missing file, so its `except FileNotFoundError:` block has only `pass`."
+        tests:
+          - call: total_of_files(["a.txt", "b.txt", "c.txt"])
+            files:
+              a.txt: |
+                3
+                4
+              b.txt: |
+                10
+          - call: total_of_files(["x.txt", "jan.txt", "feb.txt"])
+            files:
+              jan.txt: |
+                100
+                -20
+              feb.txt: |
+                5
+            hidden: true
+          - call: total_of_files(["none.txt"])
+            hidden: true
+
+  - id: errors-raise
+    slug: raise
+    title: Raising errors yourself
+    text: |
+      Your own code can raise an exception too, with the **`raise`** statement. Causing errors on purpose may sound odd, but it's the clearest way for a function to say "I can't do this with these arguments". A function that only prints an error message is easy to miss, especially when its result goes on to other code, and one that returns a special value, such as -1, risks having that value used as if it were a real result. An exception can't be missed: it stops the program unless the caller handles it.
+
+      ```python run crash
+      def hours_to_minutes(hours):
+          if hours < 0:
+              raise ValueError(f"hours can't be negative: {hours}")
+          return hours * 60
+
+
+      print(hours_to_minutes(2))
+      print(hours_to_minutes(-3))
+      ```
+
+      ```output
+      120
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 8, in <module>
+          print(hours_to_minutes(-3))
+                ~~~~~~~~~~~~~~~~^^^^
+        File "main.py", line 3, in hours_to_minutes
+          raise ValueError(f"hours can't be negative: {hours}")
+      ValueError: hours can't be negative: -3
+      ```
+
+      After `raise` comes the exception: its kind, with a message in parentheses. `ValueError` is the usual choice for a value that isn't acceptable, and `TypeError` for a value of the wrong type. The message is shown in the traceback, so make it say what was wrong.
+
+      ### Catching your own exceptions
+
+      The caller handles a raised exception like any other. With `as`, the `except` line also gives the exception a name, and printing it prints its message:
+
+      ```python run
+      def booking(guests, nights):
+          if guests < 1 or guests > 6:
+              raise ValueError(f"a room takes 1 to 6 guests, not {guests}")
+          if nights < 1:
+              raise ValueError(f"a stay is at least one night, not {nights}")
+          return (guests, nights)
+
+
+      try:
+          print("Booked:", booking(2, 3))
+          print("Booked:", booking(9, 1))
+      except ValueError as error:
+          print("Can't book:", error)
+      ```
+
+      ```output
+      Booked: (2, 3)
+      Can't book: a room takes 1 to 6 guests, not 9
+      ```
+
+      This is a good division of work. The function checks its arguments and raises an exception when they're wrong; it doesn't need to know who called it or how to talk to the user. The code that talks to the user catches the exception and decides what to say.
+
+      **Your turn:** fill in the blanks so that `set_volume(level)` raises a `ValueError` with the message `volume must be 0 to 10` when the level is outside 0 to 10, and otherwise returns the level. This code
+
+      ```python fragment
+      print(set_volume(7))
+      try:
+          set_volume(11)
+      except ValueError as error:
+          print("Error:", error)
+      ```
+
+      prints:
+
+      ```
+      7
+      Error: volume must be 0 to 10
+      ```
+    fill: |
+      def set_volume(level):
+          if level < 0 or level > 10:
+              [[raise]] [[ValueError]]("volume must be 0 to 10")
+          return level
+
+
+      if __name__ == "__main__":
+          print(set_volume(7))
+    hints:
+      - The keyword that causes an exception comes first, then the kind of exception, with the message in parentheses.
+      - "The line is `raise ValueError(\"volume must be 0 to 10\")`."
+    tests:
+      - call: |
+          print(set_volume(7))
+          try:
+              set_volume(11)
+          except ValueError as error:
+              print("Error:", error)
+      - call: set_volume(0)
+        hidden: true
+      - call: |
+          try:
+              set_volume(-1)
+          except ValueError as error:
+              print("Error:", error)
+        hidden: true
+    more:
+      - task: |
+          Write a function `withdraw(balance, amount)` that returns the balance left after taking `amount` out of an account. It raises a `ValueError`:
+
+          - with the message `amount must be positive` if the amount is 0 or less;
+          - with the message `not enough money` if the amount is more than the balance.
+
+          For example, `withdraw(100, 30)` returns `70`, and `withdraw(100, 130)` raises a `ValueError` whose message is `not enough money`.
+        seed: |
+          def withdraw(balance, amount):
+              pass
+
+
+          if __name__ == "__main__":
+              print(withdraw(100, 30))
+        solution: |
+          def withdraw(balance, amount):
+              if amount <= 0:
+                  raise ValueError("amount must be positive")
+              if amount > balance:
+                  raise ValueError("not enough money")
+              return balance - amount
+
+
+          if __name__ == "__main__":
+              print(withdraw(100, 30))
+        hints:
+          - Check the two problems first, each with its own `if`, and return `balance - amount` at the end.
+          - "Each `if` raises its error: `raise ValueError(\"not enough money\")`."
+        tests:
+          - call: withdraw(100, 30)
+          - name: withdraw(100, 130)
+            call: |
+              try:
+                  withdraw(100, 130)
+              except ValueError as error:
+                  print("ValueError:", error)
+          - call: withdraw(50, 50)
+            hidden: true
+          - call: |
+              try:
+                  withdraw(50, 0)
+              except ValueError as error:
+                  print("ValueError:", error)
+            hidden: true
+          - call: |
+              try:
+                  withdraw(20, -5)
+              except ValueError as error:
+                  print("ValueError:", error)
+            hidden: true
+      - task: |
+          The starter code has a function `parse_size(text)` that turns a size like `3x4` into a tuple `(3, 4)`, and raises a `ValueError` when the text isn't a valid size. Write the main program: it goes through the lines of the file `sizes.txt` and prints the area of each valid size, or `Skipped: ` and the exception's message for an invalid one.
+
+          With this `sizes.txt`
+
+          ```text
+          3x4
+          10x2
+          5x
+          0x8
+          2x3x4
+          ```
+
+          the program prints:
+
+          ```
+          3x4: area 12
+          10x2: area 20
+          Skipped: invalid literal for int() with base 10: ''
+          Skipped: 0x8 has a side of zero or less
+          Skipped: 2x3x4 needs exactly one x
+          ```
+        seed: |
+          def parse_size(text):
+              parts = text.split("x")
+              if len(parts) != 2:
+                  raise ValueError(f"{text} needs exactly one x")
+              width = int(parts[0])
+              height = int(parts[1])
+              if width <= 0 or height <= 0:
+                  raise ValueError(f"{text} has a side of zero or less")
+              return (width, height)
+
+
+          # Write the main program below.
+        solution: |
+          def parse_size(text):
+              parts = text.split("x")
+              if len(parts) != 2:
+                  raise ValueError(f"{text} needs exactly one x")
+              width = int(parts[0])
+              height = int(parts[1])
+              if width <= 0 or height <= 0:
+                  raise ValueError(f"{text} has a side of zero or less")
+              return (width, height)
+
+
+          # Write the main program below.
+          with open("sizes.txt") as file:
+              for line in file:
+                  text = line.strip()
+                  try:
+                      size = parse_size(text)
+                      print(f"{text}: area {size[0] * size[1]}")
+                  except ValueError as error:
+                      print("Skipped:", error)
+        hints:
+          - Go through the file line by line and strip each line before you give it to `parse_size`.
+          - The `try` goes inside the loop, so one bad line doesn't stop the others.
+          - "`except ValueError as error:` names the exception, and `print(\"Skipped:\", error)` prints its message. A `ValueError` from `int` inside `parse_size` is caught there too."
+        tests:
+          - files:
+              sizes.txt: |
+                3x4
+                10x2
+                5x
+                0x8
+                2x3x4
+          - files:
+              sizes.txt: |
+                7x7
+                ax2
+                1x100
+            hidden: true

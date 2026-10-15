@@ -1,0 +1,264 @@
+topic: references
+drills:
+  - type: predict
+    after: same-list
+    code: |
+      a = [1]
+      b = a
+      b.append(2)
+      print(a)
+    why: "`b = a` copies the reference, not the list. Both names refer to one list, so the `append` shows through `a` too."
+
+  - type: predict
+    after: same-list
+    code: |
+      x = 5
+      y = x
+      y += 1
+      print(x, y)
+    why: "Numbers can't change. `y += 1` makes a new number, 6, and points `y` at it, while `x` still refers to 5."
+
+  - type: predict
+    after: same-list
+    code: |
+      a = [1, 2]
+      b = a
+      b = [3]
+      print(a)
+    why: "`b = [3]` points `b` at a new list. It doesn't change the list that `a` refers to."
+
+  - type: predict
+    after: same-list
+    code: |
+      word = "hi"
+      other = word
+      other = other.upper()
+      print(word, other)
+    why: "Strings can't change: `upper` gives a new string, and only `other` is pointed at it."
+
+  - type: choice
+    after: copying
+    prompt: Which line makes a separate copy of the list `scores`?
+    choices:
+      - "`backup = scores`"
+      - "`backup = scores.copy()`"
+      - "`backup = scores[0]`"
+    answer: 2
+    why: "`copy()` makes a new list with the same items. `backup = scores` only gives the same list a second name, and `scores[0]` is the first item."
+
+  - type: fill
+    after: copying
+    code: |
+      names = ["Ada", "Max"]
+      backup = names.[[copy]]()
+      names.append("Lin")
+      print(backup)
+    why: "`names.copy()` is a new list, so adding to `names` afterwards doesn't change `backup`."
+
+  - type: predict
+    after: copying
+    code: |
+      a = [1, 2]
+      b = a[:]
+      b[0] = 9
+      print(a, b)
+    why: "A slice is always a new list, so `a[:]` is a copy and changing `b` leaves `a` alone."
+
+  - type: predict
+    after: copying
+    code: |
+      board = [[1], [2]]
+      saved = board.copy()
+      board[0].append(9)
+      board.append([3])
+      print(saved)
+    why: "The copy is a new outer list holding the same inner lists. The new row goes only into `board`, but the 9 goes into a row both lists share."
+
+  - type: bug
+    after: copying
+    code: |
+      grid = [[0, 0], [0, 0]]
+      saved = []
+      for row in grid:
+          saved.append(row)  # BUG
+      grid[0][0] = 1
+      print(saved)
+    fix: saved.append(row.copy())
+    why: "Appending `row` puts the same row lists into `saved`, so the change to `grid` shows up there too. Each row needs a copy of its own."
+
+  - type: predict
+    after: list-parameters
+    code: |
+      def add_zero(numbers):
+          numbers.append(0)
+
+
+      values = [5]
+      add_zero(values)
+      add_zero(values)
+      print(values)
+    why: "The parameter refers to the caller's list, so each call adds a 0 to `values` itself."
+
+  - type: predict
+    after: list-parameters
+    code: |
+      def reset(numbers):
+          numbers = []
+
+
+      values = [1, 2]
+      reset(values)
+      print(values)
+    why: "`numbers = []` only points the parameter at a new list inside the function. The caller's list doesn't change."
+
+  - type: bug
+    after: list-parameters
+    code: |
+      def empty_out(items):
+          items = []  # BUG
+
+
+      values = [1, 2]
+      empty_out(values)
+      print(values)
+    fix: items[:] = []
+    why: "Assigning to the parameter doesn't touch the caller's list. A slice assignment, `items[:] = []`, replaces the items of the list itself."
+
+  - type: predict
+    after: list-parameters
+    code: |
+      numbers = [1, 2, 3, 4]
+      numbers[1:3] = [0]
+      print(numbers)
+    why: "A slice assignment replaces the items at indexes 1 and 2 with the items of the list on the right, here just one 0."
+
+  - type: predict
+    after: side-effects
+    code: |
+      def smallest(numbers):
+          numbers.sort()
+          return numbers[0]
+
+
+      values = [3, 1, 2]
+      print(smallest(values))
+      print(values)
+    why: "The answer is right, but `sort` sorted the caller's list too. That's a side effect; `sorted(numbers)[0]` or `min(numbers)` would have none."
+
+  - type: runs
+    after: side-effects
+    code: |
+      def first(items):
+          return items.pop(0)
+
+
+      values = [1]
+      print(first(values))
+      print(first(values))
+    why: "The first call removes the only item of `values`, so the second call tries to `pop` from an empty list and stops with an `IndexError`."
+
+  - type: choice
+    after: side-effects
+    prompt: Which of these functions changes the list it's given?
+    choices:
+      - "`def f(a): return sorted(a)[0]`"
+      - "`def f(a): return a.pop()`"
+      - "`def f(a): return a[1:]`"
+    answer: 2
+    why: "`pop` removes an item from the caller's list. `sorted` and a slice both give a new list and leave the original alone."
+
+  - type: boss
+    after: list-parameters
+    prompt: |
+      Write a function `reverse_in_place(items)` that reverses the order of the list it's given. It changes the list and returns nothing.
+
+      ```python fragment
+      items = [1, 2, 3]
+      reverse_in_place(items)
+      print(items)
+      ```
+
+      ```
+      [3, 2, 1]
+      ```
+    seed: |
+      def reverse_in_place(items: list):
+          pass
+
+
+      if __name__ == "__main__":
+          items = [1, 2, 3]
+          reverse_in_place(items)
+          print(items)
+    solution: |
+      def reverse_in_place(items: list):
+          items[:] = items[::-1]
+
+
+      if __name__ == "__main__":
+          items = [1, 2, 3]
+          reverse_in_place(items)
+          print(items)
+    hints:
+      - "`items[::-1]` is a new list in reverse order, but assigning it to `items` would only change the parameter."
+      - "Put the reversed items into the list itself with a slice assignment: `items[:] = ...`."
+    tests:
+      - call: |
+          items = [1, 2, 3]
+          reverse_in_place(items)
+          print(items)
+      - call: |
+          items = ["a", "b", "c", "d"]
+          reverse_in_place(items)
+          print(items)
+        hidden: true
+
+  - type: boss
+    after: side-effects
+    prompt: |
+      Write a pure function `doubled(numbers)` that returns a new list with every number doubled. The list it's given must not change.
+
+      ```python fragment
+      numbers = [1, 5, -2]
+      print(doubled(numbers))
+      print(numbers)
+      ```
+
+      ```
+      [2, 10, -4]
+      [1, 5, -2]
+      ```
+    seed: |
+      def doubled(numbers: list) -> list:
+          pass
+
+
+      if __name__ == "__main__":
+          numbers = [1, 5, -2]
+          print(doubled(numbers))
+          print(numbers)
+    solution: |
+      def doubled(numbers: list) -> list:
+          result = []
+          for number in numbers:
+              result.append(number * 2)
+          return result
+
+
+      if __name__ == "__main__":
+          numbers = [1, 5, -2]
+          print(doubled(numbers))
+          print(numbers)
+    hints:
+      - Don't change `numbers`. Make a new empty list instead.
+      - "Append `number * 2` to the new list for each number, then return the new list."
+    tests:
+      - call: |
+          numbers = [1, 5, -2]
+          print(doubled(numbers))
+          print(numbers)
+      - call: |
+          numbers = [0, 10]
+          print(doubled(numbers))
+          print(numbers)
+        hidden: true

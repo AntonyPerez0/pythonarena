@@ -1,0 +1,712 @@
+id: functions
+summary: Writing functions of your own. Defining them with def, calling them, giving them parameters, and why a function should work with its parameters instead of variables from outside it.
+steps:
+  - id: functions-define
+    slug: define
+    title: Your own functions
+    text: |
+      You have called plenty of functions already: `print`, `input`, `int`, `len`. They come with Python. Now you'll write your own. A **function** is a named piece of code: you write it once, and then run it whenever you need it, by its name.
+
+      ### Defining a function
+
+      ```python run
+      def greet():
+          print("Hello!")
+          print("Nice to see you.")
+      ```
+
+      A function **definition** starts with the keyword `def` (short for define), then the function's name, a pair of parentheses and a colon. This first line is the function's **header**. Under it, indented like the body of an `if` or a `while`, comes the function's **body**: the code that runs when the function is used.
+
+      Run that program and nothing happens. That's not a mistake: `def` only defines the function, that is, it tells Python what the name `greet` means. The body runs only when the function is **called**.
+
+      ### Calling a function
+
+      To call a function, write its name with parentheses after it, as you do with `print`:
+
+      ```python run
+      def greet():
+          print("Hello!")
+          print("Nice to see you.")
+
+
+      greet()
+      print("...")
+      greet()
+      ```
+
+      ```output
+      Hello!
+      Nice to see you.
+      ...
+      Hello!
+      Nice to see you.
+      ```
+
+      Python reads the definition and remembers the function. Then each call runs its body, once per call. A function can be called as many times as you like: that's the point of writing one.
+
+      Function names follow the same rules as variable names: small letters, with underscores between words, such as `print_menu`. Leave two empty lines after a function definition, before the code that comes after it; Python doesn't need them, but they make the program easier to read, and Python programmers expect them.
+
+      ### Functions on this site
+
+      From now on, many tasks ask you to write a function. The checks call your function themselves, so your program needs only the definition, with no calls of its own and no `input`. A test named `greet()` calls `greet()` and compares what it prints with what it should print. To try your function with **Run**, you can add a call under the definition; the checks look only at what their own calls print.
+
+      The starter code of a function task often has `pass` as the body. `pass` is a statement that does nothing. A body can't be empty, so `pass` holds the place until you write the real code. Replace it with your own lines.
+
+      **Your turn:** fill in the blank so the program defines a function `cheer` that prints `Hip hip hooray!` when it's called.
+    fill: |
+      [[def]] cheer():
+          print("Hip hip hooray!")
+    hints:
+      - A function definition starts with a keyword, followed by the function's name, parentheses and a colon.
+      - The keyword is short for "define".
+    tests:
+      - call: cheer()
+        expect: Hip hip hooray!
+      - call: |
+          cheer()
+          cheer()
+        hidden: true
+    more:
+      - task: |
+          Write a function `print_menu()` that prints this menu:
+
+          ```
+          1. Start
+          2. Settings
+          3. Quit
+          ```
+        seed: |
+          def print_menu():
+              pass
+        solution: |
+          def print_menu():
+              print("1. Start")
+              print("2. Settings")
+              print("3. Quit")
+        hints:
+          - "Replace `pass` with three `print` lines, indented by four spaces like `pass` is."
+          - The checks call `print_menu()` themselves, so the program needs no call of its own.
+        tests:
+          - call: print_menu()
+          - call: |
+              print_menu()
+              print_menu()
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def chorus():
+              print("la la la")
+
+
+          print("verse")
+          chorus()
+          print("verse")
+          chorus()
+        hints:
+          - The definition prints nothing by itself. The body of `chorus` runs only when it's called.
+          - "Go through the lines below the definition from top to bottom: each `chorus()` prints the line in its body."
+
+  - id: functions-calling
+    slug: calling
+    title: Calling functions
+    text: |
+      A function call makes Python jump into the function's body, run it, and then come back to just after the call. That's why the order of the lines matters.
+
+      ### Define before you call
+
+      Python runs a program from top to bottom, and a `def` is a line like any other: until it has run, the name doesn't exist. So a call above the definition fails:
+
+      ```python run crash
+      greet()
+
+
+      def greet():
+          print("Hello!")
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          greet()
+          ^^^^^
+      NameError: name 'greet' is not defined
+      ```
+
+      Put your definitions at the top of the program and the code that uses them below.
+
+      ### Functions that call functions
+
+      A function's body can call other functions, your own included. Here `title` calls `line` twice:
+
+      ```python run
+      def line():
+          print("-" * 20)
+
+
+      def title():
+          line()
+          print("   Weekly report")
+          line()
+
+
+      title()
+      print("All tasks done.")
+      ```
+
+      ```output
+      --------------------
+         Weekly report
+      --------------------
+      All tasks done.
+      ```
+
+      Follow the calls. `title()` jumps into the body of `title`. Its first line calls `line()`, which prints the dashes and comes back into `title`, exactly where it left off. Then the heading is printed, `line()` runs once more, and `title` is done, so Python comes back to the main program and prints the last line.
+
+      A function can call another function that's defined further down in the file. What matters is that the other function has been defined by the time the call actually runs: the body of `title` runs only when `title()` is called, and by then both definitions have run.
+
+      ### Don't forget the parentheses
+
+      The parentheses are what makes a call. The name on its own only refers to the function, and nothing happens:
+
+      ```python run
+      def beep():
+          print("Beep!")
+
+
+      beep
+      print("Was there a beep?")
+      ```
+
+      ```output
+      Was there a beep?
+      ```
+
+      Python doesn't even complain: a line with just a name is allowed, it simply does nothing. If a function of yours seems never to run, check that the call has its `()`.
+
+      **Your turn:** fill in the blanks so that `banner` uses the function `stars` for its first and last line. When `banner()` is called, it should print:
+
+      ```
+      **********
+      * SALE!  *
+      **********
+      ```
+    fill: |
+      def stars():
+          print("**********")
+
+
+      def banner():
+          [[stars()]]
+          print("* SALE!  *")
+          [[stars()]]
+    hints:
+      - The first and the last line of the banner are exactly what `stars` prints.
+      - "Call `stars` in each blank: its name with parentheses after it."
+    tests:
+      - call: banner()
+        expect: |
+          **********
+          * SALE!  *
+          **********
+      - call: |
+          banner()
+          stars()
+        hidden: true
+    more:
+      - task: |
+          Write two functions. `countdown()` prints the numbers 3, 2 and 1, each on its own line, using a loop. `launch()` calls `countdown()` and then prints `Liftoff!`. When `launch()` is called, it prints:
+
+          ```
+          3
+          2
+          1
+          Liftoff!
+          ```
+        seed: |
+          def countdown():
+              pass
+
+
+          def launch():
+              pass
+        solution: |
+          def countdown():
+              number = 3
+              while number > 0:
+                  print(number)
+                  number -= 1
+
+
+          def launch():
+              countdown()
+              print("Liftoff!")
+        hints:
+          - "In `countdown`, write the loop as you would in a program: a helper variable that starts at 3, a condition, and an update. All of it is indented inside the function."
+          - "`launch` has two lines: the call `countdown()` and the `print`."
+        require:
+          - pattern: \bwhile\b
+            message: Print the countdown with a `while` loop.
+          - pattern: countdown\s*\(\s*\)
+            min: 2
+            message: "`launch` should call `countdown()` instead of printing the numbers itself."
+        tests:
+          - call: launch()
+          - call: countdown()
+            hidden: true
+          - call: |
+              launch()
+              launch()
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def a():
+              print("A starts")
+              b()
+              print("A ends")
+
+
+          def b():
+              print("B")
+
+
+          a()
+          print("done")
+        hints:
+          - "`a` calls `b`, which is defined further down. That's fine, because by the time `a()` runs, `b` has been defined."
+          - When `b` is done, Python goes back into `a`, to the line after the call.
+
+  - id: functions-parameters
+    slug: parameters
+    title: Parameters and arguments
+    text: |
+      `print` prints whatever you give it in the parentheses. Your own functions can take values too. Name a variable in the parentheses of the header, and the function gets a value in it every time it's called:
+
+      ```python run
+      def greet(name):
+          print(f"Hello, {name}!")
+
+
+      greet("Ada")
+      greet("Linus")
+      ```
+
+      ```output
+      Hello, Ada!
+      Hello, Linus!
+      ```
+
+      The variable in the header, `name`, is a **parameter**. The value in the call, `"Ada"`, is an **argument**. When the call runs, the parameter gets the argument as its value, and then the body runs. Each call can give a different argument, so one function does the same work with different values.
+
+      The two words are easy to mix up, and people often use them loosely, but the difference is worth knowing: a parameter is the name the function uses inside, and an argument is the value a call gives it from outside.
+
+      ### Any value as an argument
+
+      An argument can be any expression: a value written out, a variable, or a calculation. Python works out its value first and passes on the result:
+
+      ```python run
+      def show_square(number):
+          print(f"{number} squared is {number * number}")
+
+
+      show_square(4)
+      side = 7
+      show_square(side)
+      show_square(side + 1)
+      ```
+
+      ```output
+      4 squared is 16
+      7 squared is 49
+      8 squared is 64
+      ```
+
+      In the call `show_square(side)`, the parameter `number` gets the value of `side`, 7. The names don't have to match: the function only ever sees the value.
+
+      Inside the body, a parameter is a variable like any other. You can use it in a calculation, an `if`, a loop or an f-string, and even change it: the change stays inside the function.
+
+      ### A missing argument
+
+      A function with a parameter needs an argument in every call:
+
+      ```python run crash
+      def greet(name):
+          print(f"Hello, {name}!")
+
+
+      greet()
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          greet()
+          ~~~~~^^
+      TypeError: greet() missing 1 required positional argument: 'name'
+      ```
+
+      The message names the function and the parameter that got no value. "Positional" means that arguments are matched to parameters by their position, first to first. That matters as soon as a function has more than one parameter, in the next step.
+
+      **Your turn:** fill in the parameter so the function greets the guest it's called with. A call `welcome("Grace")` should print:
+
+      ```
+      Welcome, Grace!
+      Your table is ready, Grace.
+      ```
+    fill: |
+      def welcome([[guest]]):
+          print(f"Welcome, {guest}!")
+          print(f"Your table is ready, {guest}.")
+    hints:
+      - The body uses a variable that has no value yet. It should get its value from the call.
+      - "The parameter goes in the parentheses of the header. Its name is the one the body uses: `guest`."
+    tests:
+      - call: welcome("Grace")
+      - call: welcome("Tim")
+        hidden: true
+    more:
+      - task: |
+          Write a function `underline(text)` that prints the text and, on the line under it, as many `=` characters as the text has. A call `underline("Hello")` prints:
+
+          ```
+          Hello
+          =====
+          ```
+        seed: |
+          def underline(text):
+              pass
+        solution: |
+          def underline(text):
+              print(text)
+              print("=" * len(text))
+        hints:
+          - "The parameter `text` holds the string the call gives. Print it first."
+          - "The line under it is `\"=\"` repeated `len(text)` times."
+        tests:
+          - call: underline("Hello")
+          - call: underline("Python Arena")
+            hidden: true
+          - call: underline("x")
+            hidden: true
+      - task: |
+          Write a function `countdown(start)` that prints the numbers from `start` down to 1 on one line, each followed by a space, and then `Go!`. A call `countdown(3)` prints:
+
+          ```
+          3 2 1 Go!
+          ```
+
+          With 0 as the argument, it prints only `Go!`.
+        seed: |
+          def countdown(start):
+              pass
+        solution: |
+          def countdown(start):
+              line = ""
+              while start > 0:
+                  line += f"{start} "
+                  start -= 1
+              line += "Go!"
+              print(line)
+        hints:
+          - "Build the line in a string that starts empty. A loop adds each number and a space, counting down from `start`."
+          - "The parameter `start` can be the loop's helper variable: `while start > 0:`, with `start -= 1` in the body."
+          - After the loop, add `Go!` to the string and print it.
+        tests:
+          - call: countdown(3)
+          - call: countdown(0)
+            hidden: true
+          - call: countdown(1)
+            hidden: true
+          - call: countdown(7)
+            hidden: true
+
+  - id: functions-several-parameters
+    slug: several-parameters
+    title: Several parameters
+    text: |
+      A function can have several parameters, separated by commas. A call then gives as many arguments, and they're matched by position: the first argument goes to the first parameter, the second to the second, and so on.
+
+      ```python run
+      def introduce(name, age):
+          print(f"{name} is {age} years old.")
+
+
+      introduce("Mia", 12)
+      introduce(40, "Leo")
+      ```
+
+      ```output
+      Mia is 12 years old.
+      40 is Leo years old.
+      ```
+
+      The second call has its arguments the wrong way round. Python doesn't know what they mean; it simply gives the first one to `name`. Give the arguments in the order of the header.
+
+      ### Helper variables and decisions
+
+      A function's body can have its own helper variables, `if`s and loops, like any program:
+
+      ```python run
+      def compare(a, b):
+          difference = a - b
+          if difference > 0:
+              print(f"{a} is {difference} more than {b}")
+          elif difference < 0:
+              print(f"{a} is {-difference} less than {b}")
+          else:
+              print(f"{a} and {b} are equal")
+
+
+      compare(10, 4)
+      compare(3, 8)
+      compare(5, 5)
+      ```
+
+      ```output
+      10 is 6 more than 4
+      3 is 5 less than 8
+      5 and 5 are equal
+      ```
+
+      `difference` is made inside the function, every time it runs. It belongs to the function, and the rest of the program can't see it.
+
+      ### The names belong to the function
+
+      The names of the parameters have nothing to do with variables outside the function, even when the names are the same. Here the main program has variables called `width` and `height` too:
+
+      ```python run
+      def area(width, height):
+          print(f"A {width} by {height} rectangle has an area of {width * height}")
+
+
+      width = 2
+      height = 3
+      area(10, 5)
+      area(height, width)
+      ```
+
+      ```output
+      A 10 by 5 rectangle has an area of 50
+      A 3 by 2 rectangle has an area of 6
+      ```
+
+      In the first call, `width` inside the function is 10, whatever the `width` outside holds. In the second call, the first argument is the outside `height`, 3, so inside the function `width` is 3. Only the order of the arguments counts, never the names in the call.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      def label(item, price):
+          print(f"{item} costs {price}")
+
+
+      label("tea", 3)
+      cost = 5
+      label("cake", cost + 1)
+      label(cost, "pie")
+    hints:
+      - The first argument always goes to `item` and the second to `price`.
+      - "In the second call, `cost + 1` is worked out first: 6."
+      - In the last call the arguments are the wrong way round, and Python uses them anyway.
+    more:
+      - task: |
+          Write a function `times_table(number, count)` that prints the first `count` lines of the multiplication table of `number`. A call `times_table(3, 4)` prints:
+
+          ```
+          3 x 1 = 3
+          3 x 2 = 6
+          3 x 3 = 9
+          3 x 4 = 12
+          ```
+        seed: |
+          def times_table(number, count):
+              pass
+        solution: |
+          def times_table(number, count):
+              factor = 1
+              while factor <= count:
+                  print(f"{number} x {factor} = {number * factor}")
+                  factor += 1
+        hints:
+          - "Loop with a helper variable that goes from 1 up to `count`."
+          - "In each round, print one line with an f-string: the number, ` x `, the helper variable, ` = ` and the product."
+        tests:
+          - call: times_table(3, 4)
+          - call: times_table(7, 2)
+            hidden: true
+          - call: times_table(1, 5)
+            hidden: true
+          - call: times_table(12, 1)
+            hidden: true
+      - task: |
+          Write a function `report(points, maximum)` that prints the points out of the maximum and the percentage, as a whole number rounded down, as below. On the next line it prints `Passed` if the percentage is at least 50, and `Try again` otherwise. A call `report(45, 60)` prints:
+
+          ```
+          45/60 points (75%)
+          Passed
+          ```
+        seed: |
+          def report(points, maximum):
+              pass
+        solution: |
+          def report(points, maximum):
+              percent = points * 100 // maximum
+              print(f"{points}/{maximum} points ({percent}%)")
+              if percent >= 50:
+                  print("Passed")
+              else:
+                  print("Try again")
+        hints:
+          - "The percentage is the points times 100, divided by the maximum. `//` divides and rounds down to a whole number."
+          - Keep the percentage in a helper variable, print the first line with an f-string, and then decide with `if` and `else`.
+        tests:
+          - call: report(45, 60)
+          - call: report(10, 30)
+            hidden: true
+          - call: report(50, 100)
+            hidden: true
+          - call: report(0, 12)
+            hidden: true
+
+  - id: functions-global-variables
+    slug: global-variables
+    title: Parameters, not outside variables
+    text: |
+      A function can read the variables of the main program too. Variables that are made in the main program, outside every function, are called **global variables**. Reading them in a function works, but it's a habit to avoid, because it makes bugs that are hard to see.
+
+      Here a function uses a global variable by mistake, where it should use its parameter:
+
+      ```python run
+      name = "Ada"
+
+
+      def greet(person):
+          print(f"Hello, {name}!")
+
+
+      greet("Linus")
+      greet("Grace")
+      ```
+
+      ```output
+      Hello, Ada!
+      Hello, Ada!
+      ```
+
+      Whatever the argument, the function greets Ada, because it prints the global `name` and never uses its parameter `person`. If the program had called only `greet("Ada")`, the mistake would have gone unnoticed: the output would look right, for the wrong reason.
+
+      ### Why it goes wrong
+
+      A function that uses only its parameters does the same work wherever it's called from: everything it needs comes in through the call. A function that reads a global variable depends on something outside it. When that variable changes, or doesn't exist, the function behaves differently, though nobody changed the function. Here is the same function in a program without the global variable:
+
+      ```python run crash
+      def greet(person):
+          print(f"Hello, {name}!")
+
+
+      greet("Linus")
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          greet("Linus")
+          ~~~~~^^^^^^^^^
+        File "main.py", line 2, in greet
+          print(f"Hello, {name}!")
+                          ^^^^
+      NameError: name 'name' is not defined
+      ```
+
+      This traceback has two parts: first the call on line 5, then line 2 inside `greet`, where the error happened. Read it from the bottom: the last lines show where the program stopped.
+
+      The checks on this site work like that second program. They load your program and call your function on its own, with their own arguments. If your function relies on a global variable, that variable may not exist when the checks call it, or it may hold a value that has nothing to do with their arguments.
+
+      ### Everything through parameters
+
+      So when a function needs a value, make it a parameter, and give the value as an argument in the call. Variables that the function makes for itself, such as `total` here, are fine: they belong to the function.
+
+      ```python run
+      def price_with_tax(price, tax_percent):
+          total = price + price * tax_percent // 100
+          print(f"{price} with {tax_percent}% tax is {total}")
+
+
+      price_with_tax(100, 24)
+      price_with_tax(50, 10)
+      ```
+
+      ```output
+      100 with 24% tax is 124
+      50 with 10% tax is 55
+      ```
+
+      **Your turn:** this function was tried in a program that happened to have a global variable `count`, so it seemed to work. Called on its own, it fails. Fix it so it uses only its parameters. A call `order_summary("soup", 2)` should print:
+
+      ```
+      Order: 2 x soup
+      Kitchen, please make 2 portions.
+      ```
+    seed: |
+      def order_summary(dish, amount):
+          print(f"Order: {amount} x {dish}")
+          print(f"Kitchen, please make {count} portions.")
+    solution: |
+      def order_summary(dish, amount):
+          print(f"Order: {amount} x {dish}")
+          print(f"Kitchen, please make {amount} portions.")
+    hints:
+      - Check it and read the error. Which name is not defined, and on which line?
+      - "`count` isn't a parameter of the function. The number of portions is the parameter `amount`."
+    tests:
+      - call: order_summary("soup", 2)
+      - call: order_summary("pancakes", 5)
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          size = 3
+
+
+          def show(number):
+              print(number, size)
+
+
+          def show_size(size):
+              print(size)
+
+
+          show(10)
+          size = 5
+          show(10)
+          show_size(7)
+        hints:
+          - "`show` reads the global `size`, so it prints whatever `size` is at the moment of the call."
+          - "`show_size` has a parameter called `size`. Inside it, `size` is the argument of the call, not the global variable."
+      - task: |
+          This function draws a box around a text, but it takes the text and the character from global variables. Change it so it takes them as parameters instead, in this order: `box(text, character)`. A call `box("Hi", "#")` prints:
+
+          ```
+          ######
+          # Hi #
+          ######
+          ```
+        seed: |
+          def box():
+              print(character * (len(text) + 4))
+              print(f"{character} {text} {character}")
+              print(character * (len(text) + 4))
+        solution: |
+          def box(text, character):
+              print(character * (len(text) + 4))
+              print(f"{character} {text} {character}")
+              print(character * (len(text) + 4))
+        hints:
+          - The body can stay as it is. What's missing is in the header.
+          - "Name the two parameters in the parentheses of the header, separated by a comma: `def box(text, character):`."
+        tests:
+          - call: box("Hi", "#")
+          - call: box("Python", "*")
+            hidden: true
+          - call: box("", "+")
+            hidden: true

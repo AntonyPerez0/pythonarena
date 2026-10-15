@@ -1,0 +1,837 @@
+id: recursion
+summary: Functions that call themselves. The base case that stops the calls and the RecursionError when it's missing, recursive functions that return values (factorial, Fibonacci, sums of lists, reversed strings), and binary search done recursively.
+steps:
+  - id: recursion-calling-itself
+    slug: calling-itself
+    title: A function that calls itself
+    text: |
+      You know that a function can call another function. A function can also call itself. That's called **recursion**, and it's another way to repeat something.
+
+      Just as a `while` loop needs a way out, a recursive function needs a way to stop. This one calls itself every time, so it never ends on its own:
+
+      ```python run crash
+      def count_up(n):
+          count_up(n + 1)
+
+
+      count_up(1)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          count_up(1)
+          ~~~~~~~~^^^
+        File "main.py", line 2, in count_up
+          count_up(n + 1)
+          ~~~~~~~~^^^^^^^
+        File "main.py", line 2, in count_up
+          count_up(n + 1)
+          ~~~~~~~~^^^^^^^
+        File "main.py", line 2, in count_up
+          count_up(n + 1)
+          ~~~~~~~~^^^^^^^
+        [Previous line repeated 996 more times]
+      RecursionError: maximum recursion depth exceeded
+      ```
+
+      Every call starts a new call before it has finished. Python keeps track of all the unfinished calls, and when there are about a thousand of them, it gives up with a `RecursionError`. The traceback shows the same line a few times and then says how many more times it was repeated.
+
+      ### The base case
+
+      A recursive function that works has two parts:
+
+      - A **base case**: a situation so simple that the function handles it without calling itself. That's where the calls stop.
+      - A **recursive case**: the function calls itself with a smaller problem, one step closer to the base case.
+
+      ```python run
+      def countdown(n):
+          if n == 0:
+              print("Liftoff!")
+          else:
+              print(n)
+              countdown(n - 1)
+
+
+      countdown(3)
+      ```
+
+      ```output
+      3
+      2
+      1
+      Liftoff!
+      ```
+
+      `countdown(3)` prints 3 and calls `countdown(2)`, which prints 2 and calls `countdown(1)`, which prints 1 and calls `countdown(0)`. That's the base case: it prints `Liftoff!` and doesn't call itself, so the calls end there. Each call has its own `n`: while `countdown(2)` runs, the `n` of `countdown(3)` is still 3.
+
+      Each call makes `n` one smaller, so it gets to 0 sooner or later. But what about `countdown(-1)`? Then `n` goes -2, -3, -4 and never hits 0, and the program ends in a `RecursionError`. The base case `n <= 0` would catch that too.
+
+      ### Recursion that changes a list
+
+      A recursive function can work on a list. A list is passed to a function as a reference, so every call works on the very same list:
+
+      ```python run
+      def keep_doubling(numbers, limit):
+          if numbers[-1] * 2 <= limit:
+              numbers.append(numbers[-1] * 2)
+              keep_doubling(numbers, limit)
+
+
+      powers = [1]
+      keep_doubling(powers, 100)
+      print(powers)
+      ```
+
+      ```output
+      [1, 2, 4, 8, 16, 32, 64]
+      ```
+
+      Here the base case is hidden: when the next number would go over the limit, the condition is false and the function ends without calling itself. A `while` loop does the same job:
+
+      ```python fragment
+      def keep_doubling(numbers, limit):
+          while numbers[-1] * 2 <= limit:
+              numbers.append(numbers[-1] * 2)
+      ```
+
+      A solution with a loop is called **iterative**, and one where a function calls itself **recursive**. Every problem can be solved either way, but usually one way fits better. For these first examples, the loop is simpler. The next steps show problems where recursion is the natural fit.
+
+      **Your turn:** fill in the blanks: the base case's condition, and the argument of the recursive call. The program should print:
+
+      ```
+      4
+      3
+      2
+      1
+      Go!
+      ```
+    fill: |
+      def countdown(n):
+          if n [[<= 0‖== 0‖< 1]]:
+              print("Go!")
+          else:
+              print(n)
+              countdown([[n - 1]])
+
+
+      countdown(4)
+    hints:
+      - "The base case is when the countdown has reached zero: `n <= 0` (or `n == 0`)."
+      - "The recursive call gets a number one smaller, so the countdown gets closer to zero: `n - 1`."
+    tests:
+      - expect: |
+          4
+          3
+          2
+          1
+          Go!
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def show(n):
+              if n > 0:
+                  print(n)
+                  show(n - 2)
+
+
+          show(7)
+        hints:
+          - Each call prints its `n` and then calls the function with a number two smaller.
+          - "The calls stop when `n > 0` is false. Does `n` ever reach 0, or does it skip past it?"
+      - task: |
+          Write a recursive function `fill_up(items, size)` that adds the string `"-"` to the end of the list `items` until the list has `size` items. A list that already has `size` items or more stays as it is. The function changes the list it gets and returns nothing. Use recursion, not a loop.
+
+          For example, this program:
+
+          ```python fragment
+          items = ["a", "b"]
+          fill_up(items, 5)
+          print(items)
+          ```
+
+          prints:
+
+          ```
+          ['a', 'b', '-', '-', '-']
+          ```
+        seed: |
+          def fill_up(items, size):
+              pass
+
+
+          if __name__ == "__main__":
+              items = ["a", "b"]
+              fill_up(items, 5)
+              print(items)
+        solution: |
+          def fill_up(items, size):
+              if len(items) < size:
+                  items.append("-")
+                  fill_up(items, size)
+
+
+          if __name__ == "__main__":
+              items = ["a", "b"]
+              fill_up(items, 5)
+              print(items)
+        hints:
+          - "The list is too short when `len(items) < size`. Only then is there something to do."
+          - Add one `"-"` with `append`, and let the function call itself to add the rest.
+          - "When the list is long enough, the function does nothing: that's the base case, and it needs no code of its own."
+        require:
+          - pattern: def fill_up\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bfill_up\s*\(
+            message: Make `fill_up` call itself inside its own body.
+        forbid:
+          - pattern: \b(?:while|for)\b
+            message: Use recursion instead of a loop.
+        tests:
+          - call: |
+              items = ["a", "b"]
+              fill_up(items, 5)
+              print(items)
+          - call: |
+              items = []
+              fill_up(items, 2)
+              print(items)
+            hidden: true
+          - call: |
+              items = [1, 2, 3]
+              fill_up(items, 2)
+              print(items)
+            hidden: true
+
+  - id: recursion-return-values
+    slug: return-values
+    title: Recursion that returns a value
+    text: |
+      A recursive function can return a value, and that's where recursion gets useful. The classic example is the **factorial**. The factorial of 5, written 5!, is 5 * 4 * 3 * 2 * 1 = 120. Look closer and 5! is 5 * 4!, and 4! is 4 * 3!, and so on down to 1!, which is 1 (and 0! is 1 too). A definition that uses a smaller version of itself is exactly what a recursive function needs:
+
+      ```python run
+      def factorial(n):
+          if n <= 1:
+              return 1
+          return n * factorial(n - 1)
+
+
+      for i in range(1, 6):
+          print(f"{i}! = {factorial(i)}")
+      ```
+
+      ```output
+      1! = 1
+      2! = 2
+      3! = 6
+      4! = 24
+      5! = 120
+      ```
+
+      `factorial(4)` can't finish before it knows `factorial(3)`, which waits for `factorial(2)`, which waits for `factorial(1)`. That one is the base case and returns 1 right away. Then the answers travel back the way they came:
+
+      ```text
+      factorial(4) = 4 * factorial(3)
+                   = 4 * 3 * factorial(2)
+                   = 4 * 3 * 2 * factorial(1)
+                   = 4 * 3 * 2 * 1
+                   = 24
+      ```
+
+      ### Watching the calls
+
+      A `print` when a call starts and another before it returns show the order of events. This function adds up the digits of a number: the last digit is `n % 10`, and the number without it is `n // 10`. A number below 10 is a single digit, the base case:
+
+      ```python run
+      def digit_sum(n):
+          print("start", n)
+          if n < 10:
+              result = n
+          else:
+              result = n % 10 + digit_sum(n // 10)
+          print("return", result, "for", n)
+          return result
+
+
+      print(digit_sum(472))
+      ```
+
+      ```output
+      start 472
+      start 47
+      start 4
+      return 4 for 4
+      return 11 for 47
+      return 13 for 472
+      13
+      ```
+
+      The call for 472 started first and finished last. Python keeps the unfinished calls waiting on the **call stack**, the newest on top. When the call on top returns, the one below it carries on from where it stopped, with the value it was waiting for.
+
+      ### The missing return
+
+      A common mistake is to work out the result of the recursive call but forget to return it. A function that ends without `return` returns `None`, and the call waiting for an answer gets `None`:
+
+      ```python run crash
+      def factorial(n):
+          if n <= 1:
+              return 1
+          n * factorial(n - 1)
+
+
+      print(factorial(3))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 7, in <module>
+          print(factorial(3))
+                ~~~~~~~~~^^^
+        File "main.py", line 4, in factorial
+          n * factorial(n - 1)
+          ~~^~~~~~~~~~~~~~~~~~
+      TypeError: unsupported operand type(s) for *: 'int' and 'NoneType'
+      ```
+
+      `factorial(2)` worked out 2 * 1 but threw the result away and returned `None`, so `factorial(3)` tried to calculate 3 * `None`. The fix is `return n * factorial(n - 1)`.
+
+      **Your turn:** 2 to the power of 5 is 2 * 2 * 2 * 2 * 2, which is 2 times 2 to the power of 4. Fill in the blank so the function calculates powers recursively. The program should print:
+
+      ```
+      32
+      27
+      1
+      ```
+    fill: |
+      def power(base, exponent):
+          if exponent == 0:
+              return 1
+          return base * power(base, [[exponent - 1]])
+
+
+      print(power(2, 5))
+      print(power(3, 3))
+      print(power(7, 0))
+    hints:
+      - The recursive call should work on a smaller problem, one that is closer to the base case `exponent == 0`.
+      - "The power one smaller is `power(base, exponent - 1)`."
+    tests:
+      - expect: |
+          32
+          27
+          1
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def total(n):
+              if n == 0:
+                  return 0
+              result = n + total(n - 1)
+              print(n, result)
+              return result
+
+
+          print(total(3))
+        hints:
+          - The `print` inside the function comes after the recursive call, so a call prints only after the calls it made have returned.
+          - "`total(1)` is the first to print: it gets 0 from `total(0)` and prints `1 1`."
+          - Then `total(2)` and `total(3)` print, and last the main program prints what `total(3)` returned.
+      - task: |
+          Multiplying is adding the same number many times: 6 * 4 is 6 + 6 + 6 + 6, which is 6 + (6 * 3). Write a recursive function `multiply(a, b)` that returns `a` times `b` using only addition and recursion. `b` is never negative.
+
+          For example, this call:
+
+          ```python fragment
+          print(multiply(6, 4))
+          ```
+
+          prints:
+
+          ```
+          24
+          ```
+        seed: |
+          def multiply(a, b):
+              pass
+
+
+          if __name__ == "__main__":
+              print(multiply(6, 4))
+        solution: |
+          def multiply(a, b):
+              if b == 0:
+                  return 0
+              return a + multiply(a, b - 1)
+
+
+          if __name__ == "__main__":
+              print(multiply(6, 4))
+        hints:
+          - "Start with the base case: anything times 0 is 0."
+          - "Otherwise, `a` times `b` is `a` plus `a` times `b - 1`."
+          - "Don't forget the `return` in front of `a + multiply(a, b - 1)`."
+        require:
+          - pattern: def multiply\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bmultiply\s*\(
+            message: Make `multiply` call itself inside its own body.
+        forbid:
+          - pattern: \*
+            message: Multiply with addition and recursion, without `*`.
+          - pattern: \b(?:while|for)\b
+            message: Use recursion instead of a loop.
+        tests:
+          - call: print(multiply(6, 4))
+          - call: multiply(5, 0)
+            hidden: true
+          - call: multiply(-3, 5)
+            hidden: true
+          - call: multiply(12, 1)
+            hidden: true
+
+  - id: recursion-smaller-pieces
+    slug: smaller-pieces
+    title: Fibonacci, strings and lists
+    text: |
+      In the **Fibonacci sequence**, each number is the sum of the two numbers before it: 1, 1, 2, 3, 5, 8, 13 and so on. The definition has two base cases, the first two numbers, and its recursive case calls the function twice:
+
+      ```python run
+      def fibonacci(n):
+          if n <= 2:
+              return 1
+          return fibonacci(n - 1) + fibonacci(n - 2)
+
+
+      print([fibonacci(n) for n in range(1, 11)])
+      ```
+
+      ```output
+      [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
+      ```
+
+      You can check it one number at a time: `fibonacci(3)` is `fibonacci(2) + fibonacci(1)`, which is 1 + 1 = 2. Then `fibonacci(4)` is `fibonacci(3) + fibonacci(2)`, which is 2 + 1 = 3, and so on.
+
+      Two calls in every call add up fast, though. `fibonacci(30)` makes more than a million calls, because it works out the same smaller numbers again and again. A loop that remembers the two latest numbers is much faster. Recursion is often the clearest way to write something down, not always the fastest way to run it.
+
+      ### Smaller strings and lists
+
+      Recursion works whenever a problem has a smaller problem of the same kind inside it. A string without its first character is a shorter string, and a list without its first item is a shorter list. Slices give you those smaller pieces: `text[1:]` and `numbers[1:]`. The base case is often the empty string or the empty list.
+
+      The sum of a list is its first number plus the sum of the rest:
+
+      ```python run
+      def list_sum(numbers):
+          if len(numbers) == 0:
+              return 0
+          return numbers[0] + list_sum(numbers[1:])
+
+
+      print(list_sum([4, 8, 15, 16]))
+      ```
+
+      ```output
+      43
+      ```
+
+      A string reversed is the rest of it reversed, with the first character at the end:
+
+      ```python run
+      def reverse(text):
+          if text == "":
+              return ""
+          return reverse(text[1:]) + text[0]
+
+
+      print(reverse("stressed"))
+      ```
+
+      ```output
+      desserts
+      ```
+
+      A **palindrome** reads the same backwards, like "racecar". A string is a palindrome if its first and last characters are the same and the part between them, `text[1:-1]`, is a palindrome too. A string of 0 or 1 characters is always one:
+
+      ```python run
+      def is_palindrome(text):
+          if len(text) <= 1:
+              return True
+          if text[0] != text[-1]:
+              return False
+          return is_palindrome(text[1:-1])
+
+
+      print(is_palindrome("racecar"))
+      print(is_palindrome("rocket"))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      This one has two base cases: a short string gives `True`, and a mismatch gives `False` straight away, without looking at the rest.
+
+      When you write a recursive function, ask yourself two questions. What is the simplest case, and what's its answer? And how does the answer for a slightly smaller problem help with the whole one?
+
+      **Your turn:** the function counts how many times a character appears in a text. Fill in the blank so the recursive call gets the rest of the text. The program should print:
+
+      ```
+      3
+      0
+      ```
+    fill: |
+      def count_char(text, char):
+          if text == "":
+              return 0
+          if text[0] == char:
+              return 1 + count_char([[text[1:]]], char)
+          return count_char(text[1:], char)
+
+
+      print(count_char("banana", "a"))
+      print(count_char("kiwi", "x"))
+    hints:
+      - The first character has been checked, so the recursive call should look at the rest of the text.
+      - "The text without its first character is the slice `text[1:]`."
+    tests:
+      - expect: |
+          3
+          0
+    more:
+      - task: |
+          Write a recursive function `largest(numbers)` that returns the greatest number in a list that has at least one number. Don't use `max` or a loop: the greatest number is either the first one or the greatest of the rest.
+
+          For example, this call:
+
+          ```python fragment
+          print(largest([3, 9, 4]))
+          ```
+
+          prints:
+
+          ```
+          9
+          ```
+        seed: |
+          def largest(numbers):
+              pass
+
+
+          if __name__ == "__main__":
+              print(largest([3, 9, 4]))
+        solution: |
+          def largest(numbers):
+              if len(numbers) == 1:
+                  return numbers[0]
+              rest = largest(numbers[1:])
+              if numbers[0] > rest:
+                  return numbers[0]
+              return rest
+
+
+          if __name__ == "__main__":
+              print(largest([3, 9, 4]))
+        hints:
+          - "The base case is a list of one number: that number is the greatest."
+          - "Otherwise, find the greatest of the rest with `largest(numbers[1:])` and store it in a variable."
+          - Then return whichever is greater, the first number or the greatest of the rest.
+        require:
+          - pattern: def largest\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\blargest\s*\(
+            message: Make `largest` call itself inside its own body.
+        forbid:
+          - pattern: \bmax\s*\(
+            message: Find the greatest number with recursion, without `max`.
+          - pattern: \b(?:while|for)\b
+            message: Use recursion instead of a loop.
+        tests:
+          - call: print(largest([3, 9, 4]))
+          - call: largest([-5, -2, -9])
+            hidden: true
+          - call: largest([7])
+            hidden: true
+          - call: largest([1, 2, 3, 10])
+            hidden: true
+      - task: |
+          You climb a staircase taking either one or two steps at a time. A staircase of 3 steps can be climbed in 3 different ways: 1 + 1 + 1, 1 + 2 and 2 + 1. Write a recursive function `ways(steps)` that returns the number of different ways to climb a staircase of `steps` steps (at least 1).
+
+          Your first move is either one step or two. After one step, `steps - 1` steps are left, and after two, `steps - 2`. So the number of ways is the ways for `steps - 1` plus the ways for `steps - 2`. A staircase of 1 step can be climbed in 1 way, and one of 2 steps in 2 ways.
+
+          For example, this call:
+
+          ```python fragment
+          print(ways(3))
+          ```
+
+          prints:
+
+          ```
+          3
+          ```
+        seed: |
+          def ways(steps):
+              pass
+
+
+          if __name__ == "__main__":
+              print(ways(3))
+        solution: |
+          def ways(steps):
+              if steps <= 2:
+                  return steps
+              return ways(steps - 1) + ways(steps - 2)
+
+
+          if __name__ == "__main__":
+              print(ways(3))
+        hints:
+          - "There are two base cases: 1 step gives 1 way and 2 steps give 2 ways."
+          - "For a longer staircase, add up two recursive calls: `ways(steps - 1) + ways(steps - 2)`."
+          - "Since the answer for 1 is 1 and for 2 is 2, both base cases can be `if steps <= 2: return steps`."
+        require:
+          - pattern: def ways\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bways\s*\(
+            message: Make `ways` call itself inside its own body.
+        tests:
+          - call: print(ways(3))
+          - call: ways(4)
+            hidden: true
+          - call: ways(1)
+            hidden: true
+          - call: ways(10)
+            hidden: true
+
+  - id: recursion-binary-search
+    slug: binary-search
+    title: Binary search
+    text: |
+      To find out whether a value is in a list, `in` (or a loop) looks at the items one by one from the start. That's a **linear search**. In a list of a million items, it may have to look at all million.
+
+      If the list is sorted, there's a much faster way. Think of guessing a number between 1 and 100 when you're told "higher" or "lower" after each guess. You start with 50, and whatever the answer, half of the numbers are out of the game. **Binary search** does the same with a sorted list:
+
+      1. Look at the item in the middle of the search area.
+      2. If it's the one you're looking for, you're done.
+      3. If it's smaller than what you're looking for, the target can only be in the right half. Search there.
+      4. If it's greater, search the left half.
+      5. If the search area is empty, the value isn't in the list.
+
+      Steps 3 and 4 are the same search on a smaller area, so recursion fits well. The function gets the list, the target and the edges of the search area, `low` and `high`, as indexes. It returns the target's index, or -1 when the target isn't there. A `print` in each call shows how the area shrinks:
+
+      ```python run
+      def find(numbers, target, low, high):
+          if low > high:
+              return -1
+          middle = (low + high) // 2
+          print(f"searching {low}..{high}, middle item {numbers[middle]}")
+          if numbers[middle] == target:
+              return middle
+          if numbers[middle] < target:
+              return find(numbers, target, middle + 1, high)
+          return find(numbers, target, low, middle - 1)
+
+
+      numbers = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91]
+      print(find(numbers, 23, 0, len(numbers) - 1))
+      print(find(numbers, 10, 0, len(numbers) - 1))
+      ```
+
+      ```output
+      searching 0..9, middle item 16
+      searching 5..9, middle item 56
+      searching 5..6, middle item 23
+      5
+      searching 0..9, middle item 16
+      searching 0..3, middle item 5
+      searching 2..3, middle item 8
+      searching 3..3, middle item 12
+      -1
+      ```
+
+      The first call searches the whole list, from index 0 to `len(numbers) - 1`. `(low + high) // 2` is the index in the middle, rounded down. When the middle item is too small, the new area starts at `middle + 1`: the middle item has been checked already, so it's left out. In the second search, the last call gets `low` 3 and `high` 2. The area is empty, and that's the base case that returns -1.
+
+      ### Why it's fast
+
+      Every call halves the search area. A list of 10 items needs at most 4 looks, and a list of a million items needs at most 20, because a million can be halved only about 20 times before a single item is left. A linear search might need a million looks.
+
+      ### A wrapper, and a warning
+
+      So that the people who use the search don't need to think about `low` and `high`, you can wrap it in a function of its own. Here `contains` starts the search on the whole list and turns the index into `True` or `False`. Binary search works on anything sorted, such as words in alphabetical order, since `<` compares strings alphabetically:
+
+      ```python run
+      def find(numbers, target, low, high):
+          if low > high:
+              return -1
+          middle = (low + high) // 2
+          if numbers[middle] == target:
+              return middle
+          if numbers[middle] < target:
+              return find(numbers, target, middle + 1, high)
+          return find(numbers, target, low, middle - 1)
+
+
+      def contains(items, target):
+          return find(items, target, 0, len(items) - 1) != -1
+
+
+      print(contains([2, 5, 8, 12, 16], 12))
+      print(contains(["ant", "bee", "cat", "dog"], "cat"))
+      print(contains([9, 2, 7, 4, 1], 9))
+      ```
+
+      ```output
+      True
+      True
+      False
+      ```
+
+      The last answer is wrong: 9 is in the list. But the list isn't sorted, and binary search trusts the order. It looked at 7 first, decided that 9 could only be on the right, and never saw the 9 at the start. Binary search only works on a sorted list.
+
+      **Your turn:** fill in the blanks with the new edges of the search area: where the right half starts and where the left half ends. The program should print:
+
+      ```
+      5
+      1
+      -1
+      ```
+    fill: |
+      def find(numbers, target, low, high):
+          if low > high:
+              return -1
+          middle = (low + high) // 2
+          if numbers[middle] == target:
+              return middle
+          if numbers[middle] < target:
+              return find(numbers, target, [[middle + 1]], high)
+          return find(numbers, target, low, [[middle - 1]])
+
+
+      numbers = [1, 4, 9, 16, 25, 36, 49]
+      print(find(numbers, 36, 0, 6))
+      print(find(numbers, 4, 0, 6))
+      print(find(numbers, 20, 0, 6))
+    hints:
+      - The middle item has been checked already, so neither half includes it.
+      - "The right half starts just after the middle, at `middle + 1`, and the left half ends just before it, at `middle - 1`."
+    tests:
+      - expect: |
+          5
+          1
+          -1
+    more:
+      - task: |
+          This binary search has a bug. A search for 4 in `[1, 3, 5, 7]` never ends, and Python stops it with a `RecursionError`. Find out why and fix it, so the function returns the target's index, or -1 when the target isn't in the list.
+
+          For example, this call:
+
+          ```python fragment
+          print(find([1, 3, 5, 7], 4, 0, 3))
+          ```
+
+          should print:
+
+          ```
+          -1
+          ```
+        seed: |
+          def find(numbers, target, low, high):
+              if low > high:
+                  return -1
+              middle = (low + high) // 2
+              if numbers[middle] == target:
+                  return middle
+              if numbers[middle] < target:
+                  return find(numbers, target, middle, high)
+              return find(numbers, target, low, middle)
+
+
+          if __name__ == "__main__":
+              print(find([1, 3, 5, 7], 4, 0, 3))
+        solution: |
+          def find(numbers, target, low, high):
+              if low > high:
+                  return -1
+              middle = (low + high) // 2
+              if numbers[middle] == target:
+                  return middle
+              if numbers[middle] < target:
+                  return find(numbers, target, middle + 1, high)
+              return find(numbers, target, low, middle - 1)
+
+
+          if __name__ == "__main__":
+              print(find([1, 3, 5, 7], 4, 0, 3))
+        hints:
+          - "Follow the calls on paper: `low` 0 and `high` 3 give `middle` 1. What are `low` and `high` in the next call, and the one after it?"
+          - The search area stops shrinking, because the middle item, which has been checked already, stays in it. So the same call repeats forever.
+          - "Leave the middle item out of both halves: `middle + 1` and `middle - 1`."
+        tests:
+          - call: print(find([1, 3, 5, 7], 4, 0, 3))
+          - call: find([1, 3, 5, 7], 7, 0, 3)
+            hidden: true
+          - call: find([1, 3, 5, 7], 1, 0, 3)
+            hidden: true
+          - call: find([2, 4, 6, 8, 10], 11, 0, 4)
+            hidden: true
+      - task: |
+          Write a recursive function `find_name(names, name, low, high)` that searches a list of names in alphabetical order with binary search. It returns the index of `name` in the list, or -1 if the name isn't there. Don't use loops, `in` or `index`.
+
+          For example, this program:
+
+          ```python fragment
+          names = ["Ada", "Ben", "Cleo", "Dan", "Eva", "Finn", "Gus"]
+          print(find_name(names, "Eva", 0, len(names) - 1))
+          print(find_name(names, "Bob", 0, len(names) - 1))
+          ```
+
+          prints:
+
+          ```
+          4
+          -1
+          ```
+        seed: |
+          def find_name(names, name, low, high):
+              pass
+
+
+          if __name__ == "__main__":
+              names = ["Ada", "Ben", "Cleo", "Dan", "Eva", "Finn", "Gus"]
+              print(find_name(names, "Eva", 0, len(names) - 1))
+              print(find_name(names, "Bob", 0, len(names) - 1))
+        solution: |
+          def find_name(names, name, low, high):
+              if low > high:
+                  return -1
+              middle = (low + high) // 2
+              if names[middle] == name:
+                  return middle
+              if names[middle] < name:
+                  return find_name(names, name, middle + 1, high)
+              return find_name(names, name, low, middle - 1)
+
+
+          if __name__ == "__main__":
+              names = ["Ada", "Ben", "Cleo", "Dan", "Eva", "Finn", "Gus"]
+              print(find_name(names, "Eva", 0, len(names) - 1))
+              print(find_name(names, "Bob", 0, len(names) - 1))
+        hints:
+          - "Start with the base case: when `low > high`, the search area is empty and the name isn't there."
+          - "Find the middle index with `(low + high) // 2`. If the name there is the one you want, return the index."
+          - "`<` compares strings alphabetically. If the middle name comes before `name`, search from `middle + 1` to `high`, otherwise from `low` to `middle - 1`."
+        require:
+          - pattern: def find_name\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bfind_name\s*\(
+            message: Make `find_name` call itself inside its own body.
+        forbid:
+          - pattern: \b(?:while|for)\b
+            message: Use recursion instead of a loop.
+          - pattern: \bin\b|\.index\s*\(
+            message: Search with binary search, without `in` or `index`.
+        tests:
+          - call: |
+              names = ["Ada", "Ben", "Cleo", "Dan", "Eva", "Finn", "Gus"]
+              print(find_name(names, "Eva", 0, len(names) - 1))
+              print(find_name(names, "Bob", 0, len(names) - 1))
+          - call: |
+              names = ["Ada", "Ben", "Cleo", "Dan", "Eva", "Finn", "Gus"]
+              print(find_name(names, "Ada", 0, 6), find_name(names, "Gus", 0, 6), find_name(names, "Dan", 0, 6))
+            hidden: true
+          - call: find_name(["Kai", "Lea", "Max", "Noa"], "Zoe", 0, 3)
+            hidden: true
+          - call: find_name([], "Ann", 0, -1)
+            hidden: true

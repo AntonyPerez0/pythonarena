@@ -1,0 +1,1153 @@
+id: methods
+summary: Giving your classes methods. Methods that work out values from an object's attributes, methods that change the object, and methods that keep the object's data valid, with helper methods and local variables.
+steps:
+  - id: methods-first
+    slug: first-methods
+    title: Methods in a class
+    text: |
+      A class with only attributes isn't very different from a dictionary. What makes classes useful is that they can also have **methods**: functions that belong to the class and work with the data of its objects. The data and the code that handles it are kept together.
+
+      A method is defined inside the class, as the constructor is, and its first parameter is `self`, the object it is called on:
+
+      ```python run
+      class Room:
+          def __init__(self, name, width, length):
+              self.name = name
+              self.width = width
+              self.length = length
+
+          def area(self):
+              return self.width * self.length
+
+          def describe(self):
+              return f"{self.name}: {self.area()} square meters"
+
+
+      kitchen = Room("Kitchen", 3, 4)
+      print(kitchen.area())
+      kitchen.width = 5
+      print(kitchen.area())
+      print(kitchen.describe())
+      ```
+
+      ```output
+      12
+      20
+      Kitchen: 20 square meters
+      ```
+
+      - The methods are indented inside the class, with one blank line between them.
+      - When you call `kitchen.area()`, Python passes `kitchen` to the method as `self`, so `self.width` inside the method is the kitchen's width.
+      - `area` works out the area from the attributes as they are when it is called. So, unlike an area stored in the constructor, it is never out of date: after the width changes, the next call gives the new area.
+      - A method can call another method of the same object through `self`: `describe` calls `self.area()`.
+
+      ### Methods with parameters
+
+      A method can take arguments after `self`, as any function can:
+
+      ```python run
+      class Product:
+          def __init__(self, name, price):
+              self.name = name
+              self.price = price
+
+          def sale_price(self, percent):
+              return self.price * (100 - percent) / 100
+
+
+      lamp = Product("Desk lamp", 40)
+      print(lamp.sale_price(25))
+      print(lamp.sale_price(10))
+      ```
+
+      ```output
+      30.0
+      36.0
+      ```
+
+      `lamp.sale_price(25)` has one argument in the parentheses, and inside the method `self` is the lamp and `percent` is 25.
+
+      ### Forgetting self
+
+      Every method needs `self` as its first parameter. Leave it out, and the call fails, because Python always passes the object:
+
+      ```python run crash
+      class Room:
+          def __init__(self, width, length):
+              self.width = width
+              self.length = length
+
+          def area():
+              return self.width * self.length
+
+
+      hall = Room(2, 6)
+      print(hall.area())
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          print(hall.area())
+                ~~~~~~~~~^^
+      TypeError: Room.area() takes 0 positional arguments but 1 was given
+      ```
+
+      The "1 given" is the object itself. Inside a method, the attributes also need `self.` in front: a plain `width` is a `NameError`, and Python's message asks "Did you mean: 'self.width'?"
+
+      **Your turn:** fill in the blanks, so that the class has a method `diameter` and the program prints `60`.
+    fill: |
+      class Circle:
+          def __init__(self, radius):
+              self.radius = radius
+
+          def diameter([[self]]):
+              return 2 * [[self.radius]]
+
+
+      wheel = Circle(30)
+      print(wheel.[[diameter()]])
+    hints:
+      - Every method has the object itself as its first parameter.
+      - "Inside the method, the radius is the object's attribute: `self.radius`."
+      - "To call the method, write its name with parentheses after the dot: `wheel.diameter()`."
+    tests:
+      - expect: "60"
+    more:
+      - task: |
+          Write a class `Temperature` whose constructor takes a temperature in degrees Celsius and stores it in the attribute `celsius`. Give it two methods:
+
+          - `fahrenheit()` returns the temperature in degrees Fahrenheit: the Celsius degrees times 9, divided by 5, plus 32.
+          - `is_freezing()` returns `True` when the temperature is 0 degrees Celsius or less, and `False` otherwise.
+
+          This code:
+
+          ```python fragment
+          noon = Temperature(25)
+          night = Temperature(-10)
+          print(noon.fahrenheit(), noon.is_freezing())
+          print(night.fahrenheit(), night.is_freezing())
+          ```
+
+          prints
+
+          ```
+          77.0 False
+          14.0 True
+          ```
+        seed: |
+          class Temperature:
+              def __init__(self, celsius):
+                  self.celsius = celsius
+
+              # Write the methods here.
+
+
+          if __name__ == "__main__":
+              noon = Temperature(25)
+              print(noon.fahrenheit(), noon.is_freezing())
+        solution: |
+          class Temperature:
+              def __init__(self, celsius):
+                  self.celsius = celsius
+
+              def fahrenheit(self):
+                  return self.celsius * 9 / 5 + 32
+
+              def is_freezing(self):
+                  return self.celsius <= 0
+
+
+          if __name__ == "__main__":
+              noon = Temperature(25)
+              print(noon.fahrenheit(), noon.is_freezing())
+        hints:
+          - "Each method starts like `def fahrenheit(self):`, indented inside the class at the same level as `__init__`."
+          - "Use the attribute in the calculation: `return self.celsius * 9 / 5 + 32`."
+          - "A comparison is already `True` or `False`, so `is_freezing` can return it: `return self.celsius <= 0`."
+        tests:
+          - call: |
+              noon = Temperature(25)
+              night = Temperature(-10)
+              print(noon.fahrenheit(), noon.is_freezing())
+              print(night.fahrenheit(), night.is_freezing())
+          - call: |
+              t = Temperature(0)
+              print(t.fahrenheit(), t.is_freezing())
+              t.celsius = 100
+              print(t.fahrenheit(), t.is_freezing())
+            hidden: true
+          - call: Temperature(37).fahrenheit()
+            hidden: true
+      - task: |
+          Write a class `Password` whose constructor stores the password in the attribute `text`. Give it three methods:
+
+          - `length()` returns the number of characters in the password.
+          - `has_digit()` returns `True` when the password has at least one digit (0 to 9) in it.
+          - `is_strong()` returns `True` when the password is at least 8 characters long and has a digit. Use the other two methods to find that out.
+
+          This code:
+
+          ```python fragment
+          weak = Password("sunshine")
+          strong = Password("tr4in-ride")
+          print(weak.length(), weak.has_digit(), weak.is_strong())
+          print(strong.length(), strong.has_digit(), strong.is_strong())
+          ```
+
+          prints
+
+          ```
+          8 False False
+          10 True True
+          ```
+        seed: |
+          class Password:
+              def __init__(self, text):
+                  self.text = text
+
+              # Write the methods here.
+
+
+          if __name__ == "__main__":
+              weak = Password("sunshine")
+              print(weak.length(), weak.has_digit(), weak.is_strong())
+        solution: |
+          class Password:
+              def __init__(self, text):
+                  self.text = text
+
+              def length(self):
+                  return len(self.text)
+
+              def has_digit(self):
+                  for char in self.text:
+                      if char in "0123456789":
+                          return True
+                  return False
+
+              def is_strong(self):
+                  return self.length() >= 8 and self.has_digit()
+
+
+          if __name__ == "__main__":
+              weak = Password("sunshine")
+              print(weak.length(), weak.has_digit(), weak.is_strong())
+        hints:
+          - "`length` returns `len(self.text)`."
+          - "In `has_digit`, go through the characters with `for char in self.text:` and return `True` as soon as one is `in \"0123456789\"`. After the loop, return `False`."
+          - "`is_strong` calls the other methods through `self`: `self.length() >= 8 and self.has_digit()`."
+        require:
+          - pattern: self\.has_digit\(\)
+            message: "Use the method `has_digit` in `is_strong`: call it with `self.has_digit()`."
+        tests:
+          - call: |
+              weak = Password("sunshine")
+              strong = Password("tr4in-ride")
+              print(weak.length(), weak.has_digit(), weak.is_strong())
+              print(strong.length(), strong.has_digit(), strong.is_strong())
+          - call: |
+              for text in ["abc1", "12345678", "", "longpasswordbutnodigits", "9lives-of-a-cat"]:
+                  p = Password(text)
+                  print(p.length(), p.has_digit(), p.is_strong())
+            hidden: true
+
+  - id: methods-state
+    slug: changing-state
+    title: Methods that change the object
+    text: |
+      The values of an object's attributes at any moment are called its **state**. A method can change the state, and it's the usual way to do it. Here is a counter:
+
+      ```python run
+      class Counter:
+          def __init__(self):
+              self.value = 0
+
+          def increase(self):
+              self.value += 1
+
+          def add(self, amount):
+              self.value += amount
+
+          def reset(self):
+              self.value = 0
+
+
+      clicks = Counter()
+      clicks.increase()
+      clicks.increase()
+      clicks.add(10)
+      print(clicks.value)
+      clicks.reset()
+      print(clicks.value)
+      ```
+
+      ```output
+      12
+      0
+      ```
+
+      These methods don't return anything: their whole job is to change the object. They change the object that they are called on, and only that one:
+
+      ```python run
+      class Counter:
+          def __init__(self):
+              self.value = 0
+
+          def increase(self):
+              self.value += 1
+
+
+      home = Counter()
+      away = Counter()
+      home.increase()
+      home.increase()
+      away.increase()
+      print(home.value, away.value)
+      ```
+
+      ```output
+      2 1
+      ```
+
+      `home.increase()` runs the method with `self` as `home`, so `self.value += 1` adds to the home counter. The away counter has a value of its own.
+
+      ### One call, every update
+
+      A method can update several attributes at once, so that they always fit together. A car that drives also uses fuel:
+
+      ```python run
+      class Car:
+          def __init__(self, fuel, consumption):
+              self.fuel = fuel
+              self.consumption = consumption
+              self.odometer = 0
+
+          def drive(self, km):
+              self.odometer += km
+              self.fuel -= km * self.consumption / 100
+
+          def km_left(self):
+              return self.fuel / self.consumption * 100
+
+
+      car = Car(40, 5)
+      car.drive(120)
+      car.drive(80)
+      print(car.odometer, car.fuel)
+      print(car.km_left())
+      ```
+
+      ```output
+      200 30.0
+      600.0
+      ```
+
+      (`fuel` is in liters and `consumption` in liters per 100 km.) The rest of the program only says `car.drive(120)`. It doesn't need to know how the fuel is worked out, and it can't forget to update one of the attributes. This is the big idea of object-oriented programming: the class takes care of its own data.
+
+      A method can also change the state and return something, as the list method `pop` does: it removes an item and gives it to you.
+
+      ### Naming methods
+
+      Name a method after what it does. A method that changes the object usually gets a verb: `increase`, `drive`, `reset`. A method that only gives an answer is named after the answer, such as `area` or `km_left`, or it starts with `is_` when the answer is yes or no: `is_empty`. Then the client code reads almost like a sentence: `car.drive(120)`, `if counter.is_empty():`.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Lamp:
+          def __init__(self):
+              self.on = False
+              self.switches = 0
+
+          def toggle(self):
+              self.on = not self.on
+              self.switches += 1
+
+
+      desk = Lamp()
+      hall = Lamp()
+      desk.toggle()
+      desk.toggle()
+      hall.toggle()
+      print(desk.on, desk.switches)
+      print(hall.on, hall.switches)
+    hints:
+      - Every lamp starts off, with no switches, and each lamp keeps its own state.
+      - "`not self.on` turns `False` into `True` and back, so two toggles bring the desk lamp back to off."
+      - The hall lamp was toggled once.
+    more:
+      - task: |
+          Write a class `PiggyBank`. A new piggy bank has the attribute `cents` set to 0. Give it these methods:
+
+          - `insert(cents)` adds the coins to the bank.
+          - `euros()` returns how many euros the bank holds: the cents divided by 100.
+          - `smash()` returns all the cents in the bank, and leaves the bank empty.
+
+          This code:
+
+          ```python fragment
+          bank = PiggyBank()
+          bank.insert(50)
+          bank.insert(200)
+          print(bank.cents, bank.euros())
+          print(bank.smash())
+          print(bank.cents)
+          ```
+
+          prints
+
+          ```
+          250 2.5
+          250
+          0
+          ```
+        seed: |
+          class PiggyBank:
+              pass
+
+
+          if __name__ == "__main__":
+              bank = PiggyBank()
+              bank.insert(50)
+              print(bank.cents)
+        solution: |
+          class PiggyBank:
+              def __init__(self):
+                  self.cents = 0
+
+              def insert(self, cents):
+                  self.cents += cents
+
+              def euros(self):
+                  return self.cents / 100
+
+              def smash(self):
+                  amount = self.cents
+                  self.cents = 0
+                  return amount
+
+
+          if __name__ == "__main__":
+              bank = PiggyBank()
+              bank.insert(50)
+              print(bank.cents)
+        hints:
+          - "The constructor has only `self` as a parameter and sets `self.cents = 0`."
+          - "`insert` adds its parameter to `self.cents`, and `euros` returns `self.cents / 100`."
+          - "`smash` has to remember the amount before it empties the bank: store `self.cents` in a variable, set `self.cents = 0`, then return the variable."
+        tests:
+          - call: |
+              bank = PiggyBank()
+              bank.insert(50)
+              bank.insert(200)
+              print(bank.cents, bank.euros())
+              print(bank.smash())
+              print(bank.cents)
+          - call: |
+              mine = PiggyBank()
+              yours = PiggyBank()
+              mine.insert(20)
+              yours.insert(500)
+              mine.insert(5)
+              print(mine.euros(), yours.euros())
+              print(yours.smash(), yours.smash())
+              print(mine.cents, yours.cents)
+            hidden: true
+      - task: |
+          Write a class `Reading` that keeps track of reading a book. Its constructor takes the book's title and its number of pages, and stores them in the attributes `title` and `pages`. It also sets the attribute `page`, the page the reader is on, to 0. Give it these methods:
+
+          - `read(pages)` moves the reader forward that many pages. (You can assume it never goes past the end.)
+          - `percent()` returns how much of the book has been read, as a whole number of percent: use `round`.
+          - `finished()` returns `True` when the reader is on the last page.
+
+          This code:
+
+          ```python fragment
+          book = Reading("Moby-Dick", 600)
+          book.read(150)
+          print(book.page, book.percent(), book.finished())
+          book.read(400)
+          book.read(50)
+          print(book.page, book.percent(), book.finished())
+          ```
+
+          prints
+
+          ```
+          150 25 False
+          600 100 True
+          ```
+        seed: |
+          class Reading:
+              def __init__(self, title, pages):
+                  self.title = title
+
+
+          if __name__ == "__main__":
+              book = Reading("Moby-Dick", 600)
+              book.read(150)
+              print(book.page, book.percent(), book.finished())
+        solution: |
+          class Reading:
+              def __init__(self, title, pages):
+                  self.title = title
+                  self.pages = pages
+                  self.page = 0
+
+              def read(self, pages):
+                  self.page += pages
+
+              def percent(self):
+                  return round(self.page / self.pages * 100)
+
+              def finished(self):
+                  return self.page == self.pages
+
+
+          if __name__ == "__main__":
+              book = Reading("Moby-Dick", 600)
+              book.read(150)
+              print(book.page, book.percent(), book.finished())
+        hints:
+          - "The constructor stores both arguments and sets `self.page = 0`."
+          - "The method's parameter `pages` and the attribute `self.pages` are different variables: `read` adds the parameter to `self.page`."
+          - "`percent` returns `round(self.page / self.pages * 100)`, and `finished` compares `self.page` with `self.pages`."
+        tests:
+          - call: |
+              book = Reading("Moby-Dick", 600)
+              book.read(150)
+              print(book.page, book.percent(), book.finished())
+              book.read(400)
+              book.read(50)
+              print(book.page, book.percent(), book.finished())
+          - call: |
+              short = Reading("The Lottery", 9)
+              print(short.title, short.pages, short.page, short.percent())
+              short.read(2)
+              print(short.percent(), short.finished())
+              short.read(7)
+              print(short.percent(), short.finished())
+            hidden: true
+
+  - id: methods-encapsulation
+    slug: keeping-it-valid
+    title: Keeping the object valid
+    text: |
+      The code that uses an object is called its **client**. The client asks the object to do things by calling its methods. That gives the methods a chance to make sure that the object's state always makes sense: a stock count is never negative, a volume knob stays between its lowest and highest setting.
+
+      Here is a counter that counts down but never goes below zero, not even when it is made with a negative number:
+
+      ```python run
+      class Countdown:
+          def __init__(self, start):
+              self.value = 0
+              if start > 0:
+                  self.value = start
+
+          def decrease(self):
+              if self.value > 0:
+                  self.value -= 1
+
+
+      timer = Countdown(2)
+      for i in range(4):
+          timer.decrease()
+          print(timer.value)
+
+      broken = Countdown(-5)
+      print(broken.value)
+      ```
+
+      ```output
+      1
+      0
+      0
+      0
+      0
+      ```
+
+      A method that can't do what was asked can also tell the client so, by returning `True` or `False`:
+
+      ```python run
+      class Stock:
+          def __init__(self, item, amount):
+              self.item = item
+              self.amount = amount
+
+          def take(self, count):
+              if count <= self.amount:
+                  self.amount -= count
+                  return True
+              return False
+
+
+      paint = Stock("paint can", 5)
+      print(paint.take(3), paint.amount)
+      print(paint.take(3), paint.amount)
+      ```
+
+      ```output
+      True 2
+      False 2
+      ```
+
+      The second time, there aren't enough cans, so `take` changes nothing and returns `False`. The client can then decide what to do, such as print a message.
+
+      When a request makes no sense at all, the method can raise an error, as you learned in part 6:
+
+      ```python run crash
+      class Stock:
+          def __init__(self, item, amount):
+              self.item = item
+              self.amount = amount
+
+          def add(self, count):
+              if count < 0:
+                  raise ValueError("count can't be negative")
+              self.amount += count
+
+
+      paint = Stock("paint can", 5)
+      paint.add(4)
+      print(paint.amount)
+      paint.add(-10)
+      ```
+
+      ```output
+      9
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 15, in <module>
+          paint.add(-10)
+          ~~~~~~~~~^^^^^
+        File "main.py", line 8, in add
+          raise ValueError("count can't be negative")
+      ValueError: count can't be negative
+      ```
+
+      ### Encapsulation
+
+      Keeping an object's data valid by handling it only through the object's methods is called **encapsulation**. The client calls `take` and `add` and doesn't need to know how the stock is kept inside the object.
+
+      Python doesn't force this, though: a client can still write `paint.amount = -10`, and nothing stops it. The methods protect the object only when the client uses them. The Encapsulation module in part 9 shows how a class can hide its attributes; until then, change an object's state through its methods.
+
+      **Your turn:** the volume of this radio should stay between 0 and 10. Fill in the conditions, so that `up` and `down` never take it past those limits and the program prints:
+
+      ```
+      10
+      0
+      ```
+    fill: |
+      class Volume:
+          def __init__(self):
+              self.level = 5
+
+          def up(self):
+              if self.level [[< 10‖<= 9]]:
+                  self.level += 1
+
+          def down(self):
+              if self.level [[> 0‖>= 1]]:
+                  self.level -= 1
+
+
+      radio = Volume()
+      for i in range(8):
+          radio.up()
+      print(radio.level)
+      for i in range(12):
+          radio.down()
+      print(radio.level)
+    hints:
+      - "`up` may add one only while the level is below the highest setting, 10."
+      - "`down` may take one away only while the level is above 0: `> 0`."
+    tests:
+      - expect: |
+          10
+          0
+    more:
+      - task: |
+          Write a class `Battery`. A new battery has the attribute `charge` set to 100 (percent). Give it two methods:
+
+          - `use(amount)` uses that much charge and returns `True`, when the battery has at least that much left. If it doesn't, the charge stays as it was and the method returns `False`.
+          - `recharge(amount)` adds that much charge, but never more than up to 100.
+
+          This code:
+
+          ```python fragment
+          phone = Battery()
+          print(phone.use(70), phone.charge)
+          print(phone.use(40), phone.charge)
+          phone.recharge(50)
+          print(phone.charge)
+          phone.recharge(50)
+          print(phone.charge)
+          ```
+
+          prints
+
+          ```
+          True 30
+          False 30
+          80
+          100
+          ```
+        seed: |
+          class Battery:
+              def __init__(self):
+                  self.charge = 100
+
+
+          if __name__ == "__main__":
+              phone = Battery()
+              print(phone.use(70), phone.charge)
+        solution: |
+          class Battery:
+              def __init__(self):
+                  self.charge = 100
+
+              def use(self, amount):
+                  if amount <= self.charge:
+                      self.charge -= amount
+                      return True
+                  return False
+
+              def recharge(self, amount):
+                  self.charge += amount
+                  if self.charge > 100:
+                      self.charge = 100
+
+
+          if __name__ == "__main__":
+              phone = Battery()
+              print(phone.use(70), phone.charge)
+        hints:
+          - "In `use`, check first: `if amount <= self.charge:`. Only then take the amount away and return `True`. Otherwise return `False`."
+          - "In `recharge`, add the amount, then set the charge back to 100 if it went over."
+        tests:
+          - call: |
+              phone = Battery()
+              print(phone.use(70), phone.charge)
+              print(phone.use(40), phone.charge)
+              phone.recharge(50)
+              print(phone.charge)
+              phone.recharge(50)
+              print(phone.charge)
+          - call: |
+              b = Battery()
+              print(b.use(100), b.charge)
+              print(b.use(1), b.charge)
+              b.recharge(250)
+              print(b.charge)
+              print(b.use(101), b.use(15), b.charge)
+            hidden: true
+      - task: |
+          Write a class `Thermostat` whose constructor takes the target temperature and stores it in the attribute `target`. When no temperature is given, it is 20. The target must always stay between 5 and 30 degrees, both included. Give the class these methods:
+
+          - `warmer()` raises the target by one degree, but not above 30.
+          - `cooler()` lowers the target by one degree, but not below 5.
+          - `set(degrees)` sets the target to the given degrees. If they are below 5 or above 30, it changes nothing and raises a `ValueError` instead.
+
+          This code:
+
+          ```python fragment
+          home = Thermostat()
+          home.warmer()
+          print(home.target)
+          home.set(30)
+          home.warmer()
+          print(home.target)
+          try:
+              home.set(45)
+          except ValueError:
+              print("Not allowed")
+          print(home.target)
+          ```
+
+          prints
+
+          ```
+          21
+          30
+          Not allowed
+          30
+          ```
+        seed: |
+          class Thermostat:
+              pass
+
+
+          if __name__ == "__main__":
+              home = Thermostat()
+              home.warmer()
+              print(home.target)
+        solution: |
+          class Thermostat:
+              def __init__(self, target=20):
+                  self.target = target
+
+              def warmer(self):
+                  if self.target < 30:
+                      self.target += 1
+
+              def cooler(self):
+                  if self.target > 5:
+                      self.target -= 1
+
+              def set(self, degrees):
+                  if degrees < 5 or degrees > 30:
+                      raise ValueError("the target must be between 5 and 30")
+                  self.target = degrees
+
+
+          if __name__ == "__main__":
+              home = Thermostat()
+              home.warmer()
+              print(home.target)
+        hints:
+          - "The constructor has a default value: `def __init__(self, target=20):`."
+          - "`warmer` adds one only `if self.target < 30`, and `cooler` takes one away only `if self.target > 5`."
+          - "In `set`, check the degrees first and `raise ValueError(\"...\")` when they're out of range. The line that changes the target comes after the check, so it never runs for a bad value."
+        tests:
+          - call: |
+              home = Thermostat()
+              home.warmer()
+              print(home.target)
+              home.set(30)
+              home.warmer()
+              print(home.target)
+              try:
+                  home.set(45)
+              except ValueError:
+                  print("Not allowed")
+              print(home.target)
+          - call: |
+              cabin = Thermostat(7)
+              for i in range(4):
+                  cabin.cooler()
+              print(cabin.target)
+              try:
+                  cabin.set(4)
+              except ValueError:
+                  print("Not allowed")
+              print(cabin.target)
+              cabin.set(5)
+              cabin.warmer()
+              print(cabin.target)
+            hidden: true
+          - call: |
+              t = Thermostat(29)
+              t.warmer()
+              t.warmer()
+              t.cooler()
+              print(t.target)
+              t.set(18)
+              print(t.target)
+            hidden: true
+
+  - id: methods-helpers
+    slug: helper-methods
+    title: Helper methods and local variables
+    text: |
+      As a class grows, some of its methods are there only to help the others. A **helper method** is called through `self`, from the constructor or from another method. This booking class checks its arguments with one:
+
+      ```python run
+      class Booking:
+          def __init__(self, name, guests, nights):
+              self.name = name
+              self.guests = 1
+              self.nights = 1
+              if self.in_range(guests, 8):
+                  self.guests = guests
+              if self.in_range(nights, 30):
+                  self.nights = nights
+
+          def in_range(self, number, largest):
+              return 1 <= number <= largest
+
+          def price(self):
+              per_night = 50 + 20 * (self.guests - 1)
+              return per_night * self.nights
+
+
+      kim = Booking("Kim", 3, 2)
+      lee = Booking("Lee", 12, 0)
+      print(kim.guests, kim.nights, kim.price())
+      print(lee.guests, lee.nights, lee.price())
+      ```
+
+      ```output
+      3 2 180
+      1 1 50
+      ```
+
+      The constructor first gives every attribute a safe value, then uses `self.in_range` to decide whether the arguments can replace them. Lee's booking had impossible numbers, so it keeps the safe ones. Forget the `self.` in front of a helper method, and Python stops with `NameError: name 'in_range' is not defined. Did you mean: 'self.in_range'?`
+
+      ### Local variables
+
+      Look at `per_night` in `price`. It has no `self.` in front, so it is an ordinary **local variable**: it exists only while the method runs, like a variable inside any function. Use attributes for what the object must remember from one call to the next, and local variables for the steps of a calculation.
+
+      ### Remembering just enough
+
+      A class that collects numbers doesn't always need to keep them all. To know how many numbers there were and their mean, a count and a total are enough:
+
+      ```python run
+      class Tally:
+          def __init__(self):
+              self.count = 0
+              self.total = 0
+
+          def add(self, number):
+              self.count += 1
+              self.total += number
+
+          def mean(self):
+              if self.count == 0:
+                  return 0
+              return self.total / self.count
+
+
+      steps = Tally()
+      while True:
+          line = input("Steps today: ")
+          if line == "":
+              break
+          steps.add(int(line))
+
+      print("Days:", steps.count)
+      print("Mean:", steps.mean())
+      ```
+
+      ```input
+      4200
+      9800
+      7000
+
+      ```
+
+      ```output
+      Steps today: 4200
+      Steps today: 9800
+      Steps today: 7000
+      Steps today:
+      Days: 3
+      Mean: 7000.0
+      ```
+
+      The main program reads the input and the `Tally` object does the bookkeeping. `mean` checks for zero first, so that a tally with no numbers never divides by zero.
+
+      **Your turn:** this class has two mistakes, both in how it calls its own methods. Fix them, so that the program prints:
+
+      ```
+      Ann 42 70 True
+      Bo 0 0 False
+      ```
+    seed: |
+      class Exam:
+          def __init__(self, student, points):
+              self.student = student
+              self.points = 0
+              if valid(points):
+                  self.points = points
+
+          def valid(self, points):
+              return 0 <= points <= 60
+
+          def percent(self):
+              share = self.points / 60 * 100
+              return round(share)
+
+          def passed(self):
+              return percent() >= 50
+
+
+      ann = Exam("Ann", 42)
+      bo = Exam("Bo", 75)
+      print(ann.student, ann.points, ann.percent(), ann.passed())
+      print(bo.student, bo.points, bo.percent(), bo.passed())
+    solution: |
+      class Exam:
+          def __init__(self, student, points):
+              self.student = student
+              self.points = 0
+              if self.valid(points):
+                  self.points = points
+
+          def valid(self, points):
+              return 0 <= points <= 60
+
+          def percent(self):
+              share = self.points / 60 * 100
+              return round(share)
+
+          def passed(self):
+              return self.percent() >= 50
+
+
+      ann = Exam("Ann", 42)
+      bo = Exam("Bo", 75)
+      print(ann.student, ann.points, ann.percent(), ann.passed())
+      print(bo.student, bo.points, bo.percent(), bo.passed())
+    hints:
+      - Check it and read the error. Python even suggests the fix.
+      - "A method of the same object is called through `self`: `self.valid(points)`."
+      - "The second mistake is in `passed`, which calls `percent` the same wrong way."
+    tests:
+      - expect: |
+          Ann 42 70 True
+          Bo 0 0 False
+    more:
+      - task: |
+          Write a class `Expenses` that keeps track of money spent. Give it these methods:
+
+          - `add(amount)` records one expense.
+          - `count()` returns how many expenses have been recorded.
+          - `total()` returns their sum.
+          - `largest()` returns the largest expense, or 0 when there are none.
+
+          Decide yourself which attributes the class needs, but don't give an attribute the same name as a method: `self.count = 0` would hide the method `count`. This code:
+
+          ```python fragment
+          trip = Expenses()
+          trip.add(12.5)
+          trip.add(40)
+          trip.add(7.5)
+          print(trip.count(), trip.total(), trip.largest())
+          ```
+
+          prints
+
+          ```
+          3 60.0 40
+          ```
+        seed: |
+          class Expenses:
+              pass
+
+
+          if __name__ == "__main__":
+              trip = Expenses()
+              trip.add(12.5)
+              trip.add(40)
+              print(trip.count(), trip.total(), trip.largest())
+        solution: |
+          class Expenses:
+              def __init__(self):
+                  self.number = 0
+                  self.sum = 0
+                  self.biggest = 0
+
+              def add(self, amount):
+                  self.number += 1
+                  self.sum += amount
+                  if amount > self.biggest:
+                      self.biggest = amount
+
+              def count(self):
+                  return self.number
+
+              def total(self):
+                  return self.sum
+
+              def largest(self):
+                  return self.biggest
+
+
+          if __name__ == "__main__":
+              trip = Expenses()
+              trip.add(12.5)
+              trip.add(40)
+              print(trip.count(), trip.total(), trip.largest())
+        hints:
+          - "The constructor sets up what the object must remember: how many expenses, their sum and the largest so far, all 0 at the start."
+          - "`add` updates all three. The largest changes only when the new amount is bigger than the largest so far."
+          - "An attribute can't have the same name as a method of the class: `self.count = 0` would hide the method `count`. Name the attributes something else, such as `self.number`."
+        tests:
+          - call: |
+              trip = Expenses()
+              trip.add(12.5)
+              trip.add(40)
+              trip.add(7.5)
+              print(trip.count(), trip.total(), trip.largest())
+          - call: |
+              empty = Expenses()
+              print(empty.count(), empty.total(), empty.largest())
+              week = Expenses()
+              for amount in [3, 18, 2, 18, 9]:
+                  week.add(amount)
+              print(week.count(), week.total(), week.largest())
+              print(empty.count())
+            hidden: true
+      - task: |
+          The starter code has the class `Tally` from the lesson. Write the main program below it: it asks for the lengths of workouts in minutes, until the user types an empty line. Use two `Tally` objects: one for all the workouts and one for the long workouts, those of 60 minutes or more. At the end, print how many workouts of each kind there were and their mean, as in this example:
+
+          ```
+          Minutes: 30
+          Minutes: 75
+          Minutes: 45
+          Minutes: 90
+          Minutes:
+          All workouts: 4, mean 60.0
+          Long workouts: 2, mean 82.5
+          ```
+        seed: |
+          class Tally:
+              def __init__(self):
+                  self.count = 0
+                  self.total = 0
+
+              def add(self, number):
+                  self.count += 1
+                  self.total += number
+
+              def mean(self):
+                  if self.count == 0:
+                      return 0
+                  return self.total / self.count
+
+
+          # Write the main program here.
+        solution: |
+          class Tally:
+              def __init__(self):
+                  self.count = 0
+                  self.total = 0
+
+              def add(self, number):
+                  self.count += 1
+                  self.total += number
+
+              def mean(self):
+                  if self.count == 0:
+                      return 0
+                  return self.total / self.count
+
+
+          all_workouts = Tally()
+          long_workouts = Tally()
+          while True:
+              line = input("Minutes: ")
+              if line == "":
+                  break
+              minutes = int(line)
+              all_workouts.add(minutes)
+              if minutes >= 60:
+                  long_workouts.add(minutes)
+
+          print(f"All workouts: {all_workouts.count}, mean {all_workouts.mean()}")
+          print(f"Long workouts: {long_workouts.count}, mean {long_workouts.mean()}")
+        hints:
+          - "Make the two objects before the loop: `all_workouts = Tally()` and `long_workouts = Tally()`."
+          - "Read with a `while True:` loop and `break` when the line is empty. Add every workout to the first tally, and only those of 60 minutes or more to the second."
+          - "Print with f-strings: `f\"All workouts: {all_workouts.count}, mean {all_workouts.mean()}\"`."
+        require:
+          - pattern: Tally\(\)
+            min: 2
+            message: Make two `Tally` objects, one for all the workouts and one for the long ones.
+        tests:
+          - stdin: "30\n75\n45\n90\n\n"
+          - stdin: "20\n15\n\n"
+            hidden: true
+          - stdin: "120\n60\n59\n61\n\n"
+            hidden: true

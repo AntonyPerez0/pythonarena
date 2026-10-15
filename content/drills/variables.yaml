@@ -1,0 +1,167 @@
+topic: variables
+drills:
+  - type: predict
+    after: changing-values
+    code: |
+      color = "red"
+      color = "blue"
+      print(color)
+    why: "Each assignment replaces the old value, so `color` holds only the latest one, `blue`."
+
+  - type: predict
+    after: changing-values
+    code: |
+      word = "ha"
+      word = word + word
+      print(word)
+    why: "The right side is worked out first with the old value: `\"ha\" + \"ha\"` is `haha`, and that is stored back in `word`."
+
+  - type: bug
+    after: changing-values
+    code: |
+      word = "wow"
+      word + "!"  # BUG
+      print(word)
+    fix: word = word + "!"
+    why: "`word + \"!\"` builds a new string but doesn't store it anywhere, so `word` stays as it was. Assign the result back: `word = word + \"!\"`."
+
+  - type: predict
+    after: changing-values
+    code: |
+      pet = "cat"
+      text = "My " + pet
+      pet = "dog"
+      print(text)
+    why: "`text` was built while `pet` was still `cat`. Changing `pet` later doesn't change the finished string."
+
+  - type: predict
+    after: integers
+    code: |
+      print(2 + 3)
+      print("2" + "3")
+    why: "`+` adds integers, but joins strings: `\"2\" + \"3\"` is the string `23`."
+
+  - type: runs
+    after: integers
+    code: |
+      price = "10"
+      print(price / 2)
+    why: "`price` holds a string, because of the quotes, and a string can't be divided. Python stops with a `TypeError`."
+
+  - type: runs
+    after: combining-values
+    code: |
+      age = 30
+      print("Age: " + age)
+    why: "`+` can't join an integer to a string, so Python stops with a `TypeError`. Use `str(age)`, a comma or an f-string."
+
+  - type: runs
+    after: combining-values
+    code: |
+      age = 30
+      print("Age: " + str(age))
+    why: "`str(age)` turns the integer into the string `\"30\"`, and two strings join fine. It prints `Age: 30`."
+
+  - type: fill
+    after: combining-values
+    code: |
+      level = 4
+      print("Level " + [[str]](level))
+    why: "`str` turns the number into a string, so `+` can join it to the text."
+
+  - type: predict
+    after: combining-values
+    code: |
+      n = 5
+      print("n is", n, "!")
+      print("n is " + str(n) + "!")
+    why: "Commas put a space between the values, so the first line has a space before the `!`. Joining with `+` adds no spaces."
+
+  - type: predict
+    after: combining-values
+    code: |
+      print("Ready", end="")
+      print("Go")
+    why: "`end=\"\"` ends the first `print` with nothing instead of a line break, so the second `print` continues on the same line."
+
+  - type: predict
+    after: f-strings
+    code: |
+      a = 3
+      b = 4
+      print(f"{a} + {b} = {a + b}")
+    why: "In an f-string, each pair of curly brackets is replaced by the value inside it, and `{a + b}` is calculated first."
+
+  - type: bug
+    after: f-strings
+    code: |
+      city = "Oslo"
+      print("Welcome to {city}!")  # BUG
+    fix: print(f"Welcome to {city}!")
+    why: "Without the `f` before the quote, the string is an ordinary one and the brackets are printed as they are."
+
+  - type: choice
+    after: f-strings
+    prompt: "`name` holds `Ada` and `age` holds `36`. Which line prints `Ada is 36.` exactly?"
+    choices:
+      - "`print(name, \"is\", age, \".\")`"
+      - "`print(f\"{name} is {age}.\")`"
+      - "`print(\"{name} is {age}.\")`"
+    answer: 2
+    why: "The commas add a space before the full stop, and without the `f` the brackets are printed as they are. The f-string prints exactly what it says."
+
+  - type: predict
+    after: floats
+    code: |
+      print(10 / 4)
+      print(10 / 5)
+    why: "`/` always gives a float, so even `10 / 5` is `2.0`, with a decimal point."
+
+  - type: predict
+    after: floats
+    code: |
+      print(2,5)
+      print(2.5)
+    why: "Python writes decimals with a point. A comma separates two values, so the first line prints 2 and 5 with a space between."
+
+  - type: choice
+    after: floats
+    prompt: Which of these values is a float?
+    choices:
+      - "`\"2.5\"`"
+      - "`2.5`"
+      - "`25`"
+    answer: 2
+    why: "A float is a number with a decimal point, without quotes. `\"2.5\"` is a string and `25` is an integer."
+
+  - type: boss
+    after: floats
+    prompt: |
+      The variables hold the width and the length of a room in meters. Add lines that print the room's size, its area and its perimeter, with f-strings and calculated from the variables:
+
+      ```
+      Room: 4.5 x 3.0
+      Area: 13.5
+      Perimeter: 15.0
+      ```
+    seed: |
+      width = 4.5
+      length = 3.0
+    solution: |
+      width = 4.5
+      length = 3.0
+      print(f"Room: {width} x {length}")
+      print(f"Area: {width * length}")
+      print(f"Perimeter: {2 * width + 2 * length}")
+    hints:
+      - The area is the width times the length.
+      - "The perimeter goes around all four walls: two widths and two lengths, `2 * width + 2 * length`."
+    forbid:
+      - pattern: 13\.5|15\.0
+        raw: true
+        message: Let Python calculate the area and the perimeter from the variables.
+    tests:
+      - expect: |
+          Room: 4.5 x 3.0
+          Area: 13.5
+          Perimeter: 15.0

@@ -1,0 +1,1245 @@
+id: objects-as-attributes
+summary: Objects made of other objects. An object as an attribute, when you need an import, a list of objects inside an object, and `None` for "no object here".
+steps:
+  - id: objects-as-attributes-object
+    slug: object-in-object
+    title: An object as an attribute
+    text: |
+      You have already given objects lists as attributes. An attribute can just as well refer to an object of a class you wrote yourself. That's how a program models things that belong together: a book has an author, an order has a customer, a car has an engine.
+
+      ```python run
+      class Author:
+          def __init__(self, name, country):
+              self.name = name
+              self.country = country
+
+
+      class Book:
+          def __init__(self, title, author):
+              self.title = title
+              self.author = author
+
+
+      writer = Author("Ana Lind", "Sweden")
+      novel = Book("The Quiet Sea", writer)
+      poems = Book("Salt and Stone", writer)
+
+      print(novel.title)
+      print(novel.author.name)
+      print(poems.author.country)
+      ```
+
+      ```output
+      The Quiet Sea
+      Ana Lind
+      Sweden
+      ```
+
+      Read `novel.author.name` from left to right, one dot at a time:
+
+      - `novel` is a `Book` object;
+      - `novel.author` is that book's attribute `author`, which is an `Author` object;
+      - `novel.author.name` is the author's attribute `name`, a string.
+
+      The attribute holds a reference, as every variable does. Both books refer to the same `Author` object, so if the author changed her name with `writer.name = "Ana Berg"`, both books would show the new name at once.
+
+      ### The outer object uses the inner one
+
+      The methods of the outer object can use the inner object's attributes and call its methods. And when an f-string has an object in its braces, Python uses that object's own `__str__`:
+
+      ```python run
+      class Engine:
+          def __init__(self, horsepower):
+              self.horsepower = horsepower
+              self.running = False
+
+          def start(self):
+              self.running = True
+
+          def __str__(self):
+              state = "running" if self.running else "off"
+              return f"{self.horsepower} hp, {state}"
+
+
+      class Car:
+          def __init__(self, model, engine):
+              self.model = model
+              self.engine = engine
+
+          def start(self):
+              self.engine.start()
+              print(f"{self.model}: vroom")
+
+          def __str__(self):
+              return f"{self.model} (engine: {self.engine})"
+
+
+      car = Car("Roadster", Engine(150))
+      print(car)
+      car.start()
+      print(car)
+      ```
+
+      ```output
+      Roadster (engine: 150 hp, off)
+      Roadster: vroom
+      Roadster (engine: 150 hp, running)
+      ```
+
+      The car doesn't know how to start an engine; `self.engine.start()` asks the engine to do it. Each class looks after its own attributes, and the car only talks to its engine through the engine's methods. The engine object is created right in the call, `Car("Roadster", Engine(150))`: it doesn't need a variable of its own, because the car keeps a reference to it.
+
+      **Your turn:** fill in the blanks so the program prints the customer's shipping label:
+
+      ```
+      Lea Park
+      12 Elm Street
+      Springfield
+      ```
+    fill: |
+      class Address:
+          def __init__(self, street, city):
+              self.street = street
+              self.city = city
+
+
+      class Customer:
+          def __init__(self, name, address):
+              self.name = name
+              self.address = address
+
+
+      home = Address("12 Elm Street", "Springfield")
+      customer = Customer("Lea Park", home)
+      print(customer.name)
+      print(customer.[[address]].street)
+      print(customer.address.[[city]])
+    hints:
+      - "The customer's address is in the attribute `address`, and it's an `Address` object."
+      - "An `Address` has the attributes `street` and `city`. `customer.address.city` goes from the customer to its address, and from there to the city."
+    tests:
+      - expect: |
+          Lea Park
+          12 Elm Street
+          Springfield
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Coach:
+              def __init__(self, name):
+                  self.name = name
+
+
+          class Team:
+              def __init__(self, name, coach):
+                  self.name = name
+                  self.coach = coach
+
+
+          lee = Coach("Lee")
+          reds = Team("Reds", lee)
+          blues = Team("Blues", lee)
+          blues.coach.name = "Kim"
+          print(reds.coach.name)
+          print(blues.name, blues.coach.name)
+        hints:
+          - "`Coach(...)` is called only once, so both teams have the same coach object."
+          - "`blues.coach.name = \"Kim\"` renames that one coach, so the Reds see the change too."
+      - task: |
+          An `Airport` has a code and a city, and a `Flight` has a flight number and two airports, where it leaves from (`origin`) and where it lands (`destination`). Write two methods in the class `Flight`:
+
+          - `__str__(self)` returns a string such as `AY 123: Helsinki (HEL) to Oslo (OSL)`, using the airports' own `__str__`.
+          - `return_flight(self, number)` returns a new `Flight` object with the given number that flies the same route the other way around.
+
+          For example, this code:
+
+          ```python fragment
+          hel = Airport("HEL", "Helsinki")
+          osl = Airport("OSL", "Oslo")
+          there = Flight("AY 123", hel, osl)
+          back = there.return_flight("AY 124")
+          print(there)
+          print(back)
+          ```
+
+          prints:
+
+          ```
+          AY 123: Helsinki (HEL) to Oslo (OSL)
+          AY 124: Oslo (OSL) to Helsinki (HEL)
+          ```
+        seed: |
+          class Airport:
+              def __init__(self, code, city):
+                  self.code = code
+                  self.city = city
+
+              def __str__(self):
+                  return f"{self.city} ({self.code})"
+
+
+          class Flight:
+              def __init__(self, number, origin, destination):
+                  self.number = number
+                  self.origin = origin
+                  self.destination = destination
+
+
+          if __name__ == "__main__":
+              hel = Airport("HEL", "Helsinki")
+              osl = Airport("OSL", "Oslo")
+              there = Flight("AY 123", hel, osl)
+              back = there.return_flight("AY 124")
+              print(there)
+              print(back)
+        solution: |
+          class Airport:
+              def __init__(self, code, city):
+                  self.code = code
+                  self.city = city
+
+              def __str__(self):
+                  return f"{self.city} ({self.code})"
+
+
+          class Flight:
+              def __init__(self, number, origin, destination):
+                  self.number = number
+                  self.origin = origin
+                  self.destination = destination
+
+              def __str__(self):
+                  return f"{self.number}: {self.origin} to {self.destination}"
+
+              def return_flight(self, number):
+                  return Flight(number, self.destination, self.origin)
+
+
+          if __name__ == "__main__":
+              hel = Airport("HEL", "Helsinki")
+              osl = Airport("OSL", "Oslo")
+              there = Flight("AY 123", hel, osl)
+              back = there.return_flight("AY 124")
+              print(there)
+              print(back)
+        hints:
+          - "In an f-string, `{self.origin}` uses the `Airport` class's `__str__`, so it becomes `Helsinki (HEL)`."
+          - "`__str__` can be one line: `return f\"{self.number}: {self.origin} to {self.destination}\"`."
+          - "`return_flight` creates a new flight with the two airports swapped: `Flight(number, self.destination, self.origin)`."
+        tests:
+          - call: |
+              hel = Airport("HEL", "Helsinki")
+              osl = Airport("OSL", "Oslo")
+              there = Flight("AY 123", hel, osl)
+              back = there.return_flight("AY 124")
+              print(there)
+              print(back)
+          - call: |
+              rome = Airport("FCO", "Rome")
+              lima = Airport("LIM", "Lima")
+              flight = Flight("XQ 7", lima, rome)
+              print(flight)
+              back = flight.return_flight("XQ 8")
+              print(back.origin.city, back.destination.code)
+              print(flight)
+            hidden: true
+
+  - id: objects-as-attributes-imports
+    slug: imports
+    title: When you need an import
+    text: |
+      In the challenges on this site, all the classes of a program are usually in one file, `main.py`. A class can use any other class in the same file just by its name. **You don't need an `import` for a class in the same file.**
+
+      A common mistake is to copy an `import` line from an example where the classes were in separate files. Python then looks for a file that isn't there, and stops before it even gets to your classes:
+
+      ```python run crash
+      from author import Author
+
+
+      class Author:
+          def __init__(self, name):
+              self.name = name
+
+
+      print(Author("Ana Lind").name)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          from author import Author
+      ModuleNotFoundError: No module named 'author'
+      ```
+
+      The fix is to delete the `import` line: the class `Author` is right there in the file.
+
+      ### Classes in a file of their own
+
+      As a program grows, its classes often move into files of their own. Each file is a module, just like the modules you wrote yourself in part 7, and a file that uses a class from another file has to import it. Here the class `Product` is in the file `shop.py`, and `main.py` imports it:
+
+      ```python run
+      from shop import Product
+
+      cart = [Product("Tea", 3.5), Product("Bread", 2.25)]
+      for item in cart:
+          print(item)
+
+      # ==== shop.py ====
+      class Product:
+          def __init__(self, name, price):
+              self.name = name
+              self.price = price
+
+          def __str__(self):
+              return f"{self.name}: {self.price}"
+      ```
+
+      ```output
+      Tea: 3.5
+      Bread: 2.25
+      ```
+
+      `from shop import Product` means: in the file `shop.py`, find the name `Product`. Without that line, `main.py` would stop with `NameError: name 'Product' is not defined`, because the class isn't in `main.py`.
+
+      ### Python's own modules
+
+      Classes from Python's standard library live in other files too, so they need an import as well. An object from the `datetime` module can be an attribute like any other object:
+
+      ```python run
+      from datetime import date
+
+
+      class Loan:
+          def __init__(self, title, due):
+              self.title = title
+              self.due = due
+
+          def is_late(self, today):
+              return today > self.due
+
+
+      loan = Loan("World Atlas", date(2026, 3, 14))
+      print(loan.due)
+      print(loan.is_late(date(2026, 3, 10)))
+      print(loan.is_late(date(2026, 3, 20)))
+      ```
+
+      ```output
+      2026-03-14
+      False
+      True
+      ```
+
+      So the rule is short: you need an `import` for code that is in another file, either a module of Python's own or a file of yours. A class in the same file never needs one.
+
+      **Your turn:** the program below has everything in one file, but it stops with a `ModuleNotFoundError`. Fix it so that it prints:
+
+      ```
+      Hulk the hamster lives with Ben
+      ```
+    seed: |
+      from pet import Pet
+
+
+      class Pet:
+          def __init__(self, name, species):
+              self.name = name
+              self.species = species
+
+
+      class Owner:
+          def __init__(self, name, pet):
+              self.name = name
+              self.pet = pet
+
+          def __str__(self):
+              return f"{self.pet.name} the {self.pet.species} lives with {self.name}"
+
+
+      print(Owner("Ben", Pet("Hulk", "hamster")))
+    solution: |
+      class Pet:
+          def __init__(self, name, species):
+              self.name = name
+              self.species = species
+
+
+      class Owner:
+          def __init__(self, name, pet):
+              self.name = name
+              self.pet = pet
+
+          def __str__(self):
+              return f"{self.pet.name} the {self.pet.species} lives with {self.name}"
+
+
+      print(Owner("Ben", Pet("Hulk", "hamster")))
+    hints:
+      - Read the error message. Which line does it point at, and which file is Python looking for?
+      - The class `Pet` is in this same file, so the program doesn't need to import it. Delete the `import` line.
+    forbid:
+      - pattern: \bimport\b
+        message: Everything is in this one file, so the program needs no `import`.
+    tests:
+      - expect: Hulk the hamster lives with Ben
+    more:
+      - task: |
+          This program has two files. The classes are in `garden.py`, and `main.py` uses them, but `main.py` stops with a `NameError`. Add what `main.py` is missing (and don't change `garden.py`), so the program prints:
+
+          ```
+          Herb bed: Basil, Mint, Thyme
+          ```
+        seed:
+          main.py: |
+            bed = Bed("Herb bed")
+            bed.plant(Plant("Basil"))
+            bed.plant(Plant("Mint"))
+            bed.plant(Plant("Thyme"))
+            print(bed)
+          garden.py: |
+            class Plant:
+                def __init__(self, name):
+                    self.name = name
+
+
+            class Bed:
+                def __init__(self, name):
+                    self.name = name
+                    self.plants = []
+
+                def plant(self, plant):
+                    self.plants.append(plant)
+
+                def __str__(self):
+                    names = []
+                    for plant in self.plants:
+                        names.append(plant.name)
+                    return f"{self.name}: {', '.join(names)}"
+        solution:
+          main.py: |
+            from garden import Bed, Plant
+
+            bed = Bed("Herb bed")
+            bed.plant(Plant("Basil"))
+            bed.plant(Plant("Mint"))
+            bed.plant(Plant("Thyme"))
+            print(bed)
+          garden.py: |
+            class Plant:
+                def __init__(self, name):
+                    self.name = name
+
+
+            class Bed:
+                def __init__(self, name):
+                    self.name = name
+                    self.plants = []
+
+                def plant(self, plant):
+                    self.plants.append(plant)
+
+                def __str__(self):
+                    names = []
+                    for plant in self.plants:
+                        names.append(plant.name)
+                    return f"{self.name}: {', '.join(names)}"
+        hints:
+          - The classes `Bed` and `Plant` are in another file, `garden.py`, so `main.py` has to import them.
+          - "One line at the top of `main.py` can import both: `from garden import ...`, with the two names separated by a comma."
+          - "`from garden import Bed, Plant`. (Or `import garden`, and then write `garden.Bed` and `garden.Plant`.)"
+        tests:
+          - expect: "Herb bed: Basil, Mint, Thyme"
+      - task: |
+          A gym membership is valid until its expiry date. Write the class `Membership`:
+
+          - The constructor takes the member's name and the expiry date (a `date` object) and keeps them in the attributes `name` and `expires`.
+          - `valid_on(self, day)` returns `True` if the membership is valid on the given day (the expiry day itself still counts), and `False` otherwise.
+          - `days_left(self, day)` returns the number of days from the given day to the expiry date (0 on the expiry day itself).
+
+          `date` comes from Python's `datetime` module, so your program needs an import. For example, this code:
+
+          ```python fragment
+          card = Membership("Sami", date(2026, 6, 30))
+          print(card.valid_on(date(2026, 6, 1)))
+          print(card.days_left(date(2026, 6, 1)))
+          print(card.valid_on(date(2026, 7, 1)))
+          ```
+
+          prints:
+
+          ```
+          True
+          29
+          False
+          ```
+        seed: |
+          class Membership:
+              pass
+
+
+          if __name__ == "__main__":
+              card = Membership("Sami", date(2026, 6, 30))
+              print(card.valid_on(date(2026, 6, 1)))
+              print(card.days_left(date(2026, 6, 1)))
+              print(card.valid_on(date(2026, 7, 1)))
+        solution: |
+          from datetime import date
+
+
+          class Membership:
+              def __init__(self, name, expires):
+                  self.name = name
+                  self.expires = expires
+
+              def valid_on(self, day):
+                  return day <= self.expires
+
+              def days_left(self, day):
+                  return (self.expires - day).days
+
+
+          if __name__ == "__main__":
+              card = Membership("Sami", date(2026, 6, 30))
+              print(card.valid_on(date(2026, 6, 1)))
+              print(card.days_left(date(2026, 6, 1)))
+              print(card.valid_on(date(2026, 7, 1)))
+        hints:
+          - "Start the program with `from datetime import date`, so that `date(...)` works."
+          - "Dates can be compared with `<` and `<=`: an earlier date is smaller. The membership is valid when `day <= self.expires`."
+          - "Subtracting two dates gives a time difference whose `.days` is the number of days: `(self.expires - day).days`."
+        tests:
+          - call: |
+              card = Membership("Sami", date(2026, 6, 30))
+              print(card.valid_on(date(2026, 6, 1)))
+              print(card.days_left(date(2026, 6, 1)))
+              print(card.valid_on(date(2026, 7, 1)))
+          - call: |
+              card = Membership("Ines", date(2027, 1, 15))
+              print(card.name, card.expires)
+              print(card.valid_on(date(2027, 1, 15)))
+              print(card.days_left(date(2027, 1, 15)))
+              print(card.days_left(date(2026, 12, 25)))
+              print(card.valid_on(date(2027, 1, 16)))
+            hidden: true
+
+  - id: objects-as-attributes-list
+    slug: list-of-objects
+    title: A list of objects as an attribute
+    text: |
+      You have already written classes that keep a list. Often that list holds objects of another class of yours: a playlist has songs, a team has players, a shopping cart has products. The usual pattern has three parts:
+
+      1. `__init__` creates an empty list: `self.songs = []`.
+      2. A method adds an object to the list.
+      3. Other methods go through the list to work out something about all the objects.
+
+      ```python run
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+          def __str__(self):
+              return f"{self.title} ({self.seconds} s)"
+
+
+      class Playlist:
+          def __init__(self, name):
+              self.name = name
+              self.songs = []
+
+          def add(self, song):
+              self.songs.append(song)
+
+          def total_seconds(self):
+              total = 0
+              for song in self.songs:
+                  total += song.seconds
+              return total
+
+          def print_songs(self):
+              print(f"{self.name}: {len(self.songs)} songs, {self.total_seconds()} s")
+              for song in self.songs:
+                  print(song)
+
+
+      road_trip = Playlist("Road trip")
+      road_trip.add(Song("Morning Light", 215))
+      road_trip.add(Song("Neon Rain", 187))
+      road_trip.print_songs()
+      ```
+
+      ```output
+      Road trip: 2 songs, 402 s
+      Morning Light (215 s)
+      Neon Rain (187 s)
+      ```
+
+      Each playlist gets its own empty list when it's created, because `__init__` runs once for every new object. Every method reaches the list as `self.songs`.
+
+      A method can call another method of the same object, with `self.` in front: `print_songs` uses `self.total_seconds()` instead of adding up the seconds a second time. Writing each calculation once, in its own method, keeps the class short and easy to change.
+
+      ### Forgetting `self.`
+
+      Inside a method, the list is `self.songs`, never plain `songs`. Without `self.`, Python looks for a local variable called `songs`, which doesn't exist:
+
+      ```python run crash
+      class Playlist:
+          def __init__(self, name):
+              self.name = name
+              self.songs = []
+
+          def add(self, song):
+              songs.append(song)
+
+
+      mix = Playlist("Mix")
+      mix.add("Neon Rain")
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          mix.add("Neon Rain")
+          ~~~~~~~^^^^^^^^^^^^^
+        File "main.py", line 7, in add
+          songs.append(song)
+          ^^^^^
+      NameError: name 'songs' is not defined. Did you mean: 'self.songs'?
+      ```
+
+      The traceback shows two places: line 11, the call, and line 7 inside `add`, where the error really happened. The last place listed is usually the one to fix, and here Python even suggests the fix.
+
+      **Your turn:** a shelf holds books. Fill in the blanks so that `add` puts the book on the shelf and `total_pages` adds up the pages of all its books. The program should print:
+
+      ```
+      3 books, 1086 pages
+      ```
+    fill: |
+      class Book:
+          def __init__(self, title, pages):
+              self.title = title
+              self.pages = pages
+
+
+      class Shelf:
+          def __init__(self):
+              self.books = []
+
+          def add(self, book):
+              self.books.[[append]](book)
+
+          def total_pages(self):
+              total = 0
+              for book in [[self.books]]:
+                  total += book.pages
+              return total
+
+
+      shelf = Shelf()
+      shelf.add(Book("Small Gods", 290))
+      shelf.add(Book("The Quiet Sea", 318))
+      shelf.add(Book("Field Notes", 478))
+      print(len(shelf.books), "books,", shelf.total_pages(), "pages")
+    hints:
+      - "`add` should put the book at the end of the list, with the list method you use for that."
+      - "The loop in `total_pages` goes through the shelf's list. Inside a method, the list is `self.books`."
+    tests:
+      - expect: 3 books, 1086 pages
+    more:
+      - task: |
+          A fish has a name and a length in centimeters. Write the class `Aquarium`, which holds fish:
+
+          - The constructor takes no arguments (other than `self`); a new aquarium has no fish.
+          - `add(self, fish)` adds a `Fish` object to the aquarium.
+          - `total_length(self)` returns the combined length of all the fish.
+          - `__str__(self)` returns a string such as `fish: 2, total length: 17 cm`.
+
+          For example, this code:
+
+          ```python fragment
+          tank = Aquarium()
+          print(tank)
+          tank.add(Fish("Bubbles", 5))
+          tank.add(Fish("Nemo", 12))
+          print(tank.total_length())
+          print(tank)
+          ```
+
+          prints:
+
+          ```
+          fish: 0, total length: 0 cm
+          17
+          fish: 2, total length: 17 cm
+          ```
+        seed: |
+          class Fish:
+              def __init__(self, name, length):
+                  self.name = name
+                  self.length = length
+
+
+          class Aquarium:
+              pass
+
+
+          if __name__ == "__main__":
+              tank = Aquarium()
+              print(tank)
+              tank.add(Fish("Bubbles", 5))
+              tank.add(Fish("Nemo", 12))
+              print(tank.total_length())
+              print(tank)
+        solution: |
+          class Fish:
+              def __init__(self, name, length):
+                  self.name = name
+                  self.length = length
+
+
+          class Aquarium:
+              def __init__(self):
+                  self.fish = []
+
+              def add(self, fish):
+                  self.fish.append(fish)
+
+              def total_length(self):
+                  total = 0
+                  for fish in self.fish:
+                      total += fish.length
+                  return total
+
+              def __str__(self):
+                  return f"fish: {len(self.fish)}, total length: {self.total_length()} cm"
+
+
+          if __name__ == "__main__":
+              tank = Aquarium()
+              print(tank)
+              tank.add(Fish("Bubbles", 5))
+              tank.add(Fish("Nemo", 12))
+              print(tank.total_length())
+              print(tank)
+        hints:
+          - "In `__init__`, create an empty list for the fish: `self.fish = []`."
+          - "`total_length` goes through `self.fish` and adds up each fish's `length`."
+          - "`__str__` can call the other method: `f\"fish: {len(self.fish)}, total length: {self.total_length()} cm\"`."
+        tests:
+          - call: |
+              tank = Aquarium()
+              print(tank)
+              tank.add(Fish("Bubbles", 5))
+              tank.add(Fish("Nemo", 12))
+              print(tank.total_length())
+              print(tank)
+          - call: |
+              small = Aquarium()
+              big = Aquarium()
+              big.add(Fish("Goldie", 8))
+              big.add(Fish("Spike", 21))
+              big.add(Fish("Dot", 3))
+              print(big)
+              print(small)
+            hidden: true
+      - task: |
+          Add the method `names_longer_than(self, limit)` to the class `Aquarium`. It returns a list of the names of the fish that are longer than `limit` centimeters, in the order they were added. If there are none, it returns an empty list.
+
+          For example, this code:
+
+          ```python fragment
+          tank = Aquarium()
+          tank.add(Fish("Bubbles", 5))
+          tank.add(Fish("Nemo", 12))
+          tank.add(Fish("Spike", 21))
+          print(tank.names_longer_than(10))
+          print(tank.names_longer_than(30))
+          ```
+
+          prints:
+
+          ```
+          ['Nemo', 'Spike']
+          []
+          ```
+        seed: |
+          class Fish:
+              def __init__(self, name, length):
+                  self.name = name
+                  self.length = length
+
+
+          class Aquarium:
+              def __init__(self):
+                  self.fish = []
+
+              def add(self, fish):
+                  self.fish.append(fish)
+
+
+          if __name__ == "__main__":
+              tank = Aquarium()
+              tank.add(Fish("Bubbles", 5))
+              tank.add(Fish("Nemo", 12))
+              tank.add(Fish("Spike", 21))
+              print(tank.names_longer_than(10))
+              print(tank.names_longer_than(30))
+        solution: |
+          class Fish:
+              def __init__(self, name, length):
+                  self.name = name
+                  self.length = length
+
+
+          class Aquarium:
+              def __init__(self):
+                  self.fish = []
+
+              def add(self, fish):
+                  self.fish.append(fish)
+
+              def names_longer_than(self, limit):
+                  names = []
+                  for fish in self.fish:
+                      if fish.length > limit:
+                          names.append(fish.name)
+                  return names
+
+
+          if __name__ == "__main__":
+              tank = Aquarium()
+              tank.add(Fish("Bubbles", 5))
+              tank.add(Fish("Nemo", 12))
+              tank.add(Fish("Spike", 21))
+              print(tank.names_longer_than(10))
+              print(tank.names_longer_than(30))
+        hints:
+          - Start with an empty list of names in a local variable, then go through `self.fish`.
+          - "For each fish longer than `limit`, append its name (`fish.name`), not the fish itself."
+          - Return the list of names after the loop.
+        tests:
+          - call: |
+              tank = Aquarium()
+              tank.add(Fish("Bubbles", 5))
+              tank.add(Fish("Nemo", 12))
+              tank.add(Fish("Spike", 21))
+              print(tank.names_longer_than(10))
+              print(tank.names_longer_than(30))
+          - call: |
+              tank = Aquarium()
+              print(tank.names_longer_than(0))
+              tank.add(Fish("Ray", 40))
+              tank.add(Fish("Tiny", 2))
+              tank.add(Fish("Mid", 15))
+              tank.add(Fish("Edge", 14))
+              print(tank.names_longer_than(14))
+            hidden: true
+
+  - id: objects-as-attributes-none
+    slug: none
+    title: "None: no object"
+    text: |
+      Sometimes there is no object to give. A search finds nothing, or a parking spot has no car in it yet. For that, Python has the special value **`None`**, which means "nothing here". You have met it before: it's what a function returns when it has no `return`. You can also return it, or store it, on purpose.
+
+      ### A search that may find nothing
+
+      A method that looks for an object can return `None` when there's no match:
+
+      ```python run
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+          def __str__(self):
+              return f"{self.title} ({self.seconds} s)"
+
+
+      class Playlist:
+          def __init__(self):
+              self.songs = []
+
+          def add(self, song):
+              self.songs.append(song)
+
+          def find(self, title):
+              for song in self.songs:
+                  if song.title == title:
+                      return song
+              return None
+
+
+      mix = Playlist()
+      mix.add(Song("Neon Rain", 187))
+      print(mix.find("Neon Rain"))
+      print(mix.find("Blue Hour"))
+      ```
+
+      ```output
+      Neon Rain (187 s)
+      None
+      ```
+
+      The `return song` inside the loop ends the method as soon as the song is found. The `return None` after the loop only runs when the loop went through every song without finding it.
+
+      ### The error you will meet
+
+      The trouble starts when the caller forgets that the answer can be `None`, and uses it as if it were an object. With the same classes as above:
+
+      ```python run crash
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+
+      class Playlist:
+          def __init__(self):
+              self.songs = []
+
+          def find(self, title):
+              for song in self.songs:
+                  if song.title == title:
+                      return song
+              return None
+
+
+      mix = Playlist()
+      song = mix.find("Blue Hour")
+      print(song.seconds)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 20, in <module>
+          print(song.seconds)
+                ^^^^^^^^^^^^
+      AttributeError: 'NoneType' object has no attribute 'seconds'
+      ```
+
+      `NoneType` is the type of `None`. So whenever you see `'NoneType' object has no attribute`, the thing before the dot was `None` instead of the object you expected. Look for where that value came from: here, a search that found nothing.
+
+      ### Check before you use it
+
+      Test the answer with **`is None`** or `is not None` before you use it. There is only one `None` in the whole program, so `is` is the natural way to ask about it:
+
+      ```python fragment
+      song = mix.find("Blue Hour")
+      if song is None:
+          print("Not on the playlist")
+      else:
+          print(song.seconds)
+      ```
+
+      ### An attribute that starts out empty
+
+      An attribute can be `None` until it gets an object. A parking spot starts without a car:
+
+      ```python run
+      class Car:
+          def __init__(self, plate):
+              self.plate = plate
+
+
+      class ParkingSpot:
+          def __init__(self, number):
+              self.number = number
+              self.car = None
+
+          def park(self, car):
+              if self.car is not None:
+                  return False
+              self.car = car
+              return True
+
+          def __str__(self):
+              if self.car is None:
+                  return f"Spot {self.number}: free"
+              return f"Spot {self.number}: {self.car.plate}"
+
+
+      spot = ParkingSpot(7)
+      print(spot)
+      print(spot.park(Car("ABC-123")))
+      print(spot.park(Car("XYZ-789")))
+      print(spot)
+      ```
+
+      ```output
+      Spot 7: free
+      True
+      False
+      Spot 7: ABC-123
+      ```
+
+      **Your turn:** fill in the blanks so that `find` returns `None` when there's no contact with the name, and the loop handles that case. The program should print:
+
+      ```
+      Lea: 040 123 4567
+      Max is not in the phone book
+      ```
+    fill: |
+      class Contact:
+          def __init__(self, name, number):
+              self.name = name
+              self.number = number
+
+
+      class PhoneBook:
+          def __init__(self):
+              self.contacts = []
+
+          def add(self, contact):
+              self.contacts.append(contact)
+
+          def find(self, name):
+              for contact in self.contacts:
+                  if contact.name == name:
+                      return contact
+              return [[None]]
+
+
+      book = PhoneBook()
+      book.add(Contact("Lea", "040 123 4567"))
+      book.add(Contact("Sam", "050 765 4321"))
+
+      for name in ["Lea", "Max"]:
+          contact = book.find(name)
+          if contact [[is None‖== None]]:
+              print(f"{name} is not in the phone book")
+          else:
+              print(f"{name}: {contact.number}")
+    hints:
+      - "When the loop finds no contact with the name, `find` should return the value that means \"no object\"."
+      - "That value is `None`, and you test for it with `is None`: `if contact is None:`."
+    tests:
+      - expect: |
+          Lea: 040 123 4567
+          Max is not in the phone book
+    more:
+      - task: |
+          An inbox holds messages, and each message is either read or unread. Write the method `first_unread(self)` in the class `Inbox`. It returns the first message (the one added earliest) that hasn't been read yet, or `None` if every message has been read or the inbox is empty.
+
+          For example, this code:
+
+          ```python fragment
+          inbox = Inbox()
+          print(inbox.first_unread())
+          inbox.add(Message("Ana", "Lunch?"))
+          inbox.add(Message("Ben", "Meeting at 3"))
+          inbox.messages[0].read = True
+          print(inbox.first_unread())
+          ```
+
+          prints:
+
+          ```
+          None
+          Ben: Meeting at 3
+          ```
+        seed: |
+          class Message:
+              def __init__(self, sender, text):
+                  self.sender = sender
+                  self.text = text
+                  self.read = False
+
+              def __str__(self):
+                  return f"{self.sender}: {self.text}"
+
+
+          class Inbox:
+              def __init__(self):
+                  self.messages = []
+
+              def add(self, message):
+                  self.messages.append(message)
+
+              def first_unread(self):
+                  pass
+
+
+          if __name__ == "__main__":
+              inbox = Inbox()
+              print(inbox.first_unread())
+              inbox.add(Message("Ana", "Lunch?"))
+              inbox.add(Message("Ben", "Meeting at 3"))
+              inbox.messages[0].read = True
+              print(inbox.first_unread())
+        solution: |
+          class Message:
+              def __init__(self, sender, text):
+                  self.sender = sender
+                  self.text = text
+                  self.read = False
+
+              def __str__(self):
+                  return f"{self.sender}: {self.text}"
+
+
+          class Inbox:
+              def __init__(self):
+                  self.messages = []
+
+              def add(self, message):
+                  self.messages.append(message)
+
+              def first_unread(self):
+                  for message in self.messages:
+                      if not message.read:
+                          return message
+                  return None
+
+
+          if __name__ == "__main__":
+              inbox = Inbox()
+              print(inbox.first_unread())
+              inbox.add(Message("Ana", "Lunch?"))
+              inbox.add(Message("Ben", "Meeting at 3"))
+              inbox.messages[0].read = True
+              print(inbox.first_unread())
+        hints:
+          - Go through `self.messages` in order, and return the first message whose `read` is `False`.
+          - "Returning inside the loop ends the method right away, so the first unread message is the one returned."
+          - "After the loop, `return None`: if the method gets that far, there was no unread message."
+        tests:
+          - call: |
+              inbox = Inbox()
+              print(inbox.first_unread())
+              inbox.add(Message("Ana", "Lunch?"))
+              inbox.add(Message("Ben", "Meeting at 3"))
+              inbox.messages[0].read = True
+              print(inbox.first_unread())
+          - call: |
+              inbox = Inbox()
+              inbox.add(Message("Kim", "Hi"))
+              inbox.add(Message("Lou", "Bye"))
+              inbox.add(Message("Max", "Ok"))
+              print(inbox.first_unread())
+              found = inbox.first_unread()
+              print(found is inbox.messages[0])
+              for message in inbox.messages:
+                  message.read = True
+              print(inbox.first_unread())
+            hidden: true
+          - call: |
+              inbox = Inbox()
+              inbox.add(Message("A", "one"))
+              inbox.add(Message("B", "two"))
+              inbox.add(Message("C", "three"))
+              inbox.messages[0].read = True
+              inbox.messages[1].read = True
+              print(inbox.first_unread())
+            hidden: true
+      - task: |
+          A kennel at a dog hotel has room for one dog at a time. Write the class `Kennel`:
+
+          - The constructor takes the kennel's number. A new kennel is empty: its attribute `dog` is `None`.
+          - `check_in(self, dog)` puts the dog in the kennel and returns `True`, but only if the kennel is empty. If there's already a dog, nothing changes and it returns `False`.
+          - `check_out(self)` takes the dog out and returns it (the `Dog` object), leaving the kennel empty. If the kennel is empty, it returns `None`.
+          - `__str__(self)` returns `Kennel 3: empty` or, with a dog in it, `Kennel 3: Rex`.
+
+          For example, this code:
+
+          ```python fragment
+          kennel = Kennel(3)
+          print(kennel)
+          print(kennel.check_in(Dog("Rex")))
+          print(kennel.check_in(Dog("Bella")))
+          print(kennel)
+          leaving = kennel.check_out()
+          print(leaving.name)
+          print(kennel)
+          ```
+
+          prints:
+
+          ```
+          Kennel 3: empty
+          True
+          False
+          Kennel 3: Rex
+          Rex
+          Kennel 3: empty
+          ```
+        seed: |
+          class Dog:
+              def __init__(self, name):
+                  self.name = name
+
+
+          class Kennel:
+              pass
+
+
+          if __name__ == "__main__":
+              kennel = Kennel(3)
+              print(kennel)
+              print(kennel.check_in(Dog("Rex")))
+              print(kennel.check_in(Dog("Bella")))
+              print(kennel)
+              leaving = kennel.check_out()
+              print(leaving.name)
+              print(kennel)
+        solution: |
+          class Dog:
+              def __init__(self, name):
+                  self.name = name
+
+
+          class Kennel:
+              def __init__(self, number):
+                  self.number = number
+                  self.dog = None
+
+              def check_in(self, dog):
+                  if self.dog is not None:
+                      return False
+                  self.dog = dog
+                  return True
+
+              def check_out(self):
+                  leaving = self.dog
+                  self.dog = None
+                  return leaving
+
+              def __str__(self):
+                  if self.dog is None:
+                      return f"Kennel {self.number}: empty"
+                  return f"Kennel {self.number}: {self.dog.name}"
+
+
+          if __name__ == "__main__":
+              kennel = Kennel(3)
+              print(kennel)
+              print(kennel.check_in(Dog("Rex")))
+              print(kennel.check_in(Dog("Bella")))
+              print(kennel)
+              leaving = kennel.check_out()
+              print(leaving.name)
+              print(kennel)
+        hints:
+          - "In `__init__`, set `self.dog = None`, and check `self.dog is None` wherever you need to know whether the kennel is empty."
+          - "`check_out` has to return the dog after emptying the kennel, so keep the dog in a local variable first: `leaving = self.dog`, then `self.dog = None`, then `return leaving`."
+          - "When the kennel is already empty, `self.dog` is `None`, so the same three lines return `None` with no extra `if`."
+        tests:
+          - call: |
+              kennel = Kennel(3)
+              print(kennel)
+              print(kennel.check_in(Dog("Rex")))
+              print(kennel.check_in(Dog("Bella")))
+              print(kennel)
+              leaving = kennel.check_out()
+              print(leaving.name)
+              print(kennel)
+          - call: |
+              kennel = Kennel(12)
+              print(kennel.check_out())
+              print(kennel.dog)
+              print(kennel.check_in(Dog("Luna")))
+              print(kennel)
+              print(kennel.check_out().name)
+              print(kennel.check_out())
+              print(kennel.check_in(Dog("Max")))
+              print(kennel)
+            hidden: true

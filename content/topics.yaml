@@ -1,0 +1,2192 @@
+# The topics reference (/topics/): see content/README.md, "The topics reference". Checked by the content
+# build against the steps it links to.
+- term: input
+  kind: function
+  about: Shows its prompt, waits for the user to type a line and gives that line as a string.
+  steps:
+  - input-prompt
+  - arithmetic-input-numbers
+  drills: input
+- term: variable
+  kind: idea
+  about: A name that holds a value, so the program can use the value later and change it.
+  aliases:
+  - variables
+  steps:
+  - input-variables
+  - variables-changing
+  drills: variables
+- term: '='
+  kind: operator
+  about: Assignment, which works out the value on its right and stores it in the variable on its left.
+  aliases:
+  - assignment
+  - assign
+  steps:
+  - input-variables
+  - variables-changing
+  drills: variables
+- term: snake case
+  kind: idea
+  about: 'Python''s style for variable names: small letters, with underscores between the words, as in `first_name`.'
+  aliases:
+  - variable names
+  - naming
+  steps:
+  - input-variables
+  drills: input
+- term: concatenation
+  kind: idea
+  about: Joining strings end to end with `+`, which puts nothing between them, not even a space.
+  aliases:
+  - joining strings
+  - concatenate
+  steps:
+  - input-joining
+  drills: input
+- term: int
+  kind: type
+  about: The type of whole numbers, such as `-15` and `2026`; `int(...)` turns a string of digits or a float into an integer.
+  aliases:
+  - integer
+  - integers
+  steps:
+  - variables-integers
+  - arithmetic-input-numbers
+  drills: arithmetic
+- term: str
+  kind: type
+  about: The type of strings; `str(...)` turns a value, such as a number, into a string.
+  aliases:
+  - string type
+  steps:
+  - variables-integers
+  - variables-combining
+  drills: variables
+- term: TypeError
+  kind: exception
+  about: Python stops with it when an operation gets a value of a type it can't work with, such as a string plus a number.
+  steps:
+  - variables-integers
+  - variables-combining
+  - arithmetic-input-numbers
+  drills: variables
+- term: f-string
+  kind: idea
+  about: A string with `f` before its opening quote, in which each value in curly brackets is put into the text.
+  aliases:
+  - formatted string
+  - f-strings
+  steps:
+  - variables-f-strings
+  drills: variables
+- term: float
+  kind: type
+  about: The type of numbers with a decimal point, such as `2.5`; `float(...)` turns a string such as `"2.5"` into a float.
+  aliases:
+  - floating point number
+  - decimal number
+  steps:
+  - variables-floats
+  - arithmetic-input-numbers
+  drills: variables
+- term: //
+  kind: operator
+  about: Integer division, which divides and rounds the result down to a whole number, so `7 // 2` is 3.
+  aliases:
+  - integer division
+  - floor division
+  steps:
+  - arithmetic-operators
+  - arithmetic-types
+  drills: arithmetic
+- term: '%'
+  kind: operator
+  about: Gives the remainder of a division, so `7 % 2` is 1.
+  aliases:
+  - modulo
+  - remainder
+  steps:
+  - arithmetic-operators
+  drills: arithmetic
+- term: '**'
+  kind: operator
+  about: Raises a number to a power, so `2 ** 3` is 8.
+  aliases:
+  - power
+  - exponent
+  steps:
+  - arithmetic-operators
+  drills: arithmetic
+- term: type
+  kind: function
+  about: Tells the type of a value, such as `int`, `float`, `str` or `bool`.
+  aliases:
+  - data type
+  steps:
+  - arithmetic-types
+  - conditionals-booleans
+  drills: arithmetic
+- term: ValueError
+  kind: exception
+  about: Python stops with it when a value has the right type but can't be used, such as `int("2.5")`.
+  steps:
+  - arithmetic-input-numbers
+  - errors-validation
+  - errors-try-except
+  drills: arithmetic
+- term: +=
+  kind: operator
+  about: Adds to a variable, so `total += 5` does the same as `total = total + 5`.
+  aliases:
+  - increase
+  - running total
+  steps:
+  - arithmetic-using-variables
+  drills: arithmetic
+- term: if
+  kind: keyword
+  about: Starts a conditional statement, which runs the indented block below it only when its condition is true.
+  aliases:
+  - conditional statement
+  - condition
+  steps:
+  - conditionals-if
+  - conditionals-using
+  drills: conditionals
+- term: ==
+  kind: operator
+  about: Compares two values and gives `True` when they are equal; a single `=` stores a value instead.
+  aliases:
+  - equal to
+  - equals
+  steps:
+  - conditionals-comparisons
+  drills: conditionals
+- term: '!='
+  kind: operator
+  about: Compares two values and gives `True` when they are not equal.
+  aliases:
+  - not equal to
+  steps:
+  - conditionals-comparisons
+  drills: conditionals
+- term: comparison operator
+  kind: idea
+  about: One of `==`, `!=`, `<`, `<=`, `>` and `>=`, which compare two values and give `True` or `False`.
+  aliases:
+  - less than
+  - greater than
+  steps:
+  - conditionals-comparisons
+  drills: conditionals
+- term: indentation
+  kind: idea
+  about: The spaces at the start of a line, which tell Python which lines belong to a block; four spaces is the standard.
+  aliases:
+  - indent
+  - block
+  steps:
+  - conditionals-indentation
+  drills: conditionals
+- term: IndentationError
+  kind: exception
+  about: Python stops with it before running anything when a line's indentation doesn't fit, such as an unindented line after a colon.
+  steps:
+  - conditionals-indentation
+  drills: conditionals
+- term: bool
+  kind: type
+  about: The type of the Boolean values `True` and `False`, which every condition gives.
+  aliases:
+  - Boolean
+  - Boolean expression
+  steps:
+  - conditionals-booleans
+  drills: conditionals
+- term: 'True'
+  kind: literal
+  about: One of the two Boolean values, the value of a condition that holds; it is written with a capital T.
+  steps:
+  - conditionals-booleans
+  drills: conditionals
+- term: 'False'
+  kind: literal
+  about: One of the two Boolean values, the value of a condition that doesn't hold; it is written with a capital F.
+  steps:
+  - conditionals-booleans
+  drills: conditionals
+- term: statement
+  kind: idea
+  about: One complete instruction in a program, such as an assignment, a `print` or a whole `if` statement with its block.
+  steps:
+  - terminology-statements-blocks
+  drills: terminology
+- term: block
+  kind: idea
+  about: A group of statements one after another at the same indentation, such as the lines that run when the condition of an `if` is true.
+  aliases:
+  - indentation
+  - code block
+  steps:
+  - terminology-statements-blocks
+  - logic-nested
+  drills: terminology
+- term: expression
+  kind: idea
+  about: A piece of code that Python evaluates to a value, such as `2 + 3`, a variable, a comparison or a function call.
+  aliases:
+  - evaluate
+  - value
+  steps:
+  - terminology-expressions-types
+  drills: terminology
+- term: data type
+  kind: idea
+  about: The kind of a value, such as `int`, `float`, `str` or `bool`, which decides what operators like `+` do with it.
+  aliases:
+  - type of a value
+  steps:
+  - terminology-expressions-types
+  drills: terminology
+- term: len
+  kind: function
+  about: Gives the number of characters in a string, spaces and punctuation included.
+  aliases:
+  - length
+  steps:
+  - terminology-functions
+  - simple-loops-building-strings
+  - strings-length
+  drills: terminology
+- term: argument
+  kind: idea
+  about: A value given to a function in the parentheses of its call, such as `"Hi"` in `print("Hi")`.
+  aliases:
+  - parameter
+  - calling a function
+  steps:
+  - terminology-functions
+  - functions-parameters
+  drills: terminology
+- term: return value
+  kind: idea
+  about: The value a function gives back to the code that called it, such as the string that `input` returns.
+  aliases:
+  - return
+  steps:
+  - terminology-functions
+  drills: terminology
+- term: empty string
+  kind: idea
+  about: The string `""` with no characters in it, of length 0, often the starting value of a string that a loop builds up.
+  steps:
+  - terminology-functions
+  - simple-loops-building-strings
+  drills: simple-loops
+- term: runtime error
+  kind: idea
+  about: An error that happens while the program runs, such as a division by zero, so the lines before it have already run.
+  aliases:
+  - exception
+  - traceback
+  steps:
+  - terminology-errors-debugging
+  drills: terminology
+- term: debugging
+  kind: idea
+  about: Finding and fixing bugs, often with debugging prints that show the values of variables and conditions as the program runs.
+  aliases:
+  - bug
+  - debugging print
+  steps:
+  - terminology-errors-debugging
+  - simple-loops-debugging
+  drills: simple-loops
+- term: else
+  kind: keyword
+  about: Starts the branch of a conditional statement that runs when none of the conditions before it is true.
+  steps:
+  - elif-else
+  drills: elif
+- term: elif
+  kind: keyword
+  about: Adds a branch with its own condition to an `if` statement, checked only when the conditions before it are false.
+  aliases:
+  - else if
+  steps:
+  - elif-elif
+  - elif-order
+  drills: elif
+- term: alphabetical order
+  kind: idea
+  about: Strings compare with `<` and `>` character by character, so `"car" < "cat"` is true, and every capital letter comes before every small letter.
+  aliases:
+  - comparing strings
+  - string comparison
+  steps:
+  - elif-comparing-strings
+  drills: elif
+- term: and
+  kind: keyword
+  about: Combines two conditions into one that is true only when both of them are true.
+  aliases:
+  - logical operator
+  - boolean operator
+  steps:
+  - logic-and
+  drills: logic
+- term: or
+  kind: keyword
+  about: Combines two conditions into one that is true when at least one of them is true.
+  steps:
+  - logic-or
+  drills: logic
+- term: not
+  kind: keyword
+  about: Turns a condition around, so `not True` is `False` and `not False` is `True`.
+  steps:
+  - logic-not
+  drills: logic
+- term: chained comparison
+  kind: idea
+  about: A comparison such as `1 <= x <= 10` that compares the value in the middle with both limits at once.
+  aliases:
+  - range check
+  steps:
+  - logic-chained
+  drills: logic
+- term: nested conditional
+  kind: idea
+  about: A conditional statement inside the block of another one, where the indentation shows which `else` belongs to which `if`.
+  aliases:
+  - nested if
+  steps:
+  - logic-nested
+  drills: logic
+- term: while
+  kind: keyword
+  about: Starts a loop, and `while True` repeats its block until a `break` ends it.
+  aliases:
+  - loop
+  - while True
+  steps:
+  - simple-loops-while-true
+  - simple-loops-counting
+  drills: simple-loops
+- term: break
+  kind: keyword
+  about: Ends the loop it is in at once, and the program goes on from the first line after the loop.
+  steps:
+  - simple-loops-while-true
+  drills: simple-loops
+- term: infinite loop
+  kind: idea
+  about: A loop that never ends because no `break` can ever run, for example when the value it checks never changes.
+  aliases:
+  - endless loop
+  steps:
+  - simple-loops-while-true
+  drills: simple-loops
+- term: iteration
+  kind: idea
+  about: One run through the block of a loop, after which Python goes back to the start of the loop for the next one.
+  steps:
+  - simple-loops-while-true
+  drills: simple-loops
+- term: helper variable
+  kind: idea
+  about: A variable that keeps track of something while a loop runs, such as a count or a total, set to its starting value before the loop.
+  aliases:
+  - counter
+  - sum
+  - total
+  steps:
+  - simple-loops-helper-variables
+  - simple-loops-building-strings
+  drills: simple-loops
+- term: loop condition
+  kind: idea
+  about: The condition after `while`, which Python checks before every round of the loop; the loop runs as long as it is true.
+  aliases:
+  - while condition
+  steps:
+  - loop-conditions-while-condition
+  - loop-conditions-writing-conditions
+  drills: loop-conditions
+- term: initialization
+  kind: idea
+  about: Giving a variable its first value before a loop, so that the loop's condition can use it in the first round.
+  aliases:
+  - start value
+  steps:
+  - loop-conditions-three-parts
+  drills: loop-conditions
+- term: index
+  kind: idea
+  about: The number that tells where a character is in a string, counting from 0 for the first character.
+  aliases:
+  - indexing
+  - string index
+  steps:
+  - strings-indexing
+  - strings-negative-indexes
+  drills: strings
+- term: IndexError
+  kind: exception
+  about: The error Python stops with when an index is outside the indexes that a string has.
+  aliases:
+  - string index out of range
+  steps:
+  - strings-indexing
+  - strings-negative-indexes
+  drills: strings
+- term: negative index
+  kind: idea
+  about: An index below zero, which counts from the end of a string, so `text[-1]` is its last character.
+  aliases:
+  - counting from the end
+  steps:
+  - strings-negative-indexes
+  drills: strings
+- term: slice
+  kind: idea
+  about: A piece of a string, written `text[start:end]`, with the characters from the index `start` up to but not including `end`.
+  aliases:
+  - slicing
+  - substring
+  steps:
+  - strings-slices
+  drills: strings
+- term: in
+  kind: keyword
+  about: Checks whether one string is part of another, so `part in text` is `True` when `text` contains `part`.
+  aliases:
+  - not in
+  steps:
+  - strings-searching
+  drills: strings
+- term: str.find
+  kind: method
+  about: Gives the index where a piece of text first appears in a string, or `-1` when it isn't in the string at all.
+  aliases:
+  - find
+  check:
+  - .find(
+  steps:
+  - strings-searching
+  drills: strings
+- term: method
+  kind: idea
+  about: A function that belongs to a value and is called after it with a dot, as in `text.find("a")`.
+  steps:
+  - strings-searching
+- term: continue
+  kind: keyword
+  about: Skips the rest of the current round of a loop and goes straight back to the loop's condition.
+  steps:
+  - more-loops-continue
+  drills: more-loops
+- term: nested loop
+  kind: idea
+  about: A loop inside the body of another loop, which runs all its rounds in each round of the outer loop.
+  aliases:
+  - inner loop
+  - outer loop
+  steps:
+  - more-loops-nested
+  - more-loops-helper-variables
+  drills: more-loops
+- term: def
+  kind: keyword
+  about: Starts a function definition, with the function's name, its parameters in parentheses and a colon.
+  aliases:
+  - define
+  - function definition
+  steps:
+  - functions-define
+  - functions-parameters
+  drills: functions
+- term: pass
+  kind: keyword
+  about: A statement that does nothing, used where Python needs one, such as the body of a function not written yet.
+  steps:
+  - functions-define
+  - more-features-pass-and-loop-else
+- term: function call
+  kind: idea
+  about: Running a function by writing its name with parentheses after it, with the arguments, if any, inside them.
+  aliases:
+  - call
+  - calling a function
+  steps:
+  - functions-calling
+  drills: functions
+- term: parameter
+  kind: idea
+  about: A variable named in a function's header, which gets its value from the matching argument of each call.
+  steps:
+  - functions-parameters
+  - functions-several-parameters
+  drills: functions
+- term: global variable
+  kind: idea
+  about: A variable made in the main program, outside every function, which a function can read but should get as a parameter instead.
+  steps:
+  - functions-global-variables
+  - scope-local
+  - scope-global
+  drills: functions
+  aliases:
+  - global variables
+- term: interactive interpreter
+  kind: tool
+  about: Python's line by line mode, started with `python3` in a terminal, which runs each line as soon as you type it after the `>>>` prompt and shows its value.
+  aliases:
+  - REPL
+  - Python shell
+  - '>>>'
+  steps:
+  - return-values-interpreter
+  drills: return-values
+- term: str.upper
+  kind: method
+  about: Returns a copy of a string in capital letters, and `str.lower` returns one in small letters; the original string stays as it is.
+  aliases:
+  - upper
+  - str.lower
+  - lower
+  - uppercase
+  - lowercase
+  - capital letters
+  check:
+  - '"Python Arena".upper()'
+  - name = name.upper()
+  steps:
+  - return-values-interpreter
+  - strings-and-lists-immutable
+  drills: return-values
+- term: AttributeError
+  kind: exception
+  about: Raised when an object has no attribute or method of the name used, such as an attribute that was never set or a typo in its name.
+  steps:
+  - return-values-interpreter
+  - objects-methods
+  - classes-first-class
+  drills: classes
+- term: main block
+  kind: idea
+  about: The code under `if __name__ == "__main__":` at the end of a file, which runs when you run the file but not when a check loads it to call your functions.
+  aliases:
+  - __main__
+  - if __name__ == "__main__"
+  steps:
+  - return-values-trying-out
+  drills: return-values
+- term: return
+  kind: keyword
+  about: Ends a function and gives a value back to the code that called it, which can store it, print it or use it in a calculation.
+  aliases:
+  - return statement
+  steps:
+  - return-values-return
+  - return-values-return-or-print
+  drills: return-values
+- term: None
+  kind: literal
+  about: The value that means "no value", which a function without a `return` gives back, and which methods such as `list.sort` return.
+  aliases:
+  - NoneType
+  steps:
+  - return-values-return-or-print
+  - lists-sorting
+  drills: return-values
+- term: type hint
+  kind: idea
+  about: 'A note in a function''s first line that tells the types of its parameters and its return value, as in `def area(width: float) -> float:`, which Python doesn''t check.'
+  aliases:
+  - type hints
+  - annotation
+  - ->
+  steps:
+  - return-values-type-hints
+  - own-modules-type-hints
+  drills: own-modules
+- term: list
+  kind: type
+  about: An ordered collection of values in square brackets, such as `[18, 21, 17]`, whose items can be read and changed by their index.
+  aliases:
+  - array
+  - items
+  - elements
+  steps:
+  - lists-items
+  - lists-in-functions
+  drills: lists
+- term: list.append
+  kind: method
+  about: Adds an item to the end of a list.
+  aliases:
+  - append
+  - add to a list
+  check:
+  - scores.append(12)
+  steps:
+  - lists-adding
+  drills: lists
+- term: list.insert
+  kind: method
+  about: Adds an item at the index you give, as in `queue.insert(0, item)`, and moves the items from that index on one place to the right.
+  aliases:
+  - insert
+  check:
+  - .insert(0, "Guido")
+  steps:
+  - lists-adding
+  drills: lists
+- term: list.pop
+  kind: method
+  about: Removes the item at the index you give, or the last item without an index, and returns the removed item.
+  aliases:
+  - pop
+  check:
+  - queue.pop(0)
+  steps:
+  - lists-removing
+  drills: lists
+- term: list.remove
+  kind: method
+  about: Removes the first item that has the value you give, and stops with a `ValueError` if no item has it.
+  aliases:
+  - remove
+  check:
+  - colors.remove("blue")
+  steps:
+  - lists-removing
+  drills: lists
+- term: list.sort
+  kind: method
+  about: Sorts a list in place, from smallest to greatest or alphabetically, and returns `None`.
+  aliases:
+  - sort
+  - list.reverse
+  - reverse
+  check:
+  - scores.sort()
+  steps:
+  - lists-sorting
+  drills: lists
+- term: sorted
+  kind: function
+  about: Returns a new sorted list of the items it's given and leaves the original as it was.
+  aliases:
+  - sort a copy
+  steps:
+  - lists-sorting
+  - strings-and-lists-immutable
+  drills: lists
+- term: max
+  kind: function
+  about: Returns the greatest item of a list, and `min` returns the smallest.
+  aliases:
+  - min
+  - maximum
+  - minimum
+  - greatest
+  - smallest
+  steps:
+  - lists-functions
+  drills: lists
+- term: sum
+  kind: function
+  about: Returns the sum of the numbers in a list, so `sum(numbers) / len(numbers)` is their average.
+  aliases:
+  - total
+  - average
+  steps:
+  - lists-functions
+  drills: lists
+- term: for
+  kind: keyword
+  about: Starts a loop that goes through the items of a list, the characters of a string or the numbers of a range, one at a time.
+  aliases:
+  - for loop
+  - definite iteration
+  steps:
+  - for-loops-lists
+  - for-loops-strings
+  drills: for-loops
+- term: range
+  kind: function
+  about: Gives the whole numbers from a start up to but not including an end, with an optional step, as in `range(1, 10, 2)`.
+  aliases:
+  - counting loop
+  steps:
+  - for-loops-range
+  - for-loops-building-lists
+  drills: for-loops
+- term: abs
+  kind: function
+  about: Returns a number without its minus sign, so `abs(a - b)` is the distance between two numbers.
+  aliases:
+  - absolute value
+  steps:
+  - for-loops-best-item
+- term: sep
+  kind: idea
+  about: The keyword argument of `print` that sets what goes between the values, as `end` sets what goes at the end of the line.
+  aliases:
+  - end
+  - separator
+  - print sep
+  - print end
+  steps:
+  - formatting-sep-and-end
+  drills: formatting
+- term: format specifier
+  kind: idea
+  about: The part after a colon inside an f-string's braces that sets how a value is shown, such as `{price:.2f}` for two decimals or `{name:<10}` for a width.
+  aliases:
+  - .2f
+  - decimals
+  - width
+  - alignment
+  - f-string format
+  steps:
+  - formatting-decimals
+  - formatting-widths
+  drills: formatting
+- term: str.replace
+  kind: method
+  about: Returns a new string where every appearance of one piece of text is replaced with another.
+  aliases:
+  - replace
+  check:
+  - text.replace("like", "love")
+  steps:
+  - strings-and-lists-count-index-replace
+  drills: strings-and-lists
+- term: str.count
+  kind: method
+  about: Returns how many times a piece of text appears in a string, without overlaps; `list.count` counts an item in a list.
+  aliases:
+  - count
+  - list.count
+  check:
+  - text.count("s")
+  steps:
+  - strings-and-lists-count-index-replace
+  drills: strings-and-lists
+- term: str.split
+  kind: method
+  about: Cuts a string into a list of pieces, at spaces or at the separator you give, as in `"a,b".split(",")`.
+  aliases:
+  - split
+  check:
+  - sentence.split()
+  - '"Rex;dog;4".split('
+  steps:
+  - strings-and-lists-split-join
+  - reading-files-csv
+  drills: strings-and-lists
+- term: str.join
+  kind: method
+  about: Joins a list of strings into one string, with the string it's called on between the pieces, as in `", ".join(words)`.
+  aliases:
+  - join
+  check:
+  - '", ".join(words)'
+  steps:
+  - strings-and-lists-split-join
+  drills: strings-and-lists
+- term: str.strip
+  kind: method
+  about: Returns a copy of a string without the spaces at its start and its end.
+  aliases:
+  - strip
+  - trim
+  - remove whitespace
+  check:
+  - answer.strip()
+  - '"Venus\n".strip('
+  steps:
+  - strings-and-lists-split-join
+  - reading-files-line-by-line
+  drills: strings-and-lists
+- term: list of lists
+  kind: idea
+  about: A list whose items are lists, read with two indexes in a row, as in `teams[1][0]` for the first item of the second list.
+  aliases:
+  - nested list
+  - lists inside lists
+  check:
+  - lists inside lists
+  steps:
+  - more-lists-nested
+  - references-copying
+  drills: more-lists
+- term: matrix
+  kind: idea
+  about: A table of values with rows and columns, kept as a list of rows, so `grid[row][column]` is one value.
+  aliases:
+  - matrices
+  - grid
+  - two dimensional list
+  - 2D list
+  steps:
+  - more-lists-matrices
+  - more-lists-game-board
+  drills: more-lists
+- term: reference
+  kind: idea
+  about: What a variable holds for a list or another object, telling Python where the object is, so two variables can refer to one and the same list.
+  aliases:
+  - references
+  steps:
+  - references-same-list
+  - references-list-parameters
+  drills: references
+- term: mutable
+  kind: idea
+  about: A mutable value, such as a list or a dictionary, can change after it's made, and every variable that refers to it sees the change.
+  aliases:
+  - mutability
+  steps:
+  - references-same-list
+  drills: references
+- term: immutable
+  kind: idea
+  about: An immutable value, such as a number, a string or a tuple, can't change after it's made, so operations on it make a new value instead.
+  aliases:
+  - immutability
+  steps:
+  - references-same-list
+  - tuples-basics
+  drills: references
+- term: list.copy
+  kind: method
+  about: Returns a new list with the same items, so changing the copy leaves the original alone.
+  aliases:
+  - copy a list
+  check:
+  - original.copy(
+  steps:
+  - references-copying
+  drills: references
+- term: slice assignment
+  kind: idea
+  about: Replaces part of a list with the items of another list, or all of its items with `items[:] = ...`, changing the list itself.
+  steps:
+  - references-list-parameters
+  drills: references
+- term: side effect
+  kind: idea
+  about: A change a function makes outside itself besides returning its value, such as sorting a list it was given.
+  aliases:
+  - side effects
+  steps:
+  - references-side-effects
+  drills: references
+- term: pure function
+  kind: idea
+  about: A function whose only result is the value it returns, so it changes none of its arguments and nothing else.
+  steps:
+  - references-side-effects
+  drills: references
+- term: dict
+  kind: type
+  about: 'A dictionary: pairs of keys and values, written as `{"tea": 2.0}`, in which each value is found by its key.'
+  aliases:
+  - dictionary
+  - dictionaries
+  steps:
+  - dictionaries-basics
+  - dictionaries-keys-and-values
+  drills: dictionaries
+- term: key
+  kind: idea
+  about: What a dictionary stores a value under and finds it by; each key is in a dictionary once and can't be a list.
+  aliases:
+  - keys
+  - key-value pair
+  steps:
+  - dictionaries-basics
+  - dictionaries-keys-and-values
+  drills: dictionaries
+- term: KeyError
+  kind: exception
+  about: The error Python raises when you read, update or delete a key that isn't in the dictionary.
+  steps:
+  - dictionaries-basics
+  - dictionaries-counting
+  drills: dictionaries
+- term: hash
+  kind: idea
+  about: A number Python makes from a dictionary key to find it fast; a list has none because it can change, so it can't be a key.
+  aliases:
+  - unhashable
+  - hashable
+  steps:
+  - dictionaries-keys-and-values
+  drills: dictionaries
+- term: dict.items
+  kind: method
+  about: Gives the keys of a dictionary together with their values, for a loop such as `for key, value in prices.items():`.
+  check:
+  - stock.items(
+  - ages.items(
+  steps:
+  - dictionaries-looping
+  - tuples-unpacking
+  drills: dictionaries
+- term: del
+  kind: keyword
+  about: Removes a key and its value from a dictionary, as in `del ages["Ada"]`.
+  steps:
+  - dictionaries-removing
+  drills: dictionaries
+- term: dict.pop
+  kind: method
+  about: Removes a key from a dictionary and returns its value; with a second argument, it returns that argument when the key is missing.
+  check:
+  - lockers.pop(
+  steps:
+  - dictionaries-removing
+  drills: dictionaries
+- term: dict.clear
+  kind: method
+  about: Removes every key and value from a dictionary, leaving it empty.
+  check:
+  - stock.clear(
+  steps:
+  - dictionaries-removing
+  drills: dictionaries
+- term: RuntimeError
+  kind: exception
+  about: The error Python raises when a dictionary gains or loses keys while a `for` loop goes through it.
+  steps:
+  - dictionaries-removing
+  drills: dictionaries
+- term: tuple
+  kind: type
+  about: An ordered group of values, such as `(3, 7)`, that you can index and loop over like a list but can't change after it's made.
+  aliases:
+  - tuples
+  steps:
+  - tuples-basics
+  - tuples-purpose
+  - tuples-unpacking
+  drills: tuples
+- term: unpacking
+  kind: idea
+  about: Putting the values of a tuple into several variables at once, as in `minutes, seconds = to_minutes(135)`.
+  aliases:
+  - unpack
+  - multiple return values
+  steps:
+  - tuples-unpacking
+  drills: tuples
+- term: swap
+  kind: idea
+  about: Exchanging the values of two variables, which takes one line with a tuple, `a, b = b, a`.
+  aliases:
+  - swapping
+  steps:
+  - tuples-unpacking
+  drills: tuples
+- term: open
+  kind: function
+  about: Opens the file with the given name, for reading by default, or for writing with the mode `"w"` or appending with `"a"`, and returns a file handle.
+  aliases:
+  - open a file
+  - files
+  steps:
+  - reading-files-open-and-read
+  - writing-files-create
+  - writing-files-append
+  drills: reading-files
+- term: with
+  kind: keyword
+  about: '`with open(name) as file:` keeps a file open while its indented block runs and closes it when the block ends, even after an error.'
+  aliases:
+  - with open
+  - close a file
+  steps:
+  - reading-files-open-and-read
+  drills: reading-files
+- term: file handle
+  kind: idea
+  about: The variable through which a program reads or writes an open file, such as `file` in `with open("notes.txt") as file:`.
+  aliases:
+  - file object
+  steps:
+  - reading-files-open-and-read
+  drills: reading-files
+- term: file.read
+  kind: method
+  about: Reads everything that's left in an open file and returns it as one string, line breaks included.
+  aliases:
+  - read
+  - read a file
+  steps:
+  - reading-files-open-and-read
+  drills: reading-files
+- term: FileNotFoundError
+  kind: exception
+  about: Raised when a program tries to open a file that doesn't exist.
+  aliases:
+  - missing file
+  steps:
+  - reading-files-open-and-read
+  - errors-kinds
+  drills: errors
+- term: line break
+  kind: idea
+  about: The character `\n` that ends each line of a text file, which a program reads as part of the line and must write itself with `write`.
+  aliases:
+  - newline
+  - \n
+  steps:
+  - reading-files-line-by-line
+  - writing-files-create
+  drills: reading-files
+- term: str.rstrip
+  kind: method
+  about: Returns a copy of a string without the whitespace at its right end, and `lstrip` does the same at its left end.
+  aliases:
+  - rstrip
+  - lstrip
+  - str.lstrip
+  check:
+  - .rstrip(
+  steps:
+  - reading-files-line-by-line
+  drills: reading-files
+- term: CSV
+  kind: idea
+  about: A text file format where each line is one record and its fields are separated by a character such as a comma or a semicolon.
+  aliases:
+  - comma-separated values
+  - csv file
+  steps:
+  - reading-files-csv
+  - writing-files-csv
+  drills: reading-files
+- term: file mode
+  kind: idea
+  about: The second argument of `open`, which says what the program does with the file, such as `"w"` to write a new file or `"a"` to add to its end.
+  aliases:
+  - mode
+  - append mode
+  - write mode
+  check:
+  - mode
+  steps:
+  - writing-files-create
+  - writing-files-append
+  drills: writing-files
+- term: file.write
+  kind: method
+  about: Writes a string into a file opened for writing or appending, adding no line break of its own.
+  aliases:
+  - write
+  - write a file
+  steps:
+  - writing-files-create
+  - writing-files-csv
+  drills: writing-files
+- term: os.remove
+  kind: function
+  about: Deletes the file with the given name, after `import os`.
+  aliases:
+  - delete a file
+  - remove a file
+  steps:
+  - writing-files-rewrite
+  drills: writing-files
+- term: input validation
+  kind: idea
+  about: Checking that a value a program gets, such as typed input, makes sense before the program uses it.
+  aliases:
+  - validation
+  - validate input
+  steps:
+  - errors-validation
+  drills: errors
+- term: exception
+  kind: idea
+  about: An error that happens while a program runs, which stops the program unless a `try` and `except` handle it.
+  aliases:
+  - runtime error
+  steps:
+  - errors-try-except
+  - errors-kinds
+  - errors-passing
+  drills: errors
+- term: try
+  kind: keyword
+  about: Starts a block of code that might raise an exception, which the `except` blocks after it can handle.
+  aliases:
+  - try except
+  - catch
+  steps:
+  - errors-try-except
+  - errors-kinds
+  drills: errors
+- term: except
+  kind: keyword
+  about: Starts the block that runs when the code in the `try` block raises the kind of exception the `except` line names.
+  aliases:
+  - catch an error
+  - handle an error
+  steps:
+  - errors-try-except
+  - errors-kinds
+  - errors-raise
+  drills: errors
+- term: raise
+  kind: keyword
+  about: Raises an exception on purpose, as in `raise ValueError("bad age")`, so that the caller must handle it.
+  aliases:
+  - throw
+  steps:
+  - errors-raise
+  drills: errors
+- term: scope
+  kind: idea
+  about: The part of a program where a variable can be used, such as only inside one function for a local variable.
+  steps:
+  - scope-local
+  drills: scope
+- term: local variable
+  kind: idea
+  about: A variable created inside a function, its parameters included, which exists only inside that function while it runs.
+  aliases:
+  - local
+  steps:
+  - scope-local
+  drills: scope
+- term: global
+  kind: keyword
+  about: '`global name` at the start of a function makes `name` mean the global variable, so the function can assign a new value to it.'
+  steps:
+  - scope-global
+  drills: scope
+- term: UnboundLocalError
+  kind: exception
+  about: Raised when a function reads a local variable before giving it a value, often because it assigns to a global name without `global`.
+  steps:
+  - scope-global
+  drills: scope
+- term: import
+  kind: keyword
+  about: Loads a module so that the program can use the functions and values in it, as in `import math`.
+  steps:
+  - modules-import
+  - modules-from-import
+  - own-modules-files
+  drills: modules
+- term: module
+  kind: idea
+  about: A file of Python code whose functions and values other programs can import, either from the standard library or written by you.
+  aliases:
+  - modules
+  - standard library
+  - library
+  steps:
+  - modules-import
+  - own-modules-files
+  drills: own-modules
+- term: math
+  kind: module
+  about: Mathematical functions and values, such as `math.sqrt`, `math.floor`, `math.ceil` and `math.pi`.
+  aliases:
+  - sqrt
+  - square root
+  - pi
+  - floor
+  steps:
+  - modules-import
+  - modules-from-import
+  drills: modules
+- term: math.ceil
+  kind: function
+  about: Rounds a number up to a whole number, so `math.ceil(2.1)` is 3, which is handy when leftovers still need a place of their own.
+  aliases:
+  - ceil
+  - round up
+  steps:
+  - modules-import
+  drills: modules
+- term: from
+  kind: keyword
+  about: Imports chosen names from a module straight into the program, as in `from math import sqrt`, so they work without the module's name in front.
+  aliases:
+  - from import
+  steps:
+  - modules-from-import
+  drills: modules
+- term: random
+  kind: module
+  about: Makes pseudorandom numbers and random choices, with functions such as `randint`, `choice`, `shuffle`, `sample` and `seed`.
+  aliases:
+  - random numbers
+  steps:
+  - randomness-randint
+  - randomness-choice-shuffle
+  - randomness-drawing
+  drills: randomness
+- term: random.randint
+  kind: function
+  about: Gives a random whole number between its two arguments, both ends included, so `random.randint(1, 6)` rolls a die.
+  aliases:
+  - randint
+  - dice
+  steps:
+  - randomness-randint
+  drills: randomness
+- term: random.seed
+  kind: function
+  about: Sets the starting point of the pseudorandom numbers, so that the same seed gives the same numbers on every run.
+  aliases:
+  - seed
+  - pseudorandom
+  steps:
+  - randomness-randint
+  - randomness-drawing
+  drills: randomness
+- term: random.choice
+  kind: function
+  about: Picks one random item of a list, or one character of a string.
+  aliases:
+  - choice
+  steps:
+  - randomness-choice-shuffle
+  drills: randomness
+- term: random.shuffle
+  kind: function
+  about: Puts the items of a list in a random order, changing the list itself and returning `None`.
+  aliases:
+  - shuffle
+  steps:
+  - randomness-choice-shuffle
+  drills: randomness
+- term: random.sample
+  kind: function
+  about: Returns a new list of the given number of different items picked at random, as when drawing lottery numbers.
+  aliases:
+  - sample
+  - lottery
+  steps:
+  - randomness-drawing
+  drills: randomness
+- term: datetime
+  kind: module
+  about: Dates and times, with the type `datetime` for a moment, as in `datetime(2026, 3, 14, 9, 5)`, and `timedelta` for a length of time.
+  aliases:
+  - date
+  - time
+  - datetime.now
+  steps:
+  - dates-datetime
+  - dates-differences
+  - dates-formatting
+  drills: dates
+- term: timedelta
+  kind: type
+  about: A length of time, such as the difference of two datetimes, with the attributes `days` and `seconds`; adding one to a datetime moves it.
+  steps:
+  - dates-differences
+  drills: dates
+- term: datetime.strftime
+  kind: method
+  about: Turns a datetime into text in the format you describe with codes such as `%d`, `%m`, `%Y`, `%H` and `%M`.
+  aliases:
+  - strftime
+  - date format
+  check:
+  - .strftime(
+  steps:
+  - dates-formatting
+  drills: dates
+- term: datetime.strptime
+  kind: method
+  about: Reads a date written as text in a given format, such as `"%d.%m.%Y"`, and makes a datetime of it.
+  aliases:
+  - strptime
+  - parse a date
+  steps:
+  - dates-formatting
+  drills: dates
+- term: csv
+  kind: module
+  about: Reads CSV files with `csv.reader`, which gives each line as a list of values and understands values in quotes.
+  aliases:
+  - csv.reader
+  - delimiter
+  steps:
+  - data-processing-csv
+  drills: data-processing
+- term: json
+  kind: module
+  about: Turns JSON text into Python lists and dictionaries with `json.loads`, or `json.load` for an open file.
+  aliases:
+  - json.loads
+  - json.load
+  - JSON
+  steps:
+  - data-processing-json
+  drills: data-processing
+- term: statistics
+  kind: module
+  about: Calculates statistics of a list of numbers, such as `statistics.mean` and `statistics.median`.
+  aliases:
+  - mean
+  - median
+  - average
+  steps:
+  - data-processing-finding-modules
+  drills: data-processing
+- term: difflib.get_close_matches
+  kind: function
+  about: Returns the strings of a list that look most like a given word, the most similar first, as for suggesting a fix to a typo.
+  aliases:
+  - get_close_matches
+  - difflib
+  check:
+  - get_close_matches
+  steps:
+  - data-processing-finding-modules
+  drills: data-processing
+- term: ModuleNotFoundError
+  kind: exception
+  about: Raised when an `import` names a module that Python can't find, such as a file that doesn't exist.
+  steps:
+  - own-modules-files
+  - objects-as-attributes-imports
+  drills: objects-as-attributes
+- term: __name__
+  kind: idea
+  about: A variable that is `"__main__"` in the file Python started and the module's name in an imported module, which is what the main block checks.
+  aliases:
+  - __main__
+  - main block
+  - if __name__ == "__main__"
+  steps:
+  - own-modules-main
+  drills: own-modules
+- term: conditional expression
+  kind: idea
+  about: Chooses between two values in one line, as in `"warm" if temperature > 20 else "cold"`.
+  aliases:
+  - ternary operator
+  - one-line if
+  steps:
+  - more-features-conditional-expressions
+  drills: more-features
+- term: loop else
+  kind: idea
+  about: An `else` block after a `for` or `while` loop, lined up with the loop, which runs when the loop ends without `break`.
+  aliases:
+  - for else
+  - while else
+  check:
+  - loops with else
+  steps:
+  - more-features-pass-and-loop-else
+  drills: more-features
+- term: default parameter value
+  kind: idea
+  about: A value written with `=` after a parameter's name in the `def` line, used when a call leaves that argument out.
+  aliases:
+  - default value
+  - default argument
+  - optional parameter
+  steps:
+  - more-features-default-parameters
+  drills: more-features
+- term: keyword argument
+  kind: idea
+  about: An argument given with its parameter's name, such as `level=5`, so it can skip parameters that have default values.
+  aliases:
+  - named argument
+  steps:
+  - more-features-default-parameters
+  - class-attributes-defaults
+  drills: class-attributes
+- term: mutable default value
+  kind: idea
+  about: A list or dictionary as a parameter's default value is created only once and shared by every call, so use `None` and create it in the method.
+  aliases:
+  - default list
+  - mutable default argument
+  check:
+  - a list as a default value
+  - shares the same list
+  steps:
+  - more-features-default-parameters
+  - class-attributes-defaults
+  drills: class-attributes
+- term: '*args'
+  kind: idea
+  about: A parameter with a star before its name, which collects any number of arguments into a tuple.
+  aliases:
+  - variable number of arguments
+  - star parameter
+  steps:
+  - more-features-args
+  drills: more-features
+- term: object
+  kind: idea
+  about: A value in the computer's memory with data of its own, such as a list, a string or an object made from a class; in Python every value is an object.
+  aliases:
+  - objects
+  steps:
+  - objects-everything
+  - objects-classes
+  drills: objects
+- term: object-oriented programming
+  kind: idea
+  about: A way of writing programs around classes and the objects made from them, where each object keeps its data together with the methods that handle it.
+  aliases:
+  - OOP
+  - object oriented programming
+  steps:
+  - objects-everything
+  - objects-classes
+- term: instance
+  kind: idea
+  about: An object made from a class; `Fraction(1, 2)` is an instance of the class `Fraction`.
+  steps:
+  - objects-classes
+- term: attribute
+  kind: idea
+  about: A variable that belongs to an object, used with a dot after the object, such as `day.year` or `self.name`.
+  aliases:
+  - data attribute
+  - attributes
+  steps:
+  - objects-classes
+  - classes-first-class
+  - classes-attributes
+  drills: classes
+- term: constructor
+  kind: idea
+  about: The call that makes a new object, the class's name with parentheses, which runs the class's `__init__` method to set the object up.
+  steps:
+  - objects-classes
+  - classes-constructor
+  drills: classes
+- term: Fraction
+  kind: type
+  about: A class of the `fractions` module for exact fractions, such as `Fraction(3, 4)`, with the attributes `numerator` and `denominator`.
+  steps:
+  - objects-classes
+  drills: objects
+- term: fractions
+  kind: module
+  about: The module with the class `Fraction`, for fractions that are exact where floating point numbers can be slightly off.
+  steps:
+  - objects-classes
+- term: class
+  kind: keyword
+  about: 'Defines a class, the blueprint for a kind of object: the attributes its objects get and the methods they have.'
+  aliases:
+  - classes
+  - blueprint
+  steps:
+  - classes-first-class
+  - classes-constructor
+  drills: classes
+- term: PascalCase
+  kind: idea
+  about: The style for class names, with every word starting with a capital letter and no underscores, as in `BankAccount`.
+  aliases:
+  - UpperCamelCase
+  - CamelCase
+  - class names
+  steps:
+  - classes-first-class
+- term: __init__
+  kind: method
+  about: The constructor method of a class, which Python calls to set up each new object, with the object as `self`.
+  aliases:
+  - init
+  steps:
+  - classes-constructor
+  drills: classes
+- term: self
+  kind: idea
+  about: The first parameter of every method, the object the method was called on, used to reach its attributes and methods as `self.name`.
+  steps:
+  - classes-constructor
+  - methods-first
+  drills: methods
+- term: state
+  kind: idea
+  about: The values of an object's attributes at a given moment, which the object's methods can change.
+  steps:
+  - methods-state
+  drills: methods
+- term: encapsulation
+  kind: idea
+  about: Keeping an object's data valid by handling it only through the object's own methods, which hide the details from the client.
+  steps:
+  - methods-encapsulation
+  - encapsulation-private
+  - encapsulation-getters
+  drills: methods
+- term: client
+  kind: idea
+  about: The code that uses an object by creating it and calling its methods.
+  steps:
+  - methods-encapsulation
+  - encapsulation-private
+- term: helper method
+  kind: idea
+  about: A method that the constructor or the other methods of a class call through `self` to do part of their work.
+  steps:
+  - methods-helpers
+  drills: methods
+- term: __str__
+  kind: method
+  about: A method that returns a string describing the object, which `print`, `str` and f-strings use to show it.
+  steps:
+  - class-examples-str
+  - class-examples-derived
+  drills: class-examples
+- term: special method
+  kind: idea
+  about: A method whose name starts and ends with two underscores, such as `__init__` or `__str__`, which Python calls by itself when it needs it.
+  aliases:
+  - dunder method
+  - magic method
+  steps:
+  - class-examples-str
+- term: is
+  kind: operator
+  about: Checks whether two names refer to the very same object, while `==` checks whether two values are equal.
+  aliases:
+  - identity
+  - same object
+  steps:
+  - object-references-same-object
+  drills: object-references
+- term: is not
+  kind: operator
+  about: The opposite of `is`, true when two names refer to different objects, as in `if result is not None:`.
+  steps:
+  - object-references-same-object
+  - objects-as-attributes-none
+  drills: objects-as-attributes
+- term: NoneType
+  kind: type
+  about: The type of `None`, so an error about a `'NoneType' object` means a value was `None` where an object was expected.
+  steps:
+  - objects-as-attributes-none
+  drills: objects-as-attributes
+- term: private attribute
+  kind: idea
+  about: An attribute whose name starts with two underscores, such as `self.__balance`, which only the class's own methods use by that name.
+  aliases:
+  - private
+  - double underscore
+  - __
+  steps:
+  - encapsulation-private
+  drills: encapsulation
+- term: decorator
+  kind: idea
+  about: A line that starts with `@` just above a `def`, such as `@property`, which changes how the method is used.
+  steps:
+  - encapsulation-getters
+  - class-attributes-methods
+  drills: encapsulation
+- term: '@property'
+  kind: function
+  about: A decorator that turns a method into a getter, so the client reads the value like an attribute, without parentheses.
+  aliases:
+  - property
+  steps:
+  - encapsulation-getters
+  - encapsulation-setters
+  drills: encapsulation
+- term: getter
+  kind: idea
+  about: A method that gives the value of an attribute, in Python usually written with `@property`.
+  steps:
+  - encapsulation-getters
+  drills: encapsulation
+- term: setter
+  kind: idea
+  about: A method that changes the value of an attribute and can check the new value first, written with `@name.setter` after the getter.
+  aliases:
+  - .setter
+  steps:
+  - encapsulation-setters
+  drills: encapsulation
+- term: private method
+  kind: idea
+  about: A helper method whose name starts with two underscores, which the class's own methods call with `self.` and the client can't call.
+  steps:
+  - encapsulation-private-methods
+  drills: encapsulation
+- term: class variable
+  kind: idea
+  about: A variable written in a class outside its methods, shared by all objects of the class and used through the class's name.
+  aliases:
+  - static variable
+  - class attribute
+  steps:
+  - class-attributes-variables
+  drills: class-attributes
+- term: instance variable
+  kind: idea
+  about: An attribute that each object has for itself, created with `self.` in a method such as `__init__`.
+  aliases:
+  - instance attribute
+  steps:
+  - class-attributes-variables
+  drills: class-attributes
+- term: '@classmethod'
+  kind: function
+  about: A decorator that makes a method belong to the class, so it's called through the class's name and gets the class as `cls`.
+  aliases:
+  - class method
+  steps:
+  - class-attributes-methods
+  drills: class-attributes
+- term: '@staticmethod'
+  kind: function
+  about: A decorator for a method that gets neither the object nor the class, a plain function kept in the class it belongs with.
+  aliases:
+  - static method
+  steps:
+  - class-attributes-methods
+  drills: class-attributes
+- term: cls
+  kind: idea
+  about: The usual name of a class method's first parameter, which refers to the class itself, so `cls(...)` creates a new object.
+  steps:
+  - class-attributes-methods
+  drills: class-attributes
+- term: inheritance
+  kind: idea
+  about: A class taking over the attributes and methods of another class, as in `class Wizard(Character):`, so that shared code is written only once.
+  aliases:
+  - inherit
+  - inherits
+  steps:
+  - inheritance-base-class
+  drills: inheritance
+- term: base class
+  kind: idea
+  about: The class that another class inherits from, which holds what its derived classes share.
+  aliases:
+  - superclass
+  - parent class
+  steps:
+  - inheritance-base-class
+  drills: inheritance
+- term: derived class
+  kind: idea
+  about: A class that inherits another class and adds or changes attributes and methods of its own.
+  aliases:
+  - subclass
+  - child class
+  steps:
+  - inheritance-base-class
+  drills: inheritance
+- term: overriding
+  kind: idea
+  about: Writing a method in a derived class with the same name as a method of its base class, so that objects of the derived class use the new version.
+  aliases:
+  - override
+  - overrides
+  steps:
+  - inheritance-overriding
+  - inheritance-super
+  drills: inheritance
+- term: super
+  kind: function
+  about: Gives the base class's version of a method, as in `super().__init__(name, health)` in the constructor of a derived class.
+  aliases:
+  - super()
+  steps:
+  - inheritance-super
+  drills: inheritance
+- term: class hierarchy
+  kind: idea
+  about: Classes that inherit one another over several levels, like a family tree, where an object is also an instance of every class above its own.
+  aliases:
+  - hierarchy
+  steps:
+  - inheritance-isinstance
+  drills: inheritance
+- term: isinstance
+  kind: function
+  about: Tells whether a value is an object of a class or of a class derived from it, as in `isinstance(spark, Car)`.
+  steps:
+  - inheritance-isinstance
+  - oop-techniques-equality
+  drills: inheritance
+- term: name mangling
+  kind: idea
+  about: Python's way of hiding a private name by renaming it after its class, so that `self.__songs` in `Playlist` is really `self._Playlist__songs`.
+  steps:
+  - access-modifiers-private
+  drills: access-modifiers
+- term: protected attribute
+  kind: idea
+  about: An attribute whose name starts with one underscore, such as `self._songs`, which by agreement is for the class and its derived classes but not for clients.
+  aliases:
+  - protected
+  - protected method
+  - single underscore
+  steps:
+  - access-modifiers-protected
+  - access-modifiers-protected-methods
+  drills: access-modifiers
+- term: access modifier
+  kind: idea
+  about: 'The level of access of an attribute or a method: public `name`, protected `_name` or private `__name`.'
+  aliases:
+  - public
+  - access level
+  steps:
+  - access-modifiers-protected
+  drills: access-modifiers
+- term: operator overloading
+  kind: idea
+  about: Giving a class special methods such as `__lt__` or `__add__`, so that operators like `<` and `+` work with its objects.
+  aliases:
+  - overloading
+  steps:
+  - oop-techniques-comparisons
+  drills: oop-techniques
+- term: __lt__
+  kind: method
+  about: The method Python calls for `<`, which `sorted`, `min` and `max` use too; `__gt__`, `__le__` and `__ge__` do the same for `>`, `<=` and `>=`.
+  aliases:
+  - __gt__
+  - __le__
+  - __ge__
+  steps:
+  - oop-techniques-comparisons
+  - oop-techniques-equality
+  drills: oop-techniques
+- term: __eq__
+  kind: method
+  about: The method Python calls for `==` and `in`, without which `==` only checks whether two names refer to the same object.
+  aliases:
+  - __ne__
+  steps:
+  - oop-techniques-equality
+  drills: oop-techniques
+- term: __add__
+  kind: method
+  about: The method Python calls for `+`, which usually returns a new object; `__sub__` and `__mul__` do the same for `-` and `*`.
+  aliases:
+  - __sub__
+  - __mul__
+  - __truediv__
+  steps:
+  - oop-techniques-arithmetic
+  drills: oop-techniques
+- term: __repr__
+  kind: method
+  about: Returns a technical text of an object, often like the code that creates it, which `repr`, printed lists and a `print` without `__str__` use.
+  steps:
+  - oop-techniques-repr
+  drills: oop-techniques
+- term: repr
+  kind: function
+  about: Gives the technical text of a value, such as `'Ada'` with its quotes for a string.
+  steps:
+  - oop-techniques-repr
+  drills: oop-techniques
+- term: iterable
+  kind: idea
+  about: A value that a `for` loop can go through, such as a list, a string, or an object of a class with the methods `__iter__` and `__next__`.
+  steps:
+  - oop-techniques-iterators
+  drills: oop-techniques
+- term: __iter__
+  kind: method
+  about: Runs when a `for` loop starts going through an object, and returns the iterator that hands out the items, often the object itself.
+  steps:
+  - oop-techniques-iterators
+  drills: oop-techniques
+- term: __next__
+  kind: method
+  about: Returns an iterator's next item, and raises `StopIteration` when there are no items left.
+  steps:
+  - oop-techniques-iterators
+  drills: oop-techniques
+- term: next
+  kind: function
+  about: Asks an iterator, such as a generator, for its next value, and raises `StopIteration` when there are no values left.
+  steps:
+  - oop-techniques-iterators
+  - generators-next
+  - generators-expressions
+  drills: generators
+- term: StopIteration
+  kind: exception
+  about: The exception that `next` raises when a generator or another iterator has no more values; a `for` loop ends quietly when it gets one.
+  steps:
+  - oop-techniques-iterators
+  - generators-next
+  drills: generators
+- term: iterator
+  kind: idea
+  about: An object that gives the values of a series one at a time and is used up after one pass, like the results of `map`, `filter` and generators.
+  steps:
+  - oop-techniques-iterators
+  - functional-map
+  - functional-filter
+  drills: functional
+- term: separation of concerns
+  kind: idea
+  about: Dividing a program into parts that each take care of one area of the work, such as the logic, the user interface and the storage.
+  steps:
+  - larger-application-logic
+  drills: larger-application
+- term: single responsibility principle
+  kind: idea
+  about: The rule that each class, and the objects made from it, should have one job in the program.
+  aliases:
+  - single responsibility
+  steps:
+  - larger-application-logic
+  drills: larger-application
+- term: application logic
+  kind: idea
+  about: The part of a program that holds its data and the rules for handling it, apart from the user interface and the storage.
+  aliases:
+  - logic class
+  steps:
+  - larger-application-logic
+  drills: larger-application
+- term: user interface
+  kind: idea
+  about: The part of a program that talks to the user, such as a text interface that reads commands and calls the logic's methods.
+  aliases:
+  - UI
+  - text user interface
+  steps:
+  - larger-application-logic
+  - larger-application-interface
+  drills: larger-application
+- term: dependency injection
+  kind: idea
+  about: Giving an object the things it depends on from outside, such as passing a file handler to the application's constructor.
+  steps:
+  - larger-application-files
+  drills: larger-application
+- term: starred assignment
+  kind: idea
+  about: An assignment where a `*` in front of the last variable gives it a list of the items left over, as in `species, *places = parts`.
+  aliases:
+  - '*rest'
+  - extended unpacking
+  steps:
+  - larger-application-files
+  drills: larger-application
+- term: list comprehension
+  kind: idea
+  about: Builds a new list from a series in a single expression, such as `[n * 2 for n in numbers]`.
+  aliases:
+  - comprehension
+  steps:
+  - comprehensions-new-lists
+  - comprehensions-instead-of-loops
+  drills: comprehensions
+- term: filtering
+  kind: idea
+  about: Keeping only the items that meet a condition, as an `if` at the end of a comprehension does.
+  steps:
+  - comprehensions-filtering
+  drills: comprehensions
+- term: dictionary comprehension
+  kind: idea
+  about: 'Builds a new dictionary in a single expression, such as `{word: len(word) for word in words}`.'
+  aliases:
+  - dict comprehension
+  steps:
+  - more-comprehensions-dictionaries
+  drills: more-comprehensions
+- term: set comprehension
+  kind: idea
+  about: Builds a new set in a single expression, such as `{len(word) for word in words}`, so repeated values are kept only once.
+  steps:
+  - more-comprehensions-sets
+  drills: more-comprehensions
+- term: set
+  kind: type
+  about: A collection that holds each value only once and keeps no order, written `{1, 2, 3}` or made with `set()`.
+  steps:
+  - more-comprehensions-sets
+  drills: more-comprehensions
+- term: set.add
+  kind: method
+  about: Adds a value to a set, and does nothing if the value is already in it.
+  check:
+  - colors.add(
+  steps:
+  - more-comprehensions-sets
+- term: recursion
+  kind: idea
+  about: A function calling itself to solve a smaller version of the same problem.
+  aliases:
+  - recursive function
+  steps:
+  - recursion-calling-itself
+  - recursion-return-values
+  drills: recursion
+- term: base case
+  kind: idea
+  about: The case in which a recursive function answers without calling itself, so that the calls stop.
+  steps:
+  - recursion-calling-itself
+  - recursion-return-values
+  drills: recursion
+- term: RecursionError
+  kind: exception
+  about: Raised when a function calls itself too many times without stopping, usually because the base case is missing or never reached.
+  steps:
+  - recursion-calling-itself
+  drills: recursion
+- term: iterative
+  kind: idea
+  about: Describes a solution that repeats with a loop, as opposed to a recursive one.
+  aliases:
+  - iteration
+  steps:
+  - recursion-calling-itself
+- term: call stack
+  kind: idea
+  about: The unfinished function calls that Python keeps waiting, the newest on top, each carrying on when the call above it returns.
+  steps:
+  - recursion-return-values
+- term: factorial
+  kind: idea
+  about: The product of the whole numbers from 1 to n, written n!, a classic example of a recursive function.
+  steps:
+  - recursion-return-values
+- term: Fibonacci sequence
+  kind: idea
+  about: The numbers 1, 1, 2, 3, 5, 8 and so on, where each number is the sum of the two before it.
+  aliases:
+  - Fibonacci
+  steps:
+  - recursion-smaller-pieces
+- term: palindrome
+  kind: idea
+  about: A string that reads the same backwards and forwards, such as "racecar".
+  steps:
+  - recursion-smaller-pieces
+- term: binary search
+  kind: idea
+  about: Finds a value in a sorted list by looking at the middle item and going on in the half that can hold the value.
+  steps:
+  - recursion-binary-search
+  drills: recursion
+- term: linear search
+  kind: idea
+  about: Finds a value by looking at the items one by one from the start.
+  steps:
+  - recursion-binary-search
+- term: binary tree
+  kind: idea
+  about: A branching structure of nodes in which each node has at most two children, a left one and a right one.
+  aliases:
+  - tree
+  steps:
+  - recursion-examples-binary-trees
+  - recursion-examples-sorted-tree
+  drills: recursion-examples
+- term: node
+  kind: idea
+  about: One item of a tree, holding a value and references to its children.
+  steps:
+  - recursion-examples-binary-trees
+- term: leaf
+  kind: idea
+  about: A node of a tree that has no children.
+  aliases:
+  - leaves
+  steps:
+  - recursion-examples-binary-trees
+- term: subtree
+  kind: idea
+  about: A node of a tree together with everything below it, which is a complete tree of its own.
+  steps:
+  - recursion-examples-binary-trees
+- term: sorted binary tree
+  kind: idea
+  about: A binary tree in which every node's left subtree holds only smaller values and its right subtree only greater ones.
+  aliases:
+  - binary search tree
+  - BST
+  steps:
+  - recursion-examples-sorted-tree
+  drills: recursion-examples
+- term: key function
+  kind: idea
+  about: A function given to `sorted`, `sort`, `min` or `max` with `key=`, which returns the value each item is compared by.
+  aliases:
+  - key
+  - sort key
+  steps:
+  - functions-as-arguments-key
+  - functions-as-arguments-objects
+  drills: functions-as-arguments
+- term: lambda
+  kind: keyword
+  about: 'Makes a small function without a name, written `lambda parameters: expression`, which returns the value of the expression.'
+  aliases:
+  - lambda expression
+  - anonymous function
+  steps:
+  - functions-as-arguments-lambda
+  - functions-as-arguments-objects
+  drills: functions-as-arguments
+- term: yield
+  kind: keyword
+  about: Hands out one value from a generator function and pauses it there, so that it can continue from the same spot when the next value is asked for.
+  steps:
+  - generators-yield
+  drills: generators
+- term: generator
+  kind: idea
+  about: An object that produces the values of a series one at a time, only when they are asked for, made by a generator function or a generator expression.
+  aliases:
+  - generator function
+  steps:
+  - generators-yield
+  - generators-next
+  drills: generators
+- term: generator expression
+  kind: idea
+  about: A comprehension in round brackets, such as `(n * n for n in numbers)`, which makes a generator instead of a list.
+  aliases:
+  - generator comprehension
+  steps:
+  - generators-expressions
+  drills: generators
+- term: functional programming
+  kind: idea
+  about: A style of programming that builds a program from functions that return new values, instead of changing variables step by step.
+  aliases:
+  - paradigm
+  - programming paradigm
+  steps:
+  - functional-map
+  drills: functional
+- term: map
+  kind: function
+  about: Calls a function on every item of a series and gives the results as an iterator, so `list(map(int, texts))` makes a list of numbers.
+  steps:
+  - functional-map
+  - functional-filter
+  drills: functional
+- term: filter
+  kind: function
+  about: Gives, as an iterator, the items of a series for which a function returns `True`.
+  steps:
+  - functional-filter
+  drills: functional
+- term: functools
+  kind: module
+  about: A module of tools for working with functions, such as `reduce`.
+  steps:
+  - functional-reduce
+  drills: functional
+- term: functools.reduce
+  kind: function
+  about: Combines the items of a series into one value by calling a function with the result so far and each item in turn.
+  aliases:
+  - reduce
+  check:
+  - reduce(
+  steps:
+  - functional-reduce
+  drills: functional
+- term: regular expression
+  kind: idea
+  about: A pattern that describes a kind of text, such as any number or a valid code, used to search, check and replace text.
+  aliases:
+  - regex
+  - regexp
+  - pattern
+  steps:
+  - regex-search
+  - regex-classes
+  drills: regex
+- term: re
+  kind: module
+  about: Python's module for regular expressions, with functions such as `re.search`, `re.findall`, `re.fullmatch` and `re.sub`.
+  steps:
+  - regex-search
+  drills: regex
+- term: re.search
+  kind: function
+  about: Looks for the first place in a text that matches a pattern and returns a match object, or `None` when there is no match.
+  steps:
+  - regex-search
+  - regex-classes
+  drills: regex
+- term: re.findall
+  kind: function
+  about: Returns a list of all the parts of a text that match a pattern, as strings.
+  steps:
+  - regex-search
+  - regex-classes
+  drills: regex
+- term: Match.group
+  kind: method
+  about: Gives the text that a regular expression matched, from the match object that `re.search` or `re.fullmatch` returns.
+  aliases:
+  - match object
+  - group
+  check:
+  - .group(
+  steps:
+  - regex-search
+  drills: regex
+- term: raw string
+  kind: idea
+  about: A string written with an `r` before its quotes, such as `r"\d+"`, in which Python leaves every backslash as it is.
+  aliases:
+  - r-string
+  steps:
+  - regex-search
+  drills: regex
+- term: character class
+  kind: idea
+  about: Square brackets in a regular expression, such as `[aeiou]` or `[0-9]`, which match one character of those listed.
+  aliases:
+  - character set
+  steps:
+  - regex-classes
+  drills: regex
+- term: re.fullmatch
+  kind: function
+  about: Matches only when the pattern covers the whole text, which makes it the tool for checking a complete value such as an input.
+  steps:
+  - regex-repetition
+  - regex-checking-input
+  drills: regex
+- term: quantifier
+  kind: idea
+  about: A mark after part of a regular expression, such as `*`, `+`, `?` or `{3}`, that says how many times that part repeats.
+  steps:
+  - regex-repetition
+  drills: regex
+- term: re.sub
+  kind: function
+  about: Returns a new string in which every part of a text that matches a pattern is replaced with another string.
+  steps:
+  - regex-checking-input
+  drills: regex

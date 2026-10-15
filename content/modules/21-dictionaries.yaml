@@ -1,0 +1,1083 @@
+id: dictionaries
+summary: Dictionaries store values under keys. Creating and using them, what keys and values can be, going through a dictionary, counting and grouping with one, removing keys, and dictionaries as records.
+steps:
+  - id: dictionaries-basics
+    slug: basics
+    title: Keys and values
+    text: |
+      A list finds its items by position: 0, 1, 2 and so on. Often you'd rather find a value by a name: the price of a coffee, the phone number of Ada. A **dictionary** stores pairs of a **key** and a **value**, and you find each value by its key, the way you look up a word in a real dictionary to find what it means.
+
+      ```python run
+      prices = {}
+      prices["coffee"] = 2.5
+      prices["tea"] = 2.0
+      prices["cake"] = 3.75
+
+      print(prices)
+      print(len(prices))
+      print(prices["tea"])
+      ```
+
+      ```output
+      {'coffee': 2.5, 'tea': 2.0, 'cake': 3.75}
+      3
+      2.0
+      ```
+
+      - `{}` is an empty dictionary.
+      - `prices["coffee"] = 2.5` adds the key `"coffee"` with the value 2.5.
+      - `prices["tea"]`, with a key in square brackets, gives that key's value.
+      - `len` counts the pairs, and `print` shows them all, in curly braces, with a colon between each key and its value.
+
+      You can also write the pairs right away, in that same form:
+
+      ```python repl
+      >>> capitals = {"Finland": "Helsinki", "Peru": "Lima"}
+      >>> capitals["Peru"]
+      'Lima'
+      >>> capitals["Chile"] = "Santiago"
+      >>> capitals
+      {'Finland': 'Helsinki', 'Peru': 'Lima', 'Chile': 'Santiago'}
+      >>> type(capitals)
+      <class 'dict'>
+      ```
+
+      Python's name for the dictionary type is `dict`.
+
+      ### Is the key there?
+
+      Asking for a key that isn't in the dictionary stops the program with a `KeyError`, which names the missing key:
+
+      ```python run crash
+      prices = {"coffee": 2.5, "tea": 2.0}
+      print(prices["juice"])
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(prices["juice"])
+                ~~~~~~^^^^^^^^^
+      KeyError: 'juice'
+      ```
+
+      The `in` operator checks first. With a dictionary, it looks at the keys only, not at the values:
+
+      ```python repl
+      >>> prices = {"coffee": 2.5, "tea": 2.0}
+      >>> "tea" in prices
+      True
+      >>> 2.5 in prices
+      False
+      ```
+
+      Together, `in` and a lookup make a program that finds things for the user:
+
+      ```python run
+      prices = {"coffee": 2.5, "tea": 2.0, "cake": 3.75}
+
+      item = input("What would you like? ")
+      if item in prices:
+          print(f"That's {prices[item]:.2f} euros.")
+      else:
+          print("Sorry, we don't have that.")
+      ```
+
+      ```input
+      cake
+      ```
+
+      ```output
+      What would you like? cake
+      That's 3.75 euros.
+      ```
+
+      **Your turn:** fill in the blanks so the program adds a spider, with 8 legs, to the dictionary. Then it prints the number of animals in the dictionary and the legs of a bird and a spider together:
+
+      ```
+      3
+      10
+      ```
+    fill: |
+      legs = {"cat": 4, "bird": 2}
+      legs[[["spider"‖'spider']]] = 8
+      print(len(legs))
+      print(legs[[["bird"‖'bird']]] + legs["spider"])
+    hints:
+      - "A key goes in square brackets after the dictionary's name, written as you would write the string anywhere else: `\"spider\"`, with quotes."
+      - "The first blank is the new key `\"spider\"`, and the second is the key whose value is the bird's legs, `\"bird\"`."
+    tests:
+      - expect: |
+          3
+          10
+    more:
+      - task: |
+          A cinema keeps its showtimes in a dictionary. Complete the program: it asks for a movie and prints when it starts, or `No such movie today` when the movie isn't in the dictionary. Use the prompt `Movie: ` exactly. An example run:
+
+          ```
+          Movie: Tiny Giants
+          Tiny Giants starts at 16:15
+          ```
+        seed: |
+          showtimes = {"Space Dogs": "18:00", "The Last Lighthouse": "20:30", "Tiny Giants": "16:15"}
+        solution: |
+          showtimes = {"Space Dogs": "18:00", "The Last Lighthouse": "20:30", "Tiny Giants": "16:15"}
+
+          movie = input("Movie: ")
+          if movie in showtimes:
+              print(f"{movie} starts at {showtimes[movie]}")
+          else:
+              print("No such movie today")
+        hints:
+          - "Read the movie's name with `input(\"Movie: \")`. Then check whether it's a key of `showtimes` with `in`."
+          - "If it is, `showtimes[movie]` is its starting time. Put both in an f-string: `f\"{movie} starts at {showtimes[movie]}\"`."
+          - Without the `in` check, a movie that isn't in the dictionary would stop the program with a `KeyError`.
+        tests:
+          - stdin: Tiny Giants
+          - stdin: Frozen Seas
+          - stdin: The Last Lighthouse
+            hidden: true
+          - stdin: space dogs
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          stock = {"apples": 5, "pears": 0}
+          stock["plums"] = 7
+          print(len(stock))
+          print(stock["apples"] + stock["plums"])
+          print("pears" in stock)
+          print(5 in stock)
+        hints:
+          - After the second line, the dictionary has three keys.
+          - "`stock[\"apples\"]` is 5 and `stock[\"plums\"]` is 7."
+          - "`in` checks the keys only. A key with the value 0 is still a key, and 5 is a value, not a key."
+
+  - id: dictionaries-keys-and-values
+    slug: keys-and-values
+    title: What a dictionary can hold
+    text: |
+      The values in a dictionary can be of any type: numbers, strings, lists, even other dictionaries. Keys are often strings, but numbers work just as well. Here the keys are numbers:
+
+      ```python run
+      days = {1: "Monday", 2: "Tuesday", 3: "Wednesday"}
+      for number in range(1, 4):
+          print(number, days[number])
+      ```
+
+      ```output
+      1 Monday
+      2 Tuesday
+      3 Wednesday
+      ```
+
+      With lists as values, each key can have many values. A list in a dictionary is changed like any other list:
+
+      ```python run
+      grades = {"Ada": [9, 7], "Max": [6]}
+      grades["Max"].append(8)
+      grades["Lin"] = []
+      print(grades)
+      print(grades["Ada"][0])
+      ```
+
+      ```output
+      {'Ada': [9, 7], 'Max': [6, 8], 'Lin': []}
+      9
+      ```
+
+      `grades["Max"]` is a list, and `.append(8)` changes that list inside the dictionary. `grades["Ada"][0]` reads from left to right: the value of `"Ada"`, then the item at index 0 of that list.
+
+      ### One value per key
+
+      A key is in a dictionary only once. Assigning to a key that's already there replaces its value. That's also how you update a value:
+
+      ```python repl
+      >>> stock = {"apples": 5}
+      >>> stock["apples"] = 3
+      >>> stock
+      {'apples': 3}
+      >>> stock["apples"] += 10
+      >>> stock["apples"]
+      13
+      ```
+
+      `stock["apples"] += 10` reads the old value, adds 10 and stores the result under the same key. A value, on the other hand, can be stored under many keys: in `{"Ada": 9, "Max": 9}`, both keys have the value 9.
+
+      A loop can fill a dictionary, one key at a time:
+
+      ```python run
+      names = ["Ada", "Max", "Lin"]
+      seat_of = {}
+      for i in range(len(names)):
+          seat_of[names[i]] = i + 1
+      print(seat_of)
+      print(seat_of["Lin"])
+      ```
+
+      ```output
+      {'Ada': 1, 'Max': 2, 'Lin': 3}
+      3
+      ```
+
+      ### Keys must not change
+
+      A key must be immutable. Numbers, strings and Booleans work (and so do tuples, which the last module of this part shows). A list can't be a key, because it could change after it went into the dictionary:
+
+      ```python run crash
+      places = {}
+      places[[60, 24]] = "Helsinki"
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          places[[60, 24]] = "Helsinki"
+          ~~~~~~^^^^^^^^^^
+      TypeError: cannot use 'list' as a dict key (unhashable type: 'list')
+      ```
+
+      To find a key fast, Python turns it into a number called a **hash**, and that number must never change. A list's contents can change, so a list is "unhashable". Values have no such rule.
+
+      **Your turn:** write a function `word_lengths(words)` that returns a dictionary in which each word of the list is a key and its length is the value. For example, `word_lengths(["sun", "moon", "sky"])` returns `{'sun': 3, 'moon': 4, 'sky': 3}`. If a word is in the list twice, it's in the dictionary once.
+    seed: |
+      def word_lengths(words: list) -> dict:
+          pass
+
+
+      if __name__ == "__main__":
+          print(word_lengths(["sun", "moon", "sky"]))
+    solution: |
+      def word_lengths(words: list) -> dict:
+          lengths = {}
+          for word in words:
+              lengths[word] = len(word)
+          return lengths
+
+
+      if __name__ == "__main__":
+          print(word_lengths(["sun", "moon", "sky"]))
+    hints:
+      - "Start with an empty dictionary, `lengths = {}`, and return it at the end."
+      - "Go through the words, and for each one store its length: `lengths[word] = len(word)`."
+      - A word that comes again is stored under the same key, which just replaces the value with the same length.
+    tests:
+      - call: word_lengths(["sun", "moon", "sky"])
+      - call: word_lengths(["a", "python", "a"])
+        hidden: true
+      - call: word_lengths([])
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          scores = {"Ada": 3, "Max": 5}
+          scores["Ada"] = 7
+          scores["Lin"] = scores["Max"]
+          scores["Max"] += 1
+          print(scores)
+          print(len(scores))
+        hints:
+          - "Assigning to a key that's already there replaces its value, so `\"Ada\"` stays where it was with a new value."
+          - "`scores[\"Lin\"] = scores[\"Max\"]` adds a new key with Max's value at that moment, 5."
+          - "`scores[\"Max\"] += 1` changes only Max's value."
+      - task: |
+          Write a function `divisor_table(n)` that returns a dictionary whose keys are the numbers from 1 to `n`. The value of each key is a list of the numbers that divide it evenly, from smallest to largest.
+
+          For example, `divisor_table(4)` returns `{1: [1], 2: [1, 2], 3: [1, 3], 4: [1, 2, 4]}`.
+        seed: |
+          def divisor_table(n: int) -> dict:
+              pass
+
+
+          if __name__ == "__main__":
+              print(divisor_table(4))
+        solution: |
+          def divisor_table(n: int) -> dict:
+              table = {}
+              for number in range(1, n + 1):
+                  divisors = []
+                  for candidate in range(1, number + 1):
+                      if number % candidate == 0:
+                          divisors.append(candidate)
+                  table[number] = divisors
+              return table
+
+
+          if __name__ == "__main__":
+              print(divisor_table(4))
+        hints:
+          - Go through the numbers from 1 to `n` with `range(1, n + 1)`. Each one becomes a key.
+          - "For one number, build a list of its divisors: try every candidate from 1 to the number itself, and keep those with `number % candidate == 0`."
+          - "Store the list as the value: `table[number] = divisors`."
+        tests:
+          - call: divisor_table(4)
+          - call: divisor_table(1)
+            hidden: true
+          - call: divisor_table(12)
+            hidden: true
+
+  - id: dictionaries-looping
+    slug: looping
+    title: Going through a dictionary
+    text: |
+      A `for` loop over a dictionary goes through its keys, in the order they were added. Each key gives you its value:
+
+      ```python run
+      stock = {"apples": 5, "pears": 0, "plums": 7}
+      for fruit in stock:
+          print(fruit, stock[fruit])
+      ```
+
+      ```output
+      apples 5
+      pears 0
+      plums 7
+      ```
+
+      When you need both the key and the value, the method `items()` gives them in pairs. The loop then has two variables, separated by a comma: the first one gets the key and the second one the value.
+
+      ```python run
+      stock = {"apples": 5, "pears": 0, "plums": 7}
+      for fruit, amount in stock.items():
+          if amount == 0:
+              print(f"{fruit}: sold out")
+          else:
+              print(f"{fruit}: {amount} left")
+      ```
+
+      ```output
+      apples: 5 left
+      pears: sold out
+      plums: 7 left
+      ```
+
+      How one pair can fill two variables is explained in the tuples module at the end of this part.
+
+      A loop may change the values of keys that are already there. Adding or removing keys during the loop is another matter, which the step on removing keys comes back to.
+
+      ```python run
+      stock = {"apples": 5, "pears": 0, "plums": 7}
+      for fruit in stock:
+          stock[fruit] += 10
+      print(stock)
+      ```
+
+      ```output
+      {'apples': 15, 'pears': 10, 'plums': 17}
+      ```
+
+      ### In alphabetical order
+
+      `sorted` works on a dictionary too: it returns a list of its keys, in order. Looping over that list goes through the dictionary in alphabetical order:
+
+      ```python run
+      phone_book = {"Max": "555-0199", "Ada": "555-0123", "Lin": "555-0150"}
+      print(sorted(phone_book))
+      for name in sorted(phone_book):
+          print(name, phone_book[name])
+      ```
+
+      ```output
+      ['Ada', 'Lin', 'Max']
+      Ada 555-0123
+      Lin 555-0150
+      Max 555-0199
+      ```
+
+      ### The best pair
+
+      Finding the largest value works as it does with a list, except that you usually want to remember the key that goes with it:
+
+      ```python run
+      votes = {"pizza": 12, "tacos": 17, "sushi": 9}
+
+      winner = ""
+      most = 0
+      for food, count in votes.items():
+          if count > most:
+              winner = food
+              most = count
+
+      print(f"{winner} won with {most} votes")
+      ```
+
+      ```output
+      tacos won with 17 votes
+      ```
+
+      **Your turn:** fill in the blanks so the program prints each name with as many stars as the grade:
+
+      ```
+      Ada *****
+      Max ***
+      Lin ****
+      ```
+    fill: |
+      grades = {"Ada": 5, "Max": 3, "Lin": 4}
+      for name, grade in grades.[[items]]():
+          stars = "*" * [[grade]]
+          print([[name]], stars)
+    hints:
+      - "The method that gives both the key and the value of each pair is `items()`."
+      - "On each round, `name` is the key and `grade` the value. `\"*\" * grade` repeats the star `grade` times."
+    tests:
+      - expect: |
+          Ada *****
+          Max ***
+          Lin ****
+    more:
+      - task: |
+          Write a function `best_student(grades)` that takes a dictionary of names and grades and returns the name with the highest grade. If several students share the highest grade, it returns the one that comes first in the dictionary. Grades are whole numbers from 1 to 5.
+
+          For example, `best_student({"Ada": 4, "Max": 3, "Lin": 5})` returns `"Lin"`.
+        seed: |
+          def best_student(grades: dict) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(best_student({"Ada": 4, "Max": 3, "Lin": 5}))
+        solution: |
+          def best_student(grades: dict) -> str:
+              best = ""
+              highest = 0
+              for name, grade in grades.items():
+                  if grade > highest:
+                      best = name
+                      highest = grade
+              return best
+
+
+          if __name__ == "__main__":
+              print(best_student({"Ada": 4, "Max": 3, "Lin": 5}))
+        hints:
+          - Keep two helper variables, the best name so far and its grade, and go through the pairs with `items()`.
+          - "When a grade is greater than the best so far, remember both the name and the grade."
+          - "Use `>`, not `>=`: then a later student with the same grade doesn't replace the first one."
+        tests:
+          - call: 'best_student({"Ada": 4, "Max": 3, "Lin": 5})'
+          - call: 'best_student({"Ada": 5, "Max": 3, "Lin": 4})'
+            hidden: true
+          - call: 'best_student({"Kim": 1})'
+            hidden: true
+          - call: 'best_student({"Ana": 4, "Ben": 5, "Cid": 5})'
+            hidden: true
+      - task: |
+          A shop keeps its stock in a dictionary of products and amounts. Write a function `running_low(stock, limit)` that returns a list of the products whose amount is less than `limit`, in alphabetical order.
+
+          For example, `running_low({"pens": 3, "clips": 50, "tape": 1}, 5)` returns `['pens', 'tape']`.
+        seed: |
+          def running_low(stock: dict, limit: int) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(running_low({"pens": 3, "clips": 50, "tape": 1}, 5))
+        solution: |
+          def running_low(stock: dict, limit: int) -> list:
+              low = []
+              for product in sorted(stock):
+                  if stock[product] < limit:
+                      low.append(product)
+              return low
+
+
+          if __name__ == "__main__":
+              print(running_low({"pens": 3, "clips": 50, "tape": 1}, 5))
+        hints:
+          - Go through the products, check each amount against `limit`, and append the low ones to a new list.
+          - "Loop over `sorted(stock)` to get the products in alphabetical order, or sort the result list before you return it."
+        tests:
+          - call: 'running_low({"pens": 3, "clips": 50, "tape": 1}, 5)'
+          - call: 'running_low({"zips": 0, "glue": 2, "ink": 9}, 10)'
+            hidden: true
+          - call: 'running_low({"paper": 100}, 100)'
+            hidden: true
+
+  - id: dictionaries-counting
+    slug: counting
+    title: Counting and grouping
+    text: |
+      Counting how many times each thing appears is one of the most common jobs for a dictionary. The things become the keys, and their counts the values:
+
+      ```python run
+      colors = ["red", "blue", "red", "green", "blue", "red"]
+
+      counts = {}
+      for color in colors:
+          if color not in counts:
+              counts[color] = 0
+          counts[color] += 1
+
+      print(counts)
+      ```
+
+      ```output
+      {'red': 3, 'blue': 2, 'green': 1}
+      ```
+
+      `not in` is the opposite of `in`: it's true when the key is not in the dictionary. The first time a color comes up, it isn't a key yet, so the loop adds it with the count 0. Then, every time, its count goes up by one.
+
+      Without the `if`, the very first `+=` stops the program. `+=` reads the old value before it adds to it, and there is no old value yet:
+
+      ```python run crash
+      colors = ["red", "blue"]
+      counts = {}
+      for color in colors:
+          counts[color] += 1
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          counts[color] += 1
+          ~~~~~~^^^^^^^
+      KeyError: 'red'
+      ```
+
+      ### Grouping
+
+      The same pattern can sort things into groups. The values are lists, and each thing is appended to the list of its group. Here students are grouped by their grade:
+
+      ```python run
+      results = [["Ada", 5], ["Max", 3], ["Lin", 5], ["Kim", 4], ["Bo", 3]]
+
+      by_grade = {}
+      for result in results:
+          name = result[0]
+          grade = result[1]
+          if grade not in by_grade:
+              by_grade[grade] = []
+          by_grade[grade].append(name)
+
+      for grade in sorted(by_grade):
+          print(grade, by_grade[grade])
+      ```
+
+      ```output
+      3 ['Max', 'Bo']
+      4 ['Kim']
+      5 ['Ada', 'Lin']
+      ```
+
+      The first time a grade comes up, it gets an empty list. Then the name goes into the list of its grade. Both patterns have the same shape: make sure the key exists, then update its value.
+
+      **Your turn:** fill in the blanks so the function `letter_counts(text)` returns a dictionary with how many times each character appears in the string. For example, `letter_counts("banana")` returns `{'b': 1, 'a': 3, 'n': 2}`.
+    fill: |
+      def letter_counts(text: str) -> dict:
+          counts = {}
+          for letter in text:
+              if letter [[not in]] counts:
+                  counts[letter] = [[0]]
+              counts[letter] += 1
+          return counts
+
+
+      if __name__ == "__main__":
+          print(letter_counts("banana"))
+    hints:
+      - The `if` should add a letter that isn't a key yet. Which operator is true when a key is missing?
+      - "A new letter starts at 0, and the next line adds one to it. The operator is `not in`."
+    tests:
+      - call: letter_counts("banana")
+      - call: letter_counts("mississippi")
+        hidden: true
+      - call: letter_counts("a b")
+        hidden: true
+    more:
+      - task: |
+          Write a function `group_by_length(words)` that returns a dictionary in which the keys are word lengths and the value of each length is a list of the words of that length, in their original order.
+
+          For example, `group_by_length(["sun", "moon", "sky", "star"])` returns `{3: ['sun', 'sky'], 4: ['moon', 'star']}`.
+        seed: |
+          def group_by_length(words: list) -> dict:
+              pass
+
+
+          if __name__ == "__main__":
+              print(group_by_length(["sun", "moon", "sky", "star"]))
+        solution: |
+          def group_by_length(words: list) -> dict:
+              groups = {}
+              for word in words:
+                  length = len(word)
+                  if length not in groups:
+                      groups[length] = []
+                  groups[length].append(word)
+              return groups
+
+
+          if __name__ == "__main__":
+              print(group_by_length(["sun", "moon", "sky", "star"]))
+        hints:
+          - "The key for a word is `len(word)`, and the value is a list of words."
+          - "When a length comes up for the first time, give it an empty list: `groups[length] = []`."
+          - "Then append the word to its group's list: `groups[length].append(word)`."
+        tests:
+          - call: group_by_length(["sun", "moon", "sky", "star"])
+          - call: group_by_length(["a", "bb", "c", "ddd", "ee"])
+            hidden: true
+          - call: group_by_length(["python"])
+            hidden: true
+      - task: |
+          Write a program that counts votes. It asks for votes with the prompt `Vote: ` until the user types an empty line. Then it prints each option with its number of votes, in the order the options first got a vote. An example run:
+
+          ```
+          Vote: pizza
+          Vote: tacos
+          Vote: pizza
+          Vote:
+          pizza: 2
+          tacos: 1
+          ```
+        seed: |
+          votes = {}
+        solution: |
+          votes = {}
+
+          while True:
+              vote = input("Vote: ")
+              if vote == "":
+                  break
+              if vote not in votes:
+                  votes[vote] = 0
+              votes[vote] += 1
+
+          for option, count in votes.items():
+              print(f"{option}: {count}")
+        hints:
+          - "Read votes in a `while True` loop and `break` when the input is the empty string `\"\"`."
+          - "Count each vote as in the lesson: if it isn't a key yet, give it the value 0, then add one."
+          - "After the loop, go through `votes.items()` and print each option and its count."
+        tests:
+          - stdin: "pizza\ntacos\npizza\n\n"
+          - stdin: "yes\nno\nno\nmaybe\nno\nyes\n\n"
+            hidden: true
+          - stdin: "tea\n\n"
+            hidden: true
+
+  - id: dictionaries-removing
+    slug: removing
+    title: Removing keys
+    text: |
+      `del` removes a key and its value from a dictionary:
+
+      ```python run
+      lockers = {"Ada": 12, "Max": 7, "Lin": 3}
+      del lockers["Max"]
+      print(lockers)
+      ```
+
+      ```output
+      {'Ada': 12, 'Lin': 3}
+      ```
+
+      Removing a key that isn't there stops the program with a `KeyError`, just like reading one. When you aren't sure the key is there, check with `in` first:
+
+      ```python run
+      lockers = {"Ada": 12, "Lin": 3}
+      name = "Max"
+      if name in lockers:
+          del lockers[name]
+          print(name, "gave back the key")
+      else:
+          print(name, "has no locker")
+      ```
+
+      ```output
+      Max has no locker
+      ```
+
+      ### pop
+
+      The method `pop` removes a key too, and it returns the key's value, which is handy when you still need it:
+
+      ```python repl
+      >>> lockers = {"Ada": 12, "Lin": 3}
+      >>> freed = lockers.pop("Ada")
+      >>> freed
+      12
+      >>> lockers
+      {'Lin': 3}
+      >>> print(lockers.pop("Max", None))
+      None
+      ```
+
+      Given a second argument, `pop` doesn't stop at a missing key: it returns the second argument instead. `None`, Python's "no value", is a common choice. To check whether a value is `None`, write `is None`:
+
+      ```python run
+      lockers = {"Ada": 12, "Lin": 3}
+      freed = lockers.pop("Max", None)
+      if freed is None:
+          print("Max has no locker")
+      else:
+          print("Locker", freed, "is free")
+      ```
+
+      ```output
+      Max has no locker
+      ```
+
+      ### Not while looping over it
+
+      Removing keys inside a `for` loop over the same dictionary stops the program:
+
+      ```python run crash
+      stock = {"apples": 5, "pears": 0, "plums": 0}
+      for fruit in stock:
+          if stock[fruit] == 0:
+              del stock[fruit]
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          for fruit in stock:
+                       ^^^^^
+      RuntimeError: dictionary changed size during iteration
+      ```
+
+      The loop can't keep its place in a dictionary that changes size under it. Loop over a list of the keys instead. `list(stock)` makes one, and that list stays as it is when the dictionary changes:
+
+      ```python run
+      stock = {"apples": 5, "pears": 0, "plums": 0}
+      for fruit in list(stock):
+          if stock[fruit] == 0:
+              del stock[fruit]
+      print(stock)
+      ```
+
+      ```output
+      {'apples': 5}
+      ```
+
+      To empty a whole dictionary in one go, use the method `clear()`: `stock.clear()`.
+
+      Like a list, a dictionary given to a function is passed as a reference. A function can add, change and remove the keys of the caller's dictionary.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      stock = {"apples": 5, "pears": 2, "plums": 7}
+      del stock["pears"]
+      sold = stock.pop("plums")
+      print(stock)
+      print(sold)
+      print(stock.pop("kiwis", 0))
+      print(len(stock))
+    hints:
+      - "`del` removes the pears. `pop` removes the plums and returns their value."
+      - "`\"kiwis\"` isn't a key, so `pop` returns its second argument instead of stopping."
+      - After both removals, one key is left.
+    more:
+      - task: |
+          Write a function `remove_below(scores, limit)` that removes from the dictionary it's given every name whose score is below `limit`. It changes the dictionary and returns nothing.
+
+          ```python fragment
+          scores = {"Ada": 9, "Max": 4, "Lin": 6, "Kim": 2}
+          remove_below(scores, 5)
+          print(scores)
+          ```
+
+          ```
+          {'Ada': 9, 'Lin': 6}
+          ```
+        seed: |
+          def remove_below(scores: dict, limit: int):
+              pass
+
+
+          if __name__ == "__main__":
+              scores = {"Ada": 9, "Max": 4, "Lin": 6, "Kim": 2}
+              remove_below(scores, 5)
+              print(scores)
+        solution: |
+          def remove_below(scores: dict, limit: int):
+              for name in list(scores):
+                  if scores[name] < limit:
+                      del scores[name]
+
+
+          if __name__ == "__main__":
+              scores = {"Ada": 9, "Max": 4, "Lin": 6, "Kim": 2}
+              remove_below(scores, 5)
+              print(scores)
+        hints:
+          - "Go through the names and remove each one whose score is below `limit` with `del scores[name]`."
+          - "Removing keys while looping over the dictionary itself stops with a `RuntimeError`. Loop over `list(scores)`, a list of the keys, instead."
+        tests:
+          - call: |
+              scores = {"Ada": 9, "Max": 4, "Lin": 6, "Kim": 2}
+              remove_below(scores, 5)
+              print(scores)
+          - call: |
+              scores = {"Bo": 1, "Cy": 2}
+              remove_below(scores, 10)
+              print(scores)
+            hidden: true
+          - call: |
+              scores = {"Bo": 5, "Cy": 7, "Di": 4}
+              remove_below(scores, 5)
+              print(scores)
+            hidden: true
+      - task: |
+          Write a function `rename_key(data, old, new)` that moves the value of the key `old` to the key `new` in the dictionary it's given, so that `old` is no longer a key. If `old` isn't in the dictionary, the function changes nothing. It returns nothing.
+
+          ```python fragment
+          ages = {"Ada": 36, "Max": 41}
+          rename_key(ages, "Max", "Maxine")
+          print(ages)
+          ```
+
+          ```
+          {'Ada': 36, 'Maxine': 41}
+          ```
+        seed: |
+          def rename_key(data: dict, old, new):
+              pass
+
+
+          if __name__ == "__main__":
+              ages = {"Ada": 36, "Max": 41}
+              rename_key(ages, "Max", "Maxine")
+              print(ages)
+        solution: |
+          def rename_key(data: dict, old, new):
+              if old in data:
+                  data[new] = data.pop(old)
+
+
+          if __name__ == "__main__":
+              ages = {"Ada": 36, "Max": 41}
+              rename_key(ages, "Max", "Maxine")
+              print(ages)
+        hints:
+          - "`data.pop(old)` removes the old key and gives you its value, ready to store under the new key."
+          - "Check `if old in data:` first, so a missing key doesn't stop the program."
+          - "Inside the `if`, one line does it: `data[new] = data.pop(old)`."
+        tests:
+          - call: |
+              ages = {"Ada": 36, "Max": 41}
+              rename_key(ages, "Max", "Maxine")
+              print(ages)
+          - call: |
+              ages = {"Ada": 36}
+              rename_key(ages, "Bo", "Bob")
+              print(ages)
+            hidden: true
+          - call: |
+              codes = {1: "one", 2: "two", 3: "three"}
+              rename_key(codes, 1, 10)
+              print(codes)
+            hidden: true
+
+  - id: dictionaries-records
+    slug: records
+    title: Dictionaries as records
+    text: |
+      A dictionary is a good way to keep the facts about one thing together, each under a name of its own:
+
+      ```python run
+      person = {"name": "Ada", "age": 36, "city": "London"}
+      print(person["name"], "is", person["age"])
+      person["age"] += 1
+      print(person)
+      ```
+
+      ```output
+      Ada is 36
+      {'name': 'Ada', 'age': 37, 'city': 'London'}
+      ```
+
+      Compare it with a list record, as earlier in this part: `["Ada", 36, "London"]`. With the list, you have to remember that index 1 is the age. With the dictionary, the key says it: `person["age"]`. A record can also get new facts later, `person["email"] = "ada@example.com"`, without moving anything that's already in it. The keys are strings like any other, so spell them the same way every time: `person["Age"]` would stop with a `KeyError`.
+
+      ### A list of records
+
+      A list of such dictionaries, all with the same keys, is a small database:
+
+      ```python run
+      books = [
+          {"title": "The Glass Garden", "author": "Mia Stone", "pages": 312},
+          {"title": "Night Trains", "author": "Leo Grant", "pages": 205},
+          {"title": "Paper Moons", "author": "Mia Stone", "pages": 260},
+      ]
+
+      for book in books:
+          print(f"{book['title']} by {book['author']}")
+
+      total = 0
+      for book in books:
+          total += book["pages"]
+      print("Average length:", total / len(books))
+      ```
+
+      ```output
+      The Glass Garden by Mia Stone
+      Night Trains by Leo Grant
+      Paper Moons by Mia Stone
+      Average length: 259.0
+      ```
+
+      On each round, `book` is one dictionary, and `book["title"]` is its title. Inside an f-string that is itself in double quotes, write the key in single quotes, `book['title']`.
+
+      Functions make such a database easy to use. This one searches it and returns a new list of the matching titles:
+
+      ```python run
+      def short_books(books: list, max_pages: int) -> list:
+          titles = []
+          for book in books:
+              if book["pages"] <= max_pages:
+                  titles.append(book["title"])
+          return titles
+
+
+      books = [
+          {"title": "The Glass Garden", "author": "Mia Stone", "pages": 312},
+          {"title": "Night Trains", "author": "Leo Grant", "pages": 205},
+          {"title": "Paper Moons", "author": "Mia Stone", "pages": 260},
+      ]
+      print(short_books(books, 300))
+      ```
+
+      ```output
+      ['Night Trains', 'Paper Moons']
+      ```
+
+      **Your turn:** fill in the blanks so the function `make_book(title, author, year)` returns a book record with the keys `"title"`, `"author"` and `"year"`. For example, `make_book("Night Trains", "Leo Grant", 1998)` returns `{'title': 'Night Trains', 'author': 'Leo Grant', 'year': 1998}`.
+    fill: |
+      def make_book(title: str, author: str, year: int) -> dict:
+          book = [[{}]]
+          book["title"] = title
+          book[[["author"‖'author']]] = author
+          book["year"] = [[year]]
+          return book
+
+
+      if __name__ == "__main__":
+          print(make_book("Night Trains", "Leo Grant", 1998))
+    hints:
+      - The record starts as an empty dictionary, and each line after that adds one key.
+      - "An empty dictionary is `{}`. The second blank is the key `\"author\"`, in quotes, and the third is the parameter that holds the year."
+    tests:
+      - call: make_book("Night Trains", "Leo Grant", 1998)
+      - call: make_book("Paper Moons", "Mia Stone", 1987)
+        hidden: true
+    more:
+      - task: |
+          Each book is a dictionary with the keys `"title"`, `"author"` and `"year"`. Write a function `oldest_title(books)` that returns the title of the oldest book in the list. There is always at least one book, and no two books have the same year.
+
+          For example, for the books `[{"title": "Night Trains", "author": "Leo Grant", "year": 1998}, {"title": "Paper Moons", "author": "Mia Stone", "year": 1987}]`, it returns `"Paper Moons"`.
+        seed: |
+          def oldest_title(books: list) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              books = [
+                  {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+              ]
+              print(oldest_title(books))
+        solution: |
+          def oldest_title(books: list) -> str:
+              oldest = books[0]
+              for book in books:
+                  if book["year"] < oldest["year"]:
+                      oldest = book
+              return oldest["title"]
+
+
+          if __name__ == "__main__":
+              books = [
+                  {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+              ]
+              print(oldest_title(books))
+        hints:
+          - "Keep the oldest book so far in a variable, starting with the first one: `oldest = books[0]`."
+          - "Go through the books, and when a book's `\"year\"` is smaller than the oldest one's, it becomes the oldest."
+          - "Return only the title: `oldest[\"title\"]`."
+        tests:
+          - call: |
+              books = [
+                  {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+              ]
+              print(oldest_title(books))
+          - call: |
+              books = [
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+                  {"title": "The Glass Garden", "author": "Mia Stone", "year": 2011},
+                  {"title": "Salt Roads", "author": "Ana Ruiz", "year": 1979},
+              ]
+              print(oldest_title(books))
+            hidden: true
+          - call: 'oldest_title([{"title": "Alone", "author": "Bo Lind", "year": 2020}])'
+            hidden: true
+      - task: |
+          Each book is a dictionary with the keys `"title"`, `"author"` and `"year"`. Write a function `count_by_author(books)` that returns a dictionary in which each author is a key and the value is the number of their books in the list.
+
+          ```python fragment
+          books = [
+              {"title": "The Glass Garden", "author": "Mia Stone", "year": 2011},
+              {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+              {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+          ]
+          print(count_by_author(books))
+          ```
+
+          ```
+          {'Mia Stone': 2, 'Leo Grant': 1}
+          ```
+        seed: |
+          def count_by_author(books: list) -> dict:
+              pass
+
+
+          if __name__ == "__main__":
+              books = [
+                  {"title": "The Glass Garden", "author": "Mia Stone", "year": 2011},
+                  {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+              ]
+              print(count_by_author(books))
+        solution: |
+          def count_by_author(books: list) -> dict:
+              counts = {}
+              for book in books:
+                  author = book["author"]
+                  if author not in counts:
+                      counts[author] = 0
+                  counts[author] += 1
+              return counts
+
+
+          if __name__ == "__main__":
+              books = [
+                  {"title": "The Glass Garden", "author": "Mia Stone", "year": 2011},
+                  {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+              ]
+              print(count_by_author(books))
+        hints:
+          - "This is the counting pattern of the previous step. What you count is each book's `book[\"author\"]`."
+          - "If the author isn't a key yet, give them the value 0. Then add one."
+        tests:
+          - call: |
+              books = [
+                  {"title": "The Glass Garden", "author": "Mia Stone", "year": 2011},
+                  {"title": "Night Trains", "author": "Leo Grant", "year": 1998},
+                  {"title": "Paper Moons", "author": "Mia Stone", "year": 1987},
+              ]
+              print(count_by_author(books))
+          - call: |
+              books = [
+                  {"title": "Salt Roads", "author": "Ana Ruiz", "year": 1979},
+                  {"title": "Blue Hour", "author": "Ana Ruiz", "year": 1984},
+                  {"title": "Red Hour", "author": "Ana Ruiz", "year": 1990},
+                  {"title": "Alone", "author": "Bo Lind", "year": 2020},
+              ]
+              print(count_by_author(books))
+            hidden: true
+          - call: count_by_author([])
+            hidden: true

@@ -15,7 +15,8 @@
     "content:pyodide": "node scripts/content-pyodide.mjs",
     "check-links": "node scripts/check-links.mjs",
     "test:e2e": "node scripts/e2e.mjs",
-    "test:unit": "node --test \"scripts/**/*.test.mjs\""
+    "test:unit": "node --test \"scripts/**/*.test.mjs\"",
+    "pro-track-check": "node scripts/pro-track-check.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

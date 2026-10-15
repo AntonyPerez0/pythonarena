@@ -1,0 +1,1053 @@
+id: access-modifiers
+summary: Who may use what in a class hierarchy. Private attributes and methods stay hidden even from derived classes, protected ones (one underscore) are shared with them, and public ones are open to everyone.
+steps:
+  - id: access-modifiers-private
+    slug: private-in-subclass
+    title: Private attributes and derived classes
+    text: |
+      In the module on encapsulation you made attributes **private** by starting their names with two underscores. A private attribute can only be used in the class's own methods. The class's **clients**, the code that uses its objects, can't reach it, which keeps the object's data safe from careless changes.
+
+      Inheritance raises a new question: is a derived class like the class's own methods, or like any other client? For private attributes, it's like any other client. A derived class can't use its base class's private attributes either:
+
+      ```python run crash
+      class Playlist:
+          def __init__(self, name):
+              self.name = name
+              self.__songs = []
+
+          def add(self, song):
+              self.__songs.append(song)
+
+          def count(self):
+              return len(self.__songs)
+
+
+      class SmartPlaylist(Playlist):
+          def search(self, word):
+              found = []
+              for song in self.__songs:
+                  if word in song:
+                      found.append(song)
+              return found
+
+
+      mix = SmartPlaylist("Road trip")
+      mix.add("Highway Song")
+      mix.add("Slow River")
+      print(mix.count())
+      print(mix.search("River"))
+      ```
+
+      ```output
+      2
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 26, in <module>
+          print(mix.search("River"))
+                ~~~~~~~~~~^^^^^^^^^
+        File "main.py", line 16, in search
+          for song in self.__songs:
+                      ^^^^^^^^^^^^
+      AttributeError: 'SmartPlaylist' object has no attribute '_SmartPlaylist__songs'. Did you mean: '_Playlist__songs'?
+      ```
+
+      `add` and `count` work, because they are `Playlist`'s own methods. `search` fails.
+
+      ### What the error message tells you
+
+      The message shows how Python hides a private attribute: it quietly renames it, putting the class's name in front. This renaming is called **name mangling**. Inside the class `Playlist`, `self.__songs` really means `self._Playlist__songs`. Inside `SmartPlaylist`, the same words `self.__songs` mean `self._SmartPlaylist__songs`, and the playlist has no attribute of that name.
+
+      Python's "Did you mean" points at the real name, `_Playlist__songs`. Writing that would work, but don't: it goes around the lock on purpose, and the code breaks as soon as someone renames the class. The renaming has a good side, too. A derived class can have a private attribute of its own with the same name as one in its base class, and the two never get mixed up.
+
+      ### Go through the public methods
+
+      A derived class can use everything public in its base class, just as any client can. So if the base class offers a method or a property that gives the data, the derived class uses that:
+
+      ```python run
+      class Playlist:
+          def __init__(self, name):
+              self.name = name
+              self.__songs = []
+
+          def add(self, song):
+              self.__songs.append(song)
+
+          def songs(self):
+              # A copy, so the private list stays safe.
+              return self.__songs[:]
+
+
+      class SmartPlaylist(Playlist):
+          def search(self, word):
+              found = []
+              for song in self.songs():
+                  if word in song:
+                      found.append(song)
+              return found
+
+
+      mix = SmartPlaylist("Road trip")
+      mix.add("Highway Song")
+      mix.add("Slow River")
+      mix.add("River Bend")
+      print(mix.search("River"))
+      ```
+
+      ```output
+      ['Slow River', 'River Bend']
+      ```
+
+      This is often the best way: the base class keeps control of its data, and the derived class only asks for it. When a base class has no such method and its derived classes really need the data, the base class can share it in another way, which is the topic of the next step.
+
+      **Your turn:** the method `highest` of `MaxThermometer` stops with an `AttributeError`, because it uses the private attribute of its base class. Fix `highest` so that it gets the readings through `Thermometer`'s public method `readings()` instead. Don't change `Thermometer`. For example,
+
+      ```python fragment
+      thermometer = MaxThermometer()
+      thermometer.add(12)
+      thermometer.add(17)
+      thermometer.add(9)
+      print(thermometer.highest())
+      print(thermometer.readings())
+      ```
+
+      should print:
+
+      ```
+      17
+      [12, 17, 9]
+      ```
+    seed: |
+      class Thermometer:
+          def __init__(self):
+              self.__readings = []
+
+          def add(self, reading):
+              self.__readings.append(reading)
+
+          def readings(self):
+              return self.__readings[:]
+
+
+      class MaxThermometer(Thermometer):
+          def highest(self):
+              return max(self.__readings)
+
+
+      if __name__ == "__main__":
+          thermometer = MaxThermometer()
+          thermometer.add(12)
+          thermometer.add(17)
+          print(thermometer.highest())
+    solution: |
+      class Thermometer:
+          def __init__(self):
+              self.__readings = []
+
+          def add(self, reading):
+              self.__readings.append(reading)
+
+          def readings(self):
+              return self.__readings[:]
+
+
+      class MaxThermometer(Thermometer):
+          def highest(self):
+              return max(self.readings())
+
+
+      if __name__ == "__main__":
+          thermometer = MaxThermometer()
+          thermometer.add(12)
+          thermometer.add(17)
+          print(thermometer.highest())
+    hints:
+      - "`self.__readings` in `MaxThermometer` means `self._MaxThermometer__readings`, which doesn't exist. The derived class has to ask for the readings like any client."
+      - "`self.readings()` calls the public method `MaxThermometer` inherited, and it returns a list of the readings. Give that list to `max`."
+    require:
+      - pattern: self\.__readings
+        min: 3
+        max: 3
+        message: "Keep `Thermometer` as it is, and don't use `self.__readings` in `MaxThermometer`: ask for the readings with `self.readings()`."
+    forbid:
+      - pattern: _Thermometer__
+        message: "Don't go around the lock with the renamed attribute: use the public method `readings()`."
+    tests:
+      - call: |
+          thermometer = MaxThermometer()
+          thermometer.add(12)
+          thermometer.add(17)
+          thermometer.add(9)
+          print(thermometer.highest())
+          print(thermometer.readings())
+      - call: |
+          thermometer = MaxThermometer()
+          thermometer.add(-5)
+          thermometer.add(-11)
+          print(thermometer.highest())
+          thermometer.add(3)
+          print(thermometer.highest())
+        hidden: true
+    more:
+      - task: |
+          A kid's wallet is a wallet where at most 20 euros can be spent at a time. Write a class `KidsWallet` that inherits `Wallet`, with these methods:
+
+          - `can_buy(price)` returns `True` if the price is at most 20 and the wallet has at least that much money, and otherwise `False`.
+          - `spend(amount)` overrides `Wallet`'s: an amount over 20 isn't spent, and it returns `False`. Any other amount is handled by `Wallet`'s `spend`.
+
+          The money is private in `Wallet`, so use its property `money` and `super()`. For example,
+
+          ```python fragment
+          wallet = KidsWallet(30)
+          print(wallet.can_buy(25))
+          print(wallet.spend(25))
+          print(wallet.spend(15))
+          print(wallet.can_buy(18))
+          print(wallet.money)
+          ```
+
+          should print:
+
+          ```
+          False
+          False
+          True
+          False
+          15
+          ```
+        seed: |
+          class Wallet:
+              def __init__(self, money):
+                  self.__money = money
+
+              @property
+              def money(self):
+                  return self.__money
+
+              def spend(self, amount):
+                  if amount > self.__money:
+                      return False
+                  self.__money -= amount
+                  return True
+
+
+          # Write the class KidsWallet here.
+
+
+          if __name__ == "__main__":
+              wallet = KidsWallet(30)
+              print(wallet.can_buy(25))
+              print(wallet.spend(15))
+              print(wallet.money)
+        solution: |
+          class Wallet:
+              def __init__(self, money):
+                  self.__money = money
+
+              @property
+              def money(self):
+                  return self.__money
+
+              def spend(self, amount):
+                  if amount > self.__money:
+                      return False
+                  self.__money -= amount
+                  return True
+
+
+          class KidsWallet(Wallet):
+              def can_buy(self, price):
+                  return price <= 20 and price <= self.money
+
+              def spend(self, amount):
+                  if amount > 20:
+                      return False
+                  return super().spend(amount)
+
+
+          if __name__ == "__main__":
+              wallet = KidsWallet(30)
+              print(wallet.can_buy(25))
+              print(wallet.spend(15))
+              print(wallet.money)
+        hints:
+          - "`KidsWallet` needs no constructor of its own. Inside its methods, `self.money` gives the money through `Wallet`'s property, while `self.__money` wouldn't work."
+          - "`can_buy` checks two things: `price <= 20` and `price <= self.money`. Both must be true."
+          - "In `spend`, return `False` for an amount over 20. Otherwise return what `super().spend(amount)` returns: `Wallet`'s version knows how to change the private money."
+        require:
+          - pattern: class\s+KidsWallet\s*\(\s*Wallet\s*\)
+            message: "`KidsWallet` should inherit `Wallet`."
+          - pattern: super\(\)\.spend\(
+            message: "Let `Wallet`'s `spend` change the money: call it with `super().spend(...)`."
+        forbid:
+          - pattern: _Wallet__
+            message: "Don't go around the lock with the renamed attribute: use the property `money` and `super().spend(...)`."
+        tests:
+          - call: |
+              wallet = KidsWallet(30)
+              print(wallet.can_buy(25))
+              print(wallet.spend(25))
+              print(wallet.spend(15))
+              print(wallet.can_buy(18))
+              print(wallet.money)
+          - call: |
+              wallet = KidsWallet(100)
+              print(wallet.can_buy(20))
+              print(wallet.spend(20))
+              print(wallet.spend(21))
+              print(wallet.money)
+            hidden: true
+          - call: |
+              wallet = KidsWallet(5)
+              print(wallet.can_buy(5))
+              print(wallet.spend(6))
+              print(wallet.spend(5))
+              print(wallet.money)
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Robot:
+              def __init__(self):
+                  self.__code = "R1"
+
+              def robot_code(self):
+                  return self.__code
+
+
+          class Drone(Robot):
+              def __init__(self):
+                  super().__init__()
+                  self.__code = "D7"
+
+              def drone_code(self):
+                  return self.__code
+
+
+          bee = Drone()
+          print(bee.drone_code())
+          print(bee.robot_code())
+        hints:
+          - "Python renames a private attribute after the class it's written in. In `Robot`, `self.__code` is really `self._Robot__code`."
+          - "In `Drone`, `self.__code` is `self._Drone__code`: a different attribute. So the drone has two codes, and each class's methods see their own."
+
+  - id: access-modifiers-protected
+    slug: protected
+    title: Protected attributes
+    text: |
+      Private attributes are hidden from derived classes too, and sometimes that's more hiding than you want. A base class that is written to be extended often has data its derived classes need to work with, data that clients still shouldn't touch. Many programming languages have a level of access for this, called **protected**: hidden from clients, open to derived classes.
+
+      Python has no keyword for it. Instead there's a **convention**, an agreement among Python programmers: a name that starts with **one** underscore is protected. Python itself doesn't stop anyone from using it. The underscore is a sign to other programmers: this is for the class and its derived classes, keep out.
+
+      Here's the playlist again, this time with a protected list of songs:
+
+      ```python run
+      class Playlist:
+          def __init__(self, name):
+              self.name = name
+              self._songs = []
+
+          def add(self, song):
+              self._songs.append(song)
+
+          def count(self):
+              return len(self._songs)
+
+
+      class SmartPlaylist(Playlist):
+          def search(self, word):
+              found = []
+              for song in self._songs:
+                  if word in song:
+                      found.append(song)
+              return found
+
+
+      mix = SmartPlaylist("Road trip")
+      mix.add("Highway Song")
+      mix.add("Slow River")
+      print(mix.count())
+      print(mix.search("River"))
+      ```
+
+      ```output
+      2
+      ['Slow River']
+      ```
+
+      `search` can now use `self._songs` directly. Python doesn't rename a name with one underscore, so `self._songs` is the same attribute in both classes.
+
+      ### Only an agreement
+
+      Code outside the classes could use a protected attribute too, and Python would let it. A private one is another matter:
+
+      ```python repl
+      >>> class Note:
+      ...     def __init__(self):
+      ...         self._draft = "buy milk"
+      ...         self.__pin = "1234"
+      ...
+      >>> note = Note()
+      >>> note._draft
+      'buy milk'
+      >>> note.__pin
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      AttributeError: 'Note' object has no attribute '__pin'
+      ```
+
+      A programmer who sees the underscore knows the attribute isn't meant for them. If they use it anyway, and the class later changes how it stores its data, their code breaks, and it's their own fault.
+
+      ### Three levels of access
+
+      Public, protected and private are known as **access modifiers**: they set who may use an attribute or a method.
+
+      | Access | Written as | The class itself | Derived classes | Clients |
+      |---|---|---|---|---|
+      | Public | `self.name` | yes | yes | yes |
+      | Protected | `self._name` | yes | yes | no, by agreement |
+      | Private | `self.__name` | yes | no | no |
+
+      Which one to pick? Make public what clients need to use. Make an attribute private when not even a derived class should change it directly, such as a balance that must never go below zero. Make it protected when the class is meant to be extended and the derived classes need the data to do their job. Derived classes then share the duty of keeping the data valid, so it's a good habit to make changes through the base class's methods, such as `add`, and use the protected attribute mostly for reading, as `search` does.
+
+      **Your turn:** the base class keeps its items in a protected list. Fill in the blank so that the derived class returns the items in alphabetical order, and the program prints:
+
+      ```
+      ['map', 'snacks', 'water']
+      ```
+    fill: |
+      class Backpack:
+          def __init__(self):
+              self._items = []
+
+          def pack(self, item):
+              self._items.append(item)
+
+
+      class SortedBackpack(Backpack):
+          def contents(self):
+              return sorted(self.[[_items]])
+
+
+      if __name__ == "__main__":
+          bag = SortedBackpack()
+          bag.pack("water")
+          bag.pack("map")
+          bag.pack("snacks")
+          print(bag.contents())
+    hints:
+      - The list is created in `Backpack`'s constructor. Use the same name here.
+      - "A protected name starts with one underscore, and Python doesn't rename it: the blank is `_items`."
+    tests:
+      - expect: "['map', 'snacks', 'water']"
+    more:
+      - task: |
+          The method `running_low` of `ShopInventory` stops with an `AttributeError`. Change the stock in `Inventory` from private to protected, everywhere it's used, so that `ShopInventory` can use it. `running_low(limit)` returns the items that have fewer than `limit` left. For example,
+
+          ```python fragment
+          shop = ShopInventory()
+          shop.add("apples", 12)
+          shop.add("pears", 3)
+          shop.add("plums", 5)
+          print(shop.running_low(6))
+          print(shop.count("pears"))
+          ```
+
+          should print:
+
+          ```
+          ['pears', 'plums']
+          3
+          ```
+        seed: |
+          class Inventory:
+              def __init__(self):
+                  self.__stock = {}
+
+              def add(self, item, count):
+                  if item not in self.__stock:
+                      self.__stock[item] = 0
+                  self.__stock[item] += count
+
+              def count(self, item):
+                  if item not in self.__stock:
+                      return 0
+                  return self.__stock[item]
+
+
+          class ShopInventory(Inventory):
+              def running_low(self, limit):
+                  low = []
+                  for item in self.__stock:
+                      if self.__stock[item] < limit:
+                          low.append(item)
+                  return low
+
+
+          if __name__ == "__main__":
+              shop = ShopInventory()
+              shop.add("apples", 12)
+              shop.add("pears", 3)
+              print(shop.running_low(6))
+        solution: |
+          class Inventory:
+              def __init__(self):
+                  self._stock = {}
+
+              def add(self, item, count):
+                  if item not in self._stock:
+                      self._stock[item] = 0
+                  self._stock[item] += count
+
+              def count(self, item):
+                  if item not in self._stock:
+                      return 0
+                  return self._stock[item]
+
+
+          class ShopInventory(Inventory):
+              def running_low(self, limit):
+                  low = []
+                  for item in self._stock:
+                      if self._stock[item] < limit:
+                          low.append(item)
+                  return low
+
+
+          if __name__ == "__main__":
+              shop = ShopInventory()
+              shop.add("apples", 12)
+              shop.add("pears", 3)
+              print(shop.running_low(6))
+        hints:
+          - A private name starts with two underscores and a protected one with one.
+          - "Change every `self.__stock` to `self._stock`, in both classes: the attribute must have the same name everywhere."
+        require:
+          - pattern: self\._stock\b
+            message: "Make the stock protected: `self._stock`."
+        forbid:
+          - pattern: __stock
+            message: "Every `__stock` should become `_stock`, in both classes."
+        tests:
+          - call: |
+              shop = ShopInventory()
+              shop.add("apples", 12)
+              shop.add("pears", 3)
+              shop.add("plums", 5)
+              print(shop.running_low(6))
+              print(shop.count("pears"))
+          - call: |
+              shop = ShopInventory()
+              shop.add("rice", 2)
+              shop.add("beans", 10)
+              shop.add("rice", 2)
+              print(shop.running_low(5))
+              print(shop.running_low(100))
+              print(shop.count("rice"))
+              print(shop.count("salt"))
+            hidden: true
+      - task: |
+          A course keeps the names of its students in a protected list. Write a class `LimitedCourse` that inherits `Course`, for courses with room for only a limited number of students:
+
+          - The constructor takes the course's name and `limit`, the most students the course can have.
+          - `is_full()` returns `True` when the course has `limit` students.
+          - `enroll(student)` overrides `Course`'s: when the course is full, it enrolls nobody and returns `False`. Otherwise it works as `Course`'s `enroll` does.
+
+          For example,
+
+          ```python fragment
+          yoga = LimitedCourse("Yoga", 2)
+          print(yoga.enroll("Ada"))
+          print(yoga.enroll("Ada"))
+          print(yoga.enroll("Ben"))
+          print(yoga.is_full())
+          print(yoga.enroll("Cy"))
+          print(yoga)
+          ```
+
+          should print:
+
+          ```
+          True
+          False
+          True
+          True
+          False
+          Yoga: 2 students
+          ```
+        seed: |
+          class Course:
+              def __init__(self, name):
+                  self.name = name
+                  self._students = []
+
+              def enroll(self, student):
+                  if student in self._students:
+                      return False
+                  self._students.append(student)
+                  return True
+
+              def __str__(self):
+                  return f"{self.name}: {len(self._students)} students"
+
+
+          # Write the class LimitedCourse here.
+
+
+          if __name__ == "__main__":
+              yoga = LimitedCourse("Yoga", 2)
+              print(yoga.enroll("Ada"))
+              print(yoga)
+        solution: |
+          class Course:
+              def __init__(self, name):
+                  self.name = name
+                  self._students = []
+
+              def enroll(self, student):
+                  if student in self._students:
+                      return False
+                  self._students.append(student)
+                  return True
+
+              def __str__(self):
+                  return f"{self.name}: {len(self._students)} students"
+
+
+          class LimitedCourse(Course):
+              def __init__(self, name, limit):
+                  super().__init__(name)
+                  self._limit = limit
+
+              def is_full(self):
+                  return len(self._students) >= self._limit
+
+              def enroll(self, student):
+                  if self.is_full():
+                      return False
+                  return super().enroll(student)
+
+
+          if __name__ == "__main__":
+              yoga = LimitedCourse("Yoga", 2)
+              print(yoga.enroll("Ada"))
+              print(yoga)
+        hints:
+          - "The constructor calls `super().__init__(name)` and then stores the limit in an attribute of its own."
+          - "`is_full` compares the number of students, `len(self._students)`, with the limit."
+          - "`enroll` returns `False` if `self.is_full()`, and otherwise returns `super().enroll(student)`: the original still checks for a student who is already there."
+        require:
+          - pattern: class\s+LimitedCourse\s*\(\s*Course\s*\)
+            message: "`LimitedCourse` should inherit `Course`."
+          - pattern: super\(\)\.enroll\(
+            message: "Let `Course`'s `enroll` do the enrolling: call it with `super().enroll(...)`."
+        tests:
+          - call: |
+              yoga = LimitedCourse("Yoga", 2)
+              print(yoga.enroll("Ada"))
+              print(yoga.enroll("Ada"))
+              print(yoga.enroll("Ben"))
+              print(yoga.is_full())
+              print(yoga.enroll("Cy"))
+              print(yoga)
+          - call: |
+              chess = LimitedCourse("Chess", 3)
+              print(chess.is_full())
+              for name in ["Kim", "Lee", "Kim", "Max", "Ola", "Pat"]:
+                  print(chess.enroll(name))
+              print(chess.is_full())
+              print(chess)
+            hidden: true
+
+  - id: access-modifiers-protected-methods
+    slug: protected-methods
+    title: Protected methods
+    text: |
+      Methods have the same three levels of access as attributes. Most methods are public: they are what the class offers its clients. Classes often have **helper methods** too, small methods that the class's other methods call to do part of their work. In the module on encapsulation such helpers were private, with two underscores. A private method can't be called from a derived class, for the same reason that a private attribute can't be used there: Python renames it after the class it's written in. A helper that derived classes should be able to use is made protected, with one underscore.
+
+      Here a receipt keeps its prices in cents, as whole numbers, so that the sums are always exact. Its protected helper `_euros` turns cents into text. The derived class `DiscountReceipt` adds a discount and uses the same helper for its own lines:
+
+      ```python run
+      class Receipt:
+          def __init__(self):
+              self._lines = []
+
+          def _euros(self, cents):
+              return f"{cents / 100:.2f} eur"
+
+          def add(self, product, cents):
+              self._lines.append((product, cents))
+
+          def total(self):
+              total = 0
+              for product, cents in self._lines:
+                  total += cents
+              return total
+
+          def show(self):
+              for product, cents in self._lines:
+                  print(product, self._euros(cents))
+              print("Total", self._euros(self.total()))
+
+
+      class DiscountReceipt(Receipt):
+          def __init__(self, percent):
+              super().__init__()
+              self._percent = percent
+
+          def show(self):
+              super().show()
+              discount = self.total() * self._percent // 100
+              print(f"Discount {self._percent}%", self._euros(discount))
+              print("To pay", self._euros(self.total() - discount))
+
+
+      receipt = DiscountReceipt(10)
+      receipt.add("Bread", 349)
+      receipt.add("Cheese", 651)
+      receipt.show()
+      ```
+
+      ```output
+      Bread 3.49 eur
+      Cheese 6.51 eur
+      Total 10.00 eur
+      Discount 10% 1.00 eur
+      To pay 9.00 eur
+      ```
+
+      The receipt's clients only need `add`, `total` and `show`. `_euros` is a tool for the receipt family, so it's protected. Had it been private, `__euros`, the call in `DiscountReceipt` would stop with an `AttributeError`, just as the private list of songs did. Notice also that `DiscountReceipt` stores its percentage in a protected attribute of its own, `_percent`, so that classes derived from it could use it too.
+
+      A protected method can be overridden like any other method. If a derived class wanted to show prices in another way, it could write its own `_euros`, and every line `show` prints would use it.
+
+      ### Choosing the level of access
+
+      - **Public**, `name`: what clients use. Keep this small, and don't change it lightly, since other code depends on it.
+      - **Protected**, `_name`: data and tools for the class and its derived classes.
+      - **Private**, `__name`: details that only this one class handles, which not even a derived class should touch.
+
+      When you're unsure, start with less access. Opening something up later is easy, while taking access away breaks the code that already uses it.
+
+      **Your turn:** the method `show` of `NameCard` stops with an `AttributeError`, because it calls a private helper method of its base class. Make the helper method protected, so that the derived class can use it too. For example,
+
+      ```python fragment
+      card = NameCard("Speaker", "Grace")
+      card.show()
+      ```
+
+      should print:
+
+      ```
+      | Speaker |
+      | Grace |
+      ```
+    seed: |
+      class Card:
+          def __init__(self, title):
+              self.title = title
+
+          def __frame(self, text):
+              return "| " + text + " |"
+
+          def show(self):
+              print(self.__frame(self.title))
+
+
+      class NameCard(Card):
+          def __init__(self, title, name):
+              super().__init__(title)
+              self.name = name
+
+          def show(self):
+              super().show()
+              print(self.__frame(self.name))
+
+
+      if __name__ == "__main__":
+          card = NameCard("Speaker", "Grace")
+          card.show()
+    solution: |
+      class Card:
+          def __init__(self, title):
+              self.title = title
+
+          def _frame(self, text):
+              return "| " + text + " |"
+
+          def show(self):
+              print(self._frame(self.title))
+
+
+      class NameCard(Card):
+          def __init__(self, title, name):
+              super().__init__(title)
+              self.name = name
+
+          def show(self):
+              super().show()
+              print(self._frame(self.name))
+
+
+      if __name__ == "__main__":
+          card = NameCard("Speaker", "Grace")
+          card.show()
+    hints:
+      - A protected method's name starts with one underscore, a private one's with two.
+      - "Rename the method to `_frame`, and change both calls to `self._frame(...)`: the one in `Card` and the one in `NameCard`."
+    require:
+      - pattern: def\s+_frame\s*\(
+        message: "Make the helper protected: `def _frame(self, text):`."
+      - pattern: self\._frame\(
+        min: 2
+        message: "Call the protected helper as `self._frame(...)` in both classes."
+    forbid:
+      - pattern: __frame
+        message: "Every `__frame` should become `_frame`."
+    tests:
+      - call: |
+          card = NameCard("Speaker", "Grace")
+          card.show()
+      - call: |
+          card = NameCard("Guest", "Alan Turing")
+          card.show()
+          plain = Card("Welcome")
+          plain.show()
+        hidden: true
+    more:
+      - task: |
+          The class `Log` keeps a program's log entries in a protected list, as pairs of a level and a text, and adds them with its protected method `_write`. Write a class `AppLog` that inherits `Log`, with these methods:
+
+          - `info(text)` writes an entry with the level `INFO`.
+          - `error(text)` writes an entry with the level `ERROR`.
+          - `error_count()` returns how many entries have the level `ERROR`.
+
+          Add the entries with `_write`, and count them from `_entries`. For example,
+
+          ```python fragment
+          log = AppLog()
+          log.info("Program started")
+          log.error("File not found")
+          log.info("Trying again")
+          log.error("Still not found")
+          log.show()
+          print(log.error_count())
+          ```
+
+          should print:
+
+          ```
+          [INFO] Program started
+          [ERROR] File not found
+          [INFO] Trying again
+          [ERROR] Still not found
+          2
+          ```
+        seed: |
+          class Log:
+              def __init__(self):
+                  self._entries = []
+
+              def _write(self, level, text):
+                  self._entries.append((level, text))
+
+              def show(self):
+                  for level, text in self._entries:
+                      print(f"[{level}] {text}")
+
+
+          # Write the class AppLog here.
+
+
+          if __name__ == "__main__":
+              log = AppLog()
+              log.info("Program started")
+              log.error("File not found")
+              log.show()
+              print(log.error_count())
+        solution: |
+          class Log:
+              def __init__(self):
+                  self._entries = []
+
+              def _write(self, level, text):
+                  self._entries.append((level, text))
+
+              def show(self):
+                  for level, text in self._entries:
+                      print(f"[{level}] {text}")
+
+
+          class AppLog(Log):
+              def info(self, text):
+                  self._write("INFO", text)
+
+              def error(self, text):
+                  self._write("ERROR", text)
+
+              def error_count(self):
+                  count = 0
+                  for level, text in self._entries:
+                      if level == "ERROR":
+                          count += 1
+                  return count
+
+
+          if __name__ == "__main__":
+              log = AppLog()
+              log.info("Program started")
+              log.error("File not found")
+              log.show()
+              print(log.error_count())
+        hints:
+          - "`AppLog` needs no constructor: it inherits `Log`'s, which creates `self._entries`."
+          - "`info` and `error` are one line each: `self._write(\"INFO\", text)` and the same with `\"ERROR\"`."
+          - "Each entry is a tuple `(level, text)`. In `error_count`, loop with `for level, text in self._entries:` and count the entries whose level is `\"ERROR\"`."
+        require:
+          - pattern: class\s+AppLog\s*\(\s*Log\s*\)
+            message: "`AppLog` should inherit `Log`."
+          - pattern: self\._write\(
+            min: 2
+            message: "Add the entries with the protected helper: `self._write(...)`."
+          - pattern: _entries\.append
+            max: 1
+            message: "Let `_write` add the entries; `AppLog` doesn't need to append to `_entries` itself."
+        tests:
+          - call: |
+              log = AppLog()
+              log.info("Program started")
+              log.error("File not found")
+              log.info("Trying again")
+              log.error("Still not found")
+              log.show()
+              print(log.error_count())
+          - call: |
+              log = AppLog()
+              print(log.error_count())
+              log.info("Saved")
+              log.info("Closed")
+              log.show()
+              print(log.error_count())
+              log.error("Disk full")
+              print(log.error_count())
+            hidden: true
+      - task: |
+          A diary keeps its entries in a protected list. Write a class `PinDiary` that inherits `Diary`, for a diary that is locked with a PIN code:
+
+          - The constructor takes the PIN and stores it in a **private** attribute.
+          - `add(entry, pin)` and `read(pin)` override `Diary`'s methods. With the right PIN they do what `Diary`'s versions do: call those with `super()`. With a wrong PIN they raise a `ValueError` with the message `Wrong PIN`.
+          - Write the PIN check only once, in a protected method `_check(pin)` that both methods call.
+
+          For example,
+
+          ```python fragment
+          diary = PinDiary("2468")
+          diary.add("Saw a fox today", "2468")
+          print(diary.read("2468"))
+          try:
+              diary.read("1234")
+          except ValueError as error:
+              print("Error:", error)
+          ```
+
+          should print:
+
+          ```
+          ['Saw a fox today']
+          Error: Wrong PIN
+          ```
+        seed: |
+          class Diary:
+              def __init__(self):
+                  self._entries = []
+
+              def add(self, entry):
+                  self._entries.append(entry)
+
+              def read(self):
+                  return self._entries[:]
+
+
+          # Write the class PinDiary here.
+
+
+          if __name__ == "__main__":
+              diary = PinDiary("2468")
+              diary.add("Saw a fox today", "2468")
+              print(diary.read("2468"))
+              try:
+                  diary.read("1234")
+              except ValueError as error:
+                  print("Error:", error)
+        solution: |
+          class Diary:
+              def __init__(self):
+                  self._entries = []
+
+              def add(self, entry):
+                  self._entries.append(entry)
+
+              def read(self):
+                  return self._entries[:]
+
+
+          class PinDiary(Diary):
+              def __init__(self, pin):
+                  super().__init__()
+                  self.__pin = pin
+
+              def _check(self, pin):
+                  if pin != self.__pin:
+                      raise ValueError("Wrong PIN")
+
+              def add(self, entry, pin):
+                  self._check(pin)
+                  super().add(entry)
+
+              def read(self, pin):
+                  self._check(pin)
+                  return super().read()
+
+
+          if __name__ == "__main__":
+              diary = PinDiary("2468")
+              diary.add("Saw a fox today", "2468")
+              print(diary.read("2468"))
+              try:
+                  diary.read("1234")
+              except ValueError as error:
+                  print("Error:", error)
+        hints:
+          - "The constructor calls `super().__init__()`, which creates the list of entries, and then stores the PIN in `self.__pin`."
+          - "`_check(pin)` raises the error when the PIN is wrong: `raise ValueError(\"Wrong PIN\")`. When the PIN is right it does nothing at all."
+          - "`add` first calls `self._check(pin)` and then `super().add(entry)`. If the PIN is wrong, the error stops the method before anything is added. `read` works the same way, and returns what `super().read()` returns."
+        require:
+          - pattern: class\s+PinDiary\s*\(\s*Diary\s*\)
+            message: "`PinDiary` should inherit `Diary`."
+          - pattern: self\.__\w+\s*=
+            message: Store the PIN in a private attribute, with two underscores.
+          - pattern: def\s+_check\s*\(
+            message: "Write the PIN check in a protected method `_check(pin)`."
+          - pattern: super\(\)\.add\(
+            message: "Let `Diary`'s `add` add the entry: `super().add(...)`."
+          - pattern: super\(\)\.read\(
+            message: "Let `Diary`'s `read` give the entries: `super().read()`."
+        tests:
+          - call: |
+              diary = PinDiary("2468")
+              diary.add("Saw a fox today", "2468")
+              print(diary.read("2468"))
+              try:
+                  diary.read("1234")
+              except ValueError as error:
+                  print("Error:", error)
+          - call: |
+              diary = PinDiary("0000")
+              diary.add("Day one", "0000")
+              try:
+                  diary.add("Sneaky entry", "1111")
+              except ValueError as error:
+                  print("Error:", error)
+              diary.add("Day two", "0000")
+              print(diary.read("0000"))
+            hidden: true

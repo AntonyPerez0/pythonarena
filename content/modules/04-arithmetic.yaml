@@ -1,0 +1,743 @@
+id: arithmetic
+summary: Calculating with Python. All the arithmetic operators, the order of operations, the types of results, reading numbers from the user with int and float, and keeping a running total in a variable.
+steps:
+  - id: arithmetic-operators
+    slug: operators
+    title: Arithmetic operators
+    text: |
+      You have already used `+`, `-`, `*` and `/`. Python has three more arithmetic operators. Here they all are:
+
+      | Operator | What it does | Example | Result |
+      |:-:|---|---|---|
+      | `+` | addition | `7 + 2` | `9` |
+      | `-` | subtraction | `7 - 2.5` | `4.5` |
+      | `*` | multiplication | `-3 * 4` | `-12` |
+      | `/` | division | `7 / 2` | `3.5` |
+      | `//` | integer division (rounds down) | `7 // 2` | `3` |
+      | `%` | remainder, also called modulo | `7 % 2` | `1` |
+      | `**` | power | `2 ** 3` | `8` |
+
+      ### Integer division and the remainder
+
+      `//` divides and rounds the result down to a whole number: it tells you how many times one number fits into another. `%` gives what is left over. Together they answer questions such as "how many full boxes, and how many items left":
+
+      ```python repl
+      >>> 17 // 5
+      3
+      >>> 17 % 5
+      2
+      ```
+
+      5 fits into 17 three times, which makes 15, and 2 is left over. Here the same idea turns minutes into hours and minutes:
+
+      ```python run
+      minutes = 135
+      hours = minutes // 60
+      rest = minutes % 60
+      print(f"{minutes} minutes is {hours} h {rest} min.")
+      ```
+
+      ```output
+      135 minutes is 2 h 15 min.
+      ```
+
+      The remainder is also a quick test for even numbers: an even number divided by 2 leaves nothing, so `14 % 2` is 0, while `15 % 2` is 1. That comes in handy with the conditions at the end of this part.
+
+      ### Powers
+
+      `**` raises a number to a power: `2 ** 3` is 2 * 2 * 2.
+
+      ```python repl
+      >>> 2 ** 3
+      8
+      >>> 5 ** 2
+      25
+      >>> 10 ** 6
+      1000000
+      ```
+
+      Watch out: in Python, `^` is not a power. It's a different operator that this course doesn't need, so `2 ^ 3` gives a wrong answer without any error message:
+
+      ```python repl
+      >>> 2 ^ 3
+      1
+      ```
+
+      **Your turn:** fill in the blanks so the program prints how many full weeks and extra days there are in 100 days:
+
+      ```
+      100 days is 14 weeks and 2 days.
+      ```
+    fill: |
+      days = 100
+      weeks = days [[//]] 7
+      left = days [[%]] 7
+      print(f"{days} days is {weeks} weeks and {left} days.")
+    hints:
+      - The number of full weeks is how many times 7 fits into 100. The extra days are what's left over.
+      - "`//` divides and rounds down, and `%` gives the remainder."
+    tests:
+      - expect: 100 days is 14 weeks and 2 days.
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          print(9 / 2)
+          print(9 // 2)
+          print(9 % 2)
+          print(3 ** 2)
+        hints:
+          - "`/` gives the exact result as a float, and `//` rounds it down to a whole number."
+          - "`%` is what's left over when 2 is taken out of 9 as many times as it fits, and `**` is a power: 3 * 3."
+      - task: |
+          An egg carton holds 12 eggs. The variable `eggs` holds the number of eggs collected today. Add lines that calculate how many cartons can be filled and how many eggs are left over, and print this line:
+
+          ```
+          100 eggs: 8 full cartons, 4 eggs left over
+          ```
+        seed: |
+          eggs = 100
+        solution: |
+          eggs = 100
+          cartons = eggs // 12
+          left = eggs % 12
+          print(f"{eggs} eggs: {cartons} full cartons, {left} eggs left over")
+        hints:
+          - The number of full cartons is how many times 12 fits into `eggs`.
+          - "`eggs // 12` is the number of full cartons and `eggs % 12` the eggs left over."
+          - "Print them with an f-string: `f\"{eggs} eggs: {cartons} full cartons, ...\"`."
+        forbid:
+          - pattern: \b8\b|\b4\b
+            raw: true
+            message: Let Python calculate the cartons and the eggs left over from `eggs`.
+        tests:
+          - expect: "100 eggs: 8 full cartons, 4 eggs left over"
+
+  - id: arithmetic-precedence
+    slug: order-of-operations
+    title: Order of operations
+    text: |
+      A calculation is made of **operands**, the values, and **operators**, such as `+` and `*`. When a calculation has several operators, Python works them out in the order you know from mathematics:
+
+      1. whatever is in parentheses
+      2. powers, `**`
+      3. multiplication and division: `*`, `/`, `//` and `%`
+      4. addition and subtraction: `+` and `-`
+
+      Operators on the same level are worked out from left to right.
+
+      ```python run
+      print(2 + 3 * 4)
+      print((2 + 3) * 4)
+      print(2 * 3 ** 2)
+      print(20 - 8 - 2)
+      print(20 - (8 - 2))
+      ```
+
+      ```output
+      14
+      20
+      18
+      10
+      14
+      ```
+
+      In `2 * 3 ** 2`, the power comes first: `3 ** 2` is 9, and 2 * 9 is 18. In `20 - 8 - 2`, Python goes from left to right: 20 - 8 is 12, and 12 - 2 is 10. The parentheses in the last line make Python do `8 - 2` first.
+
+      ### A classic mistake
+
+      The mean of two numbers is their sum divided by two. Forget the parentheses, and only the second number is divided:
+
+      ```python run
+      first = 8
+      second = 6
+      wrong = first + second / 2
+      right = (first + second) / 2
+      print(wrong)
+      print(right)
+      ```
+
+      ```output
+      11.0
+      7.0
+      ```
+
+      Python gave no error: `first + second / 2` is a perfectly good calculation, just not the one that was meant. Its result is 8 + 3.0, which is 11.0. Python always does what the code says, so check that the order of the calculation is what you want.
+
+      ### Parentheses in a longer formula
+
+      Here the price of a product drops by 25 percent, and then shipping is added:
+
+      ```python run
+      price = 80
+      discount = 25
+      shipping = 5
+      total = price * (100 - discount) / 100 + shipping
+      print(total)
+      ```
+
+      ```output
+      65.0
+      ```
+
+      The parentheses make Python work out the share of the price you pay, 75 percent, first. Then `*` and `/` go from left to right: 80 * 75 is 6000, and 6000 / 100 is 60.0. The addition comes last. When you aren't sure of the order, add parentheses: they never hurt, and they make the formula easier to read.
+
+      **Your turn:** fill in the blanks with parentheses so the program prints 30, not 22.
+
+      ```
+      30
+      ```
+    fill: |
+      print([[(]]4 + 6[[)]] * 3)
+    hints:
+      - Without parentheses, Python multiplies 6 by 3 first.
+      - "Put `(` before the 4 and `)` after the 6, so the addition is worked out first."
+    tests:
+      - expect: "30"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          print(1 + 2 * 3)
+          print((1 + 2) * 3)
+          print(10 - 2 ** 3)
+          print(12 / 2 * 3)
+        hints:
+          - "Parentheses first, then powers, then `*` and `/`, then `+` and `-`."
+          - "`2 ** 3` is 8. In the last line, `/` and `*` are on the same level, so Python goes from left to right, and `/` makes the result a float."
+      - task: |
+          The program should print the mean of three days' practice hours, but it prints a much bigger number. Fix the calculation, so the program prints:
+
+          ```
+          Mean: 7.0
+          ```
+        seed: |
+          monday = 4
+          tuesday = 7
+          wednesday = 10
+          mean = monday + tuesday + wednesday / 3
+          print(f"Mean: {mean}")
+        solution: |
+          monday = 4
+          tuesday = 7
+          wednesday = 10
+          mean = (monday + tuesday + wednesday) / 3
+          print(f"Mean: {mean}")
+        hints:
+          - Division comes before addition. Which number is divided by 3 now?
+          - Put the sum in parentheses, so all three numbers are added before the division.
+        tests:
+          - expect: "Mean: 7.0"
+
+  - id: arithmetic-types
+    slug: number-types
+    title: Types of results
+    text: |
+      Every value has a type. The function `type` tells you which:
+
+      ```python repl
+      >>> type(7)
+      <class 'int'>
+      >>> type(7.0)
+      <class 'float'>
+      >>> type("7")
+      <class 'str'>
+      ```
+
+      Don't mind the word "class" for now; the part in quotes is the name of the type. So `7` is an integer, `7.0` is a float and `"7"` is a string.
+
+      ### The type of a result
+
+      The types of the operands decide the type of the result:
+
+      - Two integers with `+`, `-`, `*`, `//`, `%` or `**` give an integer.
+      - If even one operand is a float, the result is a float.
+      - `/` is the exception: it always gives a float.
+
+      ```python repl
+      >>> 2 + 3
+      5
+      >>> 2 + 3.0
+      5.0
+      >>> 6 / 3
+      2.0
+      >>> 7 // 2
+      3
+      >>> 7.5 // 2
+      3.0
+      >>> type(6 / 3)
+      <class 'float'>
+      ```
+
+      `//` on a float still rounds down to a whole number, but the result is a float. The type shows in what you print, so choose the operator that gives the output you want:
+
+      ```python run
+      minutes = 240
+      print(f"{minutes / 60} hours")
+      print(f"{minutes // 60} hours")
+      ```
+
+      ```output
+      4.0 hours
+      4 hours
+      ```
+
+      In a real calculation, floats and integers mix freely. This program works out a car's fuel use per 100 kilometers:
+
+      ```python run
+      liters = 42.5
+      kilometers = 680
+      per_100_km = liters / kilometers * 100
+      print(f"Fuel used: {per_100_km} liters per 100 km")
+      print(type(per_100_km))
+      ```
+
+      ```output
+      Fuel used: 6.25 liters per 100 km
+      <class 'float'>
+      ```
+
+      ### Converting between types
+
+      The name of a type also works as a function that converts a value into that type. You've met `str` already; `int` and `float` work the same way:
+
+      ```python repl
+      >>> int(3.9)
+      3
+      >>> float(3)
+      3.0
+      >>> str(3.5)
+      '3.5'
+      ```
+
+      `int` doesn't round: it simply drops everything after the decimal point, so `int(3.9)` is 3.
+
+      **Your turn:** the program prints `5.0 minutes`. Fill in the blank with the operator that makes it print `5 minutes`:
+
+      ```
+      5 minutes
+      ```
+    fill: |
+      seconds = 300
+      minutes = seconds [[//]] 60
+      print(f"{minutes} minutes")
+    hints:
+      - "`/` always gives a float, and a float is printed with a decimal point."
+      - "Integer division, `//`, gives an integer when both numbers are integers."
+    tests:
+      - expect: 5 minutes
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          print(type(10))
+          print(type(10 / 2))
+          print(type("10"))
+          print(10 // 4)
+          print(int(7.8))
+        hints:
+          - "`type` prints the type as `<class '...'>`. `/` always gives a float, and quotes make a string."
+          - "`10 // 4` rounds down, and `int` drops the decimals without rounding."
+      - task: |
+          Three pizzas of 8 slices each are shared by 5 friends. Add lines that print how many slices each friend would get if the slices could be cut exactly, how many whole slices each one gets, and how many slices are left over. Calculate them from the variables:
+
+          ```
+          Exactly: 4.8 slices each
+          Whole slices: 4 each
+          Left over: 4
+          ```
+        seed: |
+          pizzas = 3
+          slices = pizzas * 8
+          friends = 5
+        solution: |
+          pizzas = 3
+          slices = pizzas * 8
+          friends = 5
+          print(f"Exactly: {slices / friends} slices each")
+          print(f"Whole slices: {slices // friends} each")
+          print(f"Left over: {slices % friends}")
+        hints:
+          - "Each line divides `slices` by `friends` with a different operator: `/`, `//` and `%`."
+          - "`/` gives the exact result as a float, `//` the whole slices and `%` the slices left over."
+          - "For example: `print(f\"Whole slices: {slices // friends} each\")`."
+        forbid:
+          - pattern: 4\.8|\b4\b
+            raw: true
+            message: Let Python calculate the results from the variables.
+        tests:
+          - expect: |
+              Exactly: 4.8 slices each
+              Whole slices: 4 each
+              Left over: 4
+
+  - id: arithmetic-input-numbers
+    slug: numbers-as-input
+    title: Numbers as input
+    text: |
+      `input` always gives a string, even when the user types digits. Calculating with that string as if it were a number fails:
+
+      ```python run crash
+      born = input("Year of birth: ")
+      print(2050 - born)
+      ```
+
+      ```input
+      1990
+      ```
+
+      ```output
+      Year of birth: 1990
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(2050 - born)
+                ~~~~~^~~~~~
+      TypeError: unsupported operand type(s) for -: 'int' and 'str'
+      ```
+
+      The user typed 1990, but `born` holds the string `"1990"`, and an integer minus a string makes no sense.
+
+      ### int and float
+
+      You converted numbers into strings with `str`. The functions `int` and `float` go the other way: `int("1990")` is the integer 1990, and `float("2.5")` is the float 2.5.
+
+      ```python run
+      text = input("Year of birth: ")
+      born = int(text)
+      print(f"In 2050 you will turn {2050 - born}.")
+      ```
+
+      ```input
+      1990
+      ```
+
+      ```output
+      Year of birth: 1990
+      In 2050 you will turn 60.
+      ```
+
+      You don't need the extra variable. Put `input` inside `int`, and Python first runs `input` and then converts what it gives:
+
+      ```python run
+      dog_age = int(input("Dog's age in years: "))
+      print(f"That's about {dog_age * 7} in human years.")
+      ```
+
+      ```input
+      3
+      ```
+
+      ```output
+      Dog's age in years: 3
+      That's about 21 in human years.
+      ```
+
+      When the number may have decimals, use `float` instead:
+
+      ```python run
+      price = float(input("Price: "))
+      print(f"With a 20% discount: {price * 0.8}")
+      ```
+
+      ```input
+      12.5
+      ```
+
+      ```output
+      Price: 12.5
+      With a 20% discount: 10.0
+      ```
+
+      ### Text that isn't a number
+
+      `int` only accepts digits, with a minus sign in front if needed. Anything else stops the program with a `ValueError`, even a decimal point:
+
+      ```python run crash
+      count = int(input("How many? "))
+      ```
+
+      ```input
+      2.5
+      ```
+
+      ```output
+      How many? 2.5
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          count = int(input("How many? "))
+      ValueError: invalid literal for int() with base 10: '2.5'
+      ```
+
+      The message says that `int` can't read `'2.5'` as a whole number ("base 10" just means ordinary digits). If the user may type decimals, read the number with `float`. A later module shows how a program can deal with input that isn't a number at all.
+
+      **Your turn:** fill in the blank so the program reads a whole number and doubles it. If the user types `7`, the run looks like this:
+
+      ```
+      Number: 7
+      7 doubled is 14
+      ```
+    fill: |
+      number = [[int]](input("Number: "))
+      print(f"{number} doubled is {number * 2}")
+    hints:
+      - "`input` gives a string. Which function turns a string of digits into an integer?"
+      - "`int(input(\"Number: \"))` reads the line and converts it in one go."
+    tests:
+      - stdin: "7"
+      - stdin: "-15"
+        hidden: true
+    more:
+      - task: |
+          If the user types `3`, this program claims that's 3333333 cups a week. When a string is multiplied by a number, Python repeats the string. Fix the program, so that a run looks like this:
+
+          ```
+          Cups of coffee a day: 3
+          That's 21 cups a week.
+          ```
+        seed: |
+          cups = input("Cups of coffee a day: ")
+          print(f"That's {cups * 7} cups a week.")
+        solution: |
+          cups = int(input("Cups of coffee a day: "))
+          print(f"That's {cups * 7} cups a week.")
+        hints:
+          - "`cups` holds the string `\"3\"`, not the number 3."
+          - "Convert the input with `int` when you read it: `int(input(...))`."
+        tests:
+          - stdin: "3"
+          - stdin: "5"
+            hidden: true
+      - task: |
+          Write a program that asks for the price of an item and the number of items, and prints the total price. The price may have decimals, but the number of items is a whole number. If the user types `2.5` and `4`, the run looks like this:
+
+          ```
+          Price: 2.5
+          Items: 4
+          Total: 10.0
+          ```
+        seed: |
+          # Ask for the price and the number of items, then print the total.
+        solution: |
+          # Ask for the price and the number of items, then print the total.
+          price = float(input("Price: "))
+          items = int(input("Items: "))
+          print(f"Total: {price * items}")
+        hints:
+          - The price may have decimals, so read it with `float`. The number of items is whole, so read it with `int`.
+          - "The total is the price times the number of items: `print(f\"Total: {price * items}\")`."
+        tests:
+          - stdin: |
+              2.5
+              4
+          - stdin: |
+              1.25
+              3
+            hidden: true
+          - stdin: |
+              8
+              2
+            hidden: true
+
+  - id: arithmetic-using-variables
+    slug: using-variables
+    title: Calculating with variables
+    text: |
+      A program that works with numbers usually reads them, stores them in variables and then calculates with the variables. This one prints the sum and the mean of three numbers:
+
+      ```python run
+      first = int(input("First number: "))
+      second = int(input("Second number: "))
+      third = int(input("Third number: "))
+      total = first + second + third
+      print(f"Sum: {total}")
+      print(f"Mean: {total / 3}")
+      ```
+
+      ```input
+      4
+      9
+      2
+      ```
+
+      ```output
+      First number: 4
+      Second number: 9
+      Third number: 2
+      Sum: 15
+      Mean: 5.0
+      ```
+
+      ### Adding to a variable
+
+      Another way is to keep a running total in one variable and add each new value to it as it comes in:
+
+      ```python run
+      total = 0
+      price = float(input("First item: "))
+      total = total + price
+      price = float(input("Second item: "))
+      total = total + price
+      print(f"To pay: {total}")
+      ```
+
+      ```input
+      3.5
+      2.25
+      ```
+
+      ```output
+      First item: 3.5
+      Second item: 2.25
+      To pay: 5.75
+      ```
+
+      As before, `total = total + price` works out the right side first with the current values, then stores the result back in `total`. The total starts at 0, so the first addition has something to add to. Here one variable, `price`, holds each item in turn: after it's added to the total, its old value isn't needed any more.
+
+      ### The shorthand +=
+
+      Increasing a variable is so common that Python has a shorthand: `total += price` means the same as `total = total + price`. There are also `-=` and `*=`, and they work the same way:
+
+      ```python run
+      balance = 100
+      balance += 25
+      balance -= 40
+      balance *= 2
+      print(balance)
+      ```
+
+      ```output
+      170
+      ```
+
+      100 plus 25 is 125, minus 40 is 85, and doubled that's 170.
+
+      ### Keep the values you need
+
+      Reusing one variable is fine for a running total. But if the program needs every value at the end, each one needs a variable of its own:
+
+      ```python run
+      first = int(input("First number: "))
+      second = int(input("Second number: "))
+      print(f"{first} + {second} = {first + second}")
+      ```
+
+      ```input
+      12
+      30
+      ```
+
+      ```output
+      First number: 12
+      Second number: 30
+      12 + 30 = 42
+      ```
+
+      And reuse a variable only for values of the same kind. Storing a name and later an age in one variable called `data` would work, but `name` and `age` tell the reader what each value is.
+
+      **Your turn:** fill in the blanks so the program adds both answers to `total`. If the user types `3` and `5`, the run looks like this:
+
+      ```
+      Apples: 3
+      Pears: 5
+      Fruits: 8
+      ```
+    fill: |
+      total = 0
+      total [[+=]] int(input("Apples: "))
+      total [[+=]] int(input("Pears: "))
+      print(f"Fruits: {total}")
+    hints:
+      - Each line should add the number the user types to `total`.
+      - "The shorthand for adding to a variable is `+=`."
+    tests:
+      - stdin: |
+          3
+          5
+      - stdin: |
+          10
+          0
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for three test scores (whole numbers) and prints their total and their mean. If the user types `7`, `9` and `8`, the run looks like this:
+
+          ```
+          Score 1: 7
+          Score 2: 9
+          Score 3: 8
+          Total: 24
+          Mean: 8.0
+          ```
+        seed: |
+          # Ask for the three scores, then print the total and the mean.
+        solution: |
+          # Ask for the three scores, then print the total and the mean.
+          score1 = int(input("Score 1: "))
+          score2 = int(input("Score 2: "))
+          score3 = int(input("Score 3: "))
+          total = score1 + score2 + score3
+          print(f"Total: {total}")
+          print(f"Mean: {total / 3}")
+        hints:
+          - Read each score with `int(input(...))`, into a variable of its own or straight into a running total.
+          - The mean is the total divided by 3. With `/`, it's a float, so it's printed as `8.0`.
+        tests:
+          - stdin: |
+              7
+              9
+              8
+          - stdin: |
+              10
+              5
+              3
+            hidden: true
+          - stdin: |
+              1
+              2
+              2
+            hidden: true
+      - task: |
+          Write a program for a cash register. It asks for the prices of three items, which may have decimals, and prints the running total after each one. Keep the total in one variable and add each price to it with `+=`. If the user types `2.5`, `4` and `1.25`, the run looks like this:
+
+          ```
+          Item 1: 2.5
+          Total so far: 2.5
+          Item 2: 4
+          Total so far: 6.5
+          Item 3: 1.25
+          Total so far: 7.75
+          ```
+        seed: |
+          total = 0
+        solution: |
+          total = 0
+          total += float(input("Item 1: "))
+          print(f"Total so far: {total}")
+          total += float(input("Item 2: "))
+          print(f"Total so far: {total}")
+          total += float(input("Item 3: "))
+          print(f"Total so far: {total}")
+        hints:
+          - "Read a price, add it to the total, print the total: then the same again, twice."
+          - The prices may have decimals, so read them with `float`.
+          - "`total += float(input(\"Item 1: \"))` reads the first price and adds it in one line."
+        require:
+          - pattern: \+=
+            min: 3
+            message: Add each price to `total` with `+=`.
+        tests:
+          - stdin: |
+              2.5
+              4
+              1.25
+          - stdin: |
+              10
+              0.5
+              3
+            hidden: true

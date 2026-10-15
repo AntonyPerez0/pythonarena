@@ -1,0 +1,343 @@
+topic: oop-techniques
+drills:
+  - type: runs
+    after: comparisons
+    code: |
+      class Box:
+          def __init__(self, size):
+              self.size = size
+
+
+      print(Box(3) < Box(5))
+    why: "`Box` has no `__lt__`, so Python doesn't know what `<` means for boxes and stops with a `TypeError`."
+
+  - type: predict
+    after: comparisons
+    code: |
+      class Box:
+          def __init__(self, size):
+              self.size = size
+
+          def __lt__(self, other):
+              return self.size < other.size
+
+
+      print(Box(3) < Box(5))
+      print(Box(5) < Box(3))
+    why: "`<` calls `__lt__`, which compares the sizes: 3 is less than 5, and 5 isn't less than 3."
+
+  - type: fill
+    after: comparisons
+    code: |
+      class Score:
+          def __init__(self, points):
+              self.points = points
+
+          def [[__gt__]](self, other):
+              return self.points > other.points
+
+
+      print(Score(10) > Score(7))
+    why: "`>` is \"greater than\", and Python calls `__gt__` for it."
+
+  - type: predict
+    after: comparisons
+    code: |
+      class Word:
+          def __init__(self, text):
+              self.text = text
+
+          def __lt__(self, other):
+              return len(self.text) < len(other.text)
+
+
+      words = [Word("banana"), Word("fig"), Word("kiwi")]
+      for word in sorted(words):
+          print(word.text)
+    why: "`sorted` puts the items in order with `<`, and this `__lt__` compares lengths. So the words come out from the shortest to the longest, not in alphabetical order."
+
+  - type: predict
+    after: comparisons
+    code: |
+      class Runner:
+          def __init__(self, name, seconds):
+              self.name = name
+              self.seconds = seconds
+
+          def faster(self, other):
+              if self.seconds < other.seconds:
+                  return self
+              return other
+
+
+      ada = Runner("Ada", 61)
+      ben = Runner("Ben", 58)
+      print(ada.faster(ben).name)
+    why: "`faster` returns one of the two runner objects, `self` or `other`. Ben has fewer seconds, so `ada.faster(ben)` returns `ben`."
+
+  - type: predict
+    after: equality
+    code: |
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+
+      a = Point(1, 2)
+      b = Point(1, 2)
+      print(a == b)
+      print(a == a)
+    why: "Without `__eq__`, `==` asks whether the two are the same object. `a` and `b` have equal contents, but they are two different objects."
+
+  - type: predict
+    after: equality
+    code: |
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __eq__(self, other):
+              return self.x == other.x and self.y == other.y
+
+
+      points = [Point(0, 0), Point(1, 2)]
+      print(Point(1, 2) in points)
+      print(Point(1, 2) != Point(1, 2))
+    why: "`in` compares with `==`, so with `__eq__` it finds an equal point. `!=` is the opposite of `__eq__` when there's no `__ne__`."
+
+  - type: bug
+    after: arithmetic
+    code: |
+      class Weight:
+          def __init__(self, grams):
+              self.grams = grams
+
+          def __add__(self, other):
+              return self.grams + other.grams  # BUG
+
+
+      total = Weight(200) + Weight(300)
+      print(total.grams)
+    fix: return Weight(self.grams + other.grams)
+    why: "`__add__` should return a new `Weight`. As written it returns the number 500, and a number has no attribute `grams`."
+
+  - type: predict
+    after: arithmetic
+    code: |
+      class Coins:
+          def __init__(self, count):
+              self.count = count
+
+          def __add__(self, other):
+              return Coins(self.count + other.count)
+
+
+      a = Coins(3)
+      b = Coins(4)
+      c = a + b
+      print(c.count)
+      print(a.count)
+    why: "`__add__` makes a new object, 7 coins, and leaves `a` and `b` as they were."
+
+  - type: choice
+    after: arithmetic
+    prompt: Which method makes `vector * 3` work?
+    choices:
+      - "`__mul__`"
+      - "`__times__`"
+      - "`__multiply__`"
+    answer: 1
+    why: "Multiplication is `__mul__(self, other)`. Here `other` is the number 3."
+
+  - type: runs
+    after: arithmetic
+    code: |
+      class Weight:
+          def __init__(self, grams):
+              self.grams = grams
+
+          def __add__(self, other):
+              return Weight(self.grams + other.grams)
+
+
+      total = Weight(200) + 300
+      print(total.grams)
+    why: "`__add__` expects another `Weight` and asks for `other.grams`. Here `other` is the number 300, which has no `grams`, so Python stops with an `AttributeError`."
+
+  - type: predict
+    after: str-and-repr
+    code: |
+      class Fruit:
+          def __init__(self, name):
+              self.name = name
+
+          def __str__(self):
+              return self.name
+
+          def __repr__(self):
+              return f"Fruit({repr(self.name)})"
+
+
+      apple = Fruit("apple")
+      print(apple)
+      print([apple])
+    why: "`print` uses `__str__`, but a list shows its items with `__repr__`, quotes and all."
+
+  - type: choice
+    after: str-and-repr
+    prompt: "This class has only `__repr__`. What does the program print?"
+    code: |
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __repr__(self):
+              return f"Point({self.x}, {self.y})"
+
+
+      print(Point(1, 2))
+    choices:
+      - "`Point(1, 2)`"
+      - "`(1, 2)`"
+      - "`1 2`"
+    answer: 1
+    verify: output
+    why: "When a class has no `__str__`, `print` uses `__repr__`."
+
+  - type: predict
+    after: str-and-repr
+    code: |
+      print("7")
+      print(repr("7"))
+      print(["7", 7])
+    why: "`repr` of a string includes its quotes, and a list prints its items with `repr`, so the string `'7'` and the number `7` look different there."
+
+  - type: predict
+    after: iterators
+    code: |
+      class Evens:
+          def __iter__(self):
+              self.n = 0
+              return self
+
+          def __next__(self):
+              self.n += 2
+              if self.n > 6:
+                  raise StopIteration
+              return self.n
+
+
+      for number in Evens():
+          print(number)
+    why: "Each `__next__` adds 2 and returns the number: 2, 4 and 6. The next one would be 8, which is over 6, so it raises `StopIteration` and the loop ends."
+
+  - type: runs
+    after: iterators
+    code: |
+      class Team:
+          def __init__(self):
+              self.players = ["Ada", "Ben"]
+
+
+      for player in Team():
+          print(player)
+    why: "A `for` loop needs `__iter__` (and `__next__`). `Team` has neither, so Python stops with a `TypeError`: the object is not iterable. Looping over `Team().players` would work."
+
+  - type: choice
+    after: iterators
+    prompt: "What must `__next__` do when there are no items left?"
+    choices:
+      - "Return `None`"
+      - "Raise `StopIteration`"
+      - "Return `False`"
+      - "Call `__iter__` again"
+    answer: 2
+    why: "Raising `StopIteration` is how an iterator says it's done. The `for` loop catches it and ends. A returned `None` would just be one more item."
+
+  - type: boss
+    after: iterators
+    prompt: |
+      Write a class `Money` for amounts in whole euros. The constructor takes the number of euros. Give the class these methods:
+
+      - `__str__` returns text such as `25 eur`.
+      - `__add__` returns a new `Money` with the sum of two amounts.
+      - `__eq__` and `__lt__` compare two amounts.
+
+      For example,
+
+      ```python fragment
+      price = Money(25)
+      tip = Money(5)
+      print(price + tip)
+      print(price == Money(25))
+      print(tip < price)
+      print(price)
+      ```
+
+      should print:
+
+      ```
+      30 eur
+      True
+      True
+      25 eur
+      ```
+    seed: |
+      # Write the class Money here.
+
+
+      if __name__ == "__main__":
+          price = Money(25)
+          tip = Money(5)
+          print(price + tip)
+    solution: |
+      class Money:
+          def __init__(self, euros):
+              self.euros = euros
+
+          def __str__(self):
+              return f"{self.euros} eur"
+
+          def __add__(self, other):
+              return Money(self.euros + other.euros)
+
+          def __eq__(self, other):
+              return self.euros == other.euros
+
+          def __lt__(self, other):
+              return self.euros < other.euros
+
+
+      if __name__ == "__main__":
+          price = Money(25)
+          tip = Money(5)
+          print(price + tip)
+    hints:
+      - "Store the euros in the constructor, and let `__str__` return `f\"{self.euros} eur\"`."
+      - "`__add__` returns `Money(self.euros + other.euros)`. `__eq__` and `__lt__` return the result of comparing the euros."
+    require:
+      - pattern: def\s+__add__\s*\(
+        message: "Write `__add__` for `+`."
+      - pattern: def\s+__eq__\s*\(
+        message: "Write `__eq__` for `==`."
+      - pattern: def\s+__lt__\s*\(
+        message: "Write `__lt__` for `<`."
+    tests:
+      - call: |
+          price = Money(25)
+          tip = Money(5)
+          print(price + tip)
+          print(price == Money(25))
+          print(tip < price)
+          print(price)
+      - call: |
+          rent = Money(700)
+          food = Money(250)
+          print(rent + food + Money(50))
+          print(rent < food)
+          print(food != Money(250))
+          print(max([food, rent, Money(5)]))
+        hidden: true

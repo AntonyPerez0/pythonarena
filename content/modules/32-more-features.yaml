@@ -1,0 +1,684 @@
+id: more-features
+summary: A handful of useful Python features. Conditional expressions that choose a value in one line, pass for a block that does nothing, loops with an else block, default parameter values and functions that take any number of arguments.
+steps:
+  - id: more-features-conditional-expressions
+    slug: conditional-expressions
+    title: Conditional expressions
+    text: |
+      An `if` statement chooses which code runs. Often, though, the only thing that changes is a value:
+
+      ```python run
+      temperature = 25
+      if temperature > 20:
+          print("warm")
+      else:
+          print("cold")
+      ```
+
+      ```output
+      warm
+      ```
+
+      A **conditional expression** chooses between two values in one line. It reads almost like English: `"warm" if temperature > 20 else "cold"` is `"warm"` when the condition is true, and `"cold"` otherwise. Since it's an expression, it goes anywhere a value can go:
+
+      ```python run
+      temperature = 25
+      print("warm" if temperature > 20 else "cold")
+      label = "even" if temperature % 2 == 0 else "odd"
+      print(label)
+      ```
+
+      ```output
+      warm
+      odd
+      ```
+
+      The order is: the value for true, then `if` and the condition, then `else` and the value for false. (Some languages call this the ternary operator, because it has three parts.)
+
+      ### Where it shines
+
+      Small choices inside a longer line, such as a word that changes with a number, are where a conditional expression saves the most. Without it, each line would need an `if` statement of four lines:
+
+      ```python run
+      for count in [0, 1, 5]:
+          print(f"{count} {'file' if count == 1 else 'files'} found")
+      ```
+
+      ```output
+      0 files found
+      1 file found
+      5 files found
+      ```
+
+      It works in a `return` too:
+
+      ```python run
+      def larger(a, b):
+          return a if a > b else b
+
+
+      print(larger(3, 8))
+      print(larger(10, -2))
+      ```
+
+      ```output
+      8
+      10
+      ```
+
+      ### The else is not optional
+
+      An expression must always have a value, so the `else` part is required. Without it, Python can't read the line:
+
+      ```python run crash
+      score = 7
+      print("passed" if score >= 5)
+      ```
+
+      ```crash
+        File "main.py", line 2
+          print("passed" if score >= 5)
+                ^^^^^^^^^^^^^^^^^^^^^^
+      SyntaxError: expected 'else' after 'if' expression
+      ```
+
+      Use a conditional expression to choose a value. When the two cases do different things, or there are more than two cases, an ordinary `if`, `elif` and `else` is easier to read.
+
+      **Your turn:** fill in the blanks so the program sets `status` to `"adult"` for an age of 18 or more and to `"minor"` otherwise. For example:
+
+      ```
+      Age: 20
+      Status: adult
+      ```
+    fill: |
+      age = int(input("Age: "))
+      status = "adult" [[if]] age >= 18 [[else]] "minor"
+      print("Status:", status)
+    hints:
+      - The value for true comes first, then the keyword that starts the condition.
+      - "The pattern is `value if condition else other_value`: type `if` and `else` into the blanks."
+    tests:
+      - stdin: "20"
+      - stdin: "17"
+        hidden: true
+      - stdin: "18"
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          x = 7
+          print("odd" if x % 2 == 1 else "even")
+          y = 10 if x > 5 else 0
+          print(y)
+          print(x * 2 if x < 5 else x - 2)
+        hints:
+          - In each expression, check the condition first. It decides which of the two values the whole expression is.
+          - "7 is odd and greater than 5, but not less than 5."
+      - task: |
+          Write a function `plural(count, word)` that returns the count and the word, with an `s` added to the word unless the count is exactly 1: `plural(1, "apple")` returns `"1 apple"`, and `plural(3, "apple")` returns `"3 apples"`. Choose between the two with a conditional expression, not an `if` statement.
+        seed: |
+          def plural(count, word):
+              pass
+
+
+          if __name__ == "__main__":
+              print(plural(1, "apple"))
+              print(plural(3, "apple"))
+        solution: |
+          def plural(count, word):
+              ending = "" if count == 1 else "s"
+              return f"{count} {word}{ending}"
+
+
+          if __name__ == "__main__":
+              print(plural(1, "apple"))
+              print(plural(3, "apple"))
+        hints:
+          - The only thing that changes is the ending of the word, `""` or `"s"`.
+          - "Choose it with `\"\" if count == 1 else \"s\"`, and build the result with an f-string."
+        require:
+          - pattern: \bif\b[^\n]*\belse\b
+            message: Choose with a conditional expression, `value if condition else other_value`.
+        forbid:
+          - pattern: ^\s*else\s*[:]
+            flags: m
+            message: Use a conditional expression instead of an `if` and `else` statement.
+        tests:
+          - call: plural(1, "apple")
+          - call: plural(3, "apple")
+          - call: plural(0, "cat")
+            hidden: true
+          - call: plural(1, "bus stop")
+            hidden: true
+          - call: plural(12, "egg")
+            hidden: true
+
+  - id: more-features-pass-and-loop-else
+    slug: pass-and-loop-else
+    title: pass, and loops with else
+    text: |
+      ### pass
+
+      You know `pass` from the starter code of function tasks: it's a statement that does nothing. It exists because a block can't be empty: after `if`, `for`, `while`, `def` or `except`, Python wants at least one indented line. When a block should do nothing, at least for now, `pass` fills the place:
+
+      ```python run
+      def save_report(data):
+          pass  # to do: write the report to a file
+
+
+      save_report([1, 2, 3])
+      print("The program runs, though save_report does nothing yet")
+      ```
+
+      ```output
+      The program runs, though save_report does nothing yet
+      ```
+
+      A function whose body is only `pass` returns `None`. Leave the `pass` out, and Python can't read the program, even with a comment in the block, because Python skips comments:
+
+      ```python run crash
+      def save_report(data):
+          # to do: write the report to a file
+
+      print("Done")
+      ```
+
+      ```crash
+        File "main.py", line 4
+          print("Done")
+          ^^^^^
+      IndentationError: expected an indented block after function definition on line 1
+      ```
+
+      `pass` is also how you ignore an error on purpose: `except ValueError:` followed by an indented `pass` catches the error and does nothing about it.
+
+      ### Loops with else
+
+      A `for` or `while` loop can have an `else` block. It runs when the loop ends normally, after its last round, but not when `break` ends the loop. That fits searching: if the search found nothing, the loop never hit `break`:
+
+      ```python run
+      def first_negative(numbers):
+          for number in numbers:
+              if number < 0:
+                  print("First negative:", number)
+                  break
+          else:
+              print("No negative numbers")
+
+
+      first_negative([4, -2, 7, -9])
+      first_negative([1, 2, 3])
+      ```
+
+      ```output
+      First negative: -2
+      No negative numbers
+      ```
+
+      Without the `else`, the usual way is a helper variable such as `found = False`, set to `True` before the `break` and checked after the loop. The `else` block does the same with fewer lines.
+
+      ### Watch the indentation
+
+      The loop's `else` is lined up with `for`, not with `if`. Indent it one level deeper and it becomes an ordinary `else` of the `if`, which runs for every number that isn't negative:
+
+      ```python run
+      for number in [4, 7, 9]:
+          if number < 0:
+              print("First negative:", number)
+              break
+          else:
+              print("No negative numbers")
+      ```
+
+      ```output
+      No negative numbers
+      No negative numbers
+      No negative numbers
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      for word in ["tea", "coffee", "juice"]:
+          if len(word) > 5:
+              print("Long word:", word)
+              break
+      else:
+          print("No long words")
+
+      for word in ["tea", "milk"]:
+          if len(word) > 5:
+              print("Long word:", word)
+              break
+      else:
+          print("No long words")
+    hints:
+      - The loop's `else` runs only when the loop ends without `break`.
+      - "In the first loop, `coffee` has 6 letters, so the loop prints it and breaks: its `else` is skipped."
+      - The second loop never breaks, so its `else` runs.
+    more:
+      - task: |
+          The program should add up the numbers in a line of comma-separated values and skip anything that isn't a number. The `except` block is meant to do nothing, but it's empty, so Python can't even read the program. Fix it, so that it prints, for example:
+
+          ```
+          Values: 12,x,30,,8
+          Total: 50
+          ```
+        seed: |
+          values = input("Values: ").split(",")
+          total = 0
+          for value in values:
+              try:
+                  total += int(value)
+              except ValueError:
+                  # skip anything that isn't a number
+
+          print("Total:", total)
+        solution: |
+          values = input("Values: ").split(",")
+          total = 0
+          for value in values:
+              try:
+                  total += int(value)
+              except ValueError:
+                  # skip anything that isn't a number
+                  pass
+
+          print("Total:", total)
+        hints:
+          - A comment doesn't count as the contents of a block. Python needs a statement there.
+          - "Add an indented `pass` under the comment in the `except` block."
+        require:
+          - pattern: \bpass\b
+            message: Fill the empty block with `pass`.
+        tests:
+          - stdin: 12,x,30,,8
+          - stdin: 1,2,three
+            hidden: true
+          - stdin: a,b
+            hidden: true
+      - task: |
+          Write a program that asks for a PIN code at most three times. The right PIN is `4321`. For a right one it prints `Welcome!` and stops asking; for a wrong one, `Wrong PIN`. After three wrong tries it prints `Card locked`. Use a loop with an `else` block for the last message. For example:
+
+          ```
+          PIN: 1111
+          Wrong PIN
+          PIN: 4321
+          Welcome!
+          ```
+        seed: |
+          # Write your program here.
+        solution: |
+          # Write your program here.
+          for attempt in range(3):
+              pin = input("PIN: ")
+              if pin == "4321":
+                  print("Welcome!")
+                  break
+              print("Wrong PIN")
+          else:
+              print("Card locked")
+        hints:
+          - "A `for` loop over `range(3)` gives three tries. Read the PIN inside it with `input(\"PIN: \")`."
+          - When the PIN is right, print `Welcome!` and `break`. Otherwise print `Wrong PIN`.
+          - "Put `else:` lined up with `for`, after the loop. It runs only when all three tries were used without `break`."
+        require:
+          - pattern: ^([ \t]*)(for|while)\b[^\n]*\n(\1[ \t]+[^\n]*\n|[ \t]*\n)*\1else\s*[:]
+            flags: m
+            message: Print `Card locked` in an `else` block of the loop, lined up with `for` (or `while`).
+        tests:
+          - stdin: |
+              1111
+              4321
+          - stdin: |
+              4321
+            hidden: true
+          - stdin: |
+              1
+              2
+              3
+            hidden: true
+          - stdin: |
+              0000
+              1234
+              4321
+            hidden: true
+
+  - id: more-features-default-parameters
+    slug: default-parameters
+    title: Default parameter values
+    text: |
+      A parameter can have a **default value**, written with `=` after its name in the `def` line. When a call leaves that argument out, the parameter gets the default:
+
+      ```python run
+      def greet(name, greeting="Hello"):
+          print(f"{greeting}, {name}!")
+
+
+      greet("Ada")
+      greet("Linus", "Good morning")
+      greet("Grace", "")
+      ```
+
+      ```output
+      Hello, Ada!
+      Good morning, Linus!
+      , Grace!
+      ```
+
+      The last call shows that an empty string is still an argument: the default is used only when the argument is missing. You've relied on defaults all along: `print` puts a line break at the end unless you give `end=...`, and `range(5)` starts from 0 unless you give it a start.
+
+      ### Keyword arguments
+
+      With several defaults, a call can name the parameter it gives with a keyword argument, as you've done with `sep=` and `end=` in `print`, and keep the defaults of the others:
+
+      ```python run
+      def line(length=20, character="-"):
+          return character * length
+
+
+      print(line())
+      print(line(5))
+      print(line(8, "="))
+      print(line(character="*"))
+      ```
+
+      ```output
+      --------------------
+      -----
+      ========
+      ********************
+      ```
+
+      Parameters with a default come after those without one. The other way round, Python couldn't tell which argument belongs to which parameter, and it stops before running anything:
+
+      ```python run crash
+      def greet(greeting="Hello", name):
+          print(f"{greeting}, {name}!")
+      ```
+
+      ```crash
+        File "main.py", line 1
+          def greet(greeting="Hello", name):
+                                      ^^^^
+      SyntaxError: parameter without a default follows parameter with a default
+      ```
+
+      ### A list as a default: a trap
+
+      A default value is made once, when the `def` line runs, not on every call. For a number or a string that doesn't matter. But a list can change, and then every call that uses the default shares the same list:
+
+      ```python run
+      def add_item(item, basket=[]):
+          basket.append(item)
+          return basket
+
+
+      print(add_item("apple"))
+      print(add_item("pear"))
+      ```
+
+      ```output
+      ['apple']
+      ['apple', 'pear']
+      ```
+
+      The second call got a basket that already had an apple in it. The usual fix is `None` as the default, and a new list made inside the function: `def add_item(item, basket=None):`, with `if basket is None:` and `basket = []` at the start of the body.
+
+      **Your turn:** fill in the blank so that `times` is 2 when the call doesn't give it. The program should print:
+
+      ```
+      haha
+      hohoho
+      ```
+    fill: |
+      def repeat(text, times[[=2‖= 2]]):
+          return text * times
+
+
+      print(repeat("ha"))
+      print(repeat("ho", 3))
+    hints:
+      - A default value is written in the `def` line, right after the parameter's name.
+      - "Type `=2` into the blank."
+    tests:
+      - expect: |
+          haha
+          hohoho
+    more:
+      - task: |
+          Write a function `format_price(amount, currency="EUR")` that returns the amount with two decimals and the currency after it: `format_price(12.5)` returns `"12.50 EUR"`, and `format_price(3, "USD")` returns `"3.00 USD"`.
+        seed: |
+          def format_price(amount, currency):
+              pass
+
+
+          if __name__ == "__main__":
+              print(format_price(12.5))
+              print(format_price(3, "USD"))
+        solution: |
+          def format_price(amount, currency="EUR"):
+              return f"{amount:.2f} {currency}"
+
+
+          if __name__ == "__main__":
+              print(format_price(12.5))
+              print(format_price(3, "USD"))
+        hints:
+          - "The starter code's `def` line has no default yet. Give `currency` the default `\"EUR\"`."
+          - "Two decimals come from `:.2f` in an f-string: `f\"{amount:.2f} {currency}\"`."
+        tests:
+          - call: format_price(12.5)
+          - call: format_price(3, "USD")
+          - call: format_price(0.1, "GBP")
+            hidden: true
+          - call: format_price(1234.567)
+            hidden: true
+          - call: format_price(amount=7, currency="SEK")
+            hidden: true
+      - task: |
+          Write a function `draw_box(width=5, height=3, character="#")` that prints a box of the given character, `height` lines of `width` characters each. Calls can leave out any of the arguments, or name them. `draw_box(4, character="+")` prints:
+
+          ```
+          ++++
+          ++++
+          ++++
+          ```
+        seed: |
+          def draw_box():
+              pass
+
+
+          if __name__ == "__main__":
+              draw_box()
+              draw_box(4, character="+")
+        solution: |
+          def draw_box(width=5, height=3, character="#"):
+              for i in range(height):
+                  print(character * width)
+
+
+          if __name__ == "__main__":
+              draw_box()
+              draw_box(4, character="+")
+        hints:
+          - "Write all three parameters, each with its default, in the `def` line: `def draw_box(width=5, height=3, character=\"#\"):`."
+          - "Print `height` lines in a loop. Each line is `character * width`."
+        tests:
+          - call: draw_box(4, character="+")
+          - call: draw_box()
+          - call: draw_box(2, 4)
+            hidden: true
+          - call: draw_box(height=1, character="=")
+            hidden: true
+
+  - id: more-features-args
+    slug: any-number-of-arguments
+    title: Any number of arguments
+    text: |
+      `print` takes any number of arguments: `print("a")`, `print("a", "b", "c")`, even `print()`. Your own functions can do the same. A star `*` before a parameter's name collects all the remaining arguments of a call into a **tuple**:
+
+      ```python run
+      def total(*numbers):
+          print("Got", len(numbers), "numbers:", numbers)
+          return sum(numbers)
+
+
+      print(total(1, 2, 3))
+      print(total(10))
+      print(total())
+      ```
+
+      ```output
+      Got 3 numbers: (1, 2, 3)
+      6
+      Got 1 numbers: (10,)
+      10
+      Got 0 numbers: ()
+      0
+      ```
+
+      Inside the function, `numbers` is an ordinary tuple: you can loop over it, index it and take its length. (A tuple with one item is printed with a comma, `(10,)`, to tell it apart from a number in parentheses.) When no better name fits, such a parameter is usually called `*args`, short for arguments.
+
+      ### With ordinary parameters
+
+      Ordinary parameters can come before the starred one. They take the first arguments, and the starred one gets all the rest, which may be none at all:
+
+      ```python run
+      def report(title, *scores):
+          print(title)
+          for score in scores:
+              print("-", score)
+
+
+      report("Round 1", 7, 9, 4)
+      report("Round 2")
+      ```
+
+      ```output
+      Round 1
+      - 7
+      - 9
+      - 4
+      Round 2
+      ```
+
+      ### A list is one argument
+
+      A list given to such a function is still one argument, not many. Here `numbers` becomes a tuple with one item, the list, and `sum` can't add a list to a number:
+
+      ```python run crash
+      def total(*numbers):
+          return sum(numbers)
+
+
+      values = [1, 2, 3]
+      print(total(values))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 6, in <module>
+          print(total(values))
+                ~~~~~^^^^^^^^
+        File "main.py", line 2, in total
+          return sum(numbers)
+      TypeError: unsupported operand type(s) for +: 'int' and 'list'
+      ```
+
+      A star in the call spreads the list out into separate arguments: `total(*values)` is the same as `total(1, 2, 3)`, and returns 6.
+
+      **Your turn:** fill in the blank so that `longest` accepts any number of words, and the program prints `giraffe`.
+    fill: |
+      def longest([[*]]words):
+          best = ""
+          for word in words:
+              if len(word) > len(best):
+                  best = word
+          return best
+
+
+      print(longest("cat", "giraffe", "dog"))
+    hints:
+      - "As it is, `words` takes one argument, but the call gives three."
+      - "A star before the parameter's name collects all the arguments into a tuple: `*words`."
+    tests:
+      - expect: giraffe
+    more:
+      - task: |
+          Write a function `average(*numbers)` that returns the mean of any number of numbers, or `0.0` when it gets none. `average(1, 2, 3, 4)` returns `2.5`.
+        seed: |
+          def average():
+              pass
+
+
+          if __name__ == "__main__":
+              print(average(1, 2, 3, 4))
+              print(average())
+        solution: |
+          def average(*numbers):
+              if len(numbers) == 0:
+                  return 0.0
+              return sum(numbers) / len(numbers)
+
+
+          if __name__ == "__main__":
+              print(average(1, 2, 3, 4))
+              print(average())
+        hints:
+          - "Add the starred parameter to the `def` line: `def average(*numbers):`."
+          - "The mean is `sum(numbers) / len(numbers)`. Check for zero numbers first, or the division fails."
+        tests:
+          - call: average(1, 2, 3, 4)
+          - call: average(7)
+          - call: average()
+            hidden: true
+          - call: average(2, 3)
+            hidden: true
+          - call: average(-1, 1, 6)
+            hidden: true
+      - task: |
+          Write a function `shopping_list(title, *items)` that prints the title with a colon and then the items, numbered from 1. With no items at all, it prints the title and `: nothing to buy` on one line instead. `shopping_list("Groceries", "milk", "eggs", "bread")` prints:
+
+          ```
+          Groceries:
+          1. milk
+          2. eggs
+          3. bread
+          ```
+        seed: |
+          def shopping_list(title, *items):
+              pass
+
+
+          if __name__ == "__main__":
+              shopping_list("Groceries", "milk", "eggs", "bread")
+              shopping_list("Hardware")
+        solution: |
+          def shopping_list(title, *items):
+              if len(items) == 0:
+                  print(f"{title}: nothing to buy")
+                  return
+              print(f"{title}:")
+              number = 1
+              for item in items:
+                  print(f"{number}. {item}")
+                  number += 1
+
+
+          if __name__ == "__main__":
+              shopping_list("Groceries", "milk", "eggs", "bread")
+              shopping_list("Hardware")
+        hints:
+          - "`items` is a tuple of all the arguments after the title. Check its length first."
+          - "Otherwise print the title and a colon, and then each item with a counter that starts at 1: `f\"{number}. {item}\"`."
+        tests:
+          - call: shopping_list("Groceries", "milk", "eggs", "bread")
+          - call: shopping_list("Hardware")
+            hidden: true
+          - call: shopping_list("Party", "balloons")
+            hidden: true
+          - call: |
+              shopping_list("Office", "pens", "tape", "paper", "clips", "stamps")
+              shopping_list("Garden")
+            hidden: true

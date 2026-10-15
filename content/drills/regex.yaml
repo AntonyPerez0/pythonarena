@@ -1,0 +1,236 @@
+topic: regex
+drills:
+  - type: predict
+    after: search-and-findall
+    code: |
+      import re
+
+      print(re.findall(r"\d+", "7 days, 24 hours"))
+    why: "`\\d+` matches a whole run of digits, and `re.findall` returns every match as a string."
+
+  - type: predict
+    after: search-and-findall
+    code: |
+      import re
+
+      print(re.search(r"dog", "hotdog stand") is not None)
+      print(re.search(r"Dog", "hotdog stand"))
+    why: "`re.search` finds `dog` inside `hotdog`. Patterns are case sensitive, so `Dog` isn't found and the result is `None`."
+
+  - type: fill
+    after: search-and-findall
+    code: |
+      import [[re]]
+
+      print(re.findall(r"\d", "a1b2"))
+    why: "Python's regular expressions are in the module `re`."
+
+  - type: runs
+    after: search-and-findall
+    code: |
+      import re
+
+      found = re.search(r"\d", "no digits here")
+      print(found.group())
+    why: "When nothing matches, `re.search` returns `None`, and `None` has no `group` method: `AttributeError`. Check the result with an `if` first."
+
+  - type: choice
+    after: search-and-findall
+    prompt: "Why are patterns written as raw strings, such as `r\"\\d+\"`?"
+    choices:
+      - Raw strings run faster
+      - Python leaves every backslash in a raw string as it is, so the `re` module gets the pattern exactly as typed
+      - The `re` module only accepts raw strings
+    answer: 2
+    why: "In an ordinary string Python reads some backslash pairs itself, such as `\\n`. A raw string keeps the backslashes for the pattern."
+
+  - type: predict
+    after: alternatives-and-classes
+    code: |
+      import re
+
+      print(re.findall(r"[aeiou]", "banana split"))
+    why: "A character class matches one character, any of those listed. Each vowel is a match of its own."
+
+  - type: predict
+    after: alternatives-and-classes
+    code: |
+      import re
+
+      print(re.findall(r"gr[ae]y", "grey gray groy"))
+    why: "`[ae]` matches one character, an a or an e, so `groy` doesn't match."
+
+  - type: predict
+    after: alternatives-and-classes
+    code: |
+      import re
+
+      print(re.findall(r"\d.\d", "1.5 2-5 3.75"))
+      print(re.findall(r"\d\.\d", "1.5 2-5 3.75"))
+    why: "A plain dot matches any one character, a dash too. `\\.` matches only a real dot."
+
+  - type: bug
+    after: alternatives-and-classes
+    code: |
+      import re
+
+      code = "123"
+      if re.search(r"[0-9][0-9]", code):  # BUG
+          print("two digits")
+      else:
+          print("not two digits")
+    fix: 'if re.search(r"^[0-9][0-9]$", code):'
+    why: "Without `^` and `$` the pattern finds two digits anywhere in the text, so `123` passes. With them it has to be the whole text."
+
+  - type: predict
+    after: repetition-and-groups
+    code: |
+      import re
+
+      print(re.findall(r"a+", "caaat bat"))
+    why: "`a+` takes each run of a's as one match, as long as it can be."
+
+  - type: predict
+    after: repetition-and-groups
+    code: |
+      import re
+
+      print(re.search(r"\d{3}", "12345") is not None)
+      print(re.fullmatch(r"\d{3}", "12345") is not None)
+    why: "`re.search` finds three digits inside the text. `re.fullmatch` needs the pattern to cover the whole text, and two digits are left over."
+
+  - type: fill
+    after: repetition-and-groups
+    code: |
+      import re
+
+      print(re.fullmatch(r"\d[[{3}]]", "123") is not None)
+    why: "`{3}` repeats the part before it exactly three times."
+
+  - type: predict
+    after: repetition-and-groups
+    code: |
+      import re
+
+      print(re.findall(r"files?", "file files filed"))
+    why: "`?` makes the s optional: one s or none. `filed` contains `file`, so that's a match too."
+
+  - type: predict
+    after: checking-input
+    code: |
+      import re
+
+      text = "Room 12, floor 3"
+      print(re.sub(r"\d+", "#", text))
+      print(text)
+    why: "`re.sub` replaces every match and returns a new string. The original string doesn't change."
+
+  - type: bug
+    after: checking-input
+    code: |
+      import re
+
+      text = "call 555 0199"
+      print(re.sub(r"\d", text, "#"))  # BUG
+    fix: 'print(re.sub(r"\d", "#", text))'
+    why: "The order is pattern, replacement, text. In the wrong order Python looks for digits in `\"#\"`, finds none and returns it as it is."
+
+  - type: boss
+    after: checking-input
+    prompt: |
+      A color in web pages can be written as `#` followed by exactly six hex digits: the digits 0 to 9 and the letters a to f, small or capital. Write a function `is_hex_color(text)` that returns `True` if the whole text is such a color, and `False` otherwise. For example,
+
+      ```python fragment
+      print(is_hex_color("#1a2B3c"))
+      print(is_hex_color("#12345"))
+      print(is_hex_color("123456"))
+      ```
+
+      should print:
+
+      ```
+      True
+      False
+      False
+      ```
+    seed: |
+      import re
+
+
+      def is_hex_color(text):
+          pass
+
+
+      if __name__ == "__main__":
+          print(is_hex_color("#1a2B3c"))
+          print(is_hex_color("#12345"))
+          print(is_hex_color("123456"))
+    solution: |
+      import re
+
+
+      def is_hex_color(text):
+          return re.fullmatch(r"#[0-9a-fA-F]{6}", text) is not None
+
+
+      if __name__ == "__main__":
+          print(is_hex_color("#1a2B3c"))
+          print(is_hex_color("#12345"))
+          print(is_hex_color("123456"))
+    hints:
+      - "One hex digit is the class `[0-9a-fA-F]`, and `{6}` repeats it six times."
+      - "Use `re.fullmatch` so that nothing can come before or after, and return `... is not None`."
+    tests:
+      - call: |
+          print(is_hex_color("#1a2B3c"))
+          print(is_hex_color("#12345"))
+          print(is_hex_color("123456"))
+      - call: |
+          print(is_hex_color("#FFFFFF"))
+          print(is_hex_color("#00ff7g"))
+          print(is_hex_color("#abcdef0"))
+        hidden: true
+
+  - type: boss
+    after: repetition-and-groups
+    prompt: |
+      Write a function `capitalized_words(text)` that returns a list of the words in the text that start with a capital letter, A to Z, followed by small letters a to z. For example,
+
+      ```python fragment
+      print(capitalized_words("Ada met Grace in London"))
+      ```
+
+      should print:
+
+      ```
+      ['Ada', 'Grace', 'London']
+      ```
+    seed: |
+      import re
+
+
+      def capitalized_words(text):
+          pass
+
+
+      if __name__ == "__main__":
+          print(capitalized_words("Ada met Grace in London"))
+    solution: |
+      import re
+
+
+      def capitalized_words(text):
+          return re.findall(r"[A-Z][a-z]*", text)
+
+
+      if __name__ == "__main__":
+          print(capitalized_words("Ada met Grace in London"))
+    hints:
+      - "A capital letter is `[A-Z]`, and any number of small letters after it is `[a-z]*`."
+      - "`re.findall` returns all the matches as a list."
+    tests:
+      - call: print(capitalized_words("Ada met Grace in London"))
+      - call: capitalized_words("no capitals here")
+        hidden: true
+      - call: capitalized_words("Rome, Paris and Oslo")
+        hidden: true

@@ -1,0 +1,191 @@
+topic: randomness
+drills:
+  - type: choice
+    after: randint
+    prompt: Which numbers can `random.randint(1, 6)` give?
+    choices:
+      - 1 to 5
+      - 1 to 6
+      - 0 to 6
+    answer: 2
+    why: "Unlike `range`, `randint` includes both ends, so it can give 1, 6 and everything between."
+
+  - type: predict
+    after: randint
+    code: |
+      import random
+
+      roll = random.randint(1, 6)
+      print(1 <= roll <= 6)
+    why: "Whatever the roll is, it's from 1 to 6, both ends included, so the comparison is always `True`."
+
+  - type: predict
+    after: randint
+    code: |
+      import random
+
+      roll = random.randint(1, 100)
+      rolls = [roll, roll, roll]
+      print(rolls[0] == rolls[2])
+    why: "`randint` was called once, and the variable keeps that one number. For three different numbers, call it three times."
+
+  - type: runs
+    after: randint
+    code: |
+      import random
+
+      print(random.randint(1))
+    why: "`randint` needs two arguments, the smallest and the largest number. With one, Python stops with a `TypeError`."
+
+  - type: fill
+    after: randint
+    code: |
+      from random import [[randint]]
+
+      print(randint(1, 6) <= 6)
+    why: "`from random import randint` brings the function in, so the program can call it without `random.` in front."
+
+  - type: predict
+    after: choice-and-shuffle
+    code: |
+      import random
+
+      cards = ["A", "K", "Q"]
+      print(random.shuffle(cards))
+    why: "`shuffle` changes the list in place and returns `None`, so printing its result prints `None`."
+
+  - type: bug
+    after: choice-and-shuffle
+    code: |
+      import random
+
+      deck = ["A", "K", "Q", "J"]
+      deck = random.shuffle(deck)  # BUG
+      print(len(deck))
+    fix: random.shuffle(deck)
+    why: "`shuffle` returns `None`, so storing its result replaces the list with `None`. Call it on a line of its own; the list itself gets shuffled."
+
+  - type: runs
+    after: choice-and-shuffle
+    code: |
+      import random
+
+      word = "python"
+      random.shuffle(word)
+      print(word)
+    why: "`shuffle` moves the items around inside the list it's given, and a string can't be changed. Python stops with a `TypeError`."
+
+  - type: predict
+    after: choice-and-shuffle
+    code: |
+      import random
+
+      options = ["only one"]
+      print(random.choice(options))
+    why: "`choice` picks one item of the list. With one item, it can only pick that one."
+
+  - type: predict
+    after: drawing-and-seeds
+    code: |
+      import random
+
+      random.seed(5)
+      a = random.randint(1, 1000)
+      random.seed(5)
+      b = random.randint(1, 1000)
+      print(a == b)
+    why: "The same seed starts the same series of numbers, so both calls give the same number."
+
+  - type: predict
+    after: drawing-and-seeds
+    code: |
+      import random
+
+      numbers = random.sample(range(1, 41), 7)
+      print(len(numbers))
+    why: "`sample(items, 7)` returns a list of 7 different items, whichever they are."
+
+  - type: runs
+    after: drawing-and-seeds
+    code: |
+      import random
+
+      print(random.sample(range(1, 6), 7))
+    why: "`range(1, 6)` has only five numbers, so seven different ones can't be picked. Python stops with a `ValueError`."
+
+  - type: predict
+    after: drawing-and-seeds
+    code: |
+      import random
+
+      print(sorted(random.sample([3, 1, 2], 3)))
+    why: "Sampling all three items gives them in a random order, and `sorted` puts them back in order."
+
+  - type: choice
+    after: drawing-and-seeds
+    prompt: Why do the lessons' examples call `random.seed(...)` before using random numbers?
+    choices:
+      - So the program prints the same numbers on every run
+      - To make the numbers more random
+      - Because the random module doesn't work without it
+    answer: 1
+    why: "A fixed seed starts the same series of numbers every time, so the output shown can match what you see. Without a seed the numbers change on every run."
+
+  - type: bug
+    after: drawing-and-seeds
+    prompt: The program should draw all the numbers from 1 to 10 in a random order and print the largest one. One line has a bug. Which one?
+    code: |
+      import random
+
+      random.seed(2)
+      numbers = random.sample(range(1, 10), 9)  # BUG
+      print(max(numbers))
+    fix: numbers = random.sample(range(1, 11), 10)
+    why: "A range stops before its end, so `range(1, 10)` is only 1 to 9. The numbers 1 to 10 are `range(1, 11)`, ten of them."
+
+  - type: boss
+    after: drawing-and-seeds
+    prompt: |
+      Write a function `rolls_until_six()` that rolls a six-sided die with `random.randint(1, 6)` until it gives a 6, and returns how many rolls it took (the 6 included).
+
+      The checks set the seed themselves before they call it.
+    seed: |
+      import random
+
+
+      def rolls_until_six():
+          pass
+
+
+      if __name__ == "__main__":
+          print(rolls_until_six())
+    solution: |
+      import random
+
+
+      def rolls_until_six():
+          rolls = 0
+          while True:
+              rolls += 1
+              if random.randint(1, 6) == 6:
+                  return rolls
+
+
+      if __name__ == "__main__":
+          print(rolls_until_six())
+    hints:
+      - Count the rolls in a variable that starts at 0, and roll in a `while True` loop.
+      - Add one to the count on every roll. When the roll is 6, return the count.
+    tests:
+      - call: |
+          import random
+          random.seed(1)
+          print(rolls_until_six())
+          print(rolls_until_six())
+      - call: |
+          import random
+          random.seed(4)
+          print(rolls_until_six(), rolls_until_six(), rolls_until_six())
+        hidden: true
+      - call: print(rolls_until_six() >= 1)
+        hidden: true

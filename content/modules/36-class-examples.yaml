@@ -1,0 +1,1142 @@
+id: class-examples
+summary: More complete classes. A __str__ method so that print shows an object nicely, classes whose values are worked out from others, classes that keep a list, and a collection class with methods that search it.
+steps:
+  - id: class-examples-str
+    slug: printing-objects
+    title: Printing an object with __str__
+    text: |
+      When you print an object of your own class, Python doesn't know which of its data matters, so it prints the class's name and the object's address in memory, something like this:
+
+      ```text
+      <__main__.Match object at 0x7f8e2a4b3d10>
+      ```
+
+      That's no use to anyone, and the address changes on every run. A class can say how its objects should be shown by having a method called `__str__`. It returns a string that describes the object's state, and `print` uses it:
+
+      ```python run
+      class Match:
+          def __init__(self, home, away):
+              self.home = home
+              self.away = away
+              self.home_goals = 0
+              self.away_goals = 0
+
+          def goal(self, team):
+              if team == self.home:
+                  self.home_goals += 1
+              else:
+                  self.away_goals += 1
+
+          def __str__(self):
+              return f"{self.home} {self.home_goals}-{self.away_goals} {self.away}"
+
+
+      final = Match("Lions", "Tigers")
+      print(final)
+      final.goal("Lions")
+      final.goal("Tigers")
+      final.goal("Lions")
+      print(final)
+      ```
+
+      ```output
+      Lions 0-0 Tigers
+      Lions 2-1 Tigers
+      ```
+
+      `__str__` has two underscores on each side, like `__init__`. Methods with names like these are **special methods**: you don't call them yourself, Python calls them when it needs them. It calls `__init__` when an object is made, and `__str__` whenever the object has to be turned into a string. That happens in `print`, in the function `str` and in f-strings:
+
+      ```python run
+      class Match:
+          def __init__(self, home, away):
+              self.home = home
+              self.away = away
+              self.home_goals = 3
+              self.away_goals = 3
+
+          def __str__(self):
+              return f"{self.home} {self.home_goals}-{self.away_goals} {self.away}"
+
+
+      cup = Match("Owls", "Foxes")
+      text = str(cup)
+      print(len(text))
+      print(f"Full time: {cup}")
+      ```
+
+      ```output
+      14
+      Full time: Owls 3-3 Foxes
+      ```
+
+      ### Return the string, don't print it
+
+      `__str__` must **return** a string. A common mistake is to print it inside the method instead. The method then returns `None`, and Python stops:
+
+      ```python run crash
+      class Match:
+          def __init__(self, home, away):
+              self.home = home
+              self.away = away
+
+          def __str__(self):
+              print(f"{self.home} vs {self.away}")
+
+
+      game = Match("Owls", "Foxes")
+      print(game)
+      ```
+
+      ```output
+      Owls vs Foxes
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          print(game)
+          ~~~~~^^^^^^
+      TypeError: __str__ returned non-string (type NoneType)
+      ```
+
+      The line was printed by the `print` inside `__str__`, and then `print(game)` got `None` back instead of a string.
+
+      One more thing: printing a whole list of objects, such as `print([final, cup])`, still shows the addresses, because a list shows its items in another way. Print the objects one at a time in a loop instead.
+
+      **Your turn:** fill in the blanks, so that the class has a `__str__` method and the program prints:
+
+      ```
+      Bolt (battery 80%)
+      ```
+    fill: |
+      class Robot:
+          def __init__(self, name, battery):
+              self.name = name
+              self.battery = battery
+
+          def [[__str__]](self):
+              [[return]] f"{self.name} (battery {self.battery}%)"
+
+
+      helper = Robot("Bolt", 80)
+      print(helper)
+    hints:
+      - The method that `print` uses has two underscores on each side of its name.
+      - "The method is `__str__`, and it hands the string back with `return`."
+    tests:
+      - expect: Bolt (battery 80%)
+    more:
+      - task: |
+          This program should print the two lines below, but it stops with an error. Fix the `__str__` method.
+
+          ```
+          Movie night: Up (2009)
+          Up (2009)
+          ```
+        seed: |
+          class Movie:
+              def __init__(self, title, year):
+                  self.title = title
+                  self.year = year
+
+              def __str__(self):
+                  print(f"{self.title} ({self.year})")
+
+
+          film = Movie("Up", 2009)
+          print(f"Movie night: {film}")
+          print(film)
+        solution: |
+          class Movie:
+              def __init__(self, title, year):
+                  self.title = title
+                  self.year = year
+
+              def __str__(self):
+                  return f"{self.title} ({self.year})"
+
+
+          film = Movie("Up", 2009)
+          print(f"Movie night: {film}")
+          print(film)
+        hints:
+          - "Read the error: `__str__` returned `None`, not a string."
+          - "`__str__` must hand the string back with `return`, not print it."
+        tests:
+          - expect: |
+              Movie night: Up (2009)
+              Up (2009)
+      - task: |
+          Write a class `Parcel` whose constructor takes the receiver's name and the weight in kilograms, and stores them in the attributes `receiver` and `kg`. Every new parcel also has the attribute `delivered`, set to `False`. Give it a method `deliver()`, which marks the parcel delivered, and a `__str__` method that returns the text shown below: when the parcel has been delivered, it ends with ` (delivered)`.
+
+          This code:
+
+          ```python fragment
+          box = Parcel("Ada", 2.5)
+          print(box)
+          box.deliver()
+          print(box)
+          ```
+
+          prints
+
+          ```
+          Parcel for Ada, 2.5 kg
+          Parcel for Ada, 2.5 kg (delivered)
+          ```
+        seed: |
+          # Write the class Parcel here.
+
+
+          if __name__ == "__main__":
+              box = Parcel("Ada", 2.5)
+              print(box)
+        solution: |
+          class Parcel:
+              def __init__(self, receiver, kg):
+                  self.receiver = receiver
+                  self.kg = kg
+                  self.delivered = False
+
+              def deliver(self):
+                  self.delivered = True
+
+              def __str__(self):
+                  text = f"Parcel for {self.receiver}, {self.kg} kg"
+                  if self.delivered:
+                      text += " (delivered)"
+                  return text
+
+
+          if __name__ == "__main__":
+              box = Parcel("Ada", 2.5)
+              print(box)
+        hints:
+          - "`deliver` only sets `self.delivered = True`."
+          - "In `__str__`, build the text with an f-string, and add `\" (delivered)\"` to it when `self.delivered` is `True`."
+          - Return the finished string at the end of `__str__`.
+        tests:
+          - call: |
+              box = Parcel("Ada", 2.5)
+              print(box)
+              box.deliver()
+              print(box)
+          - call: |
+              big = Parcel("Grace Hopper", 14)
+              small = Parcel("Linus", 0.3)
+              small.deliver()
+              print(big)
+              print(small)
+              print(str(big).upper())
+            hidden: true
+
+  - id: class-examples-derived
+    slug: derived-values
+    title: Values worked out from others
+    text: |
+      Often some of an object's values follow from others. A length of time in seconds also tells you how many hours and minutes it is. A good rule is to store the basic data in attributes and to work out the rest in methods, so that it is always up to date:
+
+      ```python run
+      class Duration:
+          def __init__(self, seconds):
+              self.seconds = seconds
+
+          def hours(self):
+              return self.seconds // 3600
+
+          def minutes(self):
+              return self.seconds % 3600 // 60
+
+          def add(self, seconds):
+              self.seconds += seconds
+
+          def __str__(self):
+              return f"{self.hours()}:{self.minutes():02}:{self.seconds % 60:02}"
+
+
+      film = Duration(5409)
+      print(film)
+      film.add(600)
+      print(film)
+      print(film.hours(), film.minutes())
+      ```
+
+      ```output
+      1:30:09
+      1:40:09
+      1 40
+      ```
+
+      The object stores only the total number of seconds. `add` changes that one attribute, and the hours and minutes are right after it, because they are worked out each time they are asked for.
+
+      In an f-string, `:02` after a whole number shows it with at least two digits, filling with zeros in front: `{9:02}` is `09`. Clock times need that.
+
+      If a class does store a value worked out from others, say to save working it out again and again, then every method that changes the data must update that value too. Forget one, and the object contradicts itself. That is why the rule above is a good one.
+
+      ### Values that wrap around
+
+      Some values go around in a circle. An odometer with four digits goes from 9999 back to 0000, as a clock goes from 23:59 to 00:00. The remainder operator `%` keeps such a value in range:
+
+      ```python run
+      class Odometer:
+          def __init__(self):
+              self.km = 0
+
+          def drive(self, km):
+              self.km = (self.km + km) % 10000
+
+          def __str__(self):
+              return f"{self.km:04}"
+
+
+      old_van = Odometer()
+      old_van.drive(9950)
+      print(old_van)
+      old_van.drive(75)
+      print(old_van)
+      ```
+
+      ```output
+      9950
+      0025
+      ```
+
+      9950 + 75 is 10025, and the remainder when that is divided by 10000 is 25. With `%`, the method can never leave the odometer out of range, whatever the client drives.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Dial:
+          def __init__(self):
+              self.position = 0
+
+          def turn(self, steps):
+              self.position = (self.position + steps) % 12
+
+          def __str__(self):
+              return f"position {self.position:02}"
+
+
+      d = Dial()
+      d.turn(5)
+      print(d)
+      d.turn(10)
+      print(d)
+      d.turn(20)
+      print(d)
+    hints:
+      - "`print(d)` uses `__str__`, which shows the position with at least two digits."
+      - "After turning 5, the dial is at 5. Turning 10 more gives 15, and 15 % 12 is 3."
+      - "3 + 20 is 23, and 23 % 12 is 11."
+    more:
+      - task: |
+          Write a class `Record` that keeps a team's wins and losses. Its constructor takes the starting numbers of wins and losses, both 0 when not given, and stores them in the attributes `wins` and `losses`. Give it these methods:
+
+          - `win()` and `lose()` add one to the wins or the losses.
+          - `games()` returns the number of games played.
+          - `win_percent()` returns the share of games won as a whole number of percent (use `round`), or 0 when no games have been played.
+          - `__str__` returns the wins, a hyphen, the losses and the percent, as shown below.
+
+          This code:
+
+          ```python fragment
+          team = Record(6, 3)
+          print(team, team.games())
+          team.win()
+          print(team)
+          rookies = Record()
+          print(rookies)
+          ```
+
+          prints
+
+          ```
+          6-3 (67%) 9
+          7-3 (70%)
+          0-0 (0%)
+          ```
+        seed: |
+          class Record:
+              pass
+
+
+          if __name__ == "__main__":
+              team = Record(6, 3)
+              print(team, team.games())
+        solution: |
+          class Record:
+              def __init__(self, wins=0, losses=0):
+                  self.wins = wins
+                  self.losses = losses
+
+              def win(self):
+                  self.wins += 1
+
+              def lose(self):
+                  self.losses += 1
+
+              def games(self):
+                  return self.wins + self.losses
+
+              def win_percent(self):
+                  if self.games() == 0:
+                      return 0
+                  return round(self.wins / self.games() * 100)
+
+              def __str__(self):
+                  return f"{self.wins}-{self.losses} ({self.win_percent()}%)"
+
+
+          if __name__ == "__main__":
+              team = Record(6, 3)
+              print(team, team.games())
+        hints:
+          - "Store only the wins and the losses. `games` and `win_percent` work them out each time: `self.wins + self.losses`."
+          - "In `win_percent`, return 0 first when `self.games() == 0`, so that you never divide by zero."
+          - "`__str__` can call the other methods: `f\"{self.wins}-{self.losses} ({self.win_percent()}%)\"`."
+        tests:
+          - call: |
+              team = Record(6, 3)
+              print(team, team.games())
+              team.win()
+              print(team)
+              rookies = Record()
+              print(rookies)
+          - call: |
+              r = Record()
+              r.lose()
+              r.lose()
+              r.win()
+              print(r, r.games(), r.win_percent())
+              print(Record(1, 0), Record(0, 4), Record(2, 1))
+            hidden: true
+      - task: |
+          Write a class `Countdown` for a kitchen timer. Its constructor takes the minutes and the seconds to start from. Give it these methods:
+
+          - `tick()` takes one second off the time. When the time is already 00:00, it stays there.
+          - `__str__` returns the time left as minutes and seconds, both with two digits: `02:05`.
+
+          This code:
+
+          ```python fragment
+          timer = Countdown(1, 1)
+          print(timer)
+          timer.tick()
+          print(timer)
+          timer.tick()
+          print(timer)
+          ```
+
+          prints
+
+          ```
+          01:01
+          01:00
+          00:59
+          ```
+        seed: |
+          class Countdown:
+              def __init__(self, minutes, seconds):
+                  pass
+
+
+          if __name__ == "__main__":
+              timer = Countdown(1, 1)
+              print(timer)
+              timer.tick()
+              print(timer)
+        solution: |
+          class Countdown:
+              def __init__(self, minutes, seconds):
+                  self.left = minutes * 60 + seconds
+
+              def tick(self):
+                  if self.left > 0:
+                      self.left -= 1
+
+              def __str__(self):
+                  return f"{self.left // 60:02}:{self.left % 60:02}"
+
+
+          if __name__ == "__main__":
+              timer = Countdown(1, 1)
+              print(timer)
+              timer.tick()
+              print(timer)
+        hints:
+          - "It's easiest to store just one number: the seconds left, `minutes * 60 + seconds`."
+          - "`tick` takes one off only `if` there is time left."
+          - "In `__str__`, the minutes are the seconds left `// 60` and the seconds are `% 60`. Show both with `:02`."
+        tests:
+          - call: |
+              timer = Countdown(1, 1)
+              print(timer)
+              timer.tick()
+              print(timer)
+              timer.tick()
+              print(timer)
+          - call: |
+              egg = Countdown(0, 2)
+              for i in range(4):
+                  print(egg)
+                  egg.tick()
+              print(egg)
+              print(Countdown(12, 0), Countdown(0, 59), Countdown(5, 30))
+            hidden: true
+          - call: |
+              long = Countdown(10, 0)
+              for i in range(61):
+                  long.tick()
+              print(long)
+            hidden: true
+
+  - id: class-examples-list
+    slug: keeping-a-list
+    title: A class that keeps a list
+    text: |
+      Many classes keep a collection of things in a list attribute and offer methods to add to it, take from it and ask about it. The client doesn't touch the list itself; it uses the methods.
+
+      The string method `join` from part 4 comes in handy for showing such a list. As a reminder, it puts the strings of a list together into one string, with the string it is called on between them:
+
+      ```python repl
+      >>> names = ["Ann", "Bo", "Cy"]
+      >>> ", ".join(names)
+      'Ann, Bo, Cy'
+      >>> " / ".join(names)
+      'Ann / Bo / Cy'
+      ```
+
+      Read `", ".join(names)` as "join the names with a comma and a space". All the items have to be strings.
+
+      Here is a waiting list for a busy restaurant. The first to arrive is the first to get a table:
+
+      ```python run
+      class WaitingList:
+          def __init__(self):
+              self.names = []
+
+          def add(self, name):
+              self.names.append(name)
+
+          def next_up(self):
+              return self.names.pop(0)
+
+          def size(self):
+              return len(self.names)
+
+          def __str__(self):
+              if len(self.names) == 0:
+                  return "nobody waiting"
+              return ", ".join(self.names)
+
+
+      tables = WaitingList()
+      tables.add("Ann")
+      tables.add("Bo")
+      tables.add("Cy")
+      print(tables)
+      print("Table for", tables.next_up())
+      print(tables, "/", tables.size(), "waiting")
+      ```
+
+      ```output
+      Ann, Bo, Cy
+      Table for Ann
+      Bo, Cy / 2 waiting
+      ```
+
+      `next_up` both changes the list and returns the name it took out, thanks to `pop(0)`. The constructor makes a new empty list for every waiting list, so two restaurants never share one.
+
+      ### A list of tuples
+
+      When each thing in the collection has several pieces of data, the list can hold tuples. This playlist keeps each song as a pair of its title and its length in seconds:
+
+      ```python run
+      class Playlist:
+          def __init__(self, name):
+              self.name = name
+              self.songs = []
+
+          def add(self, title, seconds):
+              self.songs.append((title, seconds))
+
+          def total_seconds(self):
+              total = 0
+              for title, seconds in self.songs:
+                  total += seconds
+              return total
+
+          def longest(self):
+              best = self.songs[0]
+              for song in self.songs:
+                  if song[1] > best[1]:
+                      best = song
+              return best[0]
+
+          def __str__(self):
+              titles = []
+              for title, seconds in self.songs:
+                  titles.append(title)
+              return f"{self.name}: " + ", ".join(titles)
+
+
+      road_trip = Playlist("Road trip")
+      road_trip.add("Highway Song", 215)
+      road_trip.add("Desert Wind", 342)
+      road_trip.add("Gas Station Blues", 187)
+      print(road_trip)
+      print(road_trip.total_seconds(), "seconds")
+      print("Longest:", road_trip.longest())
+      ```
+
+      ```output
+      Road trip: Highway Song, Desert Wind, Gas Station Blues
+      744 seconds
+      Longest: Desert Wind
+      ```
+
+      `for title, seconds in self.songs:` takes each tuple apart into two variables, as you did with a dictionary's `items()`. In `longest`, `song[1]` is a song's length and `best[0]` the title of the longest one.
+
+      **Your turn:** fill in the blanks, so that the bag keeps its items in a list and the program prints:
+
+      ```
+      keys, phone, apple
+      ```
+    fill: |
+      class Bag:
+          def __init__(self):
+              self.items = []
+
+          def put(self, item):
+              self.items.[[append]](item)
+
+          def __str__(self):
+              return ", ".[[join]](self.items)
+
+
+      bag = Bag()
+      bag.put("keys")
+      bag.put("phone")
+      bag.put("apple")
+      print(bag)
+    hints:
+      - The first blank is the list method that adds an item to the end.
+      - "The second is the string method that puts a list of strings together, with `\", \"` between them: `join`."
+    tests:
+      - expect: keys, phone, apple
+    more:
+      - task: |
+          Write a class `Cart` for a web shop's shopping cart. It keeps the products and their prices in a list. Give it these methods:
+
+          - `add(product, price)` puts a product in the cart.
+          - `remove(product)` takes the first product with that name out of the cart and returns `True`, or returns `False` when there is none.
+          - `total()` returns the sum of the prices.
+          - `__str__` returns the number of items and the total with two decimals, in the form shown below.
+
+          This code:
+
+          ```python fragment
+          cart = Cart()
+          cart.add("socks", 4.5)
+          cart.add("hat", 12)
+          cart.add("socks", 4.5)
+          print(cart)
+          print(cart.remove("hat"), cart.remove("scarf"))
+          print(cart)
+          ```
+
+          prints
+
+          ```
+          items: 3, total 21.00
+          True False
+          items: 2, total 9.00
+          ```
+        seed: |
+          class Cart:
+              def __init__(self):
+                  self.items = []
+
+
+          if __name__ == "__main__":
+              cart = Cart()
+              cart.add("socks", 4.5)
+              print(cart)
+        solution: |
+          class Cart:
+              def __init__(self):
+                  self.items = []
+
+              def add(self, product, price):
+                  self.items.append((product, price))
+
+              def remove(self, product):
+                  for item in self.items:
+                      if item[0] == product:
+                          self.items.remove(item)
+                          return True
+                  return False
+
+              def total(self):
+                  total = 0
+                  for product, price in self.items:
+                      total += price
+                  return total
+
+              def __str__(self):
+                  return f"items: {len(self.items)}, total {self.total():.2f}"
+
+
+          if __name__ == "__main__":
+              cart = Cart()
+              cart.add("socks", 4.5)
+              print(cart)
+        hints:
+          - "Keep each product as a tuple: `self.items.append((product, price))`."
+          - "In `remove`, loop through the tuples. When `item[0] == product`, take that tuple out with the list method `remove` and return `True` right away. After the loop, return `False`."
+          - "`__str__` can use `len(self.items)` and `self.total()`; `:.2f` shows two decimals."
+        tests:
+          - call: |
+              cart = Cart()
+              cart.add("socks", 4.5)
+              cart.add("hat", 12)
+              cart.add("socks", 4.5)
+              print(cart)
+              print(cart.remove("hat"), cart.remove("scarf"))
+              print(cart)
+          - call: |
+              cart = Cart()
+              print(cart, cart.total())
+              cart.add("mug", 8.25)
+              cart.add("tea", 3.1)
+              cart.add("mug", 7.0)
+              print(cart.remove("mug"), cart.total())
+              print(cart.remove("tea"), cart.remove("tea"))
+              print(cart)
+            hidden: true
+      - task: |
+          Write a class `TicketQueue` for the line at a ticket counter. Give it these methods:
+
+          - `arrive(name)` puts the person at the end of the line.
+          - `serve()` takes the first person out of the line and returns their name. When the line is empty, it returns the string `"nobody"`.
+          - `position(name)` returns the person's place in the line, counting from 1, or 0 when they are not in it.
+          - `__str__` returns the names in order with ` > ` between them, or `empty` when nobody is waiting.
+
+          This code:
+
+          ```python fragment
+          line = TicketQueue()
+          line.arrive("Ann")
+          line.arrive("Bo")
+          line.arrive("Cy")
+          print(line)
+          print(line.position("Cy"), line.position("Dee"))
+          print(line.serve())
+          print(line)
+          ```
+
+          prints
+
+          ```
+          Ann > Bo > Cy
+          3 0
+          Ann
+          Bo > Cy
+          ```
+        seed: |
+          class TicketQueue:
+              pass
+
+
+          if __name__ == "__main__":
+              line = TicketQueue()
+              line.arrive("Ann")
+              line.arrive("Bo")
+              print(line)
+        solution: |
+          class TicketQueue:
+              def __init__(self):
+                  self.names = []
+
+              def arrive(self, name):
+                  self.names.append(name)
+
+              def serve(self):
+                  if len(self.names) == 0:
+                      return "nobody"
+                  return self.names.pop(0)
+
+              def position(self, name):
+                  for i in range(len(self.names)):
+                      if self.names[i] == name:
+                          return i + 1
+                  return 0
+
+              def __str__(self):
+                  if len(self.names) == 0:
+                      return "empty"
+                  return " > ".join(self.names)
+
+
+          if __name__ == "__main__":
+              line = TicketQueue()
+              line.arrive("Ann")
+              line.arrive("Bo")
+              print(line)
+        hints:
+          - "Keep the names in a list attribute that the constructor makes. `pop(0)` takes out the first one."
+          - "For `position`, go through the indexes with `for i in range(len(self.names)):`. When `self.names[i] == name`, return `i + 1`, since the places count from 1. After the loop, return 0."
+          - "`__str__` returns `\" > \".join(self.names)`, or `\"empty\"` when the list is empty."
+        tests:
+          - call: |
+              line = TicketQueue()
+              line.arrive("Ann")
+              line.arrive("Bo")
+              line.arrive("Cy")
+              print(line)
+              print(line.position("Cy"), line.position("Dee"))
+              print(line.serve())
+              print(line)
+          - call: |
+              q = TicketQueue()
+              print(q)
+              print(q.serve(), q.position("Ann"))
+              q.arrive("Zoe")
+              q.arrive("Yan")
+              print(q.position("Yan"), q.serve(), q.position("Yan"))
+              print(q.serve(), q.serve())
+              print(q)
+            hidden: true
+
+  - id: class-examples-search
+    slug: searching
+    title: A collection you can search
+    text: |
+      A larger program often has two kinds of classes: one for a single thing, and one for a collection of those things. Here a `Task` knows its own data and how to show itself, and a `TaskList` keeps the tasks and answers questions about them:
+
+      ```python run
+      class Task:
+          def __init__(self, title, hours):
+              self.title = title
+              self.hours = hours
+              self.done = False
+
+          def __str__(self):
+              status = "done" if self.done else "to do"
+              return f"{self.title} ({self.hours} h, {status})"
+
+
+      class TaskList:
+          def __init__(self):
+              self.tasks = []
+
+          def add(self, title, hours):
+              self.tasks.append(Task(title, hours))
+
+          def mark_done(self, title):
+              for task in self.tasks:
+                  if task.title == title:
+                      task.done = True
+
+          def find(self, word):
+              found = []
+              for task in self.tasks:
+                  if word.lower() in task.title.lower():
+                      found.append(task)
+              return found
+
+          def hours_left(self):
+              total = 0
+              for task in self.tasks:
+                  if not task.done:
+                      total += task.hours
+              return total
+
+
+      chores = TaskList()
+      chores.add("Wash the car", 1)
+      chores.add("Paint the fence", 4)
+      chores.add("Fix the Car radio", 2)
+      chores.mark_done("Wash the car")
+
+      for task in chores.find("car"):
+          print(task)
+      print("Hours left:", chores.hours_left())
+      ```
+
+      ```output
+      Wash the car (1 h, done)
+      Fix the Car radio (2 h, to do)
+      Hours left: 6
+      ```
+
+      A few things to notice:
+
+      - The client only calls `add` with a title and the hours. `TaskList` makes the `Task` objects itself and keeps them in its list.
+      - `find` is a search: it goes through the list and collects the tasks that match into a new list. It compares in small letters, so `car` also finds `Car`.
+      - `find` returns the `Task` objects themselves, so the client can print them (with their `__str__`) or use their attributes.
+      - `mark_done` changes the attribute of a task that is in the list. The list holds references to the tasks, so the change stays.
+
+      ### Searching for the best match
+
+      Another common search finds the one item that is best by some measure. Such a method goes through the list once and remembers the best item so far. If the list can be empty, it needs an answer for that too:
+
+      ```python fragment
+      def biggest(self):
+          if len(self.tasks) == 0:
+              return None
+          best = self.tasks[0]
+          for task in self.tasks:
+              if task.hours > best.hours:
+                  best = task
+          return best
+      ```
+
+      The examples of this part have grown step by step into something like real programs: classes that keep their data valid, show themselves with `__str__`, and answer questions about what they hold.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Shelf:
+          def __init__(self):
+              self.books = []
+
+          def add(self, title, pages):
+              self.books.append((title, pages))
+
+          def thin(self, max_pages):
+              found = []
+              for title, pages in self.books:
+                  if pages <= max_pages:
+                      found.append(title)
+              return found
+
+
+      shelf = Shelf()
+      shelf.add("Poems", 80)
+      shelf.add("Atlas", 400)
+      shelf.add("Recipes", 150)
+      print(shelf.thin(150))
+      print(len(shelf.thin(50)))
+    hints:
+      - "`thin` collects the titles of the books with at most `max_pages` pages, in the order they were added."
+      - "150 pages is still at most 150, so Recipes is in the first list."
+      - No book has 50 pages or fewer, so the second search returns an empty list.
+    more:
+      - task: |
+          The starter code has a class `Album` and a class `Collection` that keeps albums in a list. Write two search methods for `Collection`:
+
+          - `by_artist(artist)` returns a list of the albums by that artist, in the order they were added.
+          - `from_years(first, last)` returns a list of the albums released from the year `first` to the year `last`, both included.
+
+          Both return the `Album` objects themselves. This code:
+
+          ```python fragment
+          shelf = Collection()
+          shelf.add("Blue", "Joni Mitchell", 1971)
+          shelf.add("Kind of Blue", "Miles Davis", 1959)
+          shelf.add("Court and Spark", "Joni Mitchell", 1974)
+          for album in shelf.by_artist("Joni Mitchell"):
+              print(album)
+          for album in shelf.from_years(1950, 1971):
+              print(album)
+          ```
+
+          prints
+
+          ```
+          Blue by Joni Mitchell (1971)
+          Court and Spark by Joni Mitchell (1974)
+          Blue by Joni Mitchell (1971)
+          Kind of Blue by Miles Davis (1959)
+          ```
+        seed: |
+          class Album:
+              def __init__(self, title, artist, year):
+                  self.title = title
+                  self.artist = artist
+                  self.year = year
+
+              def __str__(self):
+                  return f"{self.title} by {self.artist} ({self.year})"
+
+
+          class Collection:
+              def __init__(self):
+                  self.albums = []
+
+              def add(self, title, artist, year):
+                  self.albums.append(Album(title, artist, year))
+
+              # Write the methods by_artist and from_years here.
+
+
+          if __name__ == "__main__":
+              shelf = Collection()
+              shelf.add("Blue", "Joni Mitchell", 1971)
+              shelf.add("Kind of Blue", "Miles Davis", 1959)
+              for album in shelf.by_artist("Joni Mitchell"):
+                  print(album)
+        solution: |
+          class Album:
+              def __init__(self, title, artist, year):
+                  self.title = title
+                  self.artist = artist
+                  self.year = year
+
+              def __str__(self):
+                  return f"{self.title} by {self.artist} ({self.year})"
+
+
+          class Collection:
+              def __init__(self):
+                  self.albums = []
+
+              def add(self, title, artist, year):
+                  self.albums.append(Album(title, artist, year))
+
+              def by_artist(self, artist):
+                  found = []
+                  for album in self.albums:
+                      if album.artist == artist:
+                          found.append(album)
+                  return found
+
+              def from_years(self, first, last):
+                  found = []
+                  for album in self.albums:
+                      if first <= album.year <= last:
+                          found.append(album)
+                  return found
+
+
+          if __name__ == "__main__":
+              shelf = Collection()
+              shelf.add("Blue", "Joni Mitchell", 1971)
+              shelf.add("Kind of Blue", "Miles Davis", 1959)
+              for album in shelf.by_artist("Joni Mitchell"):
+                  print(album)
+        hints:
+          - "Each method starts with an empty list, goes through `self.albums` and appends the albums that match."
+          - "An album matches `by_artist` when `album.artist == artist`, and `from_years` when `first <= album.year <= last`."
+          - Return the list of `Album` objects. The test prints each one, which uses the `__str__` that `Album` already has.
+        tests:
+          - call: |
+              shelf = Collection()
+              shelf.add("Blue", "Joni Mitchell", 1971)
+              shelf.add("Kind of Blue", "Miles Davis", 1959)
+              shelf.add("Court and Spark", "Joni Mitchell", 1974)
+              for album in shelf.by_artist("Joni Mitchell"):
+                  print(album)
+              for album in shelf.from_years(1950, 1971):
+                  print(album)
+          - call: |
+              shelf = Collection()
+              shelf.add("Thriller", "Michael Jackson", 1982)
+              shelf.add("Purple Rain", "Prince", 1984)
+              shelf.add("Bad", "Michael Jackson", 1987)
+              shelf.add("1999", "Prince", 1982)
+              for album in shelf.by_artist("Prince"):
+                  print(album.title)
+              for album in shelf.from_years(1982, 1984):
+                  print(album.title)
+              print(len(shelf.by_artist("Madonna")), len(shelf.from_years(1990, 1999)))
+            hidden: true
+      - task: |
+          Write a class `TodoList` that keeps tasks as strings. Give it these methods:
+
+          - `add(task)` puts a task at the end of the list.
+          - `done(task)` removes the task and returns `True`, or returns `False` when there is no such task.
+          - `search(word)` returns a list of the tasks that have the word in them, whatever the capitals, in their order in the list.
+          - `__str__` returns `no tasks` when the list is empty, and otherwise the word `Tasks`, the number of tasks in parentheses, a colon and the tasks separated by commas, as shown below.
+
+          This code:
+
+          ```python fragment
+          todo = TodoList()
+          todo.add("Buy milk")
+          todo.add("Call grandma")
+          todo.add("Buy stamps")
+          print(todo)
+          print(todo.search("buy"))
+          print(todo.done("Buy milk"), todo.done("Swim"))
+          print(todo)
+          ```
+
+          prints
+
+          ```
+          Tasks (3): Buy milk, Call grandma, Buy stamps
+          ['Buy milk', 'Buy stamps']
+          True False
+          Tasks (2): Call grandma, Buy stamps
+          ```
+        seed: |
+          class TodoList:
+              pass
+
+
+          if __name__ == "__main__":
+              todo = TodoList()
+              todo.add("Buy milk")
+              todo.add("Call grandma")
+              print(todo)
+              print(todo.search("buy"))
+        solution: |
+          class TodoList:
+              def __init__(self):
+                  self.tasks = []
+
+              def add(self, task):
+                  self.tasks.append(task)
+
+              def done(self, task):
+                  if task in self.tasks:
+                      self.tasks.remove(task)
+                      return True
+                  return False
+
+              def search(self, word):
+                  found = []
+                  for task in self.tasks:
+                      if word.lower() in task.lower():
+                          found.append(task)
+                  return found
+
+              def __str__(self):
+                  if len(self.tasks) == 0:
+                      return "no tasks"
+                  return f"Tasks ({len(self.tasks)}): " + ", ".join(self.tasks)
+
+
+          if __name__ == "__main__":
+              todo = TodoList()
+              todo.add("Buy milk")
+              todo.add("Call grandma")
+              print(todo)
+              print(todo.search("buy"))
+        hints:
+          - "The constructor makes an empty list. `done` checks `if task in self.tasks:` before it removes anything."
+          - "In `search`, compare both in small letters: `word.lower() in task.lower()`, and collect the matches in a new list."
+          - "`__str__` returns `f\"Tasks ({len(self.tasks)}): \" + \", \".join(self.tasks)`, or `\"no tasks\"` for an empty list."
+        tests:
+          - call: |
+              todo = TodoList()
+              todo.add("Buy milk")
+              todo.add("Call grandma")
+              todo.add("Buy stamps")
+              print(todo)
+              print(todo.search("buy"))
+              print(todo.done("Buy milk"), todo.done("Swim"))
+              print(todo)
+          - call: |
+              todo = TodoList()
+              print(todo)
+              print(todo.search("x"), todo.done("x"))
+              todo.add("Read PEP 8")
+              todo.add("Write a class")
+              todo.add("Read the class docs")
+              print(todo.search("READ"))
+              print(todo.search("class"))
+              todo.done("Read PEP 8")
+              todo.done("Write a class")
+              print(todo)
+            hidden: true

@@ -1,0 +1,873 @@
+id: classes
+summary: Writing classes of your own. The class keyword, a constructor __init__ with self, attributes that each object has, and objects of your own classes in lists and functions.
+steps:
+  - id: classes-first-class
+    slug: first-class
+    title: Your first class
+    text: |
+      So far you have used classes that come with Python, such as `Fraction` and `date`. Now you'll write your own. A class is defined with the keyword `class`, the class's name and a colon. What belongs to the class is indented under it, as in a function:
+
+      ```python fragment
+      class Planet:
+          pass
+      ```
+
+      This class is empty: `pass` is the statement that does nothing, there because Python needs at least one line in the block. It already works as a blueprint, though.
+
+      Class names are written in **PascalCase** (also called UpperCamelCase): each word starts with a capital letter and the words are joined without underscores, such as `Planet`, `TrainTicket` or `WeatherStation`. Variables and functions keep their small letters and underscores. That way you can tell at a glance that `Planet()` makes an object and `planet_count()` calls a function.
+
+      ### Objects and their attributes
+
+      To make an object, call the class like a function. Then you can attach **attributes** to the object, its own variables, by assigning to them with a dot:
+
+      ```python run
+      class Planet:
+          pass
+
+
+      home = Planet()
+      home.name = "Earth"
+      home.moons = 1
+
+      red = Planet()
+      red.name = "Mars"
+      red.moons = 2
+
+      print(home.name, home.moons)
+      print(red.name, red.moons)
+      ```
+
+      ```output
+      Earth 1
+      Mars 2
+      ```
+
+      Each object has its own attributes: `home.name` and `red.name` are two different variables. An attribute lives inside its object, so you always reach it through the object: on its own, `name` would be a `NameError`, since there's no variable by that name.
+
+      (As in the code above, PEP 8 asks for two blank lines around a class, as around a function.)
+
+      ### When an attribute is missing
+
+      Attaching attributes from outside has a problem: nothing makes sure that every object gets all of them. Forget one, and the program stops when it's used:
+
+      ```python run crash
+      class Planet:
+          pass
+
+
+      home = Planet()
+      home.name = "Earth"
+      home.moons = 1
+
+      far = Planet()
+      far.name = "Neptune"
+
+      print(home.moons)
+      print(far.moons)
+      ```
+
+      ```output
+      1
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 13, in <module>
+          print(far.moons)
+                ^^^^^^^^^
+      AttributeError: 'Planet' object has no attribute 'moons'
+      ```
+
+      An `AttributeError` says that the object has no attribute by that name. Here the program forgot to give `far` its moons. A typo in an attribute's name gives the same error.
+
+      Two objects of the same class should look the same: the same attributes, with their own values. The next step shows how a class can make sure of that.
+
+      **Your turn:** fill in the blanks, so that the program defines the class `Robot`, makes an object of it and prints:
+
+      ```
+      Bolt 80
+      ```
+    fill: |
+      [[class]] Robot:
+          pass
+
+
+      helper = [[Robot()]]
+      helper.name = "Bolt"
+      helper.battery = 80
+      print(helper.name, helper.battery)
+    hints:
+      - A class definition starts with the keyword that names what it defines.
+      - "The first blank is `class`. To make an object, call the class like a function: `Robot()`."
+    tests:
+      - expect: Bolt 80
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Box:
+              pass
+
+
+          a = Box()
+          b = Box()
+          a.items = 3
+          b.items = 5
+          a.items += b.items
+          print(a.items)
+          print(b.items)
+        hints:
+          - "`a` and `b` are two objects, and each has its own attribute `items`."
+          - "`a.items += b.items` adds 5 to `a`'s items. Only `a` changes."
+      - task: |
+          Write an empty class `Song` and a function `make_song(title, artist, seconds)` that makes a new `Song` object, attaches the attributes `title`, `artist` and `seconds` to it, and returns the object.
+
+          This code:
+
+          ```python fragment
+          song = make_song("Rainy Bus Stop", "The Umbrellas", 214)
+          print(song.title)
+          print(song.artist, song.seconds)
+          ```
+
+          prints
+
+          ```
+          Rainy Bus Stop
+          The Umbrellas 214
+          ```
+        seed: |
+          # Write the class Song here.
+
+
+          def make_song(title, artist, seconds):
+              pass
+
+
+          if __name__ == "__main__":
+              song = make_song("Rainy Bus Stop", "The Umbrellas", 214)
+              print(song.title)
+        solution: |
+          class Song:
+              pass
+
+
+          def make_song(title, artist, seconds):
+              song = Song()
+              song.title = title
+              song.artist = artist
+              song.seconds = seconds
+              return song
+
+
+          if __name__ == "__main__":
+              song = make_song("Rainy Bus Stop", "The Umbrellas", 214)
+              print(song.title)
+        hints:
+          - "The class needs only two lines: `class Song:` and an indented `pass`."
+          - "In the function, make the object with `song = Song()`, then set each attribute: `song.title = title`, and so on."
+          - Return the object itself at the end, not one of its attributes.
+        require:
+          - pattern: \bclass\s+Song\b
+            message: Define the class with `class Song:`.
+        tests:
+          - call: |
+              song = make_song("Rainy Bus Stop", "The Umbrellas", 214)
+              print(song.title)
+              print(song.artist, song.seconds)
+          - call: |
+              first = make_song("Lighthouse", "Kai Noor", 187)
+              second = make_song("Static", "Volt Sisters", 245)
+              print(second.title, second.artist, second.seconds)
+              print(first.title, first.artist, first.seconds)
+            hidden: true
+
+  - id: classes-constructor
+    slug: constructor
+    title: The constructor and self
+    text: |
+      A **constructor** sets up each new object as it is made, so that every object gets the same attributes. In Python, the constructor is a method with the special name `__init__` (two underscores on each side of `init`), written inside the class:
+
+      ```python run
+      class Planet:
+          def __init__(self, name, moons):
+              self.name = name
+              self.moons = moons
+
+
+      home = Planet("Earth", 1)
+      far = Planet("Neptune", 16)
+
+      print(home.name, home.moons)
+      print(far.name, far.moons)
+      ```
+
+      ```output
+      Earth 1
+      Neptune 16
+      ```
+
+      A function defined inside a class is a method, and `__init__` is the one that Python calls by itself whenever a new object is made. Here is what `Planet("Earth", 1)` does:
+
+      1. Python makes a new, empty `Planet` object.
+      2. It calls `__init__` with the new object as `self`, `"Earth"` as `name` and `1` as `moons`.
+      3. `self.name = name` makes the attribute `name` in the object and stores the argument in it. The same goes for `moons`.
+      4. The finished object is the value of `Planet("Earth", 1)`, and it is stored in `home`.
+
+      ### self
+
+      The first parameter of `__init__` is always `self`: the object being set up. You never pass it yourself, because Python does that. So `__init__` here has three parameters, but you call `Planet` with two arguments.
+
+      `self.name` and `name` are two different variables. `self.name` is the object's attribute, and it stays with the object. `name` is a parameter, which is gone when `__init__` ends. Giving both the same name is the custom, because it makes clear which argument goes where.
+
+      Forgetting `self.` is a common mistake. Then `name = name` only assigns the parameter to itself, and the object gets nothing:
+
+      ```python run crash
+      class Planet:
+          def __init__(self, name, moons):
+              name = name
+              self.moons = moons
+
+
+      home = Planet("Earth", 1)
+      print(home.moons)
+      print(home.name)
+      ```
+
+      ```output
+      1
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 9, in <module>
+          print(home.name)
+                ^^^^^^^^^
+      AttributeError: 'Planet' object has no attribute 'name'
+      ```
+
+      ### The right arguments
+
+      The constructor's parameters decide what you must give when you make an object. Leave one out, and Python names the missing one:
+
+      ```python run crash
+      class Planet:
+          def __init__(self, name, moons):
+              self.name = name
+              self.moons = moons
+
+
+      far = Planet("Neptune")
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 7, in <module>
+          far = Planet("Neptune")
+      TypeError: Planet.__init__() missing 1 required positional argument: 'moons'
+      ```
+
+      If the error says `Planet() takes no arguments` instead, Python didn't find a constructor at all: check the spelling of `__init__`, with two underscores on each side.
+
+      As in functions, type hints are welcome in a constructor: `def __init__(self, name: str, moons: int):`. They don't change what the code does.
+
+      **Your turn:** fill in the blanks, so that the constructor stores all three arguments in the object and the program prints:
+
+      ```
+      Kindred by Octavia Butler (1979)
+      ```
+    fill: |
+      class Book:
+          def __init__([[self]], title, author, year):
+              self.title = title
+              [[self.author]] = author
+              self.year = [[year]]
+
+
+      novel = Book("Kindred", "Octavia Butler", 1979)
+      print(f"{novel.title} by {novel.author} ({novel.year})")
+    hints:
+      - The first parameter of every constructor is the object itself.
+      - "Each attribute is set with `self.` in front of its name: `self.author = author`."
+      - "The year comes from the parameter `year`."
+    tests:
+      - expect: Kindred by Octavia Butler (1979)
+    more:
+      - task: |
+          This class has two mistakes. Fix them, so that the program prints:
+
+          ```
+          Up 2009
+          ```
+        seed: |
+          class Movie:
+              def _init_(self, title, year):
+                  self.title = title
+                  year = year
+
+
+          film = Movie("Up", 2009)
+          print(film.title, film.year)
+        solution: |
+          class Movie:
+              def __init__(self, title, year):
+                  self.title = title
+                  self.year = year
+
+
+          film = Movie("Up", 2009)
+          print(film.title, film.year)
+        hints:
+          - "Check it and read the error: `Movie() takes no arguments` means Python found no constructor. Count the underscores."
+          - "The constructor is `__init__`, with two underscores on each side."
+          - "Once that's fixed, the year isn't stored in the object: it needs `self.` in front."
+        tests:
+          - expect: Up 2009
+      - task: |
+          Write a class `Flight` with a constructor that takes the flight's code, where it leaves from, where it goes to and how long it takes in minutes, and stores them in the attributes `code`, `origin`, `destination` and `minutes`.
+
+          This code:
+
+          ```python fragment
+          flight = Flight("PA101", "Lisbon", "Oslo", 230)
+          print(f"{flight.code}: {flight.origin} to {flight.destination}")
+          print(flight.minutes // 60, "h", flight.minutes % 60, "min")
+          ```
+
+          prints
+
+          ```
+          PA101: Lisbon to Oslo
+          3 h 50 min
+          ```
+        seed: |
+          # Write the class Flight here.
+
+
+          if __name__ == "__main__":
+              flight = Flight("PA101", "Lisbon", "Oslo", 230)
+              print(flight.code, flight.minutes)
+        solution: |
+          class Flight:
+              def __init__(self, code, origin, destination, minutes):
+                  self.code = code
+                  self.origin = origin
+                  self.destination = destination
+                  self.minutes = minutes
+
+
+          if __name__ == "__main__":
+              flight = Flight("PA101", "Lisbon", "Oslo", 230)
+              print(flight.code, flight.minutes)
+        hints:
+          - "Start with `class Flight:`, and inside it `def __init__(self, code, origin, destination, minutes):`."
+          - "In the constructor, store each parameter in an attribute of the same name: `self.code = code`, and so on for all four."
+        tests:
+          - call: |
+              flight = Flight("PA101", "Lisbon", "Oslo", 230)
+              print(f"{flight.code}: {flight.origin} to {flight.destination}")
+              print(flight.minutes // 60, "h", flight.minutes % 60, "min")
+          - call: |
+              short = Flight("PA7", "Turku", "Stockholm", 55)
+              long = Flight("PA900", "Paris", "Tokyo", 805)
+              print(short.code, short.origin, short.destination, short.minutes)
+              print(long.code, long.origin, long.destination, long.minutes)
+            hidden: true
+
+  - id: classes-attributes
+    slug: attributes
+    title: Attributes of every kind
+    text: |
+      A constructor doesn't have to take every attribute as an argument. Some attributes have the same starting value in every new object: a new player has no points yet and no badges. The constructor sets those itself:
+
+      ```python run
+      class Player:
+          def __init__(self, name):
+              self.name = name
+              self.points = 0
+              self.badges = []
+
+
+      ada = Player("Ada")
+      ben = Player("Ben")
+
+      ada.points += 15
+      ada.badges.append("first win")
+      ben.points += 5
+
+      print(ada.name, ada.points, ada.badges)
+      print(ben.name, ben.points, ben.badges)
+      ```
+
+      ```output
+      Ada 15 ['first win']
+      Ben 5 []
+      ```
+
+      A few things to notice here:
+
+      - You can change an attribute at any time, from outside the class too, like any variable: `ada.points += 15`.
+      - An attribute can hold any kind of value: a number, a string, a list, a dictionary, a `date`.
+      - Every object gets a list of its own. Each time the constructor runs, `[]` makes a new empty list, so appending to Ada's badges doesn't touch Ben's.
+
+      ### A date as an attribute
+
+      An attribute can hold an object such as a `date`, and then you can use that object's own attributes and methods through it. Read `loan.borrowed.month` from left to right: the loan's `borrowed` date, and that date's `month`.
+
+      ```python run
+      from datetime import date
+
+
+      class Loan:
+          def __init__(self, title, borrowed):
+              self.title = title
+              self.borrowed = borrowed
+              self.returned = False
+
+
+      loan = Loan("Dune", date(2026, 9, 28))
+      print(loan.title, loan.borrowed, loan.returned)
+      print(loan.borrowed.month)
+
+      loan.returned = True
+      print(loan.returned)
+      ```
+
+      ```output
+      Dune 2026-09-28 False
+      9
+      True
+      ```
+
+      ### Values worked out in the constructor
+
+      The constructor can also calculate an attribute from its arguments, and a parameter can have a default value, as in any function:
+
+      ```python run
+      class Room:
+          def __init__(self, name, width, length, floor=1):
+              self.name = name
+              self.width = width
+              self.length = length
+              self.area = width * length
+              self.floor = floor
+
+
+      kitchen = Room("kitchen", 3, 4)
+      attic = Room("attic", 5, 6, 3)
+
+      print(kitchen.name, kitchen.area, kitchen.floor)
+      print(attic.name, attic.area, attic.floor)
+      ```
+
+      ```output
+      kitchen 12 1
+      attic 30 3
+      ```
+
+      Be careful with calculated attributes: the area is worked out once, when the object is made. If the program later changes `kitchen.width`, `kitchen.area` keeps its old value. The next module shows a better way for values like this.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Plant:
+          def __init__(self, name):
+              self.name = name
+              self.height = 10
+              self.notes = []
+
+
+      fern = Plant("fern")
+      ivy = Plant("ivy")
+      fern.height += 5
+      ivy.notes.append("water")
+      ivy.height = fern.height * 2
+      print(fern.height, fern.notes)
+      print(ivy.height, ivy.notes)
+    hints:
+      - Every new plant starts with the height 10 and an empty list of notes of its own.
+      - The fern grows to 15, and the ivy's height is then set to twice the fern's.
+      - Only the ivy's list gets a note.
+    more:
+      - task: |
+          Write a class `Recipe` whose constructor takes the recipe's name and the number of servings, and stores them in the attributes `name` and `servings`. When the servings aren't given, they are 2. Every new recipe also has the attribute `ingredients`, which starts as an empty list.
+
+          This code:
+
+          ```python fragment
+          soup = Recipe("Tomato soup", 4)
+          toast = Recipe("Cheese toast")
+          soup.ingredients.append("tomatoes")
+          soup.ingredients.append("onion")
+          print(soup.name, soup.servings, soup.ingredients)
+          print(toast.name, toast.servings, toast.ingredients)
+          ```
+
+          prints
+
+          ```
+          Tomato soup 4 ['tomatoes', 'onion']
+          Cheese toast 2 []
+          ```
+        seed: |
+          # Write the class Recipe here.
+
+
+          if __name__ == "__main__":
+              soup = Recipe("Tomato soup", 4)
+              print(soup.name, soup.servings, soup.ingredients)
+        solution: |
+          class Recipe:
+              def __init__(self, name, servings=2):
+                  self.name = name
+                  self.servings = servings
+                  self.ingredients = []
+
+
+          if __name__ == "__main__":
+              soup = Recipe("Tomato soup", 4)
+              print(soup.name, soup.servings, soup.ingredients)
+        hints:
+          - "A default value goes in the parameter list: `def __init__(self, name, servings=2):`."
+          - "The ingredients aren't a parameter at all: the constructor sets `self.ingredients = []`."
+          - Make the empty list inside the constructor, so that every recipe gets a list of its own.
+        tests:
+          - call: |
+              soup = Recipe("Tomato soup", 4)
+              toast = Recipe("Cheese toast")
+              soup.ingredients.append("tomatoes")
+              soup.ingredients.append("onion")
+              print(soup.name, soup.servings, soup.ingredients)
+              print(toast.name, toast.servings, toast.ingredients)
+          - call: |
+              a = Recipe("Pancakes", 6)
+              b = Recipe("Pancakes")
+              b.ingredients.append("flour")
+              b.servings += 1
+              print(a.name, a.servings, a.ingredients)
+              print(b.name, b.servings, b.ingredients)
+            hidden: true
+      - task: |
+          Write a class `Trip` whose constructor takes the destination and the first and last day of the trip as `date` objects. It stores them in the attributes `destination`, `start` and `end`, and also sets these two:
+
+          - `nights`: how many nights the trip has, which is the number of days between the start and the end.
+          - `packed`: `False` for every new trip.
+
+          (In part 7 you subtracted dates: the result has the attribute `days`.) This code:
+
+          ```python fragment
+          trip = Trip("Lisbon", date(2026, 6, 1), date(2026, 6, 8))
+          print(trip.destination, trip.nights, trip.packed)
+          trip.packed = True
+          print(trip.start, trip.end, trip.packed)
+          ```
+
+          prints
+
+          ```
+          Lisbon 7 False
+          2026-06-01 2026-06-08 True
+          ```
+        seed: |
+          from datetime import date
+
+
+          # Write the class Trip here.
+
+
+          if __name__ == "__main__":
+              trip = Trip("Lisbon", date(2026, 6, 1), date(2026, 6, 8))
+              print(trip.destination, trip.nights, trip.packed)
+        solution: |
+          from datetime import date
+
+
+          class Trip:
+              def __init__(self, destination, start, end):
+                  self.destination = destination
+                  self.start = start
+                  self.end = end
+                  self.nights = (end - start).days
+                  self.packed = False
+
+
+          if __name__ == "__main__":
+              trip = Trip("Lisbon", date(2026, 6, 1), date(2026, 6, 8))
+              print(trip.destination, trip.nights, trip.packed)
+        hints:
+          - "The constructor has the parameters `self, destination, start, end`, and stores the three arguments as attributes."
+          - "`end - start` is a time difference, and its attribute `days` is the number of nights: `self.nights = (end - start).days`."
+          - "`packed` isn't a parameter: set `self.packed = False` in the constructor."
+        tests:
+          - call: |
+              trip = Trip("Lisbon", date(2026, 6, 1), date(2026, 6, 8))
+              print(trip.destination, trip.nights, trip.packed)
+              trip.packed = True
+              print(trip.start, trip.end, trip.packed)
+          - call: |
+              long = Trip("Hokkaido", date(2026, 12, 20), date(2027, 1, 6))
+              short = Trip("Tallinn", date(2026, 5, 9), date(2026, 5, 10))
+              print(long.destination, long.nights, long.packed)
+              print(short.destination, short.nights, short.start.month)
+            hidden: true
+
+  - id: classes-objects-in-functions
+    slug: objects-and-functions
+    title: Your objects in functions and lists
+    text: |
+      Objects of your own classes are values like any others. Functions can take them as arguments and return them, and lists can hold them.
+
+      ### Functions that make and change objects
+
+      A function can create a new object and return it, and a function can change an object it is given:
+
+      ```python run
+      class Hike:
+          def __init__(self, name, km, climb):
+              self.name = name
+              self.km = km
+              self.climb = climb
+
+
+      def short_version(hike):
+          return Hike(hike.name + " (short)", hike.km / 2, hike.climb / 2)
+
+
+      def add_detour(hike, km):
+          hike.km += km
+
+
+      ridge = Hike("Ridge Loop", 12, 600)
+      easy = short_version(ridge)
+      add_detour(ridge, 3)
+
+      print(ridge.name, ridge.km)
+      print(easy.name, easy.km)
+      ```
+
+      ```output
+      Ridge Loop 15
+      Ridge Loop (short) 6.0
+      ```
+
+      `add_detour` gets a reference to the same object that `ridge` refers to, so the change is still there after the function ends, just as with a list passed to a function. `short_version` makes a new, separate object, so the detour added to `ridge` afterwards doesn't change `easy`.
+
+      ### Lists of objects
+
+      A list of objects works like any list. Loop through it and use each object's attributes:
+
+      ```python run
+      class Hike:
+          def __init__(self, name, km, climb):
+              self.name = name
+              self.km = km
+              self.climb = climb
+
+
+      def hikes_up_to(hikes, max_km):
+          found = []
+          for hike in hikes:
+              if hike.km <= max_km:
+                  found.append(hike)
+          return found
+
+
+      hikes = [Hike("Ridge Loop", 12, 600), Hike("Lake Path", 5, 40), Hike("Old Mill", 8, 150)]
+
+      for hike in hikes_up_to(hikes, 8):
+          print(f"{hike.name}: {hike.km} km")
+
+      total = 0
+      for hike in hikes:
+          total += hike.climb
+      print("Total climb:", total, "m")
+      ```
+
+      ```output
+      Lake Path: 5 km
+      Old Mill: 8 km
+      Total climb: 790 m
+      ```
+
+      `hikes_up_to` returns a new list, but the objects in it are the same `Hike` objects as in the original list, not copies.
+
+      ### Printing an object
+
+      What about `print(hike)`? For an object of your own class, Python doesn't know what to show, so it prints the class's name and the object's address in memory, something like this:
+
+      ```text
+      <__main__.Hike object at 0x7f2b5c3e1a90>
+      ```
+
+      The address changes from run to run, so for now, print the attributes you want to see. A later module shows how to teach a class to print itself nicely.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Cup:
+          def __init__(self, ml):
+              self.ml = ml
+
+
+      def fill_up(cup):
+          cup.ml = 250
+
+
+      def new_cup():
+          return Cup(100)
+
+
+      a = new_cup()
+      b = new_cup()
+      fill_up(a)
+      print(a.ml, b.ml)
+      b.ml -= 30
+      print(a.ml, b.ml)
+    hints:
+      - Each call of `new_cup` makes a new, separate cup with 100 ml.
+      - "`fill_up(a)` changes the cup that `a` refers to, so it has 250 ml after the call. `b` is another cup."
+      - Taking 30 ml out of `b` changes only that cup.
+    more:
+      - task: |
+          The starter code has a class `Movie`. Write a function `longest(movies)` that takes a list of `Movie` objects and returns the longest one: the `Movie` object itself, not its title. When two movies are equally long, return the one that comes first. The list always has at least one movie.
+
+          This code:
+
+          ```python fragment
+          movies = [Movie("Up", 2009, 96), Movie("Dune", 2021, 155), Movie("Coco", 2017, 105)]
+          best = longest(movies)
+          print(best.title, best.minutes)
+          ```
+
+          prints
+
+          ```
+          Dune 155
+          ```
+        seed: |
+          class Movie:
+              def __init__(self, title, year, minutes):
+                  self.title = title
+                  self.year = year
+                  self.minutes = minutes
+
+
+          def longest(movies):
+              pass
+
+
+          if __name__ == "__main__":
+              movies = [Movie("Up", 2009, 96), Movie("Dune", 2021, 155), Movie("Coco", 2017, 105)]
+              best = longest(movies)
+              print(best.title, best.minutes)
+        solution: |
+          class Movie:
+              def __init__(self, title, year, minutes):
+                  self.title = title
+                  self.year = year
+                  self.minutes = minutes
+
+
+          def longest(movies):
+              best = movies[0]
+              for movie in movies:
+                  if movie.minutes > best.minutes:
+                      best = movie
+              return best
+
+
+          if __name__ == "__main__":
+              movies = [Movie("Up", 2009, 96), Movie("Dune", 2021, 155), Movie("Coco", 2017, 105)]
+              best = longest(movies)
+              print(best.title, best.minutes)
+        hints:
+          - Keep the longest movie found so far in a variable, starting with the first one in the list.
+          - "Compare the attribute: `if movie.minutes > best.minutes:`, and keep the longer movie."
+          - Return the object itself, so that the caller can read any of its attributes.
+        tests:
+          - call: |
+              movies = [Movie("Up", 2009, 96), Movie("Dune", 2021, 155), Movie("Coco", 2017, 105)]
+              best = longest(movies)
+              print(best.title, best.minutes)
+          - call: |
+              movies = [Movie("Heat", 1995, 170), Movie("Jaws", 1975, 124)]
+              best = longest(movies)
+              print(best.title, best.year)
+            hidden: true
+          - call: |
+              movies = [Movie("Alien", 1979, 117), Movie("Brave", 2012, 93), Movie("Clue", 1985, 117)]
+              print(longest(movies).title)
+              print(longest([Movie("Solo", 2018, 135)]).title)
+            hidden: true
+      - task: |
+          Write a function `from_decade(movies, decade)` that takes a list of `Movie` objects and the first year of a decade, such as 1990, and returns a new list with the movies from that decade (from 1990 to 1999), in their original order.
+
+          This code:
+
+          ```python fragment
+          movies = [Movie("Heat", 1995, 170), Movie("Up", 2009, 96), Movie("Fargo", 1996, 98)]
+          for movie in from_decade(movies, 1990):
+              print(movie.title, movie.year)
+          ```
+
+          prints
+
+          ```
+          Heat 1995
+          Fargo 1996
+          ```
+        seed: |
+          class Movie:
+              def __init__(self, title, year, minutes):
+                  self.title = title
+                  self.year = year
+                  self.minutes = minutes
+
+
+          def from_decade(movies, decade):
+              pass
+
+
+          if __name__ == "__main__":
+              movies = [Movie("Heat", 1995, 170), Movie("Up", 2009, 96), Movie("Fargo", 1996, 98)]
+              for movie in from_decade(movies, 1990):
+                  print(movie.title, movie.year)
+        solution: |
+          class Movie:
+              def __init__(self, title, year, minutes):
+                  self.title = title
+                  self.year = year
+                  self.minutes = minutes
+
+
+          def from_decade(movies, decade):
+              found = []
+              for movie in movies:
+                  if decade <= movie.year < decade + 10:
+                      found.append(movie)
+              return found
+
+
+          if __name__ == "__main__":
+              movies = [Movie("Heat", 1995, 170), Movie("Up", 2009, 96), Movie("Fargo", 1996, 98)]
+              for movie in from_decade(movies, 1990):
+                  print(movie.title, movie.year)
+        hints:
+          - Start with an empty list, go through the movies and append the ones that match.
+          - "A movie is from the decade when its year is at least `decade` and less than `decade + 10`."
+          - Return the new list of `Movie` objects, not a list of titles.
+        tests:
+          - call: |
+              movies = [Movie("Heat", 1995, 170), Movie("Up", 2009, 96), Movie("Fargo", 1996, 98)]
+              for movie in from_decade(movies, 1990):
+                  print(movie.title, movie.year)
+          - call: |
+              movies = [Movie("Jaws", 1975, 124), Movie("Alien", 1979, 117), Movie("Tron", 1982, 96), Movie("Rocky", 1976, 120), Movie("Big", 1988, 104)]
+              for movie in from_decade(movies, 1970):
+                  print(movie.title)
+              print(len(from_decade(movies, 1980)))
+              print(len(from_decade(movies, 2000)))
+            hidden: true
+          - call: |
+              movies = [Movie("Edge", 1990, 100), Movie("Ends", 1999, 90), Movie("Next", 2000, 95)]
+              for movie in from_decade(movies, 1990):
+                  print(movie.title)
+            hidden: true

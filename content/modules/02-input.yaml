@@ -1,0 +1,589 @@
+id: input
+summary: Programs that ask the user for information. Reading a line with input, storing it in a variable, joining strings with +, asking several questions and printing several values at once.
+steps:
+  - id: input-prompt
+    slug: prompt
+    title: Asking the user
+    text: |
+      The programs in the first module print the same thing every time they run. Most useful programs also take **input**: information the user gives while the program runs. In Python, the command `input` reads one line that the user types.
+
+      ```python run
+      city = input("Where do you live? ")
+      print(city)
+      ```
+
+      ```input
+      Lisbon
+      ```
+
+      ```output
+      Where do you live? Lisbon
+      Lisbon
+      ```
+
+      Here is what happens, line by line:
+
+      - `input("Where do you live? ")` shows the text in the parentheses and then waits. This text is the **prompt**: it tells the user what to type. The program stops right there until the user types a line and presses Enter.
+      - What the user typed becomes the result of `input`. The `city =` in front of it stores that text under the name `city`, so the program can use it later. A name that holds a value like this is a **variable**. The next step looks at variables more closely.
+      - `print(city)` prints what is stored in `city`: the text the user typed. There are no quotes around `city`, because the program should print the value, not the word "city".
+
+      ### What a run looks like
+
+      On a computer, the user types `Lisbon` right after the prompt, on the same line, and the screen shows it there. The examples on this site show it the same way: the **Input** block above is what the user types, and in the output it appears right after the prompt, followed by a line break. When you check a program here, the tests type the input for you, a different line in each test.
+
+      Notice the space at the end of the prompt, just before the closing quote. Without it, the answer sticks to the question: `Where do you live?Lisbon`. The space is part of the prompt, so it goes inside the quotes.
+
+      ### input without a prompt
+
+      The parentheses can also be empty. Then `input()` shows nothing at all and simply waits, so the typed line appears on a line of its own:
+
+      ```python run
+      print("Type a word and press Enter.")
+      word = input()
+      print(word)
+      ```
+
+      ```input
+      hello
+      ```
+
+      ```output
+      Type a word and press Enter.
+      hello
+      hello
+      ```
+
+      The first `hello` is what the user typed, and the second is what the program printed. Both work, but a prompt is usually friendlier: the user sees what to type right where they type it.
+
+      **Your turn:** fill in the blank so the program asks for the user's favorite color and then prints it. If the user types `green`, the run looks like this:
+
+      ```
+      Favorite color: green
+      green
+      ```
+    fill: |
+      color = [[input]]("Favorite color: ")
+      print(color)
+    hints:
+      - The command that reads a line the user types is `input`.
+      - "Type only the command's name into the blank: `input`. The prompt in parentheses is already there."
+    tests:
+      - stdin: green
+      - stdin: purple
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a word with the prompt `Word: ` and prints it between two lines of five stars. If the user types `hello`, the run looks like this:
+
+          ```
+          Word: hello
+          *****
+          hello
+          *****
+          ```
+        seed: |
+          # Ask for the word, then print the frame.
+        solution: |
+          # Ask for the word, then print the frame.
+          word = input("Word: ")
+          print("*****")
+          print(word)
+          print("*****")
+        hints:
+          - "First read the word into a variable: `word = input(\"Word: \")`. Mind the space after the colon."
+          - Then you need three `print` commands, one for each line of the frame.
+          - "The middle one prints the variable, so it has no quotes: `print(word)`."
+        tests:
+          - stdin: hello
+          - stdin: Python
+            hidden: true
+      - task: |
+          This program asks its question with `print`, so the user has to type the answer on the next line. Change it so the question is the prompt of `input` and the answer is typed on the same line. If the user types `2`, the run should look like this:
+
+          ```
+          How many cats do you have? 2
+          2
+          ```
+        seed: |
+          print("How many cats do you have?")
+          cats = input()
+          print(cats)
+        solution: |
+          cats = input("How many cats do you have? ")
+          print(cats)
+        hints:
+          - Move the question into the parentheses of `input()`, and remove the `print` line that asked it.
+          - "The prompt needs a space at its end, inside the quotes: `\"How many cats do you have? \"`."
+        tests:
+          - stdin: "2"
+          - stdin: "0"
+            hidden: true
+
+  - id: input-variables
+    slug: variables
+    title: Variables
+    text: |
+      In the last step, `city = input(...)` stored the user's answer in `city`. A **variable** is a name that holds a value, so the program can use that value later. You create one by writing its name, an equals sign `=` and the value. The value can come from `input`, or you can write it straight into the code:
+
+      ```python run
+      language = "Python"
+      print(language)
+      ```
+
+      ```output
+      Python
+      ```
+
+      The `=` doesn't mean "is equal to" as in mathematics. It's an instruction: work out the value on the right, then store it under the name on the left. This is called **assignment**.
+
+      ### Use it as often as you like
+
+      Once a value is stored, the program can use it again and again. `input` runs only once, and the variable remembers the answer:
+
+      ```python run
+      shout = input("Shout into the canyon: ")
+      print(shout)
+      print(shout)
+      print(shout)
+      ```
+
+      ```input
+      hello
+      ```
+
+      ```output
+      Shout into the canyon: hello
+      hello
+      hello
+      hello
+      ```
+
+      ### A variable or a piece of text?
+
+      Quotes make all the difference here too. Without quotes, `food` is the variable and Python prints its value. With quotes, `"food"` is just a string of four letters:
+
+      ```python run
+      food = input("Food: ")
+      print(food)
+      print("food")
+      ```
+
+      ```input
+      soup
+      ```
+
+      ```output
+      Food: soup
+      soup
+      food
+      ```
+
+      ### Naming variables
+
+      Python is strict about the names it accepts:
+
+      - A name is made of letters, digits and underscores `_`. It can't contain spaces, and it can't start with a digit.
+      - Capitals matter: `name`, `Name` and `NAME` are three different variables.
+      - Python programmers write variable names in small letters and join words with underscores: `first_name`, `home_town`. This style is called **snake case**.
+
+      Choose names that say what the value is. To Python, `x` works just as well as `city`, but people reading your code (you included, a week later) understand `city` at once. It's common to name variables in English.
+
+      ### A name Python doesn't know
+
+      If you misspell a variable's name, Python has no variable by that name, so it stops with a `NameError`, the same error a misspelled `print` gives:
+
+      ```python run crash
+      color = input("Color: ")
+      print(colr)
+      ```
+
+      ```input
+      red
+      ```
+
+      ```output
+      Color: red
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(colr)
+                ^^^^
+      NameError: name 'colr' is not defined. Did you mean: 'color'?
+      ```
+
+      The variable is `color`, but line 2 asks for `colr`, with a letter missing. Python even suggests the name it knows.
+
+      **Your turn:** this program should ask for a pet's name and print it on a name tag, but it stops with a `NameError`. Fix it, so that a run looks like this:
+
+      ```
+      Pet's name: Rex
+      Hello, my name is
+      Rex
+      ```
+    seed: |
+      pet_name = input("Pet's name: ")
+      print("Hello, my name is")
+      print(pet_Name)
+    solution: |
+      pet_name = input("Pet's name: ")
+      print("Hello, my name is")
+      print(pet_name)
+    hints:
+      - Check it and read the last line of the error message. Which name doesn't Python know?
+      - Capitals matter in names. Compare the name on line 1 with the one on line 3.
+    tests:
+      - stdin: Rex
+      - stdin: Bella
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          fruit = "plum"
+          print("fruit")
+          print(fruit)
+          print(fruit)
+        hints:
+          - The variable `fruit` holds the string `plum`.
+          - "The first `print` has quotes around `fruit`, so it prints that word as it is. The other two print the variable's value."
+      - task: |
+          Python can't even start this program, because one of its variable names breaks the rules. Rename the variable to `home_town` everywhere, so that a run looks like this:
+
+          ```
+          Home town: Bergen
+          You come from
+          Bergen
+          ```
+        seed: |
+          home town = input("Home town: ")
+          print("You come from")
+          print(home town)
+        solution: |
+          home_town = input("Home town: ")
+          print("You come from")
+          print(home_town)
+        hints:
+          - A variable name can't contain a space. Python reads `home town` as two separate names.
+          - "Join the words with an underscore, `home_town`, on both lines where the name appears."
+        require:
+          - pattern: \bhome_town\b
+            min: 2
+            message: Use the name `home_town` both where the variable is created and where it's printed.
+        tests:
+          - stdin: Bergen
+          - stdin: Osaka
+            hidden: true
+
+  - id: input-joining
+    slug: joining
+    title: Joining strings with +
+    text: |
+      A greeting and the user's name usually belong on the same line. To build that line, join strings with `+`. Putting strings end to end like this is called **concatenation**:
+
+      ```python run
+      name = input("Your name: ")
+      print("Welcome, " + name + "!")
+      ```
+
+      ```input
+      Ada
+      ```
+
+      ```output
+      Your name: Ada
+      Welcome, Ada!
+      ```
+
+      Python first builds one string out of the three parts: `"Welcome, "`, the value of `name` and `"!"`. Then `print` prints that string. You can join as many parts as you need, and you can use the same variable several times in one line.
+
+      ### Spaces are your job
+
+      `+` puts nothing between the strings it joins, not even a space. Any space you want must be inside the quotes:
+
+      ```python run
+      animal = input("Animal: ")
+      print("The" + animal + "is asleep.")
+      print("The " + animal + " is asleep.")
+      ```
+
+      ```input
+      cat
+      ```
+
+      ```output
+      Animal: cat
+      Thecatis asleep.
+      The cat is asleep.
+      ```
+
+      In the second line, the space after `The` and the space before `is` are part of the strings, so the words come out apart.
+
+      ### Storing a joined string
+
+      The result of `+` is a new string, and you can store it in a variable like any other value:
+
+      ```python run
+      word = input("Word: ")
+      loud = word + "!!!"
+      print(loud)
+      print(loud + " " + loud)
+      ```
+
+      ```input
+      yes
+      ```
+
+      ```output
+      Word: yes
+      yes!!!
+      yes!!! yes!!!
+      ```
+
+      ### A missing +
+
+      Every part needs a `+` between it and the next one. Without it, Python can't read the line at all:
+
+      ```python run crash
+      name = input("Your name: ")
+      print("Hi " name)
+      ```
+
+      ```crash
+        File "main.py", line 2
+          print("Hi " name)
+                ^^^^^^^^^^
+      SyntaxError: invalid syntax. Perhaps you forgot a comma?
+      ```
+
+      This is a syntax error, so nothing runs, not even the `input` on line 1. Python guesses a missing comma. Commas do work in `print`, as the next step shows, but here the missing piece is a `+`.
+
+      **Your turn:** fill in the blanks so the program greets the user by name. If the user types `Grace`, the run looks like this:
+
+      ```
+      Name: Grace
+      Good morning, Grace.
+      ```
+    fill: |
+      name = input("Name: ")
+      print("Good morning, " [[+]] name [[+]] ".")
+    hints:
+      - The line joins three strings into one. What joins strings in Python?
+      - "Put `+` in both blanks: `\"Good morning, \" + name + \".\"`."
+    tests:
+      - stdin: Grace
+      - stdin: Linus
+        hidden: true
+    more:
+      - task: |
+          The smoothie bar's program glues the words together. Add the missing spaces, so that a run looks like this:
+
+          ```
+          Fruit: mango
+          One mango smoothie, coming up!
+          ```
+        seed: |
+          fruit = input("Fruit: ")
+          print("One" + fruit + "smoothie, coming up!")
+        solution: |
+          fruit = input("Fruit: ")
+          print("One " + fruit + " smoothie, coming up!")
+        hints:
+          - Run it and look at the output. Where are spaces missing?
+          - "The spaces go inside the quotes: one after `One` and one before `smoothie`."
+        tests:
+          - stdin: mango
+          - stdin: banana
+            hidden: true
+      - task: |
+          Write a program that asks for a user name with the prompt `User name: ` and prints the user's email address at `example.com`. If the user types `ada`, the run looks like this:
+
+          ```
+          User name: ada
+          Your address is ada@example.com
+          ```
+        seed: |
+          # Ask for the user name, then print the address.
+        solution: |
+          # Ask for the user name, then print the address.
+          user = input("User name: ")
+          print("Your address is " + user + "@example.com")
+        hints:
+          - Start by reading the user name into a variable with `input`.
+          - "The output line has three parts: the text `Your address is ` (with a space at the end), the user name, and `@example.com`."
+          - "Join them with `+`: `print(\"Your address is \" + user + \"@example.com\")`, if your variable is called `user`."
+        tests:
+          - stdin: ada
+          - stdin: grace_h
+            hidden: true
+
+  - id: input-several
+    slug: several-inputs
+    title: Several inputs
+    text: |
+      A program can call `input` as many times as it needs. Each call reads the next line the user types, and each answer usually goes into a variable of its own:
+
+      ```python run
+      dish = input("Dish: ")
+      drink = input("Drink: ")
+      print("Your order: " + dish + " with " + drink)
+      ```
+
+      ```input
+      pizza
+      lemonade
+      ```
+
+      ```output
+      Dish: pizza
+      Drink: lemonade
+      Your order: pizza with lemonade
+      ```
+
+      The answers come in the order the program asks for them. A test on this site types one line for each `input`, in that same order.
+
+      ### A new value replaces the old one
+
+      When you store a new value in a variable that already has one, the old value is gone for good. That's fine when you're done with it:
+
+      ```python run
+      guess = input("First guess: ")
+      print("You said " + guess)
+      guess = input("Second guess: ")
+      print("Now you say " + guess)
+      ```
+
+      ```input
+      blue
+      red
+      ```
+
+      ```output
+      First guess: blue
+      You said blue
+      Second guess: red
+      Now you say red
+      ```
+
+      It's a bug when you still need the first value. Here both answers go into `place`, so the first one is lost before the program prints it:
+
+      ```python run
+      place = input("Where were you born? ")
+      place = input("Where do you live now? ")
+      print("Born in " + place)
+      print("Living in " + place)
+      ```
+
+      ```input
+      Oslo
+      Rome
+      ```
+
+      ```output
+      Where were you born? Oslo
+      Where do you live now? Rome
+      Born in Rome
+      Living in Rome
+      ```
+
+      The fix is a variable for each value you need to keep, such as `birthplace` and `home`.
+
+      ### Printing several values with commas
+
+      `print` can take several values separated by commas. It prints them all on one line, with a space between each two:
+
+      ```python run
+      first = input("First word: ")
+      second = input("Second word: ")
+      print(first, second)
+      print("You typed", first, "and", second)
+      ```
+
+      ```input
+      sun
+      flower
+      ```
+
+      ```output
+      First word: sun
+      Second word: flower
+      sun flower
+      You typed sun and flower
+      ```
+
+      So commas add the spaces for you, and `+` adds nothing. `print("Hi", name)` and `print("Hi " + name)` print the same line. When something must come right after a value, with no space, use `+`: `print(name, "!")` prints `Ada !`, but `print(name + "!")` prints `Ada!`.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      a = "sun"
+      b = "rise"
+      print(a, b)
+      print(a + b)
+      print(b, a + "!")
+    hints:
+      - "Commas in `print` put a space between the values. `+` joins strings with nothing between them."
+      - "The last line has two values: `b`, and the joined string `a + \"!\"`."
+    more:
+      - task: |
+          This program should ask for the names of two players and announce the match, but the first name gets lost. Fix it, so that a run looks like this:
+
+          ```
+          Player 1: Ada
+          Player 2: Linus
+          Ada vs Linus
+          ```
+        seed: |
+          player = input("Player 1: ")
+          player = input("Player 2: ")
+          print(player + " vs " + player)
+        solution: |
+          player1 = input("Player 1: ")
+          player2 = input("Player 2: ")
+          print(player1 + " vs " + player2)
+        hints:
+          - Both answers are stored in the same variable. What happens to the first answer when the second one arrives?
+          - Give each player a variable of their own, such as `player1` and `player2`, and print both.
+        tests:
+          - stdin: |
+              Ada
+              Linus
+          - stdin: |
+              Mia
+              Omar
+            hidden: true
+      - task: |
+          Write a program that writes a postcard. It asks for the sender's name, the friend's name and a place, with the prompts shown below, and prints the card. If the user types `Ada`, `Ben` and `Lisbon`, the run looks like this:
+
+          ```
+          Your name: Ada
+          Friend's name: Ben
+          Place: Lisbon
+          Dear Ben,
+          greetings from Lisbon!
+          Ada
+          ```
+        seed: |
+          # Ask the three questions, then print the postcard.
+        solution: |
+          # Ask the three questions, then print the postcard.
+          sender = input("Your name: ")
+          friend = input("Friend's name: ")
+          place = input("Place: ")
+          print("Dear " + friend + ",")
+          print("greetings from " + place + "!")
+          print(sender)
+        hints:
+          - Ask the three questions in the order shown, each into a variable of its own.
+          - "The card has three lines, so three `print` commands. The comma after the friend's name comes right after it, with no space, so join it with `+`."
+          - "The first line is `print(\"Dear \" + friend + \",\")` if the friend's name is in `friend`."
+        tests:
+          - stdin: |
+              Ada
+              Ben
+              Lisbon
+          - stdin: |
+              Kim
+              Sam
+              the mountains
+            hidden: true

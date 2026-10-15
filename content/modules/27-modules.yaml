@@ -1,0 +1,498 @@
+id: modules
+summary: Python's standard library. Importing a module with import, taking chosen names from it with from, and finding out what a module contains with the documentation and dir.
+steps:
+  - id: modules-import
+    slug: import
+    title: Importing a module
+    text: |
+      Python has a few dozen functions built in, such as `print`, `len` and `sum`. Everything else lives in **modules**: files of ready-made functions and values, grouped by theme. Python comes with a large collection of them, called the **standard library**: a module for mathematics, one for random numbers, one for dates, one for reading CSV files, and hundreds more. This part of the course takes a tour of the most useful ones, and ends with modules you write yourself.
+
+      ### import
+
+      A module's contents aren't available until you ask for them. The `import` command loads a module and gives your program access to it. The `math` module has mathematical functions and constants:
+
+      ```python run
+      import math
+
+      print(math.sqrt(49))
+      print(math.pi)
+      print(math.floor(7.8))
+      print(math.ceil(7.2))
+      ```
+
+      ```output
+      7.0
+      3.141592653589793
+      7
+      8
+      ```
+
+      After `import math`, the program reaches everything in the module through the module's name and a dot: `math.sqrt` is the function `sqrt` of the module `math`.
+
+      - `sqrt` gives the square root of a number, always as a float.
+      - `pi` isn't a function but a value stored in the module, so it has no parentheses.
+      - `floor` rounds down to a whole number, and `ceil` (short for ceiling) rounds up.
+
+      Imports go at the top of a program, one module per line, so a reader sees at a glance which modules the program uses.
+
+      ### When rounding up is right
+
+      Rounding up is what you need whenever the leftovers still need a place of their own. Ten people in cars that seat four need three cars, not 2.5:
+
+      ```python run
+      import math
+
+      people = 10
+      seats = 4
+      print("Cars needed:", math.ceil(people / seats))
+      ```
+
+      ```output
+      Cars needed: 3
+      ```
+
+      ### The module's name is part of the name
+
+      With `import math`, the names in the module are reached only through `math.` in front of them. Writing just `sqrt` doesn't work:
+
+      ```python run crash
+      import math
+
+      print(sqrt(16))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          print(sqrt(16))
+                ^^^^
+      NameError: name 'sqrt' is not defined
+      ```
+
+      And if the `import` line is missing, Python doesn't know the name `math` at all. Its message then suggests the fix itself: `NameError: name 'math' is not defined. Did you forget to import 'math'?`
+
+      **Your turn:** fill in the blanks so the program imports the `math` module and prints the square root of `3 * 3 + 4 * 4` (the long side of a right triangle whose short sides are 3 and 4).
+    fill: |
+      [[import]] math
+
+      print(math.[[sqrt]](3 * 3 + 4 * 4))
+    hints:
+      - The command that loads a module is the same word as in the lesson's examples.
+      - "Type `import` into the first blank. The square root function of `math` is `sqrt`, which goes into the second."
+    tests:
+      - expect: "5.0"
+    more:
+      - task: |
+          An egg carton holds 12 eggs. Write a program that asks how many eggs there are and prints how many cartons are needed to pack them all. A carton that is only partly full still counts, so round up with `math.ceil`. For example:
+
+          ```
+          Eggs: 30
+          Cartons: 3
+          ```
+        seed: |
+          import math
+
+          # Write your program here.
+        solution: |
+          import math
+
+          eggs = int(input("Eggs: "))
+          print("Cartons:", math.ceil(eggs / 12))
+        hints:
+          - "Read the number with `int(input(\"Eggs: \"))`, and divide it by 12."
+          - "30 / 12 is 2.5, and `math.ceil` rounds that up to 3: `math.ceil(eggs / 12)`."
+        require:
+          - pattern: math\.ceil\s*\(
+            message: Round up with `math.ceil`.
+        tests:
+          - stdin: "30"
+          - stdin: "24"
+            hidden: true
+          - stdin: "1"
+            hidden: true
+          - stdin: "0"
+            hidden: true
+      - task: |
+          Write a function `circle_area(radius)` that returns the area of a circle: pi times the radius squared. Use `math.pi`, not a value of pi you type yourself.
+
+          `circle_area(1)` returns `3.141592653589793`.
+        seed: |
+          import math
+
+
+          def circle_area(radius):
+              pass
+
+
+          if __name__ == "__main__":
+              print(circle_area(1))
+              print(circle_area(2.5))
+        solution: |
+          import math
+
+
+          def circle_area(radius):
+              return math.pi * radius ** 2
+
+
+          if __name__ == "__main__":
+              print(circle_area(1))
+              print(circle_area(2.5))
+        hints:
+          - The area of a circle is pi times the radius times the radius.
+          - "The value of pi is `math.pi`, and the radius squared is `radius ** 2`. Return the result with `return`."
+        forbid:
+          - pattern: \b3\.14
+            message: Use `math.pi` instead of typing the value of pi.
+        tests:
+          - call: circle_area(1)
+          - call: print(f"{circle_area(2.5):.4f}")
+            hidden: true
+          - call: print(f"{circle_area(10):.4f}")
+            hidden: true
+          - call: circle_area(0)
+            hidden: true
+
+  - id: modules-from-import
+    slug: from-import
+    title: Importing names with from
+    text: |
+      Writing `math.` in front of every name gets long when a program uses the same function many times. The `from` form of import brings chosen names from a module straight into your program:
+
+      ```python run
+      from math import sqrt
+
+      print(sqrt(81))
+      print(sqrt(2))
+      ```
+
+      ```output
+      9.0
+      1.4142135623730951
+      ```
+
+      Now `sqrt` works on its own, without the prefix. To bring in several names, separate them with commas:
+
+      ```python run
+      from math import floor, ceil, pi
+
+      print(floor(pi))
+      print(ceil(pi))
+      print(f"{pi:.2f}")
+      ```
+
+      ```output
+      3
+      4
+      3.14
+      ```
+
+      ### Only what you import
+
+      `from math import sqrt` brings in `sqrt` and nothing else. The name `math` itself isn't defined, so `math.sqrt` fails, and so does any other name of the module that you didn't list:
+
+      ```python run crash
+      from math import sqrt
+
+      print(sqrt(25))
+      print(math.sqrt(36))
+      ```
+
+      ```output
+      5.0
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print(math.sqrt(36))
+                ^^^^
+      NameError: name 'math' is not defined. Did you forget to import 'math'?
+      ```
+
+      Python's guess is one way to fix it: add `import math`. The other is to write `sqrt(36)`, the name you did import.
+
+      ### Which form to use
+
+      Both forms reach the same functions, so choose by what reads best:
+
+      - `import math` keeps the module's name in every call. `math.floor(x)` tells the reader exactly where `floor` comes from.
+      - `from math import floor` is shorter, which is handy when a program uses a function often.
+
+      There's a third form, `from math import *`, which imports every name the module has. It saves typing, but it hides where the names come from, and it can quietly replace a name of your own. The `math` module has a value called `e` (2.718...), so it overwrites a variable `e` of yours:
+
+      ```python run
+      e = "Eve"
+      from math import *
+
+      print(e)
+      ```
+
+      ```output
+      2.718281828459045
+      ```
+
+      No error, just a wrong value. Use the star form only for quick experiments, if at all.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      from math import floor, ceil
+
+      print(floor(4.9))
+      print(ceil(4.1))
+      print(floor(-2.5))
+      print(ceil(6))
+    hints:
+      - "`floor` always rounds down and `ceil` always rounds up, however close the number is to the next whole number."
+      - Rounding down means toward the smaller number. For a negative number, the smaller one is further from zero.
+      - A whole number is already whole, so `ceil` leaves it as it is.
+    more:
+      - task: |
+          The program uses three names from the `math` module, but its import line brings in only one of them, so it stops with a `NameError`. Change the import line (keep it a `from` import) so the program works. For example:
+
+          ```
+          Area of the square plot: 50
+          Side: 7.07
+          Fence needed, in whole meters: 29
+          Radius of a round plot of the same area: 3.99
+          ```
+        seed: |
+          from math import sqrt
+
+          area = float(input("Area of the square plot: "))
+          side = sqrt(area)
+          print(f"Side: {side:.2f}")
+          print(f"Fence needed, in whole meters: {ceil(4 * side)}")
+          print(f"Radius of a round plot of the same area: {sqrt(area / pi):.2f}")
+        solution: |
+          from math import sqrt, ceil, pi
+
+          area = float(input("Area of the square plot: "))
+          side = sqrt(area)
+          print(f"Side: {side:.2f}")
+          print(f"Fence needed, in whole meters: {ceil(4 * side)}")
+          print(f"Radius of a round plot of the same area: {sqrt(area / pi):.2f}")
+        hints:
+          - Check it and read the `NameError`. Which name doesn't Python know?
+          - "The program uses `sqrt`, `ceil` and `pi`. List all three after `import`, separated by commas: `from math import sqrt, ceil, pi`."
+        require:
+          - pattern: from\s+math\s+import
+            message: Keep the `from math import ...` line and add the missing names to it.
+        forbid:
+          - pattern: \bmath\.
+            message: Import the names with `from`, so the program can use them without `math.` in front.
+        tests:
+          - stdin: "50"
+          - stdin: "100"
+            hidden: true
+          - stdin: "2.25"
+            hidden: true
+      - task: |
+          The `math` module also has `gcd(a, b)`, the **greatest common divisor**: the largest whole number that divides both `a` and `b` evenly. `gcd(6, 8)` is 2. Dividing the top and the bottom of a fraction by it gives the fraction in its simplest form: 6/8 is 3/4.
+
+          Write a function `simplify(top, bottom)` that returns the simplest form of the fraction `top/bottom` as a string, such as `"3/4"`. Import `gcd` with `from`.
+        seed: |
+          def simplify(top, bottom):
+              pass
+
+
+          if __name__ == "__main__":
+              print(simplify(6, 8))
+              print(simplify(10, 5))
+        solution: |
+          from math import gcd
+
+
+          def simplify(top, bottom):
+              divisor = gcd(top, bottom)
+              return f"{top // divisor}/{bottom // divisor}"
+
+
+          if __name__ == "__main__":
+              print(simplify(6, 8))
+              print(simplify(10, 5))
+        hints:
+          - "Start with `from math import gcd` at the top, then find the divisor with `gcd(top, bottom)`."
+          - Divide both numbers by the divisor with `//`, so they stay whole numbers (`/` would give `3.0`).
+          - "Build the string with an f-string: `f\"{top // divisor}/{bottom // divisor}\"`."
+        require:
+          - pattern: from\s+math\s+import[^\n]*\bgcd\b
+            message: Import `gcd` with `from math import gcd`.
+        tests:
+          - call: simplify(6, 8)
+          - call: simplify(10, 5)
+            hidden: true
+          - call: simplify(21, 14)
+            hidden: true
+          - call: simplify(7, 9)
+            hidden: true
+
+  - id: modules-contents
+    slug: contents
+    title: What a module contains
+    text: |
+      How do you find out what's in a module? There are two ways: read its documentation, or ask Python itself.
+
+      ### The documentation
+
+      Every module of the standard library has a page in Python's official documentation. The list of all of them, grouped by theme, is at [docs.python.org/3/library](https://docs.python.org/3/library/), and the `math` module's page is [docs.python.org/3/library/math.html](https://docs.python.org/3/library/math.html). Each function has a short description, and often an example. Looking things up there is part of every programmer's day, so it's worth getting used to it early.
+
+      ### dir
+
+      In part 4 you used `dir("")` to list the methods of strings. Given a module, `dir` lists the names the module contains. The list for `math` is long, so this session looks at its end, and checks for one name:
+
+      ```python repl
+      >>> import math
+      >>> names = dir(math)
+      >>> names[-7:]
+      ['sqrt', 'sumprod', 'tan', 'tanh', 'tau', 'trunc', 'ulp']
+      >>> "floor" in names
+      True
+      ```
+
+      The list is in alphabetical order. It starts with names wrapped in double underscores, such as `__name__`, which Python uses for its own bookkeeping; you can skip those. `dir` shows only the names, so it's a quick reminder of how something was spelled. The documentation tells what each one does.
+
+      ### Modules hold values too
+
+      Not everything in a module is a function. The `string` module holds handy strings of characters:
+
+      ```python run
+      import string
+
+      print(string.ascii_lowercase)
+      print(string.ascii_uppercase)
+      print(string.digits)
+      print(string.punctuation)
+      ```
+
+      ```output
+      abcdefghijklmnopqrstuvwxyz
+      ABCDEFGHIJKLMNOPQRSTUVWXYZ
+      0123456789
+      !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+      ```
+
+      (`string.ascii_letters` has both the small and the capital letters.) These save typing, and typos: a hand-typed alphabet with one letter missing is a bug that hides well. Together with `in` they make it easy to sort characters into groups:
+
+      ```python run
+      import string
+
+      code = "AB-12"
+      digits = 0
+      for character in code:
+          if character in string.digits:
+              digits += 1
+      print("Digits:", digits)
+      ```
+
+      ```output
+      Digits: 2
+      ```
+
+      Note the difference between the module `string` and the type of text values, `str`: they're two different things with similar names.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      import string
+
+      print(len(string.digits))
+      print("7" in string.digits)
+      print(string.ascii_uppercase[:5])
+      print("a" in string.ascii_uppercase)
+    hints:
+      - "`string.digits` is the string `0123456789`."
+      - "`string.ascii_uppercase` holds the capital letters A to Z, and `[:5]` takes its first five characters."
+      - Small and capital letters are different characters.
+    more:
+      - task: |
+          A website accepts a username only if it is 3 to 12 characters long and has nothing but small letters a to z, digits and underscores (`_`). Write a function `valid_username(name)` that returns `True` for a valid username and `False` otherwise. Use the strings of the `string` module instead of typing the letters and digits yourself.
+
+          `valid_username("ada_99")` returns `True`, and `valid_username("Ada")` returns `False`.
+        seed: |
+          import string
+
+
+          def valid_username(name):
+              pass
+
+
+          if __name__ == "__main__":
+              print(valid_username("ada_99"))
+              print(valid_username("Ada"))
+        solution: |
+          import string
+
+
+          def valid_username(name):
+              if len(name) < 3 or len(name) > 12:
+                  return False
+              allowed = string.ascii_lowercase + string.digits + "_"
+              for character in name:
+                  if character not in allowed:
+                      return False
+              return True
+
+
+          if __name__ == "__main__":
+              print(valid_username("ada_99"))
+              print(valid_username("Ada"))
+        hints:
+          - Check the length first, and return `False` right away if it's wrong.
+          - "Make one string of all the allowed characters: `string.ascii_lowercase + string.digits + \"_\"`."
+          - Loop over the characters of the name. As soon as one is `not in` the allowed string, return `False`. If the loop finishes, the name is valid.
+        forbid:
+          - pattern: abcdef
+            message: Use `string.ascii_lowercase` instead of typing the alphabet.
+        tests:
+          - call: valid_username("ada_99")
+          - call: valid_username("Ada")
+          - call: valid_username("a b")
+            hidden: true
+          - call: valid_username("x1")
+            hidden: true
+          - call: valid_username("python_arena_fan")
+            hidden: true
+          - call: valid_username("snake_case")
+            hidden: true
+          - call: valid_username("abc!")
+            hidden: true
+          - call: valid_username("abcdefghijkl")
+            hidden: true
+      - task: |
+          Reading the documentation of `math` turns up `math.comb(n, k)`: the number of different ways to choose `k` things out of `n`, when the order doesn't matter. In a lottery that draws 7 numbers out of 40, there are `math.comb(40, 7)` different rows, and a single row wins with a chance of one in that many.
+
+          Write a program that asks how many numbers there are in the draw and how many are picked, and prints the chance of a full row. For example:
+
+          ```
+          Numbers in the draw: 40
+          Numbers picked: 7
+          Your chance of a full row: 1 in 18643560
+          ```
+        seed: |
+          import math
+
+          # Write your program here.
+        solution: |
+          import math
+
+          total = int(input("Numbers in the draw: "))
+          picked = int(input("Numbers picked: "))
+          print("Your chance of a full row: 1 in", math.comb(total, picked))
+        hints:
+          - Read the two numbers with `int(input(...))`, using the prompts of the example.
+          - "The number of possible rows is `math.comb(total, picked)`: the total first, then how many are picked."
+        require:
+          - pattern: math\.comb\s*\(
+            message: Calculate the number of rows with `math.comb`.
+        tests:
+          - stdin: |
+              40
+              7
+          - stdin: |
+              49
+              6
+            hidden: true
+          - stdin: |
+              10
+              2
+            hidden: true

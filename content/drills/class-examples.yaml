@@ -1,0 +1,403 @@
+topic: class-examples
+drills:
+  - type: fill
+    after: printing-objects
+    code: |
+      class Dog:
+          def __init__(self, name):
+              self.name = name
+
+          def __str__(self):
+              [[return]] f"Dog called {self.name}"
+
+
+      print(Dog("Rex"))
+    why: "`__str__` hands its string back with `return`, and `print` shows that string."
+
+  - type: runs
+    after: printing-objects
+    code: |
+      class Cat:
+          def __init__(self, name):
+              self.name = name
+
+          def __str__(self):
+              print(self.name)
+
+
+      print(Cat("Tom"))
+    why: "This `__str__` prints the name and returns `None`, so `print` stops with `TypeError: __str__ returned non-string (type NoneType)`."
+
+  - type: predict
+    after: printing-objects
+    code: |
+      class Coin:
+          def __init__(self, value):
+              self.value = value
+
+          def __str__(self):
+              return f"{self.value} cents"
+
+
+      c = Coin(20)
+      print(f"I found {c}")
+      print(len(str(c)))
+    why: "f-strings and `str` both use `__str__`. The string `20 cents` has 8 characters."
+
+  - type: bug
+    after: printing-objects
+    code: |
+      class Score:
+          def __init__(self, points):
+              self.points = points
+
+          def __str__(self):
+              return self.points  # BUG
+
+
+      print(Score(7))
+    fix: return f"{self.points} points"
+    why: "`__str__` must return a string, and `self.points` is a number. Build a string from it, for example with an f-string."
+
+  - type: choice
+    after: printing-objects
+    prompt: When does Python call an object's `__str__` method?
+    choices:
+      - When the object is made
+      - When the object has to be turned into a string, for example by `print`
+      - Only when you write `obj.__str__()` yourself
+    answer: 2
+    why: "Python calls `__str__` by itself in `print`, in `str(obj)` and in f-strings. The constructor `__init__` is the one called when the object is made."
+
+  - type: predict
+    after: derived-values
+    code: |
+      class Duration:
+          def __init__(self, seconds):
+              self.seconds = seconds
+
+          def minutes(self):
+              return self.seconds // 60
+
+
+      d = Duration(130)
+      print(d.minutes())
+      d.seconds += 50
+      print(d.minutes())
+    why: "`minutes` works the value out from the seconds each time, so after the change it gives 180 // 60."
+
+  - type: predict
+    after: derived-values
+    code: |
+      h = 7
+      m = 5
+      print(f"{h:02}:{m:02}")
+      print(f"{h}:{m}")
+    why: "`:02` shows a whole number with at least two digits, filling with a zero in front. Without it, the numbers are shown as they are."
+
+  - type: predict
+    after: derived-values
+    code: |
+      class Clock:
+          def __init__(self, hour):
+              self.hour = hour
+
+          def advance(self, hours):
+              self.hour = (self.hour + hours) % 24
+
+
+      c = Clock(22)
+      c.advance(5)
+      print(c.hour)
+    why: "22 + 5 is 27, and `% 24` wraps it around to 3, as a clock goes past midnight."
+
+  - type: choice
+    after: derived-values
+    prompt: "Why is a method `def area(self): return self.width * self.height` often better than an attribute `area` set in the constructor?"
+    choices:
+      - The method is always up to date, even after the width or height changes
+      - Methods run faster than attributes
+      - An attribute can't hold a number
+    answer: 1
+    why: "An attribute set in the constructor keeps its old value when the width changes. The method works the area out each time it is called."
+
+  - type: predict
+    after: keeping-a-list
+    code: |
+      words = ["red", "green", "blue"]
+      print("-".join(words))
+      print(", ".join(words[:2]))
+    why: "`join` puts the strings of the list together with the string it is called on between them."
+
+  - type: runs
+    after: keeping-a-list
+    code: |
+      numbers = [1, 2, 3]
+      print(", ".join(numbers))
+    why: "`join` only joins strings. With numbers in the list, Python stops with a `TypeError`."
+
+  - type: predict
+    after: keeping-a-list
+    code: |
+      class Line:
+          def __init__(self):
+              self.people = []
+
+          def arrive(self, name):
+              self.people.append(name)
+
+          def serve(self):
+              return self.people.pop(0)
+
+
+      line = Line()
+      line.arrive("Ann")
+      line.arrive("Bo")
+      print(line.serve())
+      print(line.people)
+    why: "`pop(0)` removes the first name from the list and returns it, so Ann is served and only Bo is left."
+
+  - type: bug
+    after: keeping-a-list
+    code: |
+      class Bag:
+          def __init__(self):
+              self.items = 0  # BUG
+
+          def put(self, item):
+              self.items.append(item)
+
+
+      b = Bag()
+      b.put("pen")
+      print(b.items)
+    fix: self.items = []
+    why: "The bag keeps its items in a list, so the constructor has to start it as an empty list. A number has no `append`."
+
+  - type: predict
+    after: searching
+    code: |
+      class Notes:
+          def __init__(self):
+              self.notes = ["Buy eggs", "call Ann", "Egg recipe"]
+
+          def find(self, word):
+              found = []
+              for note in self.notes:
+                  if word.lower() in note.lower():
+                      found.append(note)
+              return found
+
+
+      print(Notes().find("EGG"))
+    why: "The search compares both in small letters, so `EGG` matches `eggs` and `Egg`, but not `call Ann`."
+
+  - type: fill
+    after: searching
+    code: |
+      class Library:
+          def __init__(self):
+              self.titles = ["Dune", "Emma", "Dracula"]
+
+          def search(self, word):
+              found = []
+              for title in self.titles:
+                  if word [[in]] title:
+                      found.append(title)
+              return found
+
+
+      print(Library().search("u"))
+    why: "`in` tells whether a piece of text appears anywhere in a string, so the search finds every title with a `u` in it."
+
+  - type: boss
+    after: keeping-a-list
+    prompt: |
+      Write a class `Scoreboard`. Give it these methods:
+
+      - `add(name, points)` records a player's points.
+      - `best()` returns the name of the player with the most points, the one added first when there's a tie, or `nobody` when no points have been recorded.
+      - `__str__` returns the players and their points in the order they were added, separated by commas, as shown below.
+
+      This code:
+
+      ```python fragment
+      board = Scoreboard()
+      board.add("Ann", 12)
+      board.add("Bo", 17)
+      board.add("Cy", 9)
+      print(board)
+      print(board.best())
+      ```
+
+      prints
+
+      ```
+      Ann 12, Bo 17, Cy 9
+      Bo
+      ```
+    seed: |
+      class Scoreboard:
+          pass
+
+
+      if __name__ == "__main__":
+          board = Scoreboard()
+          board.add("Ann", 12)
+          print(board)
+          print(board.best())
+    solution: |
+      class Scoreboard:
+          def __init__(self):
+              self.scores = []
+
+          def add(self, name, points):
+              self.scores.append((name, points))
+
+          def best(self):
+              if len(self.scores) == 0:
+                  return "nobody"
+              top = self.scores[0]
+              for score in self.scores:
+                  if score[1] > top[1]:
+                      top = score
+              return top[0]
+
+          def __str__(self):
+              parts = []
+              for name, points in self.scores:
+                  parts.append(f"{name} {points}")
+              return ", ".join(parts)
+
+
+      if __name__ == "__main__":
+          board = Scoreboard()
+          board.add("Ann", 12)
+          print(board)
+          print(board.best())
+    hints:
+      - "Keep a list of `(name, points)` tuples, made empty in the constructor."
+      - "For `__str__`, build a list of strings such as `\"Ann 12\"` and join it with `\", \"`."
+    tests:
+      - call: |
+          board = Scoreboard()
+          board.add("Ann", 12)
+          board.add("Bo", 17)
+          board.add("Cy", 9)
+          print(board)
+          print(board.best())
+      - call: |
+          board = Scoreboard()
+          print(board.best())
+          board.add("Zed", 5)
+          board.add("Yin", 5)
+          print(board.best())
+          board.add("Xia", 6)
+          print(board)
+          print(board.best())
+        hidden: true
+
+  - type: boss
+    after: searching
+    prompt: |
+      The starter code has a class `Recipe`. Write a class `Cookbook` that keeps `Recipe` objects in a list, with these methods:
+
+      - `add(name, minutes)` makes a new `Recipe` and puts it in the cookbook.
+      - `quick(max_minutes)` returns a list of the recipes that take at most that many minutes, in the order they were added.
+      - `slowest()` returns the recipe that takes the longest (the first one of them when there's a tie), or `None` when the cookbook is empty.
+
+      This code:
+
+      ```python fragment
+      book = Cookbook()
+      book.add("Omelet", 10)
+      book.add("Lasagna", 90)
+      book.add("Salad", 15)
+      for recipe in book.quick(15):
+          print(recipe)
+      print(book.slowest())
+      ```
+
+      prints
+
+      ```
+      Omelet, 10 min
+      Salad, 15 min
+      Lasagna, 90 min
+      ```
+    seed: |
+      class Recipe:
+          def __init__(self, name, minutes):
+              self.name = name
+              self.minutes = minutes
+
+          def __str__(self):
+              return f"{self.name}, {self.minutes} min"
+
+
+      # Write the class Cookbook here.
+
+
+      if __name__ == "__main__":
+          book = Cookbook()
+          book.add("Omelet", 10)
+          print(book.slowest())
+    solution: |
+      class Recipe:
+          def __init__(self, name, minutes):
+              self.name = name
+              self.minutes = minutes
+
+          def __str__(self):
+              return f"{self.name}, {self.minutes} min"
+
+
+      class Cookbook:
+          def __init__(self):
+              self.recipes = []
+
+          def add(self, name, minutes):
+              self.recipes.append(Recipe(name, minutes))
+
+          def quick(self, max_minutes):
+              found = []
+              for recipe in self.recipes:
+                  if recipe.minutes <= max_minutes:
+                      found.append(recipe)
+              return found
+
+          def slowest(self):
+              if len(self.recipes) == 0:
+                  return None
+              best = self.recipes[0]
+              for recipe in self.recipes:
+                  if recipe.minutes > best.minutes:
+                      best = recipe
+              return best
+
+
+      if __name__ == "__main__":
+          book = Cookbook()
+          book.add("Omelet", 10)
+          print(book.slowest())
+    hints:
+      - "`add` makes the object itself: `self.recipes.append(Recipe(name, minutes))`."
+      - "`quick` collects the matching recipes in a new list; `slowest` remembers the slowest so far, after checking for an empty list first."
+    tests:
+      - call: |
+          book = Cookbook()
+          book.add("Omelet", 10)
+          book.add("Lasagna", 90)
+          book.add("Salad", 15)
+          for recipe in book.quick(15):
+              print(recipe)
+          print(book.slowest())
+      - call: |
+          book = Cookbook()
+          print(book.slowest(), book.quick(30))
+          book.add("Soup", 40)
+          book.add("Stew", 40)
+          book.add("Toast", 3)
+          print(book.slowest())
+          print(len(book.quick(2)), len(book.quick(40)))
+        hidden: true

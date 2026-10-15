@@ -1,0 +1,850 @@
+id: objects
+summary: The start of the Advanced Course in Programming. Every value in Python is an object, objects have methods, and a class is the blueprint that objects such as fractions and dates are made from. Attributes and methods, and functions that take objects.
+steps:
+  - id: objects-everything
+    slug: everything-is-an-object
+    title: Everything is an object
+    text: |
+      This module starts the second half of the course, which the MOOC calls the Advanced Course in Programming. Its big idea is **object-oriented programming**: building programs out of objects that keep data together with the operations on that data. You have been using objects all along without calling them that.
+
+      ### Data that belongs together
+
+      When several values describe one thing, you have kept them together in a dictionary (or a tuple): a pet's name, species and age, for example. Here are two pets:
+
+      ```python run
+      pet1 = {"name": "Biscuit", "species": "cat", "age": 4}
+      pet2 = {"name": "Pepper", "species": "dog", "age": 2}
+
+      pet1["age"] += 1
+
+      print(pet1["name"], pet1["age"])
+      print(pet2["name"], pet2["age"])
+      ```
+
+      ```output
+      Biscuit 5
+      Pepper 2
+      ```
+
+      Each dictionary is an **object**: a whole of its own in the computer's memory, holding data that belongs together. The two dictionaries have the same keys, but they are separate objects, so changing one doesn't change the other. This is what programmers mean when they say that objects are **independent**.
+
+      ### Every value is an object
+
+      In Python, every value is an object: numbers, strings, lists, dictionaries, even `True` and `None`. A variable doesn't hold the object itself but a **reference** to it, as you saw in the References module, where two variables referred to the same list.
+
+      Every object has a type, and the function `type` tells you which:
+
+      ```python repl
+      >>> type(42)
+      <class 'int'>
+      >>> type("Biscuit")
+      <class 'str'>
+      >>> type([4, 2])
+      <class 'list'>
+      >>> type({"name": "Pepper"})
+      <class 'dict'>
+      ```
+
+      Python calls the type of an object its **class**. Classes are what this part of the course is about, and soon you'll write your own.
+
+      You met two more words in the References module. Lists and dictionaries are **mutable**: they can be changed after they are made. Numbers, strings and tuples are **immutable**: they can't. When a program seems to change a string, Python really makes a new string, and the variable then refers to the new one:
+
+      ```python run
+      word = "cat"
+      other = word
+      word = word + "s"
+      print(word)
+      print(other)
+      ```
+
+      ```output
+      cats
+      cat
+      ```
+
+      The string `"cat"` stays as it was, and `other` still refers to it.
+
+      ### Objects in and out of functions
+
+      A function can take objects as its arguments and return one of them: the whole object, with all its data.
+
+      ```python run
+      def older(pet1, pet2):
+          if pet1["age"] >= pet2["age"]:
+              return pet1
+          return pet2
+
+
+      cat = {"name": "Biscuit", "species": "cat", "age": 4}
+      dog = {"name": "Pepper", "species": "dog", "age": 2}
+
+      winner = older(cat, dog)
+      print(winner["name"])
+      print(winner)
+      ```
+
+      ```output
+      Biscuit
+      {'name': 'Biscuit', 'species': 'cat', 'age': 4}
+      ```
+
+      The caller gets the whole dictionary back and can use any of its data, not just the name.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      car1 = {"model": "Zip", "km": 1200}
+      car2 = {"model": "Zip", "km": 1200}
+      print(car1 == car2)
+      car1["km"] += 300
+      print(car1["km"])
+      print(car2["km"])
+      print(car1 == car2)
+    hints:
+      - "`==` compares what two dictionaries hold: the same keys with the same values make them equal."
+      - The two dictionaries are separate objects, so adding to `car1["km"]` leaves `car2` as it was.
+      - After the change, the two hold different values for `"km"`, so they are no longer equal.
+    more:
+      - task: |
+          Write a function `oldest(pets)` that takes a list of pet dictionaries, each with the keys `"name"`, `"species"` and `"age"`, and returns the whole dictionary of the oldest pet. When two pets are equally old, return the one that comes first in the list. The list always has at least one pet.
+
+          For example, with the pets in the starter code, `oldest(pets)` returns `{'name': 'Rex', 'species': 'dog', 'age': 9}`.
+        seed: |
+          def oldest(pets):
+              pass
+
+
+          if __name__ == "__main__":
+              pets = [
+                  {"name": "Biscuit", "species": "cat", "age": 4},
+                  {"name": "Rex", "species": "dog", "age": 9},
+                  {"name": "Nibbles", "species": "hamster", "age": 1},
+              ]
+              print(oldest(pets))
+        solution: |
+          def oldest(pets):
+              best = pets[0]
+              for pet in pets:
+                  if pet["age"] > best["age"]:
+                      best = pet
+              return best
+
+
+          if __name__ == "__main__":
+              pets = [
+                  {"name": "Biscuit", "species": "cat", "age": 4},
+                  {"name": "Rex", "species": "dog", "age": 9},
+                  {"name": "Nibbles", "species": "hamster", "age": 1},
+              ]
+              print(oldest(pets))
+        hints:
+          - Keep the oldest pet found so far in a variable, starting with the first pet in the list.
+          - "Go through the list with `for pet in pets:` and replace the oldest pet so far when `pet[\"age\"]` is greater than its age. Greater, not greater or equal, so that the first of two equally old pets wins."
+          - "Return the dictionary itself (`return best`), not just its name."
+        tests:
+          - call: |
+              pets = [
+                  {"name": "Biscuit", "species": "cat", "age": 4},
+                  {"name": "Rex", "species": "dog", "age": 9},
+                  {"name": "Nibbles", "species": "hamster", "age": 1},
+              ]
+              oldest(pets)
+          - call: |
+              pets = [
+                  {"name": "Kiwi", "species": "parrot", "age": 12},
+                  {"name": "Mo", "species": "cat", "age": 3},
+              ]
+              oldest(pets)
+            hidden: true
+          - call: |
+              pets = [
+                  {"name": "Ada", "species": "rabbit", "age": 5},
+                  {"name": "Bo", "species": "rabbit", "age": 5},
+                  {"name": "Cy", "species": "rabbit", "age": 2},
+              ]
+              oldest(pets)
+            hidden: true
+          - call: 'oldest([{"name": "Solo", "species": "fish", "age": 1}])'
+            hidden: true
+      - task: |
+          Write two functions:
+
+          - `new_pet(name, species)` creates and returns a new pet dictionary with the keys `"name"`, `"species"` and `"age"`. A new pet's age is 0.
+          - `birthday(pet)` adds one to the age of the pet it is given. It returns nothing: it changes the dictionary itself.
+
+          This code:
+
+          ```python fragment
+          cat = new_pet("Biscuit", "cat")
+          dog = new_pet("Rex", "dog")
+          birthday(cat)
+          birthday(cat)
+          print(cat)
+          print(dog)
+          ```
+
+          prints
+
+          ```
+          {'name': 'Biscuit', 'species': 'cat', 'age': 2}
+          {'name': 'Rex', 'species': 'dog', 'age': 0}
+          ```
+        seed: |
+          def new_pet(name, species):
+              pass
+
+
+          def birthday(pet):
+              pass
+
+
+          if __name__ == "__main__":
+              cat = new_pet("Biscuit", "cat")
+              birthday(cat)
+              print(cat)
+        solution: |
+          def new_pet(name, species):
+              return {"name": name, "species": species, "age": 0}
+
+
+          def birthday(pet):
+              pet["age"] += 1
+
+
+          if __name__ == "__main__":
+              cat = new_pet("Biscuit", "cat")
+              birthday(cat)
+              print(cat)
+        hints:
+          - "`new_pet` builds a dictionary from its parameters and returns it: `return {\"name\": name, ...}`, with the age 0."
+          - "`birthday` changes the dictionary it gets, so it needs no `return`: `pet[\"age\"] += 1`."
+          - Each call of `new_pet` makes a new dictionary, a separate object, so a birthday of one pet doesn't change the other.
+        tests:
+          - call: |
+              cat = new_pet("Biscuit", "cat")
+              dog = new_pet("Rex", "dog")
+              birthday(cat)
+              birthday(cat)
+              print(cat)
+              print(dog)
+          - call: |
+              fish = new_pet("Bubbles", "goldfish")
+              print(fish)
+              for i in range(5):
+                  birthday(fish)
+              print(fish["age"])
+            hidden: true
+          - call: |
+              a = new_pet("Twin", "cat")
+              b = new_pet("Twin", "cat")
+              birthday(b)
+              print(a["age"], b["age"])
+            hidden: true
+
+  - id: objects-methods
+    slug: methods
+    title: Methods belong to objects
+    text: |
+      You have already called many functions that come after an object and a dot: `words.append("hi")`, `line.split(",")`, `prices.values()`. These are **methods**: functions that belong to an object and work on that object. You write the object first, then a dot, then the method's name with its arguments in parentheses.
+
+      Compare a method with an ordinary function. `len(motto)` is a function: the object goes inside the parentheses. `motto.count("s")` calls a method of the string `motto`: it works on the string before the dot.
+
+      ```python run
+      motto = "Practice makes progress"
+
+      print(len(motto))
+      print(motto.upper())
+      print(motto.count("s"))
+      print(motto.find("makes"))
+      print(motto.find("perfect"))
+      ```
+
+      ```output
+      23
+      PRACTICE MAKES PROGRESS
+      3
+      9
+      -1
+      ```
+
+      `find` gives the index where the text starts, or `-1` when it isn't there at all. A method works on any string, a literal one too: `"ready, steady, go".count("y")` is 2.
+
+      Each type has its own methods: `upper` and `find` belong to strings, `append` and `sort` to lists, `values` and `items` to dictionaries. Calling a method that the object's type doesn't have stops the program:
+
+      ```python run crash
+      numbers = [3, 1, 2]
+      print(numbers.upper())
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(numbers.upper())
+                ^^^^^^^^^^^^^
+      AttributeError: 'list' object has no attribute 'upper'
+      ```
+
+      An `AttributeError` means the object has nothing by that name: a list has no `upper`.
+
+      ### Methods that return, methods that change
+
+      Strings are immutable, so a string method never changes the string. It returns a new string, and the result is lost unless you store it:
+
+      ```python run
+      code = "abc-123"
+      code.upper()
+      print(code)
+      code = code.upper()
+      print(code)
+      ```
+
+      ```output
+      abc-123
+      ABC-123
+      ```
+
+      Lists are mutable, and many list methods change the list itself. Most of them return `None`, so don't assign their result:
+
+      ```python run
+      queue = ["Ann", "Bo"]
+      queue.append("Cy")
+      first = queue.pop(0)
+      print(first)
+      print(queue)
+
+      numbers = [3, 1, 2]
+      numbers = numbers.sort()
+      print(numbers)
+      ```
+
+      ```output
+      Ann
+      ['Bo', 'Cy']
+      None
+      ```
+
+      `pop(0)` both changes the list and returns the item it took out. `sort` only changes the list and returns `None`, so the last assignment threw the sorted list away. Write just `numbers.sort()` on its own line.
+
+      Dictionary methods work the same way. `values()` gives the values of the dictionary it is called on:
+
+      ```python run
+      stock = {"apples": 4, "pears": 0, "plums": 7}
+      total = 0
+      for amount in stock.values():
+          total += amount
+      print(total)
+      ```
+
+      ```output
+      11
+      ```
+
+      ### A method on a method's result
+
+      A method's result is an object too, so you can call a method on it straight away. Python works from left to right:
+
+      ```python run
+      answer = "  YES please "
+      print(answer.strip().lower())
+      print(answer.lower().count("e"))
+      ```
+
+      ```output
+      yes please
+      3
+      ```
+
+      `answer.strip()` returns a new string without the spaces around it, and `.lower()` is called on that new string.
+
+      **Your turn:** fill in the method names, so that the program first makes the sentence all small letters, then counts how many times `tea` appears in it and finds where the first `two` starts. It should print:
+
+      ```
+      2
+      8
+      ```
+    fill: |
+      sentence = "Tea for two, and two for tea"
+      small = sentence.[[lower]]()
+      print(small.[[count]]("tea"))
+      print(small.[[find]]("two"))
+    hints:
+      - The first method returns the string in small letters, the second counts how many times a piece of text appears, and the third gives the index where a piece of text starts.
+      - "The three methods are `lower`, `count` and `find`."
+    tests:
+      - expect: |
+          2
+          8
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          word = "level"
+          word.upper()
+          print(word)
+          letters = ["b", "c", "a"]
+          letters.sort()
+          print(letters)
+          print(letters.pop())
+          print(word.upper().count("L"))
+        hints:
+          - "`word.upper()` on its own line returns a new string that isn't stored anywhere. Strings can't change, so `word` is still the same."
+          - "`sort` changes the list itself, and `pop()` with no index removes and returns the last item."
+          - "In the last line, `word.upper()` gives `\"LEVEL\"`, and `count` counts the capital L's in that."
+      - task: |
+          Tags typed by users are messy. Write a function `clean_tags(tags)` that takes a list of strings and changes **the list itself**, so that each tag has no spaces at its start or end and is in small letters. The function returns nothing.
+
+          This code:
+
+          ```python fragment
+          my_tags = ["  Python", "SQL ", " Web Dev "]
+          clean_tags(my_tags)
+          print(my_tags)
+          ```
+
+          prints
+
+          ```
+          ['python', 'sql', 'web dev']
+          ```
+        seed: |
+          def clean_tags(tags):
+              pass
+
+
+          if __name__ == "__main__":
+              my_tags = ["  Python", "SQL ", " Web Dev "]
+              clean_tags(my_tags)
+              print(my_tags)
+        solution: |
+          def clean_tags(tags):
+              for i in range(len(tags)):
+                  tags[i] = tags[i].strip().lower()
+
+
+          if __name__ == "__main__":
+              my_tags = ["  Python", "SQL ", " Web Dev "]
+              clean_tags(my_tags)
+              print(my_tags)
+        hints:
+          - "`tag.strip().lower()` returns a cleaned copy of one tag, but strings never change, so the copy has to be put back into the list."
+          - "Go through the indexes with `for i in range(len(tags)):` and replace each item: `tags[i] = ...`."
+          - A loop like `for tag in tags:` that changes only the variable `tag` doesn't change the list, and neither does building a new list. The caller's list itself must change.
+        tests:
+          - call: |
+              my_tags = ["  Python", "SQL ", " Web Dev "]
+              clean_tags(my_tags)
+              print(my_tags)
+          - call: |
+              tags = ["Garden", " HERBS", "tomatoes  ", "already clean"]
+              clean_tags(tags)
+              print(tags)
+            hidden: true
+          - call: |
+              tags = []
+              clean_tags(tags)
+              print(tags)
+              tags.append("  Lonely  ")
+              clean_tags(tags)
+              print(tags)
+            hidden: true
+
+  - id: objects-classes
+    slug: classes-and-objects
+    title: Classes are blueprints
+    text: |
+      Lists, strings, dictionaries and tuples have their own way of being written in code: `[1, 2]`, `"hi"`, `{"a": 1}`, `(1, 2)`. Every other kind of object is made by calling a **constructor**: the name of its class with parentheses, like a function call. You did this in part 7 when you created a `datetime` from a year, a month and a day.
+
+      Python's `fractions` module has a class called `Fraction` for exact fractions. Floating point numbers can be slightly off, as you have seen; fractions never are:
+
+      ```python run
+      from fractions import Fraction
+
+      print(0.1 + 0.2)
+      print(Fraction(1, 10) + Fraction(2, 10))
+
+      share = Fraction(3, 4)
+      print(share)
+      print(share + Fraction(1, 6))
+      print(Fraction(4, 10))
+      ```
+
+      ```output
+      0.30000000000000004
+      3/10
+      3/4
+      11/12
+      2/5
+      ```
+
+      `Fraction(3, 4)` creates a new `Fraction` object with the numerator 3 and the denominator 4. The constructor also reduces a fraction to its simplest form, so `Fraction(4, 10)` is `2/5`. Fractions can be added, multiplied and compared like numbers.
+
+      Class names such as `Fraction` start with a capital letter, and function names don't. So a call like `Fraction(1, 2)` tells you at a glance that it makes a new object.
+
+      ### A class is the blueprint of objects
+
+      A **class** describes one kind of object: what data each object of that kind holds and which methods it has. Think of the blueprint of a house: from one blueprint you can build as many houses as you like, and each house has its own address and its own paint. An object made from a class is called an **instance** of the class, and the variables that each object has are its **attributes**.
+
+      A `Fraction` has the attributes `numerator` and `denominator`, and every `Fraction` object has its own values for them. You read an attribute with the object, a dot and the attribute's name:
+
+      ```python run
+      from fractions import Fraction
+
+      small = Fraction(3, 12)
+      big = Fraction(7, 2)
+
+      print(small.numerator, small.denominator)
+      print(big.numerator, big.denominator)
+      ```
+
+      ```output
+      1 4
+      7 2
+      ```
+
+      (`3/12` was reduced to `1/4` when the object was made.)
+
+      The `date` class of the `datetime` module works the same way: each `date` object has its own `year`, `month` and `day`.
+
+      ```python run
+      from datetime import date
+
+      launch = date(2026, 7, 20)
+      deadline = date(2026, 12, 31)
+
+      print(launch)
+      print(launch.month, deadline.month)
+      print(deadline.day)
+      ```
+
+      ```output
+      2026-07-20
+      7 12
+      31
+      ```
+
+      The `type` function shows the class of each object:
+
+      ```python repl
+      >>> from fractions import Fraction
+      >>> type(Fraction(1, 2))
+      <class 'fractions.Fraction'>
+      >>> from datetime import date
+      >>> type(date(2026, 7, 20))
+      <class 'datetime.date'>
+      ```
+
+      Programming built around classes and the objects made from them is what **object-oriented programming** means. In the next module you'll write classes of your own. First, a closer look at the objects of classes that Python already has.
+
+      **Your turn:** fill in the blanks, so that the program imports the class, then prints the fraction and its denominator:
+
+      ```
+      1/4
+      4
+      ```
+    fill: |
+      from fractions import [[Fraction]]
+
+      slice_size = Fraction(2, 8)
+      print(slice_size)
+      print(slice_size.[[denominator]])
+    hints:
+      - The class you import has the same name as the one the program calls on the next line.
+      - "The bottom part of a fraction is its denominator, and the attribute has that name: `slice_size.denominator`, with no parentheses."
+    tests:
+      - expect: |
+          1/4
+          4
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          from fractions import Fraction
+
+          a = Fraction(1, 4)
+          b = Fraction(2, 4)
+          print(b)
+          print(a + b)
+          print((a + b).numerator)
+          print(a * 2)
+        hints:
+          - A new `Fraction` is reduced to its simplest form, so `Fraction(2, 4)` prints as `1/2`.
+          - "1/4 + 2/4 is 3/4, and the numerator is the top part of that new fraction."
+          - Twice one quarter is two quarters, and that is reduced too.
+      - task: |
+          A fraction like 7/4 is easier to read as a mixed number: `1 3/4`. Write a function `as_mixed(fraction)` that takes a `Fraction` object and returns it as a string in this form: the whole part, a space, then the rest as a fraction. When there's no whole part, return only the fraction (`3/4`), and when there's no rest, only the whole number (`2`). The fractions are always positive.
+
+          This code:
+
+          ```python fragment
+          print(as_mixed(Fraction(7, 4)))
+          print(as_mixed(Fraction(3, 4)))
+          print(as_mixed(Fraction(8, 4)))
+          ```
+
+          prints
+
+          ```
+          1 3/4
+          3/4
+          2
+          ```
+        seed: |
+          from fractions import Fraction
+
+
+          def as_mixed(fraction):
+              pass
+
+
+          if __name__ == "__main__":
+              print(as_mixed(Fraction(7, 4)))
+        solution: |
+          from fractions import Fraction
+
+
+          def as_mixed(fraction):
+              whole = fraction.numerator // fraction.denominator
+              rest = fraction.numerator % fraction.denominator
+              if rest == 0:
+                  return str(whole)
+              if whole == 0:
+                  return f"{rest}/{fraction.denominator}"
+              return f"{whole} {rest}/{fraction.denominator}"
+
+
+          if __name__ == "__main__":
+              print(as_mixed(Fraction(7, 4)))
+        hints:
+          - "Use the attributes `fraction.numerator` and `fraction.denominator`. For 7/4, the whole part is 7 // 4 and the rest is 7 % 4."
+          - "Build the string with an f-string: `f\"{whole} {rest}/{fraction.denominator}\"`."
+          - When the rest is 0, return only the whole part as a string; when the whole part is 0, return only the fraction.
+        tests:
+          - call: |
+              print(as_mixed(Fraction(7, 4)))
+              print(as_mixed(Fraction(3, 4)))
+              print(as_mixed(Fraction(8, 4)))
+          - call: |
+              print(as_mixed(Fraction(22, 7)))
+              print(as_mixed(Fraction(1, 9)))
+              print(as_mixed(Fraction(15, 5)))
+            hidden: true
+          - call: as_mixed(Fraction(10, 4))
+            hidden: true
+
+  - id: objects-attributes
+    slug: methods-and-attributes
+    title: Methods and attributes
+    text: |
+      After an object's dot there can be two kinds of things: attributes and methods. A `date` has the attribute `year`, and it has the method `weekday`, which you used with `datetime` objects in part 7: it gives the day of the week as a number from 0 (Monday) to 6 (Sunday).
+
+      ```python run
+      from datetime import date
+
+      start = date(2026, 10, 17)
+
+      print(start.year)
+      print(start.weekday())
+      ```
+
+      ```output
+      2026
+      5
+      ```
+
+      - `start.year` is an **attribute**: a value stored in the object. There are no parentheses after it.
+      - `start.weekday()` is a **method call**: the method works something out from the object's data. The parentheses are what call it, even when there are no arguments.
+
+      Mixing these up is a common mistake. Without the parentheses, Python doesn't call the method: you get the method itself, and printing it shows something like the line below (the number at the end changes from run to run):
+
+      ```text
+      <built-in method weekday of datetime.date object at 0x7f3a2c1b9e30>
+      ```
+
+      With parentheses after an attribute, Python tries to call the number stored in it:
+
+      ```python run crash
+      from datetime import date
+
+      start = date(2026, 10, 17)
+      print(start.month())
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print(start.month())
+                ~~~~~~~~~~~^^
+      TypeError: 'int' object is not callable
+      ```
+
+      "Not callable" means there are parentheses after something that isn't a function or a method. How do you know which is which? The documentation of a class lists its attributes and its methods. For `date`, `year`, `month` and `day` are attributes, and `weekday()` is a method.
+
+      ### Functions that take objects
+
+      Objects are values like any others, so your own functions can take them as arguments and return them. This program has a function that names the day of the week of a date, and one that picks the dates of one month out of a list:
+
+      ```python run
+      from datetime import date
+
+
+      def day_name(day):
+          names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+          return names[day.weekday()]
+
+
+      def in_month(days, month):
+          found = []
+          for day in days:
+              if day.month == month:
+                  found.append(day)
+          return found
+
+
+      meetings = [date(2026, 5, 11), date(2026, 6, 3), date(2026, 5, 29)]
+
+      for day in in_month(meetings, 5):
+          print(day, day_name(day))
+      ```
+
+      ```output
+      2026-05-11 Monday
+      2026-05-29 Friday
+      ```
+
+      `day_name` uses the method's result as an index into a list. `in_month` reads an attribute of each object and returns a new list with some of the same `date` objects in it.
+
+      **Your turn:** this program mixes up attributes and methods. Fix it, so that it prints:
+
+      ```
+      Month: 3
+      Weekday: 6
+      Year: 2026
+      ```
+    seed: |
+      from datetime import date
+
+      holiday = date(2026, 3, 1)
+      print("Month:", holiday.month())
+      print("Weekday:", holiday.weekday)
+      print("Year:", holiday.year)
+    solution: |
+      from datetime import date
+
+      holiday = date(2026, 3, 1)
+      print("Month:", holiday.month)
+      print("Weekday:", holiday.weekday())
+      print("Year:", holiday.year)
+    hints:
+      - Check the program and read the error. Which name has parentheses after it that it shouldn't have?
+      - "`month` is an attribute, so it has no parentheses. `weekday` is a method, so it needs them: `holiday.weekday()`."
+    tests:
+      - expect: |
+          Month: 3
+          Weekday: 6
+          Year: 2026
+    more:
+      - task: |
+          Write a function `day_label(day)` that takes a `date` object and returns a short label for it: the first three letters of the day of the week, a space, then the day, the month and the year separated by dots.
+
+          This code:
+
+          ```python fragment
+          print(day_label(date(2026, 10, 17)))
+          print(day_label(date(2026, 3, 2)))
+          ```
+
+          prints
+
+          ```
+          Sat 17.10.2026
+          Mon 2.3.2026
+          ```
+        seed: |
+          from datetime import date
+
+
+          def day_label(day):
+              pass
+
+
+          if __name__ == "__main__":
+              print(day_label(date(2026, 10, 17)))
+        solution: |
+          from datetime import date
+
+
+          def day_label(day):
+              names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+              return f"{names[day.weekday()]} {day.day}.{day.month}.{day.year}"
+
+
+          if __name__ == "__main__":
+              print(day_label(date(2026, 10, 17)))
+        hints:
+          - "Make a list of the short day names, starting from Monday, and pick one with `day.weekday()` as the index."
+          - "The day, the month and the year are attributes: `day.day`, `day.month` and `day.year`, with no parentheses."
+          - "Put it together with an f-string: `f\"{...} {day.day}.{day.month}.{day.year}\"`."
+        tests:
+          - call: |
+              print(day_label(date(2026, 10, 17)))
+              print(day_label(date(2026, 3, 2)))
+          - call: |
+              print(day_label(date(2027, 1, 1)))
+              print(day_label(date(2026, 12, 31)))
+            hidden: true
+          - call: day_label(date(2026, 6, 3))
+            hidden: true
+      - task: |
+          Write a function `weekend_count(days)` that takes a list of `date` objects and returns how many of them fall on a Saturday or a Sunday.
+
+          This code:
+
+          ```python fragment
+          days = [date(2026, 10, 17), date(2026, 10, 18), date(2026, 10, 19)]
+          print(weekend_count(days))
+          ```
+
+          prints
+
+          ```
+          2
+          ```
+        seed: |
+          from datetime import date
+
+
+          def weekend_count(days):
+              pass
+
+
+          if __name__ == "__main__":
+              days = [date(2026, 10, 17), date(2026, 10, 18), date(2026, 10, 19)]
+              print(weekend_count(days))
+        solution: |
+          from datetime import date
+
+
+          def weekend_count(days):
+              count = 0
+              for day in days:
+                  if day.weekday() >= 5:
+                      count += 1
+              return count
+
+
+          if __name__ == "__main__":
+              days = [date(2026, 10, 17), date(2026, 10, 18), date(2026, 10, 19)]
+              print(weekend_count(days))
+        hints:
+          - "`weekday()` gives 5 for a Saturday and 6 for a Sunday."
+          - "Count with a loop: start from 0, go through the list with `for day in days:` and add one when `day.weekday() >= 5`."
+          - Return the count; don't print it.
+        tests:
+          - call: |
+              days = [date(2026, 10, 17), date(2026, 10, 18), date(2026, 10, 19)]
+              print(weekend_count(days))
+          - call: weekend_count([date(2026, 5, 4), date(2026, 5, 5), date(2026, 5, 6)])
+            hidden: true
+          - call: weekend_count([date(2026, 3, 1), date(2026, 3, 8), date(2026, 3, 14), date(2026, 3, 20)])
+            hidden: true
+          - call: weekend_count([])
+            hidden: true

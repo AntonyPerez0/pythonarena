@@ -1,0 +1,836 @@
+id: strings-and-lists
+summary: More ways to work with strings and lists. Slices with a step, why strings can't be changed, the methods count, index, replace, split, join and strip, and how the functions of a larger program pass data to each other.
+steps:
+  - id: strings-and-lists-slices
+    slug: slices
+    title: Slices with a step
+    text: |
+      You know slices from strings: `text[a:b]` is the part from index `a` up to, but not including, index `b`. Lists can be sliced in just the same way, and a slice of a list is a new list:
+
+      ```python run
+      word = "keyboard"
+      print(word[3:6])
+      numbers = [10, 20, 30, 40, 50, 60]
+      print(numbers[1:4])
+      print(numbers[:2])
+      print(numbers[-2:])
+      print(numbers)
+      ```
+
+      ```output
+      boa
+      [20, 30, 40]
+      [10, 20]
+      [50, 60]
+      [10, 20, 30, 40, 50, 60]
+      ```
+
+      Leaving out the first index starts from the beginning, and leaving out the second goes to the end, so `numbers[-2:]` is the last two items. The original list doesn't change: the slice is a copy of part of it.
+
+      A slice never stops the program with an `IndexError`. If it reaches past the end, it simply has fewer items: `numbers[4:100]` is `[50, 60]`.
+
+      ### The step
+
+      Like `range`, a slice can have a third number, the **step**. `[a:b:2]` takes every second item:
+
+      ```python run
+      letters = "abcdefgh"
+      print(letters[0:8:2])
+      print(letters[1::2])
+      print(letters[::3])
+      ```
+
+      ```output
+      aceg
+      bdfh
+      adg
+      ```
+
+      `letters[1::2]` starts from index 1 and goes to the end, taking every second character. `letters[::3]` leaves out both ends and takes every third character of the whole string.
+
+      ### Going backwards
+
+      With a negative step, the slice goes from right to left. The start is then the greater index. Leaving out both ends with the step -1 gives the whole string or list in reverse:
+
+      ```python run
+      numbers = [10, 20, 30, 40, 50, 60]
+      print(numbers[4:1:-1])
+      print(numbers[::-1])
+      word = input("Word: ")
+      print(word[::-1])
+      ```
+
+      ```input
+      drawer
+      ```
+
+      ```output
+      [50, 40, 30]
+      [60, 50, 40, 30, 20, 10]
+      Word: drawer
+      reward
+      ```
+
+      `[::-1]` is the shortest way to reverse a string in Python.
+
+      ### Joining lists
+
+      Like strings, two lists can be joined with `+`. The result is a new list with the items of both, in order:
+
+      ```python run
+      first = [1, 2, 3]
+      second = [7, 8]
+      print(first + second)
+      print(first[::-1] + second)
+      ```
+
+      ```output
+      [1, 2, 3, 7, 8]
+      [3, 2, 1, 7, 8]
+      ```
+
+      **Your turn:** fill in the blank with a slice, so the program prints the word backwards and tells whether it's a **palindrome**, a word that reads the same both ways:
+
+      ```
+      Word: level
+      level
+      A palindrome!
+      ```
+    fill: |
+      word = input("Word: ")
+      backwards = word[[[::-1]]]
+      print(backwards)
+      if word == backwards:
+          print("A palindrome!")
+    hints:
+      - "A slice with a negative step goes backwards."
+      - "Leave out both ends and use the step -1: `[::-1]`."
+    tests:
+      - stdin: level
+      - stdin: python
+        hidden: true
+      - stdin: racecar
+        hidden: true
+    more:
+      - task: |
+          A simple way to shuffle a deck of cards is to take every second card from the top into one pile, and put the rest after them. Write the function `shuffle(cards: list) -> list`, which returns a new list with the cards at indexes 0, 2, 4, ... first and then the cards at indexes 1, 3, 5, ... For example, `shuffle([1, 2, 3, 4, 5])` returns `[1, 3, 5, 2, 4]`.
+        seed: |
+          def shuffle(cards: list) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(shuffle([1, 2, 3, 4, 5]))
+        solution: |
+          def shuffle(cards: list) -> list:
+              return cards[::2] + cards[1::2]
+
+
+          if __name__ == "__main__":
+              print(shuffle([1, 2, 3, 4, 5]))
+        hints:
+          - "A slice with step 2 takes every second item. Starting from index 0 gives the first pile."
+          - "Starting from index 1 with the same step gives the rest: `cards[1::2]`."
+          - "Join the two slices with `+` and return the result."
+        tests:
+          - call: shuffle([1, 2, 3, 4, 5])
+          - call: shuffle(["A", "K", "Q", "J"])
+            hidden: true
+          - call: shuffle([7])
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          text = "python"
+          print(text[1:4])
+          print(text[::2])
+          print(text[-3:])
+          print(text[4:0:-1])
+          numbers = [5, 6, 7, 8]
+          print(numbers[::-1][:2])
+        hints:
+          - "`text[1:4]` takes indexes 1, 2 and 3. `text[::2]` takes every second character from the start."
+          - "`text[4:0:-1]` goes backwards from index 4 and stops before index 0."
+          - "`numbers[::-1]` is the reversed list, and `[:2]` takes its first two items."
+
+  - id: strings-and-lists-immutable
+    slug: immutable
+    title: Strings can't be changed
+    text: |
+      Strings and lists have a lot in common: indexes, slices, `len`, `in` and `for` work on both. There's one big difference, though. A list can be changed after it's made, but a string can't. Strings are **immutable**:
+
+      ```python run crash
+      numbers = [1, 2, 3]
+      numbers[0] = 10
+      print(numbers)
+      word = "cat"
+      word[0] = "b"
+      ```
+
+      ```output
+      [10, 2, 3]
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          word[0] = "b"
+          ~~~~^^^
+      TypeError: 'str' object does not support item assignment
+      ```
+
+      The list accepts the new item, but the string refuses. For the same reason, strings have no `sort` method: `"cab".sort()` is an `AttributeError`. The function `sorted` works, though, because it doesn't change anything: for a string it returns a new list of the characters in order.
+
+      ### New strings instead
+
+      The variable is a different matter. A variable can always be given a new value, and that new value can be a new string made from the old one:
+
+      ```python run
+      word = "cat"
+      word = "b" + word[1:]
+      print(word)
+      word = word + "s"
+      print(word)
+      print(sorted("cab"))
+      ```
+
+      ```output
+      bat
+      bats
+      ['a', 'b', 'c']
+      ```
+
+      `word[1:]` is `"at"`, so `"b" + word[1:]` is a new string, `"bat"`, and the variable `word` now refers to it. The old string `"cat"` was never changed: the variable simply moved on to another string.
+
+      That's why every string method you know returns a new string instead of changing the old one. `upper` gives a new string in capital letters, and the original stays as it was. To keep the result, store it, often in the same variable:
+
+      ```python run
+      name = "ada"
+      name.upper()
+      print(name)
+      name = name.upper()
+      print(name)
+      ```
+
+      ```output
+      ada
+      ADA
+      ```
+
+      The second line makes `"ADA"` and throws it away, because nothing stores it. A list method like `sort` is different: it changes the list itself and returns `None`. So for a list, `numbers.sort()` alone is right, and for a string, `name = name.upper()` is.
+
+      **Your turn:** the program should print the name the user types with its first letter in capitals, but it crashes. Fix it by building a new string instead of changing the old one:
+
+      ```
+      Name: grace
+      Grace
+      ```
+    seed: |
+      name = input("Name: ")
+      name[0] = name[0].upper()
+      print(name)
+    solution: |
+      name = input("Name: ")
+      name = name[0].upper() + name[1:]
+      print(name)
+    hints:
+      - "A string can't be changed, so `name[0] = ...` is an error. Build a new string and store it in `name` instead."
+      - "The new string is the first letter in capitals followed by the rest of the name: `name[0].upper() + name[1:]`."
+    tests:
+      - stdin: grace
+      - stdin: linus
+        hidden: true
+      - stdin: Ada
+        hidden: true
+    more:
+      - task: |
+          Write the function `replace_at(text: str, index: int, char: str) -> str`, which returns a new string that is like `text` but has `char` at the given index. For example, `replace_at("table", 0, "c")` returns `'cable'`. You can assume the index is in the string.
+        seed: |
+          def replace_at(text: str, index: int, char: str) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(replace_at("table", 0, "c"))
+        solution: |
+          def replace_at(text: str, index: int, char: str) -> str:
+              return text[:index] + char + text[index + 1:]
+
+
+          if __name__ == "__main__":
+              print(replace_at("table", 0, "c"))
+        hints:
+          - "The new string has three parts: everything before the index, the new character, and everything after the index."
+          - "Everything before the index is `text[:index]`, and everything after it is `text[index + 1:]`."
+          - "Join the three parts with `+` and return the result."
+        tests:
+          - call: replace_at("table", 0, "c")
+          - call: replace_at("table", 4, "t")
+            hidden: true
+          - call: replace_at("python", 2, "_")
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          word = "cold"
+          other = word
+          word = word + "er"
+          print(word)
+          print(other)
+          print(sorted("tea"))
+          word.upper()
+          print(word)
+        hints:
+          - "`word + \"er\"` makes a new string, and only `word` is given it. `other` still refers to the old string."
+          - "`sorted` on a string returns a list of its characters in order."
+          - "`word.upper()` makes a new string, but nothing stores it."
+
+  - id: strings-and-lists-count-index-replace
+    slug: count-and-replace
+    title: count, index and replace
+    text: |
+      Strings and lists have more methods worth knowing. **`count`** tells how many times something appears. It works on strings, where it counts a piece of text, and on lists, where it counts an item:
+
+      ```python run
+      text = "she sells sea shells"
+      print(text.count("s"))
+      print(text.count("ell"))
+      numbers = [3, 1, 3, 3, 2]
+      print(numbers.count(3))
+      print("aaaa".count("aa"))
+      ```
+
+      ```output
+      6
+      2
+      3
+      2
+      ```
+
+      The last line shows that `count` doesn't count overlapping pieces: after it finds `aa` at the start, it goes on from the third `a`, so it finds two, not three.
+
+      ### Where is it?
+
+      **`index`** returns the index of the first place where something is found, in a string or in a list:
+
+      ```python run crash
+      names = ["Ada", "Linus", "Grace"]
+      print(names.index("Grace"))
+      print("banana".index("an"))
+      print(names.index("Guido"))
+      ```
+
+      ```output
+      2
+      1
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print(names.index("Guido"))
+                ~~~~~~~~~~~^^^^^^^^^
+      ValueError: list.index(x): x not in list
+      ```
+
+      If the item isn't there, `index` stops the program, so check with `in` first. For strings, you also know `find`, which returns -1 instead of stopping.
+
+      ### Replacing
+
+      **`replace`** returns a new string where every appearance of one piece of text is replaced with another:
+
+      ```python run
+      text = "I like cats. Cats like me."
+      print(text.replace("like", "love"))
+      print(text.replace("cat", "dog"))
+      print(text)
+      ```
+
+      ```output
+      I love cats. Cats love me.
+      I like dogs. Cats like me.
+      I like cats. Cats like me.
+      ```
+
+      It replaces every appearance, not just the first. Capital letters count: `"Cats"` isn't `"cat"`, so it stays. And since strings can't be changed, `text` itself stays as it was. Forgetting that is the most common `replace` bug:
+
+      ```python run
+      text = "Hello, World"
+      text.replace("World", "Python")
+      print(text)
+      text = text.replace("World", "Python")
+      print(text)
+      ```
+
+      ```output
+      Hello, World
+      Hello, Python
+      ```
+
+      The first `replace` makes the new string and throws it away. Only when the result is stored does `text` say `Hello, Python`.
+
+      Replacing with the empty string `""` removes a piece of text: `"1,000,000".replace(",", "")` is `"1000000"`.
+
+      **Your turn:** fill in the blanks so the program counts the letter `e` in the text and then replaces every `cat` with `dog`:
+
+      ```
+      Letter e: 4
+      the dog sees the dog
+      ```
+    fill: |
+      text = "the cat sees the cat"
+      print("Letter e:", text.[[count]]("e"))
+      text = text.[[replace]]("cat", "dog")
+      print(text)
+    hints:
+      - "One method counts how many times a piece of text appears, the other replaces it with another."
+      - "`count(\"e\")` counts the letter e, and `replace(\"cat\", \"dog\")` returns the text with every cat replaced."
+    tests:
+      - expect: |
+          Letter e: 4
+          the dog sees the dog
+    more:
+      - task: |
+          Write the function `censor(text: str, banned: list) -> str`, which returns the text with every banned word replaced by stars, one star per letter. For example, `censor("you silly goose", ["silly"])` returns `'you ***** goose'`.
+        seed: |
+          def censor(text: str, banned: list) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(censor("you silly goose", ["silly"]))
+        solution: |
+          def censor(text: str, banned: list) -> str:
+              for word in banned:
+                  text = text.replace(word, "*" * len(word))
+              return text
+
+
+          if __name__ == "__main__":
+              print(censor("you silly goose", ["silly"]))
+        hints:
+          - "Go through the banned words with a `for` loop and replace each of them in the text."
+          - "The stars for a word are `\"*\" * len(word)`."
+          - "`replace` returns a new string, so store it: `text = text.replace(word, \"*\" * len(word))`. Return `text` after the loop."
+        tests:
+          - call: censor("you silly goose", ["silly"])
+          - call: censor("darn it, darn this darn bug", ["darn", "bug"])
+            hidden: true
+          - call: censor("all is fine", ["bad"])
+            hidden: true
+      - task: |
+          Write a program that asks for a text and a piece of text to look for. It prints how many times the piece is in the text and the index where it's first found. If it isn't found at all, it prints `Not found`:
+
+          ```
+          Text: the cat sat on the mat
+          Find: at
+          Found 3 times, first at index 5
+          ```
+        seed: |
+          # Count and find a piece of text.
+        solution: |
+          # Count and find a piece of text.
+          text = input("Text: ")
+          piece = input("Find: ")
+          if piece in text:
+              count = text.count(piece)
+              first = text.index(piece)
+              print(f"Found {count} times, first at index {first}")
+          else:
+              print("Not found")
+        hints:
+          - "Check with `if piece in text:` first, because `index` stops the program when the piece isn't there."
+          - "`text.count(piece)` gives the number of times and `text.index(piece)` the first index."
+          - "Store both numbers in variables, such as `count` and `first`, and put them in the line with an f-string: `f\"Found {count} times, first at index {first}\"`."
+        tests:
+          - stdin: |
+              the cat sat on the mat
+              at
+          - stdin: |
+              banana
+              na
+            hidden: true
+          - stdin: |
+              hello
+              x
+            hidden: true
+
+  - id: strings-and-lists-split-join
+    slug: split-and-join
+    title: split, join and strip
+    text: |
+      Text that a program reads often holds several values on one line: words in a sentence, numbers separated by commas. **`split`** cuts a string into a list of pieces. Without an argument, it cuts at spaces:
+
+      ```python run
+      sentence = "the quick brown fox"
+      words = sentence.split()
+      print(words)
+      print(len(words), "words, the last is", words[-1])
+      print("a,b,,c".split(","))
+      ```
+
+      ```output
+      ['the', 'quick', 'brown', 'fox']
+      4 words, the last is fox
+      ['a', 'b', '', 'c']
+      ```
+
+      With an argument, `split` cuts at that text instead. Two commas in a row give an empty piece between them.
+
+      The pieces are always strings. Numbers on a line must go through `int`, one at a time:
+
+      ```python run
+      line = input("Two numbers: ")
+      parts = line.split()
+      a = int(parts[0])
+      b = int(parts[1])
+      print("Sum:", a + b)
+      ```
+
+      ```input
+      15 27
+      ```
+
+      ```output
+      Two numbers: 15 27
+      Sum: 42
+      ```
+
+      ### Joining
+
+      **`join`** goes the other way: it joins a list of strings into one string. The string you call it on goes between the pieces. It looks backwards at first, but read it as "join these, with this between them":
+
+      ```python run
+      words = ["red", "green", "blue"]
+      print(", ".join(words))
+      print("".join(words))
+      print(" -> ".join(sorted(words)))
+      ```
+
+      ```output
+      red, green, blue
+      redgreenblue
+      blue -> green -> red
+      ```
+
+      Every item must be a string: `", ".join([1, 2])` is a `TypeError`. Turn numbers into strings first.
+
+      ### Stripping spaces
+
+      Users type extra spaces more often than you'd think. **`strip`** returns the string without spaces at its start and its end; the spaces in between stay:
+
+      ```python run
+      answer = "   yes please  "
+      print("[" + answer + "]")
+      print("[" + answer.strip() + "]")
+      print(answer.strip() == "yes please")
+      ```
+
+      ```output
+      [   yes please  ]
+      [yes please]
+      True
+      ```
+
+      `split` and `join` together make a handy pair. `split()` without an argument ignores any number of spaces between words, so `" ".join(text.split())` turns any messy spacing into single spaces.
+
+      **Your turn:** fill in the blanks so the program splits the line into words, prints how many there are, and prints them joined with dashes:
+
+      ```
+      Words: one two three
+      3 words
+      one-two-three
+      ```
+    fill: |
+      line = input("Words: ")
+      words = line.[[split]]()
+      print(len(words), "words")
+      print([["-"‖'-']].join(words))
+    hints:
+      - "One method cuts a string into a list of words. The other is called on the string that goes between the words."
+      - "`line.split()` gives the list of words, and `\"-\".join(words)` joins them with dashes."
+    tests:
+      - stdin: one two three
+      - stdin: a b
+        hidden: true
+      - stdin: Python is fun to learn
+        hidden: true
+    more:
+      - task: |
+          Write a program that reads lines of results until the user types an empty line. Each line has a name and then one or more scores, separated by spaces. For each line, the program prints the name and the total of the scores:
+
+          ```
+          Results: Ada 12 15 9
+          Ada: 36
+          Results: Linus 7 8
+          Linus: 15
+          Results:
+          ```
+        seed: |
+          # Read results until an empty line.
+        solution: |
+          # Read results until an empty line.
+          while True:
+              line = input("Results: ")
+              if line == "":
+                  break
+              parts = line.split()
+              total = 0
+              for score in parts[1:]:
+                  total += int(score)
+              print(f"{parts[0]}: {total}")
+        hints:
+          - "`line.split()` gives a list: the name first, then the scores, all as strings."
+          - "The name is `parts[0]`, and the scores are the slice `parts[1:]`."
+          - "Add up the scores in a `for` loop, converting each with `int`, and print the name and the total."
+        tests:
+          - stdin: "Ada 12 15 9\nLinus 7 8\n\n"
+          - stdin: "Grace 100\nGuido 1 2 3 4 5\nKen 0 0\n\n"
+            hidden: true
+          - stdin: "\n"
+            hidden: true
+      - task: |
+          Write the function `tidy(text: str) -> str`, which returns the text without spaces at its start and end, and with exactly one space between words. For example, `tidy("  too   many  spaces ")` returns `'too many spaces'`.
+        seed: |
+          def tidy(text: str) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(tidy("  too   many  spaces "))
+        solution: |
+          def tidy(text: str) -> str:
+              return " ".join(text.split())
+
+
+          if __name__ == "__main__":
+              print(tidy("  too   many  spaces "))
+        hints:
+          - "`split()` without an argument ignores any number of spaces, including those at the start and the end."
+          - "Join the words again with a single space between them: `\" \".join(...)`."
+        tests:
+          - call: tidy("  too   many  spaces ")
+          - call: tidy("already tidy")
+            hidden: true
+          - call: tidy("   lonely   ")
+            hidden: true
+
+  - id: strings-and-lists-larger-programs
+    slug: larger-programs
+    title: Passing data between functions
+    text: |
+      The programs you write are getting longer. The first rule for a larger program: don't write it all at once. Build it from small functions, and try each one out before you write the next. A function that works on its own can be trusted when the rest of the program uses it.
+
+      In a program made of functions, each function gets the data it needs as **arguments**, and gives the data it produces back with **`return`**. A `main` function ties them together. Here's a small program that reads exam points and reports on them:
+
+      ```python run
+      def read_points() -> list:
+          points = []
+          while True:
+              line = input("Points: ")
+              if line == "":
+                  break
+              points.append(int(line))
+          return points
+
+
+      def passed(points: list) -> int:
+          count = 0
+          for p in points:
+              if p >= 50:
+                  count += 1
+          return count
+
+
+      def report(points: list) -> str:
+          average = sum(points) / len(points)
+          passed_count = passed(points)
+          return f"{len(points)} exams, average {average:.1f}, {passed_count} passed"
+
+
+      def main():
+          points = read_points()
+          print(report(points))
+
+
+      main()
+      ```
+
+      ```input
+      72
+      45
+      90
+
+      ```
+
+      ```output
+      Points: 72
+      Points: 45
+      Points: 90
+      Points:
+      3 exams, average 69.0, 2 passed
+      ```
+
+      Follow the data: `read_points` returns the list, `main` stores it in its own variable and hands it to `report`, which hands it on to `passed`. No function reaches for a variable outside itself. Each function is easy to try out alone, too: `passed([50, 49])` should be 1, whatever else the program does. The program starts from the call `main()` on the last line. (A program like this, with no function task, can call `main` at the top level.)
+
+      ### A trap: variables from outside
+
+      You saw in the module on functions that a function should work with its parameters, not with variables from outside it. The mistake is easy to miss when the outside variable happens to hold the right list:
+
+      ```python run
+      def total_length(words: list) -> int:
+          total = 0
+          for word in word_list:
+              total += len(word)
+          return total
+
+
+      word_list = ["sun", "moon"]
+      print(total_length(word_list))
+      print(total_length(["planet"]))
+      ```
+
+      ```output
+      7
+      7
+      ```
+
+      The loop uses `word_list` instead of the parameter `words`. The first call happens to give the right answer, because the argument is that same list. The second call shows the bug: whatever list you give, the function counts `word_list`.
+
+      In a function task, this bug is even worse. If `word_list` is made in the main block, it doesn't exist at all when the checks load your program and call the function, so every check stops with a `NameError`. Inside a function, use only its parameters and its own variables.
+
+      **Your turn:** `total_length` in the starter code uses a variable from the main block. It works when you run the program, but the checks fail with a `NameError`. Fix the function so it uses its parameter. For example, `total_length(["sun", "moon"])` returns `7`.
+    seed: |
+      def total_length(words: list) -> int:
+          total = 0
+          for word in word_list:
+              total += len(word)
+          return total
+
+
+      if __name__ == "__main__":
+          word_list = ["sun", "moon"]
+          print(total_length(word_list))
+    solution: |
+      def total_length(words: list) -> int:
+          total = 0
+          for word in words:
+              total += len(word)
+          return total
+
+
+      if __name__ == "__main__":
+          word_list = ["sun", "moon"]
+          print(total_length(word_list))
+    hints:
+      - "The list the function should count is its parameter. Which name does the `for` loop use instead?"
+      - "Change `for word in word_list:` to `for word in words:`."
+    tests:
+      - call: total_length(["sun", "moon"])
+      - call: total_length(["planet"])
+        hidden: true
+      - call: total_length([])
+        hidden: true
+    more:
+      - task: |
+          Finish a step counter program. It reads daily step counts until an empty line, prints a chart with one `#` for each full thousand steps, and then the total, the average and the best day. The `main` function is ready; write the three functions it uses:
+
+          - `read_steps()` reads the counts until an empty line and returns them in a list.
+          - `print_chart(steps)` prints a line for each day: `Day`, the day's number from 1, a colon, the steps in a column of 6 characters, a space and the `#` characters.
+          - `best_day(steps)` returns the number of the day with the most steps (the first one if several are equal).
+
+          ```
+          Steps: 8500
+          Steps: 12000
+          Steps: 4300
+          Steps:
+          Day 1:   8500 ########
+          Day 2:  12000 ############
+          Day 3:   4300 ####
+          Total: 24800
+          Average: 8266.7
+          Best day: 2
+          ```
+
+          You can assume at least one count is typed.
+        seed: |
+          def read_steps() -> list:
+              pass
+
+
+          def print_chart(steps: list):
+              pass
+
+
+          def best_day(steps: list) -> int:
+              pass
+
+
+          def main():
+              steps = read_steps()
+              print_chart(steps)
+              print("Total:", sum(steps))
+              print(f"Average: {sum(steps) / len(steps):.1f}")
+              print("Best day:", best_day(steps))
+
+
+          main()
+        solution: |
+          def read_steps() -> list:
+              steps = []
+              while True:
+                  line = input("Steps: ")
+                  if line == "":
+                      break
+                  steps.append(int(line))
+              return steps
+
+
+          def print_chart(steps: list):
+              for i in range(len(steps)):
+                  print(f"Day {i + 1}: {steps[i]:6} {'#' * (steps[i] // 1000)}")
+
+
+          def best_day(steps: list) -> int:
+              best = 0
+              for i in range(len(steps)):
+                  if steps[i] > steps[best]:
+                      best = i
+              return best + 1
+
+
+          def main():
+              steps = read_steps()
+              print_chart(steps)
+              print("Total:", sum(steps))
+              print(f"Average: {sum(steps) / len(steps):.1f}")
+              print("Best day:", best_day(steps))
+
+
+          main()
+        hints:
+          - "Write and try one function at a time. `read_steps` is like reading names until an empty line, but it converts each line with `int` before appending it and returns the list."
+          - "In `print_chart`, go through the indexes. The number of `#` characters is `steps[i] // 1000`, and `\"#\" * n` makes n of them. In the f-string, write the `#` in single quotes: `{'#' * (steps[i] // 1000)}`."
+          - "In `best_day`, find the index of the greatest count, as you did when finding the best item of a list, and return that index plus 1."
+        tests:
+          - stdin: "8500\n12000\n4300\n\n"
+          - stdin: "999\n1000\n15500\n15500\n\n"
+            hidden: true
+          - stdin: "7000\n\n"
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def show_total(prices):
+              print(sum(costs))
+
+
+          costs = [1, 2, 3]
+          show_total([10, 20])
+          costs = [5]
+          show_total(costs)
+          show_total([])
+        hints:
+          - "Look closely at which list the function sums: its parameter is `prices`, but it uses `costs`."
+          - "Whatever list the call gives, the function sums the list that `costs` refers to at that moment."
+          - "After `costs = [5]`, the sum is 5 for every call."

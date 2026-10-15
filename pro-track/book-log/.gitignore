@@ -1,0 +1,10 @@
+# Python's and pytest's own files
+__pycache__/
+.pytest_cache/
+
+# The virtual environment (python -m venv .venv)
+.venv/
+
+# The database and the CSV file the program makes when you run it
+*.db
+books.csv

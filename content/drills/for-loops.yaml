@@ -1,0 +1,178 @@
+topic: for-loops
+drills:
+  - type: predict
+    after: for-lists
+    code: |
+      for n in [3, 1, 2]:
+          print(n * 2)
+    why: "The loop takes the items in order, 3, 1 and 2, and prints each one doubled."
+
+  - type: bug
+    after: for-lists
+    code: |
+      numbers = [5, 10, 15]
+      total = 0
+      for number in numbers:
+          total += numbers[number]  # BUG
+      print(total)
+    fix: total += number
+    why: "A `for` loop gives you the items themselves, not their indexes. `numbers[5]` is past the end of the list, so the program crashes."
+
+  - type: predict
+    after: for-lists
+    code: |
+      def has_negative(numbers):
+          for n in numbers:
+              if n < 0:
+                  return True
+              return False
+
+
+      print(has_negative([4, -1]))
+    why: "`return False` is inside the loop, so the function ends after looking at the first number, 4. It belongs after the loop, so that every number is checked first."
+
+  - type: predict
+    after: for-strings
+    code: |
+      count = 0
+      for char in "a b c":
+          count += 1
+      print(count)
+    why: "The loop goes through every character, and the two spaces are characters too: 5 in all."
+
+  - type: fill
+    after: for-strings
+    code: |
+      word = "loop"
+      result = ""
+      for char in word:
+          result += [[char.upper()]]
+      print(result)
+    why: "Each round adds the character in capital letters to the new string `result`."
+
+  - type: runs
+    after: for-strings
+    code: |
+      for digit in 123:
+          print(digit)
+    why: "A `for` loop needs something to go through, like a list, a string or a range. A number has no items, so Python stops with a `TypeError`: `'int' object is not iterable`."
+
+  - type: predict
+    after: range
+    code: |
+      for i in range(3):
+          print(i)
+    why: "`range(3)` starts from 0 and leaves out the end, 3. That's three numbers: 0, 1 and 2."
+
+  - type: predict
+    after: range
+    code: |
+      print(list(range(1, 10, 3)))
+    why: "The range starts at 1 and goes up in steps of 3: 1, 4 and 7. The next one, 10, is the end, which is left out."
+
+  - type: choice
+    after: range
+    prompt: Which loop prints the numbers 1 to 5?
+    choices:
+      - "`for i in range(5):`"
+      - "`for i in range(1, 5):`"
+      - "`for i in range(1, 6):`"
+    answer: 3
+    why: "The end of a range is left out, so to reach 5 the end must be 6. `range(5)` gives 0 to 4 and `range(1, 5)` gives 1 to 4."
+
+  - type: bug
+    after: range
+    code: |
+      for i in range(3, 0):  # BUG
+          print(i)
+      print("Go")
+    fix: "for i in range(3, 0, -1):"
+    why: "Without a step, a range counts up, and from 3 up to 0 there are no numbers at all, so the loop never runs. Counting down needs the step -1."
+
+  - type: predict
+    after: building-lists
+    code: |
+      print(range(3))
+      print(list(range(3)))
+    why: "A range isn't a list, and printing it shows only its description. `list` turns it into a list of its numbers."
+
+  - type: predict
+    after: building-lists
+    code: |
+      words = ["hi", "hello", "hey"]
+      lengths = []
+      for w in words:
+          lengths.append(len(w))
+      print(lengths)
+    why: "The loop appends the length of each word to the new list, in the same order as the words."
+
+  - type: predict
+    after: building-lists
+    code: |
+      letters = ["x", "y", "z"]
+      for i in range(len(letters)):
+          print(i, letters[i])
+    why: "`range(len(letters))` gives the indexes 0, 1 and 2, and `letters[i]` is the item at each index."
+
+  - type: bug
+    after: best-item
+    code: |
+      temps = [-4, -9, -2]
+      best = 0  # BUG
+      for t in temps:
+          if t > best:
+              best = t
+      print(best)
+    fix: best = temps[0]
+    why: "Every temperature is below 0, so none of them beats the start value, and the program prints 0, which isn't in the list. Start from the first item instead."
+
+  - type: predict
+    after: best-item
+    code: |
+      words = ["cat", "dog", "emu"]
+      best = words[0]
+      for w in words:
+          if len(w) >= len(best):
+              best = w
+      print(best)
+    why: "All three words are equally long. With `>=`, each equally long word replaces the best so far, so the last one wins. With `>`, the first one would stay."
+
+  - type: boss
+    after: best-item
+    prompt: |
+      Write the function `most_vowels(words: list) -> str`, which returns the word with the most vowels (a, e, i, o, u). If several words have equally many, return the first of them. The words are in small letters. For example, `most_vowels(["sky", "banana", "orange"])` returns `'banana'`.
+    seed: |
+      def most_vowels(words: list) -> str:
+          pass
+
+
+      if __name__ == "__main__":
+          print(most_vowels(["sky", "banana", "orange"]))
+    solution: |
+      def vowel_count(word: str) -> int:
+          count = 0
+          for char in word:
+              if char in "aeiou":
+                  count += 1
+          return count
+
+
+      def most_vowels(words: list) -> str:
+          best = words[0]
+          for word in words:
+              if vowel_count(word) > vowel_count(best):
+                  best = word
+          return best
+
+
+      if __name__ == "__main__":
+          print(most_vowels(["sky", "banana", "orange"]))
+    hints:
+      - "A helper function `vowel_count(word)` that counts the vowels of one word keeps the main loop short."
+      - "Start with `best = words[0]`, and replace it when a word has more vowels than `best`. Use `>` so the first of equal words stays."
+    tests:
+      - call: most_vowels(["sky", "banana", "orange"])
+      - call: most_vowels(["rhythm"])
+        hidden: true
+      - call: most_vowels(["tree", "idea", "aqueous", "audio"])
+        hidden: true

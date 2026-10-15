@@ -1,0 +1,714 @@
+id: regex
+summary: Regular expressions describe a kind of text with a pattern. Searching and finding with the re module, raw strings, alternatives, character classes, repetition and groups, checking a whole input with re.fullmatch, and replacing text with re.sub.
+steps:
+  - id: regex-search
+    slug: search-and-findall
+    title: What regular expressions are
+    text: |
+      String methods find exact text: `"cat" in text` or `text.find("cat")`. But often you're looking for a *kind* of text: any number, a time of day, a word with a capital letter. A **regular expression** (a **regex** for short) describes such text with a **pattern**. Regular expressions are a small language of their own, and the same patterns work, with small differences, in most programming languages and in many text editors.
+
+      Python's regular expressions are in the module **`re`**. The function `re.search(pattern, text)` looks for the first place in the text that matches the pattern:
+
+      ```python run
+      import re
+
+      notes = ["Meeting at 10", "Lunch with Pia", "Dentist at 3 pm"]
+      for note in notes:
+          if re.search(r"\d", note):
+              print("Has a time:", note)
+      ```
+
+      ```output
+      Has a time: Meeting at 10
+      Has a time: Dentist at 3 pm
+      ```
+
+      In a pattern, most characters simply match themselves: the pattern `r"Pia"` matches the text Pia, with the same capitals. A few have a special meaning. `\d` matches any one **digit**, 0 to 9.
+
+      `re.search` returns a **match object** when it finds a match, and `None` when it doesn't. In an `if`, a match counts as true and `None` as false. The match object's method `group()` gives the text that matched:
+
+      ```python repl
+      >>> import re
+      >>> re.search(r"\d", "Room 42")
+      <re.Match object; span=(5, 6), match='4'>
+      >>> re.search(r"\d\d", "Room 42").group()
+      '42'
+      >>> print(re.search(r"\d", "Room B"))
+      None
+      >>> re.search(r"\d", "Room 42") is not None
+      True
+      ```
+
+      `span=(5, 6)` says where the match is: from index 5 up to index 6. When a function should return `True` or `False`, compare the result with `None`, as the last line does.
+
+      ### Raw strings
+
+      The patterns above are written `r"..."`. The `r` makes a **raw string**, in which Python leaves every backslash as it is. In an ordinary string, Python reads some backslash pairs itself: `"\n"` is a line break and `"\t"` a tab. Patterns are full of backslashes, so write them as raw strings, and the `re` module gets exactly what you typed:
+
+      ```python repl
+      >>> len("\n")
+      1
+      >>> len(r"\n")
+      2
+      >>> print(r"\d and \n")
+      \d and \n
+      ```
+
+      Without the `r`, Python even warns about a pattern such as `"\d"`: `SyntaxWarning: "\d" is an invalid escape sequence`.
+
+      ### Finding every match
+
+      `re.findall(pattern, text)` returns a list of all the matches, as strings. A `+` after a part of a pattern means "one or more of it" (step 3 shows more marks like it), so `\d+` matches a whole run of digits: a number.
+
+      ```python run
+      import re
+
+      text = "3 apples, 12 pears and 150 grapes"
+      print(re.findall(r"\d", text))
+      print(re.findall(r"\d+", text))
+      numbers = [int(number) for number in re.findall(r"\d+", text)]
+      print(sum(numbers))
+      ```
+
+      ```output
+      ['3', '1', '2', '1', '5', '0']
+      ['3', '12', '150']
+      165
+      ```
+
+      The matches are strings, so turn them into numbers with `int` before you calculate with them.
+
+      **Your turn:** a password needs at least one digit. Fill in the two blanks: the name of the `re` function that looks for a match, and the pattern for one digit. The program should print:
+
+      ```
+      sunshine needs a digit
+      sunsh1ne ok
+      2fast ok
+      ```
+    fill: |
+      import re
+
+      passwords = ["sunshine", "sunsh1ne", "2fast"]
+      for password in passwords:
+          if re.[[search]](r"[[\d]]", password):
+              print(password, "ok")
+          else:
+              print(password, "needs a digit")
+    hints:
+      - The function that looks for the first match anywhere in the text returns a match or `None`.
+      - "The function is `re.search`, so the first blank is `search`. A digit is `\\d` in a pattern."
+    tests:
+      - expect: |
+          sunshine needs a digit
+          sunsh1ne ok
+          2fast ok
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          import re
+
+          print(re.findall(r"\d", "R2-D2"))
+          print(re.findall(r"\d+", "Call 555 0199 now"))
+          print(re.search(r"cat", "Concatenate") is not None)
+          print(re.search(r"Cat", "concatenate"))
+        hints:
+          - "`\\d` matches one digit at a time, and `\\d+` a whole run of digits."
+          - The third line looks for `cat` anywhere in the text, and it's there, inside the word.
+          - "Patterns are case sensitive: `Cat` with a capital C isn't in `concatenate`, so `re.search` returns `None`."
+      - task: |
+          Write a function `numbers_in(text)` that returns a list of the whole numbers in the text, as integers, in the order they appear. Use the `re` module. For example,
+
+          ```python fragment
+          print(numbers_in("Gate 7 opens at 1930, row 12"))
+          ```
+
+          should print:
+
+          ```
+          [7, 1930, 12]
+          ```
+        seed: |
+          import re
+
+
+          def numbers_in(text):
+              pass
+
+
+          if __name__ == "__main__":
+              print(numbers_in("Gate 7 opens at 1930, row 12"))
+        solution: |
+          import re
+
+
+          def numbers_in(text):
+              return [int(number) for number in re.findall(r"\d+", text)]
+
+
+          if __name__ == "__main__":
+              print(numbers_in("Gate 7 opens at 1930, row 12"))
+        hints:
+          - "`re.findall(r\"\\d+\", text)` gives every number in the text, as strings."
+          - "Turn each string into an integer with `int`. A list comprehension does it in one line."
+        require:
+          - pattern: \bre\.(findall|search)\s*\(
+            message: Find the numbers with the `re` module.
+        tests:
+          - call: print(numbers_in("Gate 7 opens at 1930, row 12"))
+          - call: numbers_in("a1b22c333")
+            hidden: true
+          - call: numbers_in("no numbers here")
+            hidden: true
+
+  - id: regex-classes
+    slug: alternatives-and-classes
+    title: Alternatives and character classes
+    text: |
+      A pattern of plain characters matches only that exact text. Special characters let one pattern match many different texts. This step shows the ones that choose between alternatives and between characters.
+
+      ### Alternatives
+
+      A vertical bar `|` means **or**: `r"cat|dog"` matches either `cat` or `dog`:
+
+      ```python run
+      import re
+
+      for word in ["hotdog", "category", "parrot"]:
+          print(word, re.search(r"cat|dog", word) is not None)
+      ```
+
+      ```output
+      hotdog True
+      category True
+      parrot False
+      ```
+
+      ### Character classes
+
+      Square brackets make a **character class**, which matches **one** character: any of those listed. `r"[aeiou]"` matches one vowel. A dash gives a range: `[0-9]` is any digit, `[a-z]` any small letter and `[A-Za-z]` any letter. A `^` right after the opening bracket turns the class around: `[^0-9]` is any character that is *not* a digit. Classes in a row match characters in a row, so `r"[0-2][0-9]"` matches two digits, the first of them 0, 1 or 2:
+
+      ```python repl
+      >>> import re
+      >>> re.findall(r"[aeiou]", "regular expression")
+      ['e', 'u', 'a', 'e', 'e', 'i', 'o']
+      >>> re.findall(r"[A-Z]", "Ada Lovelace met Charles Babbage")
+      ['A', 'L', 'C', 'B']
+      >>> re.findall(r"[^a-z ]", "it's 9 a.m.!")
+      ["'", '9', '.', '.', '!']
+      >>> re.findall(r"[0-2][0-9]", "07 31 19 42 20")
+      ['07', '19', '20']
+      ```
+
+      Some classes are so common that they have a short form. `\d` is a digit, the same as `[0-9]`. `\w` is a "word character": a letter, a digit or the underscore `_`. `\s` is whitespace: a space, a tab or a line break.
+
+      ### The dot, the start and the end
+
+      A dot `.` matches any one character, except a line break. `^` matches at the start of the text and `$` at its end, without using up any character. With them you can check how a text starts or ends, or, with both, the whole text:
+
+      ```python run
+      import re
+
+      for code in ["A1", "B7x", "x9", "C3"]:
+          if re.search(r"^[A-Z][0-9]$", code):
+              print(code, "is a valid code")
+      print(re.findall(r"c.t", "cat, cot, coat, cut"))
+      ```
+
+      ```output
+      A1 is a valid code
+      C3 is a valid code
+      ['cat', 'cot', 'cut']
+      ```
+
+      Without the `^` and the `$`, `B7x` would be valid too, because `B7` is in it. And `coat` isn't found by `c.t`, because the dot stands for exactly one character.
+
+      ### Special characters as themselves
+
+      To match one of the special characters `. ^ $ * + ? ( ) [ ] { } | \` as an ordinary character, put a backslash before it: `r"\."` matches a dot and `r"\$"` a dollar sign. Compare:
+
+      ```python repl
+      >>> import re
+      >>> re.findall(r"\d.\d", "1.5 and 2x5")
+      ['1.5', '2x5']
+      >>> re.findall(r"\d\.\d", "1.5 and 2x5")
+      ['1.5']
+      ```
+
+      Inside square brackets most special characters lose their meaning, so `[.?!]` matches a period, a question mark or an exclamation mark.
+
+      **Your turn:** fill in the pattern so that the program finds the orders of tea or coffee. The program should print:
+
+      ```
+      hot: green tea
+      hot: black coffee
+      ```
+    fill: |
+      import re
+
+      orders = ["green tea", "orange juice", "black coffee", "water"]
+      for order in orders:
+          if re.search(r"[[tea|coffee‖coffee|tea]]", order):
+              print("hot:", order)
+    hints:
+      - The pattern should match either the word `tea` or the word `coffee`.
+      - "The vertical bar means or: `tea|coffee`."
+    tests:
+      - expect: |
+          hot: green tea
+          hot: black coffee
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          import re
+
+          print(re.findall(r"[0-9][a-z]", "3d 4K 5g 66 7up"))
+          print(re.findall(r"b.g", "big bag bug b g"))
+          print(re.search(r"^Hi", "Oh, Hi!") is not None)
+          print(re.findall(r"\w\w", "a ab abc"))
+        hints:
+          - "The first pattern is a digit followed by a small letter. `K` is a capital, and `66` has no letter."
+          - The dot matches any one character, a space too.
+          - "`^` means the start of the text. `\\w\\w` is two word characters in a row, and a match can't be used twice."
+      - task: |
+          A square on a chess board is named by a letter from `a` to `h` and a number from 1 to 8, such as `e4`. Write a function `is_chess_square(text)` that returns `True` if the whole text is such a name, and `False` otherwise. Use a regular expression. For example,
+
+          ```python fragment
+          print(is_chess_square("e4"))
+          print(is_chess_square("i9"))
+          print(is_chess_square("a10"))
+          ```
+
+          should print:
+
+          ```
+          True
+          False
+          False
+          ```
+        seed: |
+          import re
+
+
+          def is_chess_square(text):
+              pass
+
+
+          if __name__ == "__main__":
+              print(is_chess_square("e4"))
+              print(is_chess_square("i9"))
+              print(is_chess_square("a10"))
+        solution: |
+          import re
+
+
+          def is_chess_square(text):
+              return re.search(r"^[a-h][1-8]$", text) is not None
+
+
+          if __name__ == "__main__":
+              print(is_chess_square("e4"))
+              print(is_chess_square("i9"))
+              print(is_chess_square("a10"))
+        hints:
+          - "Two character classes in a row: a letter from a to h, then a digit from 1 to 8."
+          - "Put `^` before them and `$` after them, so that nothing else can come before or after: `r\"^[a-h][1-8]$\"`."
+          - "`re.search` returns a match or `None`. Return `... is not None` to get `True` or `False`."
+        require:
+          - pattern: \bre\.
+            message: Check the name with a regular expression from the `re` module.
+        tests:
+          - call: |
+              print(is_chess_square("e4"))
+              print(is_chess_square("i9"))
+              print(is_chess_square("a10"))
+          - call: |
+              print(is_chess_square("h8"))
+              print(is_chess_square("a1"))
+              print(is_chess_square("E4"))
+              print(is_chess_square("b0"))
+              print(is_chess_square("c"))
+              print(is_chess_square("xd5"))
+            hidden: true
+
+  - id: regex-repetition
+    slug: repetition-and-groups
+    title: Repetition and groups
+    text: |
+      `\d\d\d\d` matches four digits, but writing the same part again and again gets tiring, and often you don't even know how many there will be. A **quantifier** right after a part of a pattern says how many times that part repeats:
+
+      - `*` zero or more times
+      - `+` one or more times
+      - `?` zero times or once: the part is optional
+      - `{m}` exactly m times
+      - `{m,n}` from m to n times
+
+      A quantifier repeats only the one thing right before it: a character, a class or a short form such as `\d`. So `r"ha+"` is an h followed by one or more a's, and `r"[0-9]+"` is one or more digits:
+
+      ```python repl
+      >>> import re
+      >>> re.findall(r"ha+", "ha haaa h hah")
+      ['ha', 'haaa', 'ha']
+      >>> re.findall(r"colou?r", "color or colour?")
+      ['color', 'colour']
+      >>> re.findall(r"\d{4}", "1984, 42, 2026")
+      ['1984', '2026']
+      >>> re.findall(r"[A-Z][a-z]*", "Ada met Bo and X")
+      ['Ada', 'Bo', 'X']
+      ```
+
+      The last pattern is a capital letter followed by any number of small letters, none at all included, so it finds capitalized words.
+
+      ### Groups
+
+      Round brackets make a **group**. They collect part of a pattern into one unit: a quantifier after a group repeats the whole group, and a `|` inside a group chooses only within it:
+
+      ```python run
+      import re
+
+      for laugh in ["haha", "hahaha", "hah"]:
+          print(laugh, re.search(r"^(ha)+$", laugh) is not None)
+      for word in ["gray", "grey", "groy"]:
+          print(word, re.search(r"^gr(a|e)y$", word) is not None)
+      ```
+
+      ```output
+      haha True
+      hahaha True
+      hah False
+      gray True
+      grey True
+      groy False
+      ```
+
+      Without the brackets, `r"^ha+$"` would be an h followed by a's, which matches `haaa` but not `haha`. And `r"^gra|ey$"` would mean "starts with gra, or ends with ey". One thing to know: when a pattern has a group, `re.findall` returns only the part that the group matched, not the whole match. So use groups with `re.search`, or with the function below.
+
+      ### The whole text: re.fullmatch
+
+      `^` and `$` around a pattern make it describe the whole text. `re.fullmatch(pattern, text)` does the same more simply: it matches only when the pattern covers the text from its first character to its last. That makes it the natural tool for checking a whole value, such as a year:
+
+      ```python run
+      import re
+
+
+      def is_year(text):
+          return re.fullmatch(r"\d{4}", text) is not None
+
+
+      for text in ["2026", "20266", "year 2026", "99"]:
+          print(text, is_year(text))
+      ```
+
+      ```output
+      2026 True
+      20266 False
+      year 2026 False
+      99 False
+      ```
+
+      `re.search(r"\d{4}", "20266")` would find a match, the first four digits. `re.fullmatch` doesn't, because a fifth digit is left over.
+
+      **Your turn:** a US ZIP code is exactly five digits. Fill in the quantifier so that the program prints:
+
+      ```
+      90210 valid
+      1234 invalid
+      123456 invalid
+      02139 valid
+      ```
+    fill: |
+      import re
+
+      for code in ["90210", "1234", "123456", "02139"]:
+          if re.fullmatch(r"\d[[{5}]]", code):
+              print(code, "valid")
+          else:
+              print(code, "invalid")
+    hints:
+      - "`\\d` is one digit. The quantifier after it says how many times it repeats."
+      - "Exactly five times is written `{5}`."
+    tests:
+      - expect: |
+          90210 valid
+          1234 invalid
+          123456 invalid
+          02139 valid
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          import re
+
+          print(re.findall(r"o+", "foo bo boooo"))
+          print(re.findall(r"\d{2,3}", "1 22 333 4444"))
+          print(re.fullmatch(r"(ab)+", "ababab") is not None)
+          print(re.fullmatch(r"ab+", "ababab") is not None)
+        hints:
+          - "`o+` takes each run of o's as one match, as long as it can be."
+          - "`\\d{2,3}` takes two or three digits, as many as it can. In `4444` that leaves one digit, which is too few for another match."
+          - "`(ab)+` repeats the whole pair, but `ab+` repeats only the b."
+      - task: |
+          A product code is two capital letters, a dash and four digits, such as `AB-1234`. It may also end with a dash and one more capital letter, as in `AB-1234-X`. Write a function `is_product_code(text)` that returns `True` if the whole text is a product code, and `False` otherwise. Use `re.fullmatch`. For example,
+
+          ```python fragment
+          print(is_product_code("AB-1234"))
+          print(is_product_code("AB-1234-X"))
+          print(is_product_code("AB-123"))
+          ```
+
+          should print:
+
+          ```
+          True
+          True
+          False
+          ```
+        seed: |
+          import re
+
+
+          def is_product_code(text):
+              pass
+
+
+          if __name__ == "__main__":
+              print(is_product_code("AB-1234"))
+              print(is_product_code("AB-1234-X"))
+              print(is_product_code("AB-123"))
+        solution: |
+          import re
+
+
+          def is_product_code(text):
+              return re.fullmatch(r"[A-Z]{2}-\d{4}(-[A-Z])?", text) is not None
+
+
+          if __name__ == "__main__":
+              print(is_product_code("AB-1234"))
+              print(is_product_code("AB-1234-X"))
+              print(is_product_code("AB-123"))
+        hints:
+          - "Two capital letters are `[A-Z]{2}`, and four digits are `\\d{4}`. A dash outside square brackets is an ordinary character."
+          - "The ending is optional: put the dash and the letter in a group and add `?` after it: `(-[A-Z])?`."
+          - "`re.fullmatch` returns a match or `None`; return `... is not None`."
+        require:
+          - pattern: \bre\.fullmatch\s*\(
+            message: Check the whole code with `re.fullmatch`.
+        tests:
+          - call: |
+              print(is_product_code("AB-1234"))
+              print(is_product_code("AB-1234-X"))
+              print(is_product_code("AB-123"))
+          - call: |
+              print(is_product_code("ab-1234"))
+              print(is_product_code("AB1234"))
+              print(is_product_code("ZZ-0000"))
+              print(is_product_code("AB-1234-"))
+              print(is_product_code("AB-1234-XY"))
+              print(is_product_code("QR-9876-K"))
+              print(is_product_code("ABC-1234"))
+            hidden: true
+
+  - id: regex-checking-input
+    slug: checking-input
+    title: Checking input and replacing text
+    text: |
+      A program can't trust its input. A user types a time as `9.30`, a phone number with spaces, or their name where a number should go. A pattern describes exactly what's acceptable, and `re.fullmatch` checks the whole input against it. A loop asks again until the input fits:
+
+      ```python run
+      import re
+
+      while True:
+          time = input("Time (HH:MM): ")
+          if re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", time):
+              break
+          print("Please use the form HH:MM, such as 09:30.")
+      print("Alarm set for", time)
+      ```
+
+      ```input
+      9.30
+      24:00
+      07:45
+      ```
+
+      ```output
+      Time (HH:MM): 9.30
+      Please use the form HH:MM, such as 09:30.
+      Time (HH:MM): 24:00
+      Please use the form HH:MM, such as 09:30.
+      Time (HH:MM): 07:45
+      Alarm set for 07:45
+      ```
+
+      Read the pattern in parts. The hour is either 0 or 1 followed by any digit, or 2 followed by a digit from 0 to 3. Then comes a colon. The minutes are a digit from 0 to 5 followed by any digit. A regular expression sees characters, not numbers, so a range of numbers such as 0 to 23 has to be spelled out digit by digit.
+
+      A check that you need in several places fits in a function that returns `True` or `False`:
+
+      ```python fragment
+      def is_valid_time(text):
+          return re.fullmatch(r"([01]\d|2[0-3]):[0-5]\d", text) is not None
+      ```
+
+      ### Replacing with re.sub
+
+      `re.sub(pattern, replacement, text)` returns a new string in which every match of the pattern is replaced with the replacement. It's handy for tidying up text:
+
+      ```python repl
+      >>> import re
+      >>> re.sub(r"\s+", " ", "too    many     spaces")
+      'too many spaces'
+      >>> re.sub(r"[^0-9]", "", "+1 (555) 010-0199")
+      '15550100199'
+      >>> re.sub(r"\d", "*", "PIN 4821, card 7734")
+      'PIN ****, card ****'
+      >>> re.sub(r"colou?r", "hue", "Color? Pick a colour.")
+      'Color? Pick a hue.'
+      ```
+
+      The first line squeezes every run of whitespace into one space. The second removes everything that isn't a digit, by replacing it with the empty string. The last one leaves `Color` alone, since patterns are case sensitive. Like the string methods, `re.sub` never changes the original string: strings can't be changed, so it returns a new one.
+
+      Tidying and checking work well together. This function removes the spaces, brackets and dashes people like to type in phone numbers, and then checks what's left:
+
+      ```python run
+      import re
+
+
+      def clean_phone(text):
+          digits = re.sub(r"[ ()-]", "", text)
+          if re.fullmatch(r"\+?\d{7,15}", digits):
+              return digits
+          return None
+
+
+      for number in ["+358 40 123 4567", "(555) 010-0199", "call me"]:
+          print(clean_phone(number))
+      ```
+
+      ```output
+      +358401234567
+      5550100199
+      None
+      ```
+
+      **Your turn:** the program asks for a username until it gets one that is 3 to 12 characters long and has only small letters and digits. Fill in the two blanks: the `re` function that checks the whole text, and the quantifier. An example run:
+
+      ```
+      Username: Ada
+      Use 3 to 12 small letters or digits.
+      Username: ada_l
+      Use 3 to 12 small letters or digits.
+      Username: ada99
+      Welcome, ada99!
+      ```
+    fill: |
+      import re
+
+      while True:
+          name = input("Username: ")
+          if re.[[fullmatch]](r"[a-z0-9][[{3,12}]]", name):
+              break
+          print("Use 3 to 12 small letters or digits.")
+      print(f"Welcome, {name}!")
+    hints:
+      - The whole name has to fit the pattern, not just part of it, so use the function that checks the whole text.
+      - "The function is `re.fullmatch`. From 3 to 12 times is the quantifier `{3,12}`."
+    tests:
+      - stdin: |
+          Ada
+          ada_l
+          ada99
+      - stdin: |
+          xy
+          thisnameiswaytoolong
+          bob
+        hidden: true
+      - stdin: grace1
+        hidden: true
+    more:
+      - task: |
+          Write a function `mask(card)` that returns the card number with every digit except the last four replaced by `*`. Other characters, such as spaces, stay as they are. Use `re.sub`. For example,
+
+          ```python fragment
+          print(mask("1234 5678 9012 3456"))
+          ```
+
+          should print:
+
+          ```
+          **** **** **** 3456
+          ```
+        seed: |
+          import re
+
+
+          def mask(card):
+              pass
+
+
+          if __name__ == "__main__":
+              print(mask("1234 5678 9012 3456"))
+        solution: |
+          import re
+
+
+          def mask(card):
+              return re.sub(r"\d", "*", card[:-4]) + card[-4:]
+
+
+          if __name__ == "__main__":
+              print(mask("1234 5678 9012 3456"))
+        hints:
+          - "Split the job in two: the start of the text, `card[:-4]`, and its last four characters, `card[-4:]`."
+          - "Replace every digit of the start with `re.sub(r\"\\d\", \"*\", ...)`, and add the last four characters back unchanged."
+        require:
+          - pattern: \bre\.sub\s*\(
+            message: Replace the digits with `re.sub`.
+        tests:
+          - call: print(mask("1234 5678 9012 3456"))
+          - call: print(mask("4000-1234-5678-9010"))
+            hidden: true
+          - call: print(mask("98765"))
+            hidden: true
+      - task: |
+          Write a program that reads prices until the user enters an empty line. A valid price is one or more digits, optionally followed by a dot and exactly two digits: `12`, `3.50` and `0.99` are valid, but `3.5`, `.50`, `12.345` and `ten` are not. For each invalid line the program prints `Not a price:` and the line right away. At the end it prints the total of the valid prices, with two decimals. An example run:
+
+          ```
+          Price: 3.50
+          Price: 12
+          Price: 3.5
+          Not a price: 3.5
+          Price: 0.99
+          Price:
+          Total: 16.49
+          ```
+        seed: |
+          import re
+
+        solution: |
+          import re
+
+          total = 0
+          while True:
+              line = input("Price: ")
+              if line == "":
+                  break
+              if re.fullmatch(r"\d+(\.\d\d)?", line):
+                  total += float(line)
+              else:
+                  print("Not a price:", line)
+          print(f"Total: {total:.2f}")
+        hints:
+          - "Read lines in a `while True` loop and `break` when the line is empty."
+          - "A price is `\\d+` followed by an optional group of a dot and two digits. The dot needs a backslash: `r\"\\d+(\\.\\d\\d)?\"`."
+          - "Check each line with `re.fullmatch`. Add the valid ones to the total with `float(line)`, and print `f\"Total: {total:.2f}\"` at the end."
+        require:
+          - pattern: \bre\.fullmatch\s*\(
+            message: Check each price with `re.fullmatch`.
+        tests:
+          - stdin: "3.50\n12\n3.5\n0.99\n\n"
+          - stdin: "ten\n.50\n12.345\n7\n100.10\n\n"
+            hidden: true
+          - stdin: "1.5\n\n"
+            hidden: true

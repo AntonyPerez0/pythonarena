@@ -1,0 +1,292 @@
+topic: class-attributes
+drills:
+  - type: predict
+    after: class-variables
+    code: |
+      class Robot:
+          built = 0
+
+          def __init__(self):
+              Robot.built += 1
+
+
+      a = Robot()
+      b = Robot()
+      c = Robot()
+      print(Robot.built)
+    why: "`built` is a class variable, shared by all robots. Each constructor call adds one to the same counter, so it ends at 3."
+
+  - type: predict
+    after: class-variables
+    code: |
+      class Shop:
+          discount = 10
+
+          def __init__(self, name):
+              self.name = name
+
+
+      a = Shop("North")
+      b = Shop("South")
+      Shop.discount = 25
+      print(a.discount, b.discount)
+    why: "There's only one `discount`, in the class. Reading `a.discount` finds it there, so after the change both shops see 25."
+
+  - type: predict
+    after: class-variables
+    code: |
+      class Robot:
+          built = 0
+
+          def __init__(self):
+              self.built += 1
+
+
+      a = Robot()
+      b = Robot()
+      print(Robot.built, a.built)
+    why: "Assigning to `self.built` gives each robot an attribute of its own, so the class variable stays 0. Change a class variable through the class's name: `Robot.built += 1`."
+
+  - type: fill
+    after: class-variables
+    code: |
+      class Visitor:
+          total = 0
+
+          def __init__(self, name):
+              self.name = name
+              [[Visitor]].total += 1
+
+
+      Visitor("Ann")
+      Visitor("Bo")
+      print(Visitor.total)
+    why: "A class variable is changed through the class's name, `Visitor.total`, so every visitor adds to the same count."
+
+  - type: choice
+    after: class-variables
+    prompt: Where is a class variable written?
+    choices:
+      - "In `__init__`, as `self.name = value`"
+      - Inside the class, outside any method, without `self.`
+      - Outside the class, before it
+    answer: 2
+    why: "A class variable is written in the class body, outside the methods. `self.name = value` in `__init__` makes an instance variable, one per object."
+
+  - type: predict
+    after: class-methods
+    code: |
+      class Square:
+          def __init__(self, side):
+              self.side = side
+
+          @classmethod
+          def unit(cls):
+              return cls(1)
+
+
+      s = Square.unit()
+      print(s.side)
+    why: "`Square.unit()` is a class method: `cls` is the class `Square`, so `cls(1)` creates a square with side 1."
+
+  - type: predict
+    after: class-methods
+    code: |
+      class Grade:
+          @staticmethod
+          def passed(points):
+              return points >= 50
+
+
+      print(Grade.passed(72))
+      print(Grade.passed(31))
+    why: "A static method is called through the class's name and gets only its own parameters. No `Grade` object is needed."
+
+  - type: bug
+    after: class-methods
+    code: |
+      class Square:
+          def __init__(self, side):
+              self.side = side
+
+          @classmethod
+          def unit():  # BUG
+              return Square(1)
+
+
+      print(Square.unit().side)
+    fix: "def unit(cls):"
+    why: "Python gives a class method the class as its first argument, so it needs the parameter `cls`. Without it: `TypeError: Square.unit() takes 0 positional arguments but 1 was given`."
+
+  - type: runs
+    after: class-methods
+    code: |
+      class Clock:
+          def __init__(self):
+              self.hour = 12
+
+          def show(self):
+              print(self.hour)
+
+
+      Clock.show()
+    why: "`show` is an ordinary method, so it needs an object to be its `self`. Calling it through the class gives none: `TypeError: Clock.show() missing 1 required positional argument: 'self'`."
+
+  - type: choice
+    after: class-methods
+    prompt: What does a class method get as its first parameter?
+    choices:
+      - The object it's called on (`self`)
+      - The class itself (`cls`)
+      - Nothing, only the arguments of the call
+    answer: 2
+    why: "A class method gets the class as `cls`. An ordinary method gets the object as `self`, and a static method gets neither."
+
+  - type: predict
+    after: default-values
+    code: |
+      class Pizza:
+          def __init__(self, size="medium", cheese=True):
+              self.size = size
+              self.cheese = cheese
+
+
+      a = Pizza()
+      b = Pizza("large")
+      c = Pizza(cheese=False)
+      print(a.size, b.size, c.size, c.cheese)
+    why: "Left-out arguments get their default values. `cheese=False` is a keyword argument, so `c` keeps the default size."
+
+  - type: bug
+    after: default-values
+    code: |
+      class Hero:
+          def __init__(self, name, health=100, level=1):
+              self.name = name
+              self.health = health
+              self.level = level
+
+
+      hero = Hero("Ana", 5)  # BUG
+      print(hero.health, hero.level)
+    fix: hero = Hero("Ana", level=5)
+    why: "Arguments fill the parameters in order, so 5 becomes the health. To give only the level, name it: `level=5`."
+
+  - type: predict
+    after: default-values
+    code: |
+      class Box:
+          def __init__(self, things=[]):
+              self.things = things
+
+
+      a = Box()
+      b = Box()
+      a.things.append("key")
+      print(b.things)
+    why: "The default list is created once, when the `def` line is read, so every box without things of its own shares it. Use `None` as the default and create the list in `__init__`."
+
+  - type: runs
+    after: default-values
+    code: |
+      class Note:
+          def __init__(self, text="", title):
+              self.text = text
+              self.title = title
+    why: "Parameters with default values must come after the ones without. Python can't read the class: `SyntaxError: parameter without a default follows parameter with a default`."
+
+  - type: predict
+    after: classes-together
+    code: |
+      class Dock:
+          def __init__(self):
+              self.boats = []
+
+          def release(self):
+              if len(self.boats) == 0:
+                  return None
+              return self.boats.pop(0)
+
+
+      dock = Dock()
+      dock.boats.append("Swan")
+      print(dock.release())
+      print(dock.release())
+    why: "The first call takes the only boat. The dock is then empty, so the second call returns `None`."
+
+  - type: boss
+    after: class-methods
+    prompt: |
+      Write the class `Badge`. Every new badge gets the next number from the class variable `issued`, which starts at 0: the first badge is number 1. The constructor takes the holder's name. The class method `count(cls)` returns how many badges have been made, and `__str__` returns a string such as `#1 Ada`.
+
+      For example, this code:
+
+      ```python fragment
+      a = Badge("Ada")
+      b = Badge("Ben")
+      print(a)
+      print(b)
+      print(Badge.count())
+      ```
+
+      prints:
+
+      ```
+      #1 Ada
+      #2 Ben
+      2
+      ```
+    seed: |
+      class Badge:
+          issued = 0
+
+
+      if __name__ == "__main__":
+          a = Badge("Ada")
+          b = Badge("Ben")
+          print(a)
+          print(b)
+          print(Badge.count())
+    solution: |
+      class Badge:
+          issued = 0
+
+          def __init__(self, name):
+              Badge.issued += 1
+              self.number = Badge.issued
+              self.name = name
+
+          @classmethod
+          def count(cls):
+              return cls.issued
+
+          def __str__(self):
+              return f"#{self.number} {self.name}"
+
+
+      if __name__ == "__main__":
+          a = Badge("Ada")
+          b = Badge("Ben")
+          print(a)
+          print(b)
+          print(Badge.count())
+    hints:
+      - "In `__init__`, add one to `Badge.issued` first, then store the new value as the badge's own `self.number`."
+      - "`count` has `@classmethod` above it and returns `cls.issued`."
+    require:
+      - pattern: '@classmethod'
+        raw: true
+        message: Make `count` a class method, with `@classmethod` above it.
+    tests:
+      - call: |
+          a = Badge("Ada")
+          b = Badge("Ben")
+          print(a)
+          print(b)
+          print(Badge.count())
+      - call: |
+          print(Badge.count())
+          for name in ["Kim", "Lou", "Max"]:
+              print(Badge(name))
+          print(Badge.count())
+        hidden: true

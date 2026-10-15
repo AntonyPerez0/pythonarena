@@ -1,0 +1,194 @@
+topic: tuples
+drills:
+  - type: predict
+    after: basics
+    code: |
+      t = (1, 2, 3)
+      print(t[1:])
+      print(len(t))
+    why: "A slice of a tuple is a tuple, shown in parentheses. `len` counts its items."
+
+  - type: runs
+    after: basics
+    code: |
+      point = (1, 2)
+      point[0] = 5
+    why: "A tuple can't change, so assigning to one of its items stops with `TypeError: 'tuple' object does not support item assignment`."
+
+  - type: runs
+    after: basics
+    code: |
+      days = ("Mon", "Tue")
+      days.append("Wed")
+    why: "Tuples have no methods that change them, so there is no `append`: Python stops with an `AttributeError`."
+
+  - type: predict
+    after: basics
+    code: |
+      point = (3, 4)
+      point = (point[0] + 1, point[1])
+      print(point)
+    why: "The tuple itself doesn't change: a new tuple is made from the old values, and the variable now refers to it."
+
+  - type: predict
+    after: basics
+    code: |
+      sizes = ("S", "M", "L")
+      for size in sizes:
+          print(size.lower())
+    why: "A `for` loop goes through a tuple's items just as it goes through a list's."
+
+  - type: choice
+    after: why-tuples
+    prompt: Which of these can be a key in a dictionary?
+    choices:
+      - "`[1, 2]`, a list"
+      - "`(1, 2)`, a tuple"
+      - "Both"
+    answer: 2
+    why: "A key must not be able to change. A tuple can't change, but a list can, so a list can't be a key."
+
+  - type: predict
+    after: why-tuples
+    code: |
+      grid = {(0, 0): "X", (1, 2): "O"}
+      print(grid[(1, 2)])
+      print((2, 1) in grid)
+    why: "The keys are tuples. `(1, 2)` is a key, but `(2, 1)` is a different tuple, so it isn't."
+
+  - type: fill
+    after: why-tuples
+    code: |
+      board = {}
+      board[[[(0, 2)]]] = "X"
+      print(board)
+    expect: |
+      {(0, 2): 'X'}
+    why: "A tuple of a row and a column can be a key, because a tuple can't change."
+
+  - type: predict
+    after: without-parentheses
+    code: |
+      numbers = 4, 5
+      print(numbers)
+    why: "It's the commas that make a tuple. `4, 5` is the tuple `(4, 5)` even without parentheses."
+
+  - type: predict
+    after: without-parentheses
+    code: |
+      a, b = 3, 8
+      a, b = b, a
+      print(a, b)
+    why: "The right side makes the tuple `(8, 3)` first, and then it's unpacked into `a` and `b`, so the values swap."
+
+  - type: runs
+    after: without-parentheses
+    code: |
+      x, y = (1, 2, 3)
+    why: "Two variables can't take three values: Python stops with `ValueError: too many values to unpack (expected 2, got 3)`."
+
+  - type: predict
+    after: without-parentheses
+    code: |
+      def low_high(numbers):
+          return min(numbers), max(numbers)
+
+
+      result = low_high([4, 9, 2])
+      print(result)
+      low, high = result
+      print(high - low)
+    why: "The function returns two values as one tuple, `(2, 9)`. Unpacking puts them into `low` and `high`."
+
+  - type: bug
+    after: without-parentheses
+    code: |
+      def to_minutes(total_seconds):
+          return total_seconds // 60, total_seconds % 60
+
+
+      seconds, minutes = to_minutes(150)  # BUG
+      print(minutes, "min", seconds, "s")
+    fix: minutes, seconds = to_minutes(150)
+    why: "Unpacking goes in order: the first value returned, the minutes, goes into the first variable."
+
+  - type: predict
+    after: without-parentheses
+    code: |
+      pets = [("Rex", 4), ("Tom", 7)]
+      for name, age in pets:
+          print(name, age + 1)
+    why: "Each tuple of the list is unpacked into `name` and `age` at the start of the round."
+
+  - type: fill
+    after: without-parentheses
+    code: |
+      a = "left"
+      b = "right"
+      a, b = [[b, a]]
+      print(a, b)
+    why: "`a, b = b, a` makes a tuple of the old values first, then unpacks it, so the two values swap."
+
+  - type: boss
+    after: without-parentheses
+    prompt: |
+      Write a function `fibonacci(n)` that returns a list of the first `n` Fibonacci numbers. The first two are 0 and 1, and each one after them is the sum of the two before it. For example, `fibonacci(7)` returns `[0, 1, 1, 2, 3, 5, 8]`.
+    seed: |
+      def fibonacci(n: int) -> list:
+          pass
+
+
+      if __name__ == "__main__":
+          print(fibonacci(7))
+    solution: |
+      def fibonacci(n: int) -> list:
+          numbers = []
+          a, b = 0, 1
+          for i in range(n):
+              numbers.append(a)
+              a, b = b, a + b
+          return numbers
+
+
+      if __name__ == "__main__":
+          print(fibonacci(7))
+    hints:
+      - "Keep the current number and the next one in two variables, starting with `a, b = 0, 1`."
+      - "On each round, append `a`, then move both forward in one line: `a, b = b, a + b`."
+    tests:
+      - call: fibonacci(7)
+      - call: fibonacci(1)
+        hidden: true
+      - call: fibonacci(12)
+        hidden: true
+
+  - type: boss
+    after: without-parentheses
+    prompt: |
+      Write a function `swap_pairs(pairs)` that takes a list of tuples of two values and returns a new list in which the two values of each tuple are the other way around. For example, `swap_pairs([(1, 2), ("a", "b")])` returns `[(2, 1), ('b', 'a')]`.
+    seed: |
+      def swap_pairs(pairs: list) -> list:
+          pass
+
+
+      if __name__ == "__main__":
+          print(swap_pairs([(1, 2), ("a", "b")]))
+    solution: |
+      def swap_pairs(pairs: list) -> list:
+          swapped = []
+          for first, second in pairs:
+              swapped.append((second, first))
+          return swapped
+
+
+      if __name__ == "__main__":
+          print(swap_pairs([(1, 2), ("a", "b")]))
+    hints:
+      - "Unpack each tuple in the loop: `for first, second in pairs:`."
+      - "Append a new tuple with the values the other way around, `(second, first)`, to a new list."
+    tests:
+      - call: swap_pairs([(1, 2), ("a", "b")])
+      - call: swap_pairs([])
+        hidden: true
+      - call: swap_pairs([(0, 9), (8, 7), (6, 5)])
+        hidden: true
