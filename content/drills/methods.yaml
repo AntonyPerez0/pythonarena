@@ -1,0 +1,418 @@
+topic: methods
+drills:
+  - type: fill
+    after: first-methods
+    code: |
+      class Square:
+          def __init__(self, side):
+              self.side = side
+
+          def area([[self]]):
+              return self.side * self.side
+
+
+      print(Square(4).area())
+    why: "Every method's first parameter is `self`, the object the method is called on."
+
+  - type: runs
+    after: first-methods
+    code: |
+      class Dog:
+          def bark():
+              print("Woof")
+
+
+      Dog().bark()
+    why: "`bark` has no `self` parameter, but Python always passes the object: `TypeError: Dog.bark() takes 0 positional arguments but 1 was given`."
+
+  - type: bug
+    after: first-methods
+    code: |
+      class Box:
+          def __init__(self, width):
+              self.width = width
+
+          def double(self):
+              return width * 2  # BUG
+
+
+      print(Box(3).double())
+    fix: return self.width * 2
+    why: "Inside a method, an attribute is reached through `self`. A plain `width` is a `NameError`."
+
+  - type: predict
+    after: first-methods
+    code: |
+      class Rect:
+          def __init__(self, w, h):
+              self.w = w
+              self.h = h
+
+          def area(self):
+              return self.w * self.h
+
+
+      r = Rect(2, 3)
+      print(r.area())
+      r.h = 10
+      print(r.area())
+    why: "A method works with the attributes as they are when it is called, so the second call uses the new height."
+
+  - type: choice
+    after: first-methods
+    prompt: "`r` is an object with a method `area`. What does `r.area` give, without parentheses?"
+    choices:
+      - The area
+      - The method itself, without calling it
+      - An error
+    answer: 2
+    why: "Only the parentheses call a method. Without them you get the method itself, and printing it shows something like `<bound method ...>`."
+
+  - type: predict
+    after: changing-state
+    code: |
+      class Counter:
+          def __init__(self):
+              self.value = 0
+
+          def increase(self):
+              self.value += 1
+
+
+      a = Counter()
+      b = Counter()
+      a.increase()
+      b.increase()
+      a.increase()
+      print(a.value, b.value)
+    why: "A method changes only the object it is called on, so each counter counts its own calls."
+
+  - type: predict
+    after: changing-state
+    code: |
+      class Counter:
+          def __init__(self):
+              self.value = 0
+
+          def increase(self):
+              self.value += 1
+
+
+      c = Counter()
+      print(c.increase())
+      print(c.value)
+    why: "`increase` changes the object but returns nothing, so printing its result prints `None`. The change is still made."
+
+  - type: bug
+    after: changing-state
+    code: |
+      class Wallet:
+          def __init__(self):
+              self.money = 0
+
+          def add(self, amount):
+              self.money = amount  # BUG
+
+
+      w = Wallet()
+      w.add(5)
+      w.add(10)
+      print(w.money)
+    fix: self.money += amount
+    why: "`=` replaces the money with the new amount. To add to what's already there, use `+=`."
+
+  - type: fill
+    after: changing-state
+    code: |
+      class Jar:
+          def __init__(self):
+              self.coins = 0
+
+          def add(self, n):
+              self.coins [[+=]] n
+
+
+      j = Jar()
+      j.add(3)
+      j.add(4)
+      print(j.coins)
+    why: "`+=` adds to the attribute's current value, so the jar keeps every coin added."
+
+  - type: predict
+    after: keeping-it-valid
+    code: |
+      class Lives:
+          def __init__(self):
+              self.left = 2
+
+          def lose(self):
+              if self.left > 0:
+                  self.left -= 1
+
+
+      p = Lives()
+      for i in range(5):
+          p.lose()
+      print(p.left)
+    why: "`lose` takes a life only while there are some left, so the count stops at 0."
+
+  - type: predict
+    after: keeping-it-valid
+    code: |
+      class Stock:
+          def __init__(self, amount):
+              self.amount = amount
+
+          def take(self, n):
+              if n <= self.amount:
+                  self.amount -= n
+                  return True
+              return False
+
+
+      s = Stock(4)
+      print(s.take(3), s.take(3), s.amount)
+    why: "The first `take` succeeds and leaves 1. The second asks for more than there is, so it changes nothing and returns `False`."
+
+  - type: choice
+    after: keeping-it-valid
+    prompt: What is encapsulation?
+    choices:
+      - Keeping an object's data valid by handling it through the object's own methods
+      - Putting every class in a file of its own
+      - Making a copy of an object before changing it
+    answer: 1
+    why: "The client calls the methods, and the methods make sure the object's state always makes sense."
+
+  - type: runs
+    after: keeping-it-valid
+    code: |
+      class Account:
+          def __init__(self):
+              self.balance = 0
+
+          def deposit(self, amount):
+              if amount <= 0:
+                  raise ValueError("amount must be positive")
+              self.balance += amount
+
+
+      Account().deposit(0)
+    why: "The method refuses an amount of 0 by raising a `ValueError`, and nothing catches it, so the program stops."
+
+  - type: bug
+    after: helper-methods
+    code: |
+      class Order:
+          def __init__(self, items):
+              self.items = items
+
+          def tax(self):
+              return self.items * 0.2
+
+          def total(self):
+              return self.items + tax()  # BUG
+
+
+      print(Order(10).total())
+    fix: return self.items + self.tax()
+    why: "A method of the same object is called through `self`. A plain `tax()` is a `NameError`."
+
+  - type: predict
+    after: helper-methods
+    code: |
+      class Shop:
+          def __init__(self):
+              self.sales = 0
+
+          def sell(self, price):
+              discount = price // 10
+              self.sales += price - discount
+
+
+      shop = Shop()
+      shop.sell(50)
+      shop.sell(30)
+      print(shop.sales)
+    why: "Each sale adds the price minus a tenth of it: 45 and 27. The local variable `discount` is gone after each call; only `self.sales` is remembered."
+
+  - type: runs
+    after: helper-methods
+    code: |
+      class Shop:
+          def __init__(self):
+              self.sales = 0
+
+          def sell(self, price):
+              discount = price // 10
+              self.sales += price - discount
+
+
+      shop = Shop()
+      shop.sell(50)
+      print(shop.discount)
+    why: "`discount` is a local variable of `sell`, not an attribute, so the object has no `discount`: `AttributeError`."
+
+  - type: boss
+    after: keeping-it-valid
+    prompt: |
+      Write a class `Elevator` whose constructor takes the number of the top floor and stores it in the attribute `top`. A new elevator is on floor 0, in the attribute `floor`. Give it these methods:
+
+      - `up()` moves the elevator one floor up, but not above the top floor.
+      - `down()` moves it one floor down, but not below 0.
+      - `go_to(floor)` moves the elevator to the given floor and returns `True`, if the floor is between 0 and the top floor. Otherwise it returns `False` and the elevator stays where it is.
+
+      This code:
+
+      ```python fragment
+      lift = Elevator(3)
+      lift.down()
+      print(lift.floor)
+      print(lift.go_to(5), lift.floor)
+      print(lift.go_to(3), lift.floor)
+      lift.up()
+      print(lift.floor)
+      ```
+
+      prints
+
+      ```
+      0
+      False 0
+      True 3
+      3
+      ```
+    seed: |
+      class Elevator:
+          pass
+
+
+      if __name__ == "__main__":
+          lift = Elevator(3)
+          lift.up()
+          print(lift.floor)
+    solution: |
+      class Elevator:
+          def __init__(self, top):
+              self.top = top
+              self.floor = 0
+
+          def up(self):
+              if self.floor < self.top:
+                  self.floor += 1
+
+          def down(self):
+              if self.floor > 0:
+                  self.floor -= 1
+
+          def go_to(self, floor):
+              if 0 <= floor <= self.top:
+                  self.floor = floor
+                  return True
+              return False
+
+
+      if __name__ == "__main__":
+          lift = Elevator(3)
+          lift.up()
+          print(lift.floor)
+    hints:
+      - "`up` moves only `if self.floor < self.top`, and `down` only `if self.floor > 0`."
+      - "In `go_to`, check `0 <= floor <= self.top` before changing anything, and return `True` or `False`."
+    tests:
+      - call: |
+          lift = Elevator(3)
+          lift.down()
+          print(lift.floor)
+          print(lift.go_to(5), lift.floor)
+          print(lift.go_to(3), lift.floor)
+          lift.up()
+          print(lift.floor)
+      - call: |
+          tower = Elevator(10)
+          for i in range(4):
+              tower.up()
+          print(tower.floor)
+          print(tower.go_to(-1), tower.go_to(0), tower.floor)
+          tower.down()
+          print(tower.floor, tower.top)
+        hidden: true
+
+  - type: boss
+    after: helper-methods
+    prompt: |
+      Write a class `Grades` that collects exam grades from 0 to 5. Give it these methods:
+
+      - `add(grade)` records the grade and returns `True`, but only if it is from 0 to 5. Otherwise it records nothing and returns `False`. Check the grade with a helper method `valid(grade)` that returns `True` or `False`.
+      - `count()` returns how many grades have been recorded.
+      - `mean()` returns their mean, or 0 when there are none.
+
+      This code:
+
+      ```python fragment
+      course = Grades()
+      print(course.add(4), course.add(9), course.add(5))
+      print(course.count(), course.mean())
+      ```
+
+      prints
+
+      ```
+      True False True
+      2 4.5
+      ```
+    seed: |
+      class Grades:
+          pass
+
+
+      if __name__ == "__main__":
+          course = Grades()
+          print(course.add(4), course.add(9))
+          print(course.count(), course.mean())
+    solution: |
+      class Grades:
+          def __init__(self):
+              self.number = 0
+              self.total = 0
+
+          def valid(self, grade):
+              return 0 <= grade <= 5
+
+          def add(self, grade):
+              if not self.valid(grade):
+                  return False
+              self.number += 1
+              self.total += grade
+              return True
+
+          def count(self):
+              return self.number
+
+          def mean(self):
+              if self.number == 0:
+                  return 0
+              return self.total / self.number
+
+
+      if __name__ == "__main__":
+          course = Grades()
+          print(course.add(4), course.add(9))
+          print(course.count(), course.mean())
+    hints:
+      - "A count and a total are enough to give the mean. Don't call the attribute `count`, or it would hide the method of the same name."
+      - "`add` calls the helper through `self`: `if not self.valid(grade): return False`."
+    require:
+      - pattern: self\.valid\(
+        message: "Check the grade in `add` with the helper method: `self.valid(grade)`."
+    tests:
+      - call: |
+          course = Grades()
+          print(course.add(4), course.add(9), course.add(5))
+          print(course.count(), course.mean())
+      - call: |
+          g = Grades()
+          print(g.count(), g.mean())
+          print(g.add(-1), g.add(0), g.add(6), g.add(3))
+          print(g.count(), g.mean(), g.valid(5), g.valid(7))
+        hidden: true

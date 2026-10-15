@@ -1,0 +1,691 @@
+id: loop-conditions
+summary: Loops that check a condition before every round. The three parts of a counting loop, conditions that are sure to end, two habits for debugging loops, and building a string piece by piece.
+steps:
+  - id: loop-conditions-while-condition
+    slug: while-condition
+    title: A loop with a condition
+    text: |
+      In the last module, every loop started with `while True:`. Since `True` is always true, a loop like that would run forever on its own, so a `break` inside it did the stopping. But `while` can do more: like `if`, it takes any **condition**, and the loop runs as long as the condition is true.
+
+      Here is a loop in the style of the last module. It counts to three:
+
+      ```python run
+      number = 1
+      while True:
+          if number > 3:
+              break
+          print(number)
+          number += 1
+      print("Done")
+      ```
+
+      ```output
+      1
+      2
+      3
+      Done
+      ```
+
+      And here is the same loop with a condition:
+
+      ```python run
+      number = 1
+      while number <= 3:
+          print(number)
+          number += 1
+      print("Done")
+      ```
+
+      ```output
+      1
+      2
+      3
+      Done
+      ```
+
+      This is what Python does with it:
+
+      1. It checks the condition `number <= 3`. If it's true, it runs the indented lines under the `while`, the **body** of the loop.
+      2. At the end of the body, it goes back up to the `while` line and checks the condition again.
+      3. As soon as the condition is false, it skips the body and goes on with the first line after the loop.
+
+      One pass through the body is an iteration of the loop, as in the last module. These lessons also call it a **round**, which is shorter. Here the body runs three times, with `number` at 1, 2 and 3. After the third round `number` is 4, the condition `4 <= 3` is false, and the loop ends.
+
+      Compare the two conditions. The `if` before `break` says when to **stop**: `number > 3`. The `while` condition says when to **keep going**: `number <= 3`. One is the opposite of the other. The version with the condition is shorter, and a reader sees right at the top how long the loop runs.
+
+      ### The condition comes first
+
+      Python checks the loop condition before every round, the first one included. If the condition is false from the start, the body doesn't run at all:
+
+      ```python run
+      lap = int(input("Starting lap: "))
+      while lap <= 5:
+          print(f"Lap {lap}")
+          lap += 1
+      print("Race over")
+      ```
+
+      ```input
+      3
+      ```
+
+      ```output
+      Starting lap: 3
+      Lap 3
+      Lap 4
+      Lap 5
+      Race over
+      ```
+
+      With 8 as the input, `8 <= 5` is false straight away, so after the prompt the program prints only `Race over`.
+
+      The condition is checked only there, at the top. If it becomes false in the middle of the body, the rest of the body still runs, and the loop ends when Python comes back up to check.
+
+      **Your turn:** fill in the condition so the program prints the multiples of 5 from 5 to 50, each on its own line.
+    fill: |
+      number = 5
+      while [[number <= 50‖number < 51‖number < 55]]:
+          print(number)
+          number += 5
+    hints:
+      - The loop should keep going as long as `number` is at most 50.
+      - "\"At most\" is `<=`. Compare `number` with 50."
+    tests:
+      - expect: |
+          5
+          10
+          15
+          20
+          25
+          30
+          35
+          40
+          45
+          50
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          x = 20
+          while x > 1:
+              print(x)
+              x = x // 2
+          print("Last:", x)
+        hints:
+          - "`//` divides and drops the remainder, so `5 // 2` is 2."
+          - Before each round, check whether `x > 1` is still true. Write down `x` after every round.
+          - "The values of `x` are 20, 10, 5, 2 and then 1. Which of them get printed inside the loop?"
+      - task: |
+          Write a program that asks `How many steps? ` and then prints one line per step, from `Step 1` up to the number typed in. After the steps it prints `At the top!`. Use a `while` loop with a condition, not `while True`.
+
+          ```
+          How many steps? 3
+          Step 1
+          Step 2
+          Step 3
+          At the top!
+          ```
+        seed: |
+          steps = int(input("How many steps? "))
+        solution: |
+          steps = int(input("How many steps? "))
+          step = 1
+          while step <= steps:
+              print(f"Step {step}")
+              step += 1
+          print("At the top!")
+        hints:
+          - You need a second variable that counts the steps. Give it the value 1 before the loop.
+          - "The loop goes on while the counter is at most `steps`: `while step <= steps:`."
+          - In the body, print the line with an f-string, then add 1 to the counter. `At the top!` goes after the loop, without indentation.
+        forbid:
+          - pattern: while\s+True
+            message: Write the loop with a condition, such as `while step <= steps:`, instead of `while True`.
+        tests:
+          - stdin: "3"
+          - stdin: "1"
+            hidden: true
+          - stdin: "0"
+            hidden: true
+          - stdin: "6"
+            hidden: true
+
+  - id: loop-conditions-three-parts
+    slug: three-parts
+    title: Start, condition, update
+    text: |
+      A loop that counts needs three things. Here they are in a loop that prints the times of a bus that leaves every two hours:
+
+      ```python run
+      hour = 9  # 1. the start value
+      while hour <= 17:  # 2. the condition
+          print(f"{hour}:00")
+          hour += 2  # 3. the update
+      ```
+
+      ```output
+      9:00
+      11:00
+      13:00
+      15:00
+      17:00
+      ```
+
+      1. **Initialization**: before the loop, the variable in the condition gets its first value. Here `hour` starts at 9.
+      2. **Condition**: at the top of the loop, it decides whether another round runs.
+      3. **Update**: in the body, the variable changes, so that every round brings the loop closer to its end. Here `hour` grows by 2 in every round, so sooner or later `hour <= 17` is false.
+
+      If one of the three is missing or wrong, the loop goes wrong too.
+
+      ### Forgetting the start value
+
+      Without an initialization, the variable doesn't exist yet when Python first checks the condition:
+
+      ```python run crash
+      while total < 100:
+          total += 30
+      print(total)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          while total < 100:
+                ^^^^^
+      NameError: name 'total' is not defined
+      ```
+
+      The fix is a line before the loop that gives `total` its start value, such as `total = 0`.
+
+      ### Forgetting the update
+
+      Without an update, the condition never changes. If it's true once, it stays true forever:
+
+      ```python fragment
+      hour = 9
+      while hour <= 17:
+          print(f"{hour}:00")
+      ```
+
+      This prints `9:00` again and again, without end: an infinite loop, like the ones in the last module. On your own computer you stop such a program with **Ctrl+C**. On this site, a program that runs for more than a few seconds, or prints a huge amount, is stopped for you, with a note that says so.
+
+      A sneakier way to lose the update is to forget its indentation:
+
+      ```python fragment
+      hour = 9
+      while hour <= 17:
+          print(f"{hour}:00")
+      hour += 2
+      ```
+
+      `hour += 2` isn't indented, so it isn't part of the body. Only the indented lines repeat; this line would run once the loop is over, and the loop is never over.
+
+      The update can also go the wrong way. With `hour -= 2`, `hour` gets smaller in every round and stays below 17 forever. So before you run a loop, ask yourself: does every round take a step toward making the condition false?
+
+      **Your turn:** this program should print `Round 1` to `Round 4` and then `Game over`, but it never stops. Fix it.
+
+      ```
+      Round 1
+      Round 2
+      Round 3
+      Round 4
+      Game over
+      ```
+    seed: |
+      round_number = 1
+      while round_number <= 4:
+          print(f"Round {round_number}")
+      round_number += 1
+      print("Game over")
+    solution: |
+      round_number = 1
+      while round_number <= 4:
+          print(f"Round {round_number}")
+          round_number += 1
+      print("Game over")
+    hints:
+      - Which lines repeat? Only the indented lines under the `while` are part of the loop.
+      - The update `round_number += 1` is outside the loop, so the loop never reaches it. Indent it with four spaces, like the `print` above it.
+    tests:
+      - expect: |
+          Round 1
+          Round 2
+          Round 3
+          Round 4
+          Game over
+    more:
+      - task: |
+          Fill in the start value, the condition and the update, so the program prints the battery levels below and then `Empty`.
+
+          ```
+          100
+          75
+          50
+          25
+          Empty
+          ```
+        fill: |
+          battery = [[100]]
+          while [[battery > 0‖battery >= 25‖battery > 24]]:
+              print(battery)
+              [[battery -= 25‖battery = battery - 25]]
+          print("Empty")
+        hints:
+          - The first number printed is the start value. Each number is 25 less than the one before.
+          - The loop should go on while there's still something left in the battery, so compare `battery` with 0.
+          - "The update makes `battery` 25 smaller: `battery -= 25`."
+        tests:
+          - expect: |
+              100
+              75
+              50
+              25
+              Empty
+      - task: |
+          Write a program that asks for two whole numbers with the prompts `From: ` and `To: `, and prints every whole number from the first one to the second one, in order. If the first number is greater than the second, it prints no numbers at all.
+
+          ```
+          From: 4
+          To: 7
+          4
+          5
+          6
+          7
+          ```
+        seed: |
+          first = int(input("From: "))
+          last = int(input("To: "))
+        solution: |
+          first = int(input("From: "))
+          last = int(input("To: "))
+          number = first
+          while number <= last:
+              print(number)
+              number += 1
+        hints:
+          - "Name the three parts first. The start value is the first number, the loop goes on while the number is at most the last one, and the update adds 1."
+          - "Use a variable that starts at `first`: `number = first`. Then loop `while number <= last:`."
+          - If the first number is greater than the second, the condition is false from the start, so the loop prints nothing on its own.
+        forbid:
+          - pattern: while\s+True
+            message: Write the loop with a condition instead of `while True`.
+        tests:
+          - stdin: |
+              4
+              7
+          - stdin: |
+              10
+              10
+            hidden: true
+          - stdin: |
+              9
+              3
+            hidden: true
+          - stdin: |
+              -2
+              1
+            hidden: true
+
+  - id: loop-conditions-writing-conditions
+    slug: writing-conditions
+    title: Writing conditions
+    text: |
+      A loop condition can be anything you could write after `if`: a comparison, or several of them joined with `and`, `or` and `not`. With `and`, the loop goes on only while both parts are true, so it ends as soon as either part is false.
+
+      In this little game, a hiker walks 4 km per round and uses 3 points of energy for it. The hike ends when the hiker has walked 12 km or runs out of energy, whichever comes first:
+
+      ```python run
+      energy = int(input("Energy: "))
+      distance = 0
+      while distance < 12 and energy > 0:
+          distance += 4
+          energy -= 3
+          print(f"{distance} km walked, energy {energy}")
+      print("The hike is over")
+      ```
+
+      ```input
+      10
+      ```
+
+      ```output
+      Energy: 10
+      4 km walked, energy 7
+      8 km walked, energy 4
+      12 km walked, energy 1
+      The hike is over
+      ```
+
+      With 10 points of energy, the hiker gets to 12 km, and `distance < 12` is what ends the loop. With 5 points, the energy runs out first: after two rounds it's -1, and the hike ends at 8 km.
+
+      ### Make sure the loop ends
+
+      Before you trust a loop, check that its condition really becomes false, whatever the input. This loop is meant to count up to 10 in steps of 2:
+
+      ```python fragment
+      number = int(input("Start: "))
+      while number != 10:
+          print(number)
+          number += 2
+      ```
+
+      With 4 as the start, it prints 4, 6 and 8 and stops. But with 3 it prints 3, 5, 7, 9, 11, 13 and goes on forever: the number jumps over 10 and is never equal to it. With 12 it starts above 10 and only gets bigger. Writing `number < 10` instead fixes both: when you count up, a condition with `<` or `<=` ends the loop even when the number jumps past the limit.
+
+      ### Debugging a loop
+
+      Mistakes in loops often hide in the condition: the loop runs one round too many or too few, or goes wrong only for some inputs. Two habits help you find them:
+
+      - **Write the input into the code while you test.** A program that asks for input makes you type it on every run. For now, write the value straight into the code and keep the `input` call in a comment, so you can switch back easily: `limit = 30  # int(input("Limit: "))`. When the checks say your program fails with some input, put that input in the same way and run it until you see why.
+      - **Print the values in every round.** A debugging `print` in the body shows what the variables are in each round. Remove it once the program works, since the extra lines would fail the checks.
+
+      This program adds up 1 * 1, 2 * 2, 3 * 3 and so on until the total reaches a limit. Both habits are in use:
+
+      ```python run
+      limit = 30  # int(input("Limit: "))
+      total = 0
+      count = 0
+      while total < limit:
+          count += 1
+          total += count * count
+          print("debug:", count, total)
+      print(f"{count} squares add up to at least {limit}")
+      ```
+
+      ```output
+      debug: 1 1
+      debug: 2 5
+      debug: 3 14
+      debug: 4 30
+      4 squares add up to at least 30
+      ```
+
+      The debugging lines show every round, and that the loop stops as soon as `total` reaches 30.
+
+      **Your turn:** in this game you get the same number of points on every try. The loop should go on while you've had fewer than 5 tries **and** your score is still below 10. Fill in the condition.
+
+      ```
+      Points per try: 3
+      Try 1: score 3
+      Try 2: score 6
+      Try 3: score 9
+      Try 4: score 12
+      ```
+    fill: |
+      points = int(input("Points per try: "))
+      tries = 0
+      score = 0
+      while [[tries < 5 and score < 10‖score < 10 and tries < 5]]:
+          tries += 1
+          score += points
+          print(f"Try {tries}: score {score}")
+    hints:
+      - The condition has two parts, one about `tries` and one about `score`. The loop goes on only while both are true.
+      - "Fewer than 5 tries is `tries < 5`, and a score below 10 is `score < 10`. Join them with `and`."
+    tests:
+      - stdin: "3"
+      - stdin: "1"
+        hidden: true
+      - stdin: "2"
+        hidden: true
+      - stdin: "10"
+        hidden: true
+    more:
+      - task: |
+          This program prints numbers from a start value upward in steps of 4, as long as they are below 30. It works when the start is 2, but with 3 as the start it never stops. Fix the condition so that it works for every start value.
+
+          ```
+          Start: 2
+          2
+          6
+          10
+          14
+          18
+          22
+          26
+          Done
+          ```
+        seed: |
+          number = int(input("Start: "))
+          while number != 30:
+              print(number)
+              number += 4
+          print("Done")
+        solution: |
+          number = int(input("Start: "))
+          while number < 30:
+              print(number)
+              number += 4
+          print("Done")
+        hints:
+          - "Try it with 3 as the start, on paper or with the input written into the code: 3, 7, 11, ..., 27, 31. Is the number ever equal to 30?"
+          - The loop should go on while the number is below 30, not while it's different from 30.
+        tests:
+          - stdin: "2"
+          - stdin: "3"
+            hidden: true
+          - stdin: "29"
+            hidden: true
+          - stdin: "45"
+            hidden: true
+      - task: |
+          Write a program that asks for a savings goal and the amount saved each week, with the prompts `Goal: ` and `Saved per week: `. It then adds the weekly amount week by week and prints the total after each week, until the total reaches the goal. Last, it prints how many weeks that took.
+
+          ```
+          Goal: 100
+          Saved per week: 30
+          Week 1: 30
+          Week 2: 60
+          Week 3: 90
+          Week 4: 120
+          Weeks needed: 4
+          ```
+        seed: |
+          goal = int(input("Goal: "))
+          weekly = int(input("Saved per week: "))
+        solution: |
+          goal = int(input("Goal: "))
+          weekly = int(input("Saved per week: "))
+          total = 0
+          weeks = 0
+          while total < goal:
+              weeks += 1
+              total += weekly
+              print(f"Week {weeks}: {total}")
+          print(f"Weeks needed: {weeks}")
+        hints:
+          - "You need two helper variables, both starting at 0: the total saved so far and the number of weeks."
+          - The loop goes on while the total is still below the goal. In each round, add 1 to the weeks and the weekly amount to the total, then print the line.
+          - "The last line comes after the loop, when the total has reached the goal: `Weeks needed: ...`."
+        forbid:
+          - pattern: while\s+True
+            message: Write the loop with a condition, such as `while total < goal:`, instead of `while True`.
+        tests:
+          - stdin: |
+              100
+              30
+          - stdin: |
+              50
+              25
+            hidden: true
+          - stdin: |
+              7
+              2
+            hidden: true
+          - stdin: |
+              1000
+              120
+            hidden: true
+
+  - id: loop-conditions-building-strings
+    slug: building-strings
+    title: Strings that grow round by round
+    text: |
+      In the last module you built strings in a loop: start with the empty string `""`, and add a piece in every round with `+=`. That works just as well in a loop with a condition. The pieces can be f-strings, which saves you the `str()` that a number would otherwise need:
+
+      ```python run
+      countdown = ""
+      number = 5
+      while number > 0:
+          countdown += f"{number}... "
+          number -= 1
+      countdown += "Go!"
+      print(countdown)
+      ```
+
+      ```output
+      5... 4... 3... 2... 1... Go!
+      ```
+
+      Why not print each piece right away? Because every `print` starts a new line, and here the whole countdown should be on one line. A string you've built can also wait: after the loop, the program can add more to it, as with `Go!` here, print it twice, or check it first.
+
+      ### Choosing the piece
+
+      Each round can decide what to add. This loop draws a ruler, with a `|` at every fifth position and a dot everywhere else:
+
+      ```python run
+      ruler = ""
+      position = 0
+      while position <= 20:
+          if position % 5 == 0:
+              ruler += "|"
+          else:
+              ruler += "."
+          position += 1
+      print(ruler)
+      ```
+
+      ```output
+      |....|....|....|....|
+      ```
+
+      The loop runs 21 rounds, for the positions 0 to 20, and in each round the `if` picks the piece. `%` gives the remainder of a division, so `position % 5 == 0` is true for 0, 5, 10, 15 and 20.
+
+      ### Separators: the first piece first
+
+      In the last module, an `if` kept a separator from being left over at the end: it added the separator only when the string wasn't empty any more. When you know the first piece before the loop starts, there's a simpler way. Put that piece in the string before the loop, and add every later piece with the separator in front of it:
+
+      ```python run
+      evens = "2"
+      number = 4
+      while number <= 10:
+          evens += f", {number}"
+          number += 2
+      print(f"Even numbers: {evens}")
+      ```
+
+      ```output
+      Even numbers: 2, 4, 6, 8, 10
+      ```
+
+      Every comma sits between two numbers, and the loop needs no `if`. Note how the start value of `number` is 4, not 2: the 2 is already in the string.
+
+      **Your turn:** the program draws a progress bar of 10 places: a `#` for every task done and a `-` for every task still to do. Fill in the line that adds a `#` to the bar.
+
+      ```
+      Tasks done (out of 10): 4
+      [####------]
+      ```
+    fill: |
+      done = int(input("Tasks done (out of 10): "))
+      bar = ""
+      place = 1
+      while place <= 10:
+          if place <= done:
+              [[bar += "#"‖bar = bar + "#"]]
+          else:
+              bar += "-"
+          place += 1
+      print(f"[{bar}]")
+    hints:
+      - "Look at the `else` branch: it adds a `-` to the end of `bar`. The blank does the same with a `#`."
+      - "Adding to the end of a string is `+=`, with the text to add in quotes."
+    tests:
+      - stdin: "4"
+      - stdin: "0"
+        hidden: true
+      - stdin: "10"
+        hidden: true
+      - stdin: "7"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a number and prints its first five multiples on one line, separated by a comma and a space, as below. Build the line in a loop.
+
+          ```
+          Number: 7
+          Multiples of 7: 7, 14, 21, 28, 35
+          ```
+        seed: |
+          number = int(input("Number: "))
+        solution: |
+          number = int(input("Number: "))
+          multiples = f"{number}"
+          times = 2
+          while times <= 5:
+              multiples += f", {number * times}"
+              times += 1
+          print(f"Multiples of {number}: {multiples}")
+        hints:
+          - "The first multiple is the number itself. Put it in the string before the loop: `multiples = f\"{number}\"`."
+          - "Loop with a helper variable that goes from 2 to 5, and add `\", \"` and the next multiple to the string in every round."
+          - The whole line is printed once, after the loop.
+        require:
+          - pattern: \bwhile\b
+            message: Build the line in a `while` loop instead of writing out the five multiples one by one.
+        tests:
+          - stdin: "7"
+          - stdin: "3"
+            hidden: true
+          - stdin: "10"
+            hidden: true
+          - stdin: "1"
+            hidden: true
+      - task: |
+          Write a program that asks for prices with the prompt `Price: ` until the user types 0. Then it prints all the prices as one sum, with the total at the end, as below. You can assume the first price isn't 0.
+
+          ```
+          Price: 4
+          Price: 10
+          Price: 3
+          Price: 0
+          4 + 10 + 3 = 17
+          ```
+        seed: |
+          # Write your program here.
+        solution: |
+          # Write your program here.
+          total = 0
+          calculation = ""
+          while True:
+              price = int(input("Price: "))
+              if price == 0:
+                  break
+              if calculation == "":
+                  calculation = f"{price}"
+              else:
+                  calculation += f" + {price}"
+              total += price
+          print(f"{calculation} = {total}")
+        hints:
+          - "You need two helper variables: the total, starting at 0, and the calculation as a string, starting empty."
+          - Read the prices in a `while True` loop and `break` when the price is 0. Add every other price to the total.
+          - "For the string: if it's still empty, the price becomes its first piece. Otherwise add `\" + \"` and the price."
+          - After the loop, print the string, `" = "` and the total.
+        tests:
+          - stdin: |
+              4
+              10
+              3
+              0
+          - stdin: |
+              8
+              0
+            hidden: true
+          - stdin: |
+              1
+              2
+              3
+              4
+              5
+              0
+            hidden: true

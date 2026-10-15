@@ -1,0 +1,195 @@
+topic: loop-conditions
+drills:
+  - type: predict
+    after: while-condition
+    code: |
+      count = 3
+      while count > 0:
+          print(count)
+          count -= 1
+    why: "The condition is checked before every round. After the round that prints 1, `count` is 0, and `0 > 0` is false."
+
+  - type: predict
+    after: while-condition
+    code: |
+      n = 10
+      while n < 5:
+          print(n)
+          n += 1
+      print("end")
+    why: "`10 < 5` is false from the start, so the body never runs. Only the line after the loop prints."
+
+  - type: fill
+    after: while-condition
+    code: |
+      i = 1
+      while i [[<=]] 4:
+          print(i)
+          i += 1
+    why: "`i <= 4` stays true for 1, 2, 3 and 4, so the loop prints all four. With `<` it would stop after 3."
+
+  - type: choice
+    after: while-condition
+    prompt: When does Python check the condition of a `while` loop?
+    choices:
+      - Before every round, the first one included
+      - Only once, before the first round
+      - After every line of the body
+    answer: 1
+    why: "Python checks the condition at the top of the loop, before each round. In the middle of the body it doesn't look at it."
+
+  - type: runs
+    after: while-condition
+    code: |
+      x = 1
+      while x = 3:
+          x += 1
+    why: "One `=` gives a variable a value; comparing is `==`. A condition with a single `=` is a syntax error, and Python suggests `==`."
+
+  - type: predict
+    after: three-parts
+    code: |
+      n = 0
+      while n < 3:
+          n += 1
+          print(n)
+    why: "The update comes before the `print`, so each round prints the new value: 1, 2 and 3. When `n` is 3, `3 < 3` is false."
+
+  - type: runs
+    after: three-parts
+    code: |
+      while total < 50:
+          total += 20
+      print(total)
+    why: "`total` has no start value, so it doesn't exist when Python checks the condition the first time: a `NameError`."
+
+  - type: bug
+    after: three-parts
+    code: |
+      steps = 1
+      while steps <= 5:
+          print(steps)
+          steps -= 1  # BUG
+    fix: steps += 1
+    why: "The update goes the wrong way: `steps` gets smaller, so `steps <= 5` stays true forever. Counting up needs `+=`."
+
+  - type: bug
+    after: three-parts
+    prompt: The program should print the numbers 1 to 5. One line has a bug. Which one?
+    code: |
+      number = 1
+      while number < 5:  # BUG
+          print(number)
+          number += 1
+    fix: "while number <= 5:"
+    why: "`number < 5` is false when `number` is 5, so 5 is never printed. `<=` includes the limit."
+
+  - type: predict
+    after: writing-conditions
+    code: |
+      a = 0
+      b = 10
+      while a < 5 and b > 7:
+          a += 1
+          b -= 1
+      print(a, b)
+    why: "With `and`, the loop ends as soon as one part is false. After three rounds `b` is 7, and `7 > 7` is false, while `a < 5` would still be true."
+
+  - type: choice
+    after: writing-conditions
+    prompt: "The loop `while n != 10:` adds 3 to `n` in every round. With which start value does it never end?"
+    choices:
+      - "`n = 1`"
+      - "`n = 4`"
+      - "`n = 2`"
+    answer: 3
+    why: "From 2 the values are 5, 8, 11, 14 and so on: they jump over 10, so `n != 10` stays true forever. From 1 or 4 they land on 10."
+
+  - type: predict
+    after: writing-conditions
+    code: |
+      x = 1
+      while x < 20:
+          x = x * 3
+      print(x)
+    why: "The loop goes on while `x` is below 20: 1, 3, 9, 27. The condition is checked only at the top, so `x` can end up above the limit."
+
+  - type: predict
+    after: building-strings
+    code: |
+      sums = "1"
+      n = 2
+      while n <= 4:
+          sums += f"+{n}"
+          n += 1
+      print(sums)
+    why: "The first piece is in the string before the loop, and every later piece brings its `+` in front of it, so no `+` is left over at the end."
+
+  - type: predict
+    after: building-strings
+    code: |
+      line = ""
+      n = 1
+      while n <= 6:
+          if n % 2 == 0:
+              line += "x"
+          else:
+              line += "o"
+          n += 1
+      print(line)
+    why: "Each round adds one piece, and the `if` picks it: `o` for the odd numbers 1, 3 and 5, `x` for the even ones."
+
+  - type: bug
+    after: building-strings
+    code: |
+      stars = ""
+      i = 0
+      while i < 4:
+          stars = "*"  # BUG
+          i += 1
+      print(stars)
+    fix: stars += "*"
+    why: "`stars = \"*\"` replaces the string in every round, so it ends up as one star. `+=` adds to its end."
+
+  - type: fill
+    after: building-strings
+    code: |
+      word = "ha"
+      laugh = ""
+      count = 0
+      while count < 3:
+          laugh [[+=]] word
+          count += 1
+      print(laugh)
+    why: "`laugh += word` adds `ha` to the end of `laugh` in every round: three rounds make `hahaha`."
+
+  - type: boss
+    after: building-strings
+    prompt: |
+      Write a program that asks `Limit: ` and prints, on one line, the square numbers (1, 4, 9, 16, ...) that are below the limit, separated by a comma and a space. The limit is always at least 2.
+
+      ```
+      Limit: 30
+      1, 4, 9, 16, 25
+      ```
+    seed: |
+      limit = int(input("Limit: "))
+    solution: |
+      limit = int(input("Limit: "))
+      squares = "1"
+      number = 2
+      while number * number < limit:
+          squares += f", {number * number}"
+          number += 1
+      print(squares)
+    hints:
+      - The first square, 1, is always below the limit, so it can go in the string before the loop.
+      - "Loop with a number that starts at 2, while `number * number` is below the limit. Add `\", \"` and the square in every round."
+    tests:
+      - stdin: "30"
+      - stdin: "2"
+        hidden: true
+      - stdin: "100"
+        hidden: true
+      - stdin: "101"
+        hidden: true

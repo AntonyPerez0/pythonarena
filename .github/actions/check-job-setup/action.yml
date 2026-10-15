@@ -1,0 +1,44 @@
+# The first steps of every check job in .github/workflows/deploy.yml (after actions/checkout): Node
+# with the npm cache, npm ci, Chromium (cached, with its system libraries) if asked, and the build
+# job's output (the site-build artifact: dist, src/generated, public/lessons, public/images and fidelity/out, which
+# holds the content check list) put back where the build left it.
+name: Set up a check job
+description: Node, npm ci, Chromium if asked, and the build job's output.
+inputs:
+  chromium:
+    description: "'true' to install Chromium for Playwright, with its system libraries"
+    default: "false"
+  npm:
+    description: "'false' to skip npm ci (a job that needs no package)"
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+
+    - name: Install dependencies (also copies Pyodide into public/engine)
+      if: inputs.npm == 'true'
+      shell: bash
+      run: npm ci
+
+    # Playwright's browser download, keyed by the locked Playwright version.
+    - name: Cache Chromium for the browser tests
+      if: inputs.chromium == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+    - name: Install Chromium for the browser tests
+      if: inputs.chromium == 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium
+
+    - name: Get the build job's output
+      uses: actions/download-artifact@v4
+      with:
+        name: site-build
+        path: .

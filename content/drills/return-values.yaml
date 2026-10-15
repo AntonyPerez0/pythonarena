@@ -1,0 +1,236 @@
+topic: return-values
+drills:
+  - type: predict
+    after: interpreter
+    code: |
+      word = "Hello"
+      word.upper()
+      print(word)
+    why: "`upper` gives a new string, but nothing stores it. The variable `word` still holds `\"Hello\"`."
+
+  - type: choice
+    after: interpreter
+    prompt: "You type `\"7\"` at the interpreter's `>>>` prompt. What does it show?"
+    choices:
+      - "`7`"
+      - "`'7'`"
+      - Nothing
+    answer: 2
+    why: "The interpreter shows a value the way it's written in code, so a string is shown with quotes: `'7'`. That's how you can tell it from the number `7`."
+
+  - type: runs
+    after: interpreter
+    code: |
+      name = "ada"
+      print(name.uppercase())
+    why: "Strings have no method called `uppercase`, so Python stops with an `AttributeError`. The method is `upper`."
+
+  - type: choice
+    after: trying-out
+    prompt: In a function task, where does the code go that tries out your function by hand?
+    choices:
+      - At the top level, right after the function
+      - "Under `if __name__ == \"__main__\":` at the end of the file"
+      - Inside the function itself
+    answer: 2
+    why: "The checks load your file and call the function themselves. The main block runs when you run the file, and the checks skip it."
+
+  - type: predict
+    after: small-functions
+    code: |
+      def info(name, age):
+          print(name, "is", age)
+
+
+      age = "Bob"
+      name = 30
+      info(age, name)
+    why: "Arguments go to parameters by position, not by name. The first argument, `\"Bob\"`, becomes the parameter `name`."
+
+  - type: runs
+    after: small-functions
+    code: |
+      def greet(name, greeting):
+          print(greeting, name)
+
+
+      greet("Ada")
+    why: "`greet` has two parameters but the call gives one argument, so Python stops with a `TypeError`: `missing 1 required positional argument: 'greeting'`."
+
+  - type: fill
+    after: small-functions
+    code: |
+      def row(width):
+          print("#" * width)
+
+
+      def block(height):
+          count = 0
+          while count < height:
+              [[row]](4)
+              count += 1
+
+
+      block(2)
+    why: "`block` calls the function `row` once per round of its loop, and each call prints one row of 4 characters."
+
+  - type: predict
+    after: return
+    code: |
+      def size(n):
+          if n > 10:
+              return "big"
+          return "small"
+          print("done")
+
+
+      print(size(20))
+      print(size(5))
+    why: "A `return` ends the function at once. `print(\"done\")` comes after the last `return`, so it never runs."
+
+  - type: bug
+    after: return
+    code: |
+      def square(x):
+          x * x  # BUG
+
+
+      print(square(4))
+    fix: return x * x
+    why: "The function works out `x * x` and throws it away. Without `return` it gives back `None`, so the program prints `None` instead of 16."
+
+  - type: predict
+    after: return
+    code: |
+      def first_even(limit):
+          n = 1
+          while n <= limit:
+              if n % 2 == 0:
+                  return n
+              n += 1
+          return -1
+
+
+      print(first_even(5))
+      print(first_even(1))
+    why: "The `return` inside the loop ends the function as soon as it finds 2. With a limit of 1 the loop never finds an even number, so the last line returns -1."
+
+  - type: predict
+    after: return-or-print
+    code: |
+      def add(a, b):
+          print(a + b)
+
+
+      result = add(2, 3)
+      print(result)
+    why: "`add` prints 5 itself and has no `return`, so it gives back `None`. That's what `result` holds."
+
+  - type: runs
+    after: return-or-print
+    code: |
+      def double(x):
+          print(x * 2)
+
+
+      total = double(4) + 1
+    why: "`double` prints 8 but returns `None`, and `None + 1` is a `TypeError`. A function whose result you calculate with must `return` it."
+
+  - type: bug
+    after: return-or-print
+    code: |
+      def full_name(first, last):
+          print(first + " " + last)  # BUG
+
+
+      name = full_name("Ada", "Lovelace")
+      print(name.upper())
+    fix: return first + " " + last
+    why: "The function prints the name instead of returning it, so `name` is `None`, which has no `upper` method. Returning the string fixes it."
+
+  - type: predict
+    after: return-or-print
+    code: |
+      def plus_one(n):
+          return n + 1
+
+
+      def twice(n):
+          return n * 2
+
+
+      print(twice(plus_one(3)))
+      print(plus_one(twice(3)))
+    why: "The inner call runs first. `twice(plus_one(3))` is `twice(4)`, which is 8, and `plus_one(twice(3))` is `plus_one(6)`, which is 7."
+
+  - type: runs
+    after: type-hints
+    code: |
+      def is_adult(age: int) -> bool:
+          return age >= 18
+
+
+      print(is_adult("20"))
+    why: "The hint says `int`, but Python doesn't check hints. The string `\"20\"` reaches `age >= 18`, and a string can't be compared with a number: a `TypeError`."
+
+  - type: choice
+    after: type-hints
+    prompt: The type hint says `str`, but the call gives a number. What does the program print?
+    code: |
+      def twice(text: str) -> str:
+          return text * 2
+
+
+      print(twice(21))
+    choices:
+      - "`42`"
+      - "`2121`"
+      - "Nothing: it stops with a `TypeError`"
+    answer: 1
+    verify: output
+    why: "Type hints are only hints. The function gets the number 21, and `21 * 2` is 42."
+
+  - type: predict
+    after: type-hints
+    code: |
+      def half(n: int) -> int:
+          return n / 2
+
+
+      print(half(10))
+    why: "`/` always gives a `float`, so the function returns `5.0`, whatever its hint says. For a whole number, `n // 2` would be right."
+
+  - type: boss
+    after: type-hints
+    prompt: |
+      Write the function `clamp(value: int, low: int, high: int) -> int`, which returns `value` if it is between `low` and `high`, `low` if it is smaller than that, and `high` if it is greater. For example, `clamp(42, 0, 10)` returns `10` and `clamp(5, 0, 10)` returns `5`.
+    seed: |
+      def clamp(value: int, low: int, high: int) -> int:
+          pass
+
+
+      if __name__ == "__main__":
+          print(clamp(42, 0, 10))
+    solution: |
+      def clamp(value: int, low: int, high: int) -> int:
+          if value < low:
+              return low
+          if value > high:
+              return high
+          return value
+
+
+      if __name__ == "__main__":
+          print(clamp(42, 0, 10))
+    hints:
+      - "Handle the two cases outside the range first: `if value < low:` returns `low`."
+      - "If `value > high`, return `high`. If neither is true, the value is in the range: return it as it is."
+    tests:
+      - call: clamp(42, 0, 10)
+      - call: clamp(5, 0, 10)
+      - call: clamp(-3, 0, 10)
+        hidden: true
+      - call: clamp(10, 0, 10)
+        hidden: true
+      - call: clamp(7, 8, 9)
+        hidden: true

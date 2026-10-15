@@ -1,0 +1,102 @@
+# The Pro Track (/pro/): projects for the learner's own computer, with Python 3.14 and pytest.
+# Each project is a folder pro-track/<id>/ (its model solution in pro-track-solutions/<id>/); this
+# file lists them in the order the site shows them, with what the site needs besides the project's
+# README.md (its title, summary and sections come from there). pro-track/README.md, "For
+# contributors", says what each key means.
+projects:
+  - id: word-stats
+    hours: 3 to 5
+    practices:
+      - module: reading-files
+        what: reading text files line by line
+      - module: dictionaries
+        what: counting words with a dictionary
+      - module: functions-as-arguments
+        what: sorting with a key and a lambda
+      - module: errors
+        what: raising and catching exceptions
+      - module: functions
+        what: small functions, each with tests of its own
+    checklist:
+      - id: setup
+        text: "`python -m pytest` runs, and the tests fail"
+      - id: split-words
+        text: Step 1, splitting words, passes `test_words.py`
+      - id: count
+        text: Step 2, counting, passes `test_textstats.py`
+      - id: most-frequent
+        text: Step 3, the most frequent words, passes `test_most_frequent.py`
+      - id: read-files
+        text: Step 4, reading a file, passes `test_textfiles.py`
+      - id: command-line
+        text: Step 5, the command line, passes `test_commandline.py`
+      - id: whole-program
+        text: Step 6, the whole program, passes `test_program.py`
+      - id: run-it
+        text: I ran the program on my own text files
+      - id: github
+        text: The tests pass in my GitHub repository's Actions tab
+  - id: book-log
+    hours: 3 to 5
+    practices:
+      - module: classes
+        what: a class over a SQLite database, with sqlite3
+      - module: errors
+        what: raising ValueError for wrong values, and catching it in the menu
+      - module: larger-application
+        what: a text menu in a module of its own, apart from the data
+      - module: writing-files
+        what: exporting the books to a CSV file with the csv module
+      - module: dictionaries
+        what: the pages of each author in a dictionary
+    checklist:
+      - id: setup
+        text: "`python -m pytest` runs, and the tests fail"
+      - id: schema
+        text: Step 1, creating the table, passes `test_schema.py`
+      - id: add-find
+        text: Step 2, add and find_by_id, passes `test_add_and_find.py`
+      - id: list-search
+        text: Step 3, list and search, passes `test_list_and_search.py`
+      - id: update-remove
+        text: Step 4, update and remove, passes `test_update_and_remove.py`
+      - id: totals
+        text: Step 5, the totals, passes `test_totals.py`
+      - id: export
+        text: Step 6, export to CSV, passes `test_export.py`
+      - id: run-it
+        text: I ran the program, quit, and found my books still there the next time
+      - id: github
+        text: The tests pass in my GitHub repository's Actions tab
+  - id: memory-game
+    hours: 3 to 5
+    practices:
+      - module: classes
+        what: the game's rules in a plain class, tested without a window
+      - module: encapsulation
+        what: private attributes and read-only properties
+      - module: randomness
+        what: shuffling with a seeded random.Random, so tests can check it
+      - module: events
+        what: mouse clicks in a pygame window
+      - module: pygame-techniques
+        what: drawing cards and text with pygame
+    checklist:
+      - id: setup
+        text: "`python -m pytest` runs, and the tests fail"
+      - id: deck
+        text: Step 1, shuffling the cards, passes `test_deck.py`
+      - id: new-game
+        text: Step 2, a new game, passes `test_new_game.py`
+      - id: flip-match
+        text: Step 3, flipping and matching, passes `test_flip.py`
+      - id: mismatch
+        text: Step 4, cards that don't match, passes `test_mismatch.py`
+      - id: win
+        text: Step 5, winning, passes `test_end_of_game.py`
+      - id: status-line
+        text: Step 6, the status line, passes `test_status_line.py`
+      - id: window
+        text: Step 7, I played a whole game in the window with `python -m memorygame`
+      - id: github
+        text: The tests pass in my GitHub repository's Actions tab

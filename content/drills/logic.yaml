@@ -1,0 +1,195 @@
+topic: logic
+drills:
+  - type: predict
+    after: and
+    code: |
+      print(5 > 3 and 2 > 4)
+    why: "`and` is true only when both sides are. `5 > 3` is true, but `2 > 4` is false, so the whole is `False`."
+
+  - type: predict
+    after: and
+    code: |
+      age = 15
+      if age >= 13 and age <= 19:
+          print("teen")
+      else:
+          print("not a teen")
+    why: "15 is at least 13 and at most 19, so both comparisons are true and the `if` block runs."
+
+  - type: runs
+    after: and
+    code: |
+      x = 5
+      if x > 0 and < 10:
+          print("one digit")
+    why: "Each side of `and` must be a whole comparison. After `and`, Python finds `<` and stops with a `SyntaxError`. Write `x > 0 and x < 10`."
+
+  - type: fill
+    after: and
+    code: |
+      speed = 45
+      if speed >= 30 [[and]] speed <= 50:
+          print("Within the limits")
+      else:
+          print("Too slow or too fast")
+    why: "The speed must be at least 30 and at most 50 at the same time, so the operator is `and`."
+
+  - type: predict
+    after: or
+    code: |
+      x = 15
+      print(x < 5 or x > 10)
+      print(x < 5 and x > 10)
+    why: "`or` needs one true side: `x > 10` is true. `and` needs both, and `x < 5` is false. No number is below 5 and above 10 at once."
+
+  - type: predict
+    after: or
+    code: |
+      color = "blue"
+      if color == "red" or "green":
+          print("Christmas color")
+      else:
+          print("Other color")
+    why: "The right side of `or` is just the string `\"green\"`, and a string that isn't empty counts as true. So the condition is always true. It should be `color == \"red\" or color == \"green\"`."
+
+  - type: bug
+    after: or
+    code: |
+      name = "Bob"
+      if name == "Ann" or "Ben":  # BUG
+          print("Hi, team!")
+      else:
+          print("Who are you?")
+    fix: 'if name == "Ann" or name == "Ben":'
+    why: "`\"Ben\"` on its own is a string, which counts as true, so the condition is always true. Each side of `or` needs its own comparison."
+
+  - type: choice
+    after: or
+    prompt: Which condition is true exactly when `x` is outside the range 1 to 10?
+    choices:
+      - "`x < 1 or x > 10`"
+      - "`x < 1 and x > 10`"
+      - "`x > 1 or x < 10`"
+    answer: 1
+    why: "Outside the range means below 1 or above 10. With `and`, the condition could never be true, and `x > 1 or x < 10` is true for every number."
+
+  - type: predict
+    after: not
+    code: |
+      print(not 5 > 3)
+      print(not 5 == 3)
+    why: "The comparison is evaluated first, then `not` turns it around: `5 > 3` is true, so `not 5 > 3` is `False`."
+
+  - type: predict
+    after: not
+    code: |
+      print(True or False and False)
+    why: "`and` goes before `or`, so this is `True or (False and False)`, which is `True or False`, which is `True`."
+
+  - type: choice
+    after: not
+    prompt: How does Python read `a or b and c`?
+    choices:
+      - "`(a or b) and c`"
+      - "`a or (b and c)`"
+      - It's an error without parentheses
+    answer: 2
+    why: "Python evaluates `not` first, then `and`, and `or` last. Parentheses make the order clear to the reader as well."
+
+  - type: predict
+    after: chained-comparisons
+    code: |
+      x = 5
+      print(1 < x < 10)
+      print(1 < x < 3)
+    why: "`1 < x < 10` means `1 < x and x < 10`. In the second line, 5 is not less than 3."
+
+  - type: fill
+    after: chained-comparisons
+    code: |
+      n = 0
+      if 0 [[<=]] n <= 100:
+          print("valid")
+      else:
+          print("invalid")
+    why: "0 should be inside the range, so the lower limit needs `<=`. With `<`, 0 would be invalid."
+
+  - type: predict
+    after: chained-comparisons
+    code: |
+      a = 2
+      b = 2
+      c = 3
+      print(a == b == c)
+    why: "`a == b == c` means `a == b and b == c`. The second part is false, so the whole is `False`."
+
+  - type: predict
+    after: nested-conditionals
+    code: |
+      x = -3
+      if x > 0:
+          if x > 10:
+              print("big")
+          else:
+              print("small")
+      else:
+          print("not positive")
+    why: "The outer condition is false, so the whole inner statement is skipped and the outer `else` runs."
+
+  - type: predict
+    after: nested-conditionals
+    code: |
+      x = 5
+      if x > 0:
+          if x > 10:
+              print("big")
+      else:
+          print("negative")
+      print("end")
+    why: "The `else` is at the same indentation as the outer `if`, so it belongs to it. `x > 0` is true, the inner condition is false, and nothing is printed before `end`."
+
+  - type: boss
+    after: nested-conditionals
+    prompt: |
+      Write a program that gives advice for a walk. It asks for the temperature and the wind speed in meters per second. If it's below -10 degrees or the wind is over 20 m/s, it prints `Stay inside.` Otherwise it prints `Wear a jacket.` when it's below 10 degrees, and `A T-shirt is fine.` when it's warmer.
+
+      ```
+      Temperature: 5
+      Wind speed: 3
+      Wear a jacket.
+      ```
+    seed: |
+      temperature = int(input("Temperature: "))
+      wind = int(input("Wind speed: "))
+    solution: |
+      temperature = int(input("Temperature: "))
+      wind = int(input("Wind speed: "))
+      if temperature < -10 or wind > 20:
+          print("Stay inside.")
+      elif temperature < 10:
+          print("Wear a jacket.")
+      else:
+          print("A T-shirt is fine.")
+    hints:
+      - "The first check combines two conditions with `or`: `temperature < -10 or wind > 20`."
+      - "The `elif` only runs when it's safe to go out, so it only needs to look at the temperature."
+    tests:
+      - stdin: |
+          5
+          3
+      - stdin: |
+          -15
+          0
+        hidden: true
+      - stdin: |
+          20
+          25
+        hidden: true
+      - stdin: |
+          20
+          5
+        hidden: true
+      - stdin: |
+          10
+          20
+        hidden: true

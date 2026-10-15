@@ -1,0 +1,200 @@
+topic: more-loops
+drills:
+  - type: predict
+    after: break
+    code: |
+      n = 1
+      while True:
+          print(n)
+          if n == 3:
+              break
+          n += 1
+    why: "The `print` comes before the check, so 3 is printed too. Then `break` ends the loop."
+
+  - type: choice
+    after: break
+    prompt: What does `break` do in a loop?
+    choices:
+      - It ends the loop at once
+      - It skips the rest of the round and starts the next one
+      - It ends the whole program
+    answer: 1
+    why: "`break` ends the loop it's in, and the program goes on with the first line after the loop."
+
+  - type: predict
+    after: break
+    code: |
+      total = 0
+      while total < 10:
+          total += 4
+          if total == 6:
+              break
+      print(total)
+    why: "`total` becomes 4, 8 and 12, and is never 6, so the `break` never runs. The loop ends by its condition when `12 < 10` is false."
+
+  - type: runs
+    after: break
+    code: |
+      number = 5
+      if number > 3:
+          break
+      print(number)
+    why: "`break` works only inside a loop. In an `if` on its own, Python can't read the program: `'break' outside loop`."
+
+  - type: predict
+    after: continue
+    code: |
+      n = 0
+      while n < 6:
+          n += 1
+          if n % 2 == 0:
+              continue
+          print(n)
+    why: "For even numbers, `continue` skips the `print` and jumps back to the top. Only 1, 3 and 5 are printed."
+
+  - type: choice
+    after: continue
+    prompt: What does `continue` do in a loop?
+    choices:
+      - It ends the loop at once
+      - It skips the rest of the round and goes back to the condition
+      - It skips only the next line
+    answer: 2
+    why: "`continue` jumps straight back to the top of the loop. If the condition is still true, the next round starts."
+
+  - type: bug
+    after: continue
+    prompt: The program should print the numbers 1 to 5, except 3. One line has a bug. Which one?
+    code: |
+      n = 0
+      while n < 5:
+          n += 1
+          if n == 3:
+              break  # BUG
+          print(n)
+    fix: continue
+    why: "`break` ends the whole loop, so 4 and 5 are never printed. `continue` skips only the round with 3."
+
+  - type: predict
+    after: continue
+    code: |
+      word = "banana"
+      result = ""
+      i = 0
+      while i < len(word):
+          i += 1
+          if word[i - 1] == "a":
+              continue
+          result += word[i - 1]
+      print(result)
+    why: "Every round looks at one letter. For an `a`, `continue` skips adding it, so only `b`, `n` and `n` are left."
+
+  - type: predict
+    after: nested
+    code: |
+      count = 0
+      i = 0
+      while i < 3:
+          j = 0
+          while j < 4:
+              count += 1
+              j += 1
+          i += 1
+      print(count)
+    why: "The inner loop runs 4 rounds in each of the 3 rounds of the outer loop: 3 times 4 is 12."
+
+  - type: predict
+    after: nested
+    code: |
+      i = 1
+      while i <= 2:
+          j = 1
+          while j <= 3:
+              if j == 2:
+                  break
+              print(i, j)
+              j += 1
+          i += 1
+    why: "The `break` ends only the inner loop. The outer loop still runs its second round, which again prints only `j` = 1."
+
+  - type: fill
+    after: nested
+    code: |
+      row = 1
+      while row <= 3:
+          line = ""
+          col = 1
+          while col <= [[row]]:
+              line += "*"
+              col += 1
+          print(line)
+          row += 1
+    why: "The inner loop runs `row` times, so each row is one star longer than the one before."
+
+  - type: predict
+    after: helper-variables
+    code: |
+      print("a", end="")
+      print("b", end="-")
+      print("c")
+    why: "`end=\"\"` ends the line with nothing and `end=\"-\"` with a dash, so the next `print` carries on the same line."
+
+  - type: predict
+    after: helper-variables
+    code: |
+      i = 0
+      j = 0
+      while i < 2:
+          while j < 2:
+              print(i, j)
+              j += 1
+          i += 1
+    why: "`j` gets its start value only once, before the outer loop. After the first round of the outer loop it's 2, so the inner loop never runs again."
+
+  - type: bug
+    after: helper-variables
+    code: |
+      row = 1
+      while row <= 2:
+          col = 1
+          while col <= 3:
+              print(row * col, end=" ")
+              row += 1  # BUG
+          print()
+          row += 1
+    fix: col += 1
+    why: "The inner loop must update its own helper variable, `col`. Updating `row` there means `col <= 3` never becomes false."
+
+  - type: boss
+    after: helper-variables
+    prompt: |
+      Write a program that asks for a number and prints one line for every whole number from 1 up to it, with the number repeated as many times as its value, separated by spaces.
+
+      ```
+      Number: 4
+      1
+      2 2
+      3 3 3
+      4 4 4 4
+      ```
+    seed: |
+      number = int(input("Number: "))
+    solution: |
+      number = int(input("Number: "))
+      row = 1
+      while row <= number:
+          count = 0
+          while count < row:
+              print(row, end=" ")
+              count += 1
+          print()
+          row += 1
+    hints:
+      - The outer loop goes through the numbers from 1 up to the input. The inner loop prints the current number that many times.
+      - "Give the inner loop's counter its start value inside the outer loop, and end each line with `print()`."
+    tests:
+      - stdin: "4"
+      - stdin: "1"
+        hidden: true
+      - stdin: "6"
+        hidden: true

@@ -1,0 +1,674 @@
+id: comprehensions
+summary: Building a new list from an old one in a single line. List comprehensions that change every item, pick only some items with if, choose between two values with if and else, and take the place of loops that build lists.
+steps:
+  - id: comprehensions-new-lists
+    slug: new-lists
+    title: A new list from an old one
+    text: |
+      Many programs take a list and make a new list out of it: prices with tax added, names in capital letters, the length of every word. So far you've done it with a loop that starts from an empty list and appends one item per round:
+
+      ```python run
+      words = ["tea", "coffee", "cocoa", "water"]
+      lengths = []
+      for word in words:
+          lengths.append(len(word))
+      print(lengths)
+      ```
+
+      ```output
+      [3, 6, 5, 5]
+      ```
+
+      That's three lines to say one thing: "the length of each word". Python has a shorter way to say it, a **list comprehension**:
+
+      ```python run
+      words = ["tea", "coffee", "cocoa", "water"]
+      lengths = [len(word) for word in words]
+      print(lengths)
+      ```
+
+      ```output
+      [3, 6, 5, 5]
+      ```
+
+      ### How to read it
+
+      A list comprehension has this shape:
+
+      ```text
+      [expression for item in series]
+      ```
+
+      - The square brackets say that the result is a new list.
+      - `for word in words` works like the first line of a `for` loop, without the colon. It goes through the series one item at a time.
+      - The expression before the `for`, here `len(word)`, says what goes into the new list for each item.
+
+      Read it out loud from the left: "the length of word, for each word in words". The new list has exactly as many items as the series, in the same order. The original list doesn't change: the comprehension only reads it.
+
+      ### Any expression will do
+
+      The expression can be a calculation, a method call, a conversion or a call to a function: anything that gives a value. The series can be anything a `for` loop can go through, such as a list or a `range`:
+
+      ```python repl
+      >>> numbers = [4, 7, 10]
+      >>> [n * 10 for n in numbers]
+      [40, 70, 100]
+      >>> [str(n) for n in numbers]
+      ['4', '7', '10']
+      >>> names = ["ada", "linus", "grace"]
+      >>> [name.capitalize() for name in names]
+      ['Ada', 'Linus', 'Grace']
+      >>> [n * n for n in range(1, 6)]
+      [1, 4, 9, 16, 25]
+      ```
+
+      The second one shows that the new items don't have to be of the same type as the old ones: numbers went in, strings came out. The third uses the string method `capitalize`, which gives the string with its first letter in capitals.
+
+      A function can return a comprehension directly. There's no need to store it in a variable first:
+
+      ```python fragment
+      def lengths_of(words):
+          return [len(word) for word in words]
+      ```
+
+      ### The expression comes first
+
+      The order matters. If you write it in the order of a loop, with the `for` first, Python can't read it:
+
+      ```python run crash
+      numbers = [4, 7, 10]
+      doubled = [for n in numbers: n * 2]
+      ```
+
+      ```crash
+        File "main.py", line 2
+          doubled = [for n in numbers: n * 2]
+                     ^^^
+      SyntaxError: invalid syntax
+      ```
+
+      The fix is `[n * 2 for n in numbers]`: first what you want, then where it comes from.
+
+      **Your turn:** every order in the shop gets a shipping fee of 5 added to its price. Fill in the blank so the comprehension makes the list of prices with shipping. The program should print:
+
+      ```
+      [17, 45, 9, 25]
+      ```
+    fill: |
+      prices = [12, 40, 4, 20]
+      with_shipping = [[[price + 5‖5 + price]] for price in prices]
+      print(with_shipping)
+    hints:
+      - The blank is the expression, what goes into the new list for each `price`.
+      - "Each price gets 5 added: the blank is `price + 5`."
+    tests:
+      - expect: "[17, 45, 9, 25]"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [1, 2, 3]
+          print([n * 3 for n in numbers])
+          print([n - 1 for n in numbers])
+          print(numbers)
+        hints:
+          - Each comprehension makes a new list with one item for each item of `numbers`.
+          - The comprehensions only read `numbers`, so the last line prints the list as it was.
+      - task: |
+          Write a function `shout(words)` that returns a new list with each word in capital letters and an exclamation mark at the end. Use a list comprehension.
+
+          For example, `shout(["hi", "stop", "go"])` returns `['HI!', 'STOP!', 'GO!']`, so the program in the editor prints:
+
+          ```
+          ['HI!', 'STOP!', 'GO!']
+          ```
+        seed: |
+          def shout(words):
+              pass
+
+
+          if __name__ == "__main__":
+              print(shout(["hi", "stop", "go"]))
+        solution: |
+          def shout(words):
+              return [word.upper() + "!" for word in words]
+
+
+          if __name__ == "__main__":
+              print(shout(["hi", "stop", "go"]))
+        hints:
+          - "The method `upper()` gives a word in capital letters, and `+ \"!\"` adds the exclamation mark."
+          - "The function can return the comprehension directly: `return [... for word in words]`."
+          - "The expression in front of the `for` is `word.upper() + \"!\"`."
+        require:
+          - pattern: \[[^\n]*\bfor\b
+            message: Build the new list with a list comprehension, `[... for word in words]`.
+        forbid:
+          - pattern: \.append\s*\(
+            message: Build the new list with a list comprehension instead of `append`.
+        tests:
+          - call: print(shout(["hi", "stop", "go"]))
+          - call: shout(["Python", "now"])
+            hidden: true
+          - call: shout([])
+            hidden: true
+
+  - id: comprehensions-filtering
+    slug: filtering
+    title: Picking items with if
+    text: |
+      Sometimes the new list should have only some of the items. With a loop you'd put an `if` inside it:
+
+      ```python run
+      scores = [72, 45, 90, 38, 66]
+      passed = []
+      for score in scores:
+          if score >= 50:
+              passed.append(score)
+      print(passed)
+      ```
+
+      ```output
+      [72, 90, 66]
+      ```
+
+      A list comprehension can do the same. The condition goes at the end:
+
+      ```python run
+      scores = [72, 45, 90, 38, 66]
+      passed = [score for score in scores if score >= 50]
+      print(passed)
+      ```
+
+      ```output
+      [72, 90, 66]
+      ```
+
+      The shape is now:
+
+      ```text
+      [expression for item in series if condition]
+      ```
+
+      Only the items for which the condition is `True` make it into the new list. The others are skipped, so the new list can be shorter than the original, or even empty. This is called **filtering**. Here the expression is just `score`, so the items that pass go in as they are.
+
+      ### Filter and change at the same time
+
+      The expression can still change the items that pass the filter:
+
+      ```python repl
+      >>> numbers = [3, 8, 5, 12, 7, 4]
+      >>> [n for n in numbers if n % 2 == 0]
+      [8, 12, 4]
+      >>> [n * n for n in numbers if n % 2 == 0]
+      [64, 144, 16]
+      >>> [n for n in numbers if n > 100]
+      []
+      ```
+
+      When a comprehension gets longer, read the condition first: which items get through? Then read the expression: what happens to each of them?
+
+      ### The filter comes first
+
+      Python checks the condition before it works out the expression, so the expression only sees the items that passed. That makes a filter a good guard for an expression that wouldn't work on every item. Dividing by zero stops a program, so here the zeros are filtered out:
+
+      ```python run
+      team_sizes = [4, 0, 5, 0, 10]
+      pizza_slices = [40 // size for size in team_sizes if size != 0]
+      print(pizza_slices)
+      ```
+
+      ```output
+      [10, 8, 4]
+      ```
+
+      Without the `if`, the first zero would stop the program with a `ZeroDivisionError`.
+
+      The condition can be anything that gives `True` or `False`, including conditions joined with `and` and `or`, and `in`:
+
+      ```python repl
+      >>> words = ["apple", "fig", "banana", "kiwi", "cherry"]
+      >>> [w for w in words if len(w) > 3 and "a" in w]
+      ['apple', 'banana']
+      ```
+
+      **Your turn:** fill in the blank so that `freezing` holds only the temperatures below zero. The program should print:
+
+      ```
+      [-2, -7, -1]
+      ```
+    fill: |
+      temperatures = [3, -2, 0, -7, 5, -1]
+      freezing = [t for t in temperatures [[if t < 0‖if 0 > t]]]
+      print(freezing)
+    hints:
+      - The condition comes at the end of the comprehension, after the word `if`.
+      - "A temperature below zero is one for which `t < 0` is true: the blank is `if t < 0`."
+    tests:
+      - expect: "[-2, -7, -1]"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [5, 10, 15, 20]
+          print([n for n in numbers if n > 10])
+          print([n // 5 for n in numbers if n != 15])
+          print([n for n in numbers if n > 50])
+        hints:
+          - "Read the condition first: which numbers pass it?"
+          - "In the second line, every number except 15 passes, and each one is divided by 5."
+          - No number is greater than 50, so the last list has no items at all.
+      - task: |
+          Write a function `words_with(words, letter)` that returns a new list of the words that contain the given letter, in their original order. Use a list comprehension.
+
+          For example, this call:
+
+          ```python fragment
+          print(words_with(["python", "java", "rust", "ruby"], "u"))
+          ```
+
+          prints:
+
+          ```
+          ['rust', 'ruby']
+          ```
+        seed: |
+          def words_with(words, letter):
+              pass
+
+
+          if __name__ == "__main__":
+              print(words_with(["python", "java", "rust", "ruby"], "u"))
+        solution: |
+          def words_with(words, letter):
+              return [word for word in words if letter in word]
+
+
+          if __name__ == "__main__":
+              print(words_with(["python", "java", "rust", "ruby"], "u"))
+        hints:
+          - "The words go into the new list as they are, so the expression is just `word`. The work is in the condition."
+          - "`letter in word` is `True` when the word contains the letter."
+          - "Put it together: `[word for word in words if ...]`."
+        require:
+          - pattern: \[[^\n]*\bfor\b
+            message: Build the new list with a list comprehension.
+        forbid:
+          - pattern: \.append\s*\(
+            message: Build the new list with a list comprehension instead of `append`.
+        tests:
+          - call: print(words_with(["python", "java", "rust", "ruby"], "u"))
+          - call: words_with(["cat", "dog", "bird", "cow"], "o")
+            hidden: true
+          - call: words_with(["cat", "dog"], "z")
+            hidden: true
+
+  - id: comprehensions-if-else
+    slug: if-else
+    title: Choosing a value with if and else
+    text: |
+      In part 7 you met the **conditional expression**, an `if` and `else` on one line that gives one of two values:
+
+      ```python repl
+      >>> age = 15
+      >>> "adult" if age >= 18 else "minor"
+      'minor'
+      ```
+
+      It reads like a sentence: the value is `"adult"` if the condition is true, else it's `"minor"`.
+
+      A conditional expression can be the expression of a list comprehension. Then it chooses a value for each item separately, and every item gets into the new list in one form or the other:
+
+      ```python run
+      scores = [72, 45, 90, 38]
+      results = ["pass" if score >= 50 else "fail" for score in scores]
+      print(results)
+      ```
+
+      ```output
+      ['pass', 'fail', 'pass', 'fail']
+      ```
+
+      The shape is:
+
+      ```text
+      [value1 if condition else value2 for item in series]
+      ```
+
+      Either value can use the item. Here negative readings from a broken sensor are replaced with zero, and the other readings are kept as they are:
+
+      ```python run
+      readings = [12, -3, 7, -1, 5]
+      cleaned = [r if r >= 0 else 0 for r in readings]
+      print(cleaned)
+      ```
+
+      ```output
+      [12, 0, 7, 0, 5]
+      ```
+
+      ### Two different ifs
+
+      There are now two places for an `if` in a comprehension, and they do different jobs:
+
+      - An `if` at the end, after the series, is a **filter**. It decides which items get into the new list at all, so the list can get shorter.
+      - An `if` with an `else`, before the `for`, is part of the expression. It decides what each item becomes, and the new list has as many items as the original.
+
+      ```python repl
+      >>> numbers = [4, -2, 9, -5]
+      >>> [n for n in numbers if n > 0]
+      [4, 9]
+      >>> [n if n > 0 else 0 for n in numbers]
+      [4, 0, 9, 0]
+      ```
+
+      If you put the `else` at the end, Python can't read it. A filter has no `else`: an item either passes or it doesn't.
+
+      ```python run crash
+      numbers = [4, -2, 9, -5]
+      fixed = [n for n in numbers if n > 0 else 0]
+      ```
+
+      ```crash
+        File "main.py", line 2
+          fixed = [n for n in numbers if n > 0 else 0]
+                                               ^^^^
+      SyntaxError: invalid syntax
+      ```
+
+      Python points at the `else`: where it is, it makes no sense. Move the whole `n if n > 0 else 0` to the front.
+
+      **Your turn:** fill in the blank with the condition, so that every negative reading becomes 0 and the others stay as they are. The program should print:
+
+      ```
+      [12, 0, 7, 0, 0, 5]
+      ```
+    fill: |
+      readings = [12, -3, 7, -1, 0, 5]
+      cleaned = [r if [[r >= 0‖r > 0‖0 <= r‖0 < r]] else 0 for r in readings]
+      print(cleaned)
+    hints:
+      - "The value before `if` is used when the condition is true: the reading `r` itself, for a reading that is fine."
+      - "A reading is fine when it isn't negative: the condition is `r >= 0`."
+    tests:
+      - expect: "[12, 0, 7, 0, 0, 5]"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [3, -1, 8, -6]
+          print([n for n in numbers if n < 0])
+          print([n if n < 0 else 1 for n in numbers])
+          print(["big" if n > 5 else "small" for n in numbers])
+        hints:
+          - The first comprehension has an `if` at the end, so it's a filter. Only some numbers get through.
+          - The other two have an `if` and an `else` before the `for`, so every number gives one item.
+          - "In the last one, only 8 is greater than 5."
+      - task: |
+          A chat program hides words that aren't allowed. Write a function `censor(words, banned)` that returns a new list where every word that is in the list `banned` is replaced with `"***"`, and the other words stay as they are. Use a list comprehension.
+
+          For example, this call:
+
+          ```python fragment
+          print(censor(["you", "silly", "goose"], ["silly", "dumb"]))
+          ```
+
+          prints:
+
+          ```
+          ['you', '***', 'goose']
+          ```
+        seed: |
+          def censor(words, banned):
+              pass
+
+
+          if __name__ == "__main__":
+              print(censor(["you", "silly", "goose"], ["silly", "dumb"]))
+        solution: |
+          def censor(words, banned):
+              return ["***" if word in banned else word for word in words]
+
+
+          if __name__ == "__main__":
+              print(censor(["you", "silly", "goose"], ["silly", "dumb"]))
+        hints:
+          - Every word gives one item in the new list, so you need an `if` and an `else` before the `for`, not a filter at the end.
+          - "`word in banned` is `True` when the word is one of the banned words."
+          - "The expression is `\"***\" if word in banned else word`."
+        require:
+          - pattern: \[[^\n]*\bfor\b
+            message: Build the new list with a list comprehension.
+        forbid:
+          - pattern: \.append\s*\(
+            message: Build the new list with a list comprehension instead of `append`.
+        tests:
+          - call: print(censor(["you", "silly", "goose"], ["silly", "dumb"]))
+          - call: censor(["dumb", "and", "dumb"], ["dumb"])
+            hidden: true
+          - call: censor(["all", "fine"], [])
+            hidden: true
+
+  - id: comprehensions-instead-of-loops
+    slug: instead-of-loops
+    title: Comprehensions instead of loops
+    text: |
+      Many loops you've written follow the same recipe: start with an empty list, go through a series, maybe check a condition, and append one value per round. Every loop like that can become a comprehension. Each part of the loop has its place:
+
+      ```python fragment
+      long_names = []
+      for name in names:
+          if len(name) > 4:
+              long_names.append(name.upper())
+
+      long_names = [name.upper() for name in names if len(name) > 4]
+      ```
+
+      What was appended moves to the front, the `for` line stays in the middle, and the `if` goes to the end.
+
+      ### Your own functions inside
+
+      When the expression needs several lines of work, write a function for it and call the function in the comprehension:
+
+      ```python run
+      def grade(points):
+          if points >= 90:
+              return "A"
+          if points >= 75:
+              return "B"
+          return "C"
+
+
+      points = [95, 80, 62, 77]
+      print([grade(p) for p in points])
+      ```
+
+      ```output
+      ['A', 'B', 'C', 'B']
+      ```
+
+      The comprehension stays short and readable, and the function can be tested on its own.
+
+      ### Lists, tuples and objects as items
+
+      The items can be anything, and so can the values you make from them. Here the items are lists and the new items are tuples:
+
+      ```python repl
+      >>> table = [[3, 8, 1], [5], [9, 2]]
+      >>> [len(row) for row in table]
+      [3, 1, 2]
+      >>> [max(row) for row in table]
+      [8, 5, 9]
+      >>> [(n, n * n) for n in range(1, 4)]
+      [(1, 1), (2, 4), (3, 9)]
+      ```
+
+      Items that are objects work the same way: `[book.title for book in books]` makes a list of the books' titles.
+
+      ### Two lists side by side
+
+      To combine two lists of the same length item by item, go through the indexes with `range(len(...))`:
+
+      ```python run
+      prices = [3, 10, 2]
+      amounts = [4, 1, 5]
+      totals = [prices[i] * amounts[i] for i in range(len(prices))]
+      print(totals)
+      ```
+
+      ```output
+      [12, 10, 10]
+      ```
+
+      ### Counting and adding up
+
+      A comprehension makes a list, and the functions you know for lists work on it right away. `len` of a filtered list counts the items that pass, and `sum` adds the values up:
+
+      ```python repl
+      >>> scores = [72, 45, 90, 38, 66]
+      >>> len([s for s in scores if s >= 50])
+      3
+      >>> sum([s for s in scores if s >= 50])
+      228
+      ```
+
+      ### When to keep the loop
+
+      A comprehension is for building a list. When a loop does something else, such as printing, asking for input or updating several variables at once, keep the loop. And if a comprehension grows so long that you have to read it three times, a loop or a helper function is kinder to the next reader.
+
+      **Your turn:** the function below builds its list with a loop. Rewrite it so that it returns a list comprehension instead, without `append`. It should still return the names longer than four letters in capital letters, so the program prints:
+
+      ```
+      ['GRACE', 'LINUS']
+      ```
+    seed: |
+      def long_names_upper(names):
+          result = []
+          for name in names:
+              if len(name) > 4:
+                  result.append(name.upper())
+          return result
+
+
+      if __name__ == "__main__":
+          print(long_names_upper(["Ada", "Grace", "Linus", "Tim"]))
+    solution: |
+      def long_names_upper(names):
+          return [name.upper() for name in names if len(name) > 4]
+
+
+      if __name__ == "__main__":
+          print(long_names_upper(["Ada", "Grace", "Linus", "Tim"]))
+    hints:
+      - "What the loop appends goes to the front of the comprehension: `name.upper()`."
+      - "The loop's `if` becomes a filter at the end: `if len(name) > 4`."
+      - "The whole function body can be one line: `return [... for name in names if ...]`."
+    require:
+      - pattern: \[[^\n]*\bfor\b
+        message: Return a list comprehension.
+    forbid:
+      - pattern: \.append\s*\(
+        message: The list comprehension builds the list for you, so there's no need for `append`.
+    tests:
+      - call: print(long_names_upper(["Ada", "Grace", "Linus", "Tim"]))
+      - call: long_names_upper(["Margaret", "Tim", "Barbara", "Ken"])
+        hidden: true
+      - call: long_names_upper(["Bo", "Al"])
+        hidden: true
+    more:
+      - task: |
+          A quiz has a list of the right answers, and each player gives a list of answers in the same order. Write a function `quiz_score(answers, key)` that returns the number of answers that match the right answer in the same position. Use a list comprehension.
+
+          For example, this call:
+
+          ```python fragment
+          print(quiz_score(["a", "c", "b", "d"], ["a", "b", "b", "d"]))
+          ```
+
+          prints:
+
+          ```
+          3
+          ```
+        seed: |
+          def quiz_score(answers, key):
+              pass
+
+
+          if __name__ == "__main__":
+              print(quiz_score(["a", "c", "b", "d"], ["a", "b", "b", "d"]))
+        solution: |
+          def quiz_score(answers, key):
+              return len([i for i in range(len(answers)) if answers[i] == key[i]])
+
+
+          if __name__ == "__main__":
+              print(quiz_score(["a", "c", "b", "d"], ["a", "b", "b", "d"]))
+        hints:
+          - The positions matter, so go through the indexes with `for i in range(len(answers))`.
+          - "Keep only the indexes where `answers[i] == key[i]`."
+          - "`len` of that filtered list is the number of right answers."
+        require:
+          - pattern: \[[^\n]*\bfor\b
+            message: Use a list comprehension to pick out the right answers.
+        tests:
+          - call: print(quiz_score(["a", "c", "b", "d"], ["a", "b", "b", "d"]))
+          - call: quiz_score(["b", "b", "b"], ["a", "b", "c"])
+            hidden: true
+          - call: quiz_score(["d", "d"], ["a", "b"])
+            hidden: true
+      - task: |
+          Write a function `price_tags(items)` that gets a list of tuples, each with a product's name and its price, and returns a list of price tags as strings. A tag has the name, a colon, a space and the price with two decimals. Use a list comprehension.
+
+          For example, this program:
+
+          ```python fragment
+          tags = price_tags([("tea", 2.5), ("bread", 3), ("jam", 4.25)])
+          for tag in tags:
+              print(tag)
+          ```
+
+          prints:
+
+          ```
+          tea: 2.50
+          bread: 3.00
+          jam: 4.25
+          ```
+        seed: |
+          def price_tags(items):
+              pass
+
+
+          if __name__ == "__main__":
+              tags = price_tags([("tea", 2.5), ("bread", 3), ("jam", 4.25)])
+              for tag in tags:
+                  print(tag)
+        solution: |
+          def price_tags(items):
+              return [f"{name}: {price:.2f}" for name, price in items]
+
+
+          if __name__ == "__main__":
+              tags = price_tags([("tea", 2.5), ("bread", 3), ("jam", 4.25)])
+              for tag in tags:
+                  print(tag)
+        hints:
+          - "Each item is a tuple, so you can take it apart in the `for`: `for name, price in items`."
+          - "An f-string makes the tag. `{price:.2f}` shows a number with two decimals."
+          - "The expression is `f\"{name}: {price:.2f}\"`."
+        require:
+          - pattern: \[[^\n]*\bfor\b
+            message: Build the list of tags with a list comprehension.
+        forbid:
+          - pattern: \.append\s*\(
+            message: Build the list with a list comprehension instead of `append`.
+        tests:
+          - call: |
+              tags = price_tags([("tea", 2.5), ("bread", 3), ("jam", 4.25)])
+              for tag in tags:
+                  print(tag)
+          - call: price_tags([("milk", 1.2)])
+            hidden: true
+          - call: price_tags([])
+            hidden: true

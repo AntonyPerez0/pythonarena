@@ -1,0 +1,162 @@
+topic: strings-and-lists
+drills:
+  - type: predict
+    after: slices
+    code: |
+      print("python"[::-1])
+    why: "The step -1 goes from the end to the start, so `[::-1]` is the string backwards."
+
+  - type: predict
+    after: slices
+    code: |
+      numbers = [1, 2, 3, 4, 5, 6]
+      print(numbers[1::2])
+    why: "The slice starts at index 1 and takes every second item to the end: indexes 1, 3 and 5."
+
+  - type: fill
+    after: slices
+    code: |
+      cards = ["A", "K", "Q", "J"]
+      print(cards[[[:2]]])
+    why: "`[:2]` leaves out the start, so it takes the items from the beginning up to, but not including, index 2."
+
+  - type: runs
+    after: immutable
+    code: |
+      word = "hat"
+      word[0] = "c"
+    why: "Strings can't be changed, so assigning to one of their characters is a `TypeError`. Make a new string instead: `\"c\" + word[1:]`."
+
+  - type: predict
+    after: immutable
+    code: |
+      a = "hi"
+      b = a
+      a = a + "!"
+      print(a, b)
+    why: "`a + \"!\"` is a new string, and only `a` is given it. `b` still refers to the old string `\"hi\"`."
+
+  - type: bug
+    after: immutable
+    code: |
+      word = "python"
+      word[0] = "P"  # BUG
+      print(word)
+    fix: word = "P" + word[1:]
+    why: "A string can't be changed in place. Build a new string from the new first letter and the rest, `word[1:]`, and store it in the variable."
+
+  - type: predict
+    after: immutable
+    code: |
+      print(sorted("cba"))
+    why: "Strings have no `sort` method, but `sorted` works on a string: it returns a list of the characters in order."
+
+  - type: bug
+    after: count-and-replace
+    code: |
+      text = "I love Java"
+      text.replace("Java", "Python")  # BUG
+      print(text)
+    fix: text = text.replace("Java", "Python")
+    why: "`replace` returns a new string and leaves `text` as it was. Without storing the result, the program prints the old text."
+
+  - type: predict
+    after: count-and-replace
+    code: |
+      print("banana".count("a"))
+      print([1, 1, 2].count(1))
+    why: "`count` works on strings and lists: there are three a's in banana and two 1s in the list."
+
+  - type: predict
+    after: count-and-replace
+    code: |
+      print("a-b-c".replace("-", ""))
+      print("mississippi".count("ss"))
+    why: "Replacing with the empty string removes every dash. `ss` is in mississippi twice."
+
+  - type: runs
+    after: count-and-replace
+    code: |
+      print("hello".index("z"))
+    why: "`index` stops with a `ValueError` when it can't find what you look for. Check with `in` first, or use `find`, which returns -1."
+
+  - type: predict
+    after: split-and-join
+    code: |
+      print("1,2,3".split(","))
+    why: "`split` cuts the string at each comma. The pieces are strings, so the list shows them in quotes."
+
+  - type: runs
+    after: split-and-join
+    code: |
+      parts = "4 5".split()
+      print(parts[0] + 1)
+    why: "The pieces of `split` are strings, so `\"4\" + 1` is a `TypeError`. Convert a piece with `int(parts[0])` first."
+
+  - type: predict
+    after: split-and-join
+    code: |
+      print("-".join(["a", "b", "c"]))
+    why: "`join` is called on the string that goes between the pieces, here a dash."
+
+  - type: choice
+    after: split-and-join
+    prompt: Which line joins the strings of the list `words` with a space between them?
+    choices:
+      - "`words.join(\" \")`"
+      - "`\" \".join(words)`"
+      - "`join(words, \" \")`"
+    answer: 2
+    why: "`join` is a string method: it's called on the separator, and the list is its argument."
+
+  - type: predict
+    after: split-and-join
+    code: |
+      answer = "  hi  "
+      print("[" + answer.strip() + "]")
+    why: "`strip` returns the string without the spaces at its start and end."
+
+  - type: predict
+    after: larger-programs
+    code: |
+      def double_all(values):
+          result = []
+          for v in numbers:
+              result.append(v * 2)
+          return result
+
+
+      numbers = [1, 2]
+      print(double_all([5]))
+    why: "The loop uses `numbers`, a variable from outside the function, instead of the parameter `values`. So it doubles `[1, 2]`, whatever list it's given."
+
+  - type: boss
+    after: larger-programs
+    prompt: |
+      Write the function `acronym(phrase: str) -> str`, which returns the first letters of the words in the phrase, in capital letters. Words are separated by spaces, and there may be more than one space between them. For example, `acronym("portable network graphics")` returns `'PNG'`.
+    seed: |
+      def acronym(phrase: str) -> str:
+          pass
+
+
+      if __name__ == "__main__":
+          print(acronym("portable network graphics"))
+    solution: |
+      def acronym(phrase: str) -> str:
+          result = ""
+          for word in phrase.split():
+              result += word[0].upper()
+          return result
+
+
+      if __name__ == "__main__":
+          print(acronym("portable network graphics"))
+    hints:
+      - "`phrase.split()` gives the words, however many spaces are between them."
+      - "Build the result from `word[0].upper()` for each word, and return it after the loop."
+    tests:
+      - call: acronym("portable network graphics")
+      - call: acronym("  as   soon as possible ")
+        hidden: true
+      - call: acronym("Python")
+        hidden: true

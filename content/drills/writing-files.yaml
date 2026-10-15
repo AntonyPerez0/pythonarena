@@ -1,0 +1,238 @@
+topic: writing-files
+drills:
+  - type: predict
+    after: create
+    code: |
+      with open("out.txt", "w") as file:
+          file.write("ab")
+          file.write("cd\n")
+
+      with open("out.txt") as file:
+          print(file.read())
+    why: "`write` writes exactly the string it gets. No line break comes between `ab` and `cd`, so they end up on one line."
+
+  - type: fill
+    after: create
+    code: |
+      with open("hello.txt", [["w"‖'w']]) as file:
+          file.write("Hello!\n")
+
+      with open("hello.txt") as file:
+          print(file.read())
+    why: "The mode `\"w\"` opens the file for writing and creates it if it doesn't exist."
+
+  - type: runs
+    after: create
+    code: |
+      total = 15
+      with open("total.txt", "w") as file:
+          file.write(total)
+    why: "`write` only takes a string, so writing the number 15 stops with a `TypeError`. Write `f\"{total}\\n\"` instead."
+
+  - type: predict
+    after: create
+    code: |
+      with open("note.txt", "w") as file:
+          file.write("first\n")
+
+      with open("note.txt", "w") as file:
+          file.write("second\n")
+
+      with open("note.txt") as file:
+          print(file.read())
+    why: "Opening a file with `\"w\"` empties it first, so the second `with` wipes out `first` before it writes `second`."
+
+  - type: choice
+    after: create
+    prompt: "The file `data.txt` has 100 lines. What does `open(\"data.txt\", \"w\")` do to it?"
+    choices:
+      - Opens it so that new lines go after the old ones
+      - Empties it, so the 100 lines are gone
+      - Stops with an error because the file already exists
+    answer: 2
+    why: "The mode `\"w\"` always starts from an empty file. To keep the old lines and add to the end, use `\"a\"`."
+
+  - type: bug
+    after: create
+    code: |
+      with open("lines.txt", "w") as file:
+          file.write("first")  # BUG
+          file.write("second\n")
+
+      with open("lines.txt") as file:
+          print(file.read())
+    fix: file.write("first\n")
+    why: "`write` doesn't add a line break the way `print` does. Without `\\n`, the two strings end up on the same line."
+
+  - type: predict
+    after: append
+    code: |
+      with open("list.txt", "w") as file:
+          file.write("A\n")
+
+      with open("list.txt", "a") as file:
+          file.write("B\n")
+
+      with open("list.txt") as file:
+          print(file.read())
+    why: "`\"w\"` creates the file with `A`, and `\"a\"` adds `B` to its end without removing anything."
+
+  - type: predict
+    after: append
+    code: |
+      for word in ["x", "y", "z"]:
+          with open("log.txt", "a") as file:
+              file.write(word + "\n")
+
+      with open("log.txt") as file:
+          print(len(file.read()))
+    why: "Each round opens the file in append mode and adds one letter and one line break, so the file ends up with 6 characters."
+
+  - type: bug
+    after: append
+    code: |
+      def log(message):
+          with open("log.txt", "w") as file:  # BUG
+              file.write(message + "\n")
+
+
+      log("start")
+      log("end")
+      with open("log.txt") as file:
+          print(file.read())
+    fix: 'with open("log.txt", "a") as file:'
+    why: "With `\"w\"`, every call empties the file first, so only the last message survives. A log is appended to with `\"a\"`."
+
+  - type: choice
+    after: append
+    prompt: Which mode adds new lines to the end of a file and keeps what's already in it?
+    choices:
+      - "`\"r\"`"
+      - "`\"w\"`"
+      - "`\"a\"`"
+    answer: 3
+    why: "`\"a\"` is append mode. `\"w\"` empties the file first, and `\"r\"` (the default) only reads."
+
+  - type: predict
+    after: csv
+    code: |
+      line = ""
+      for value in [4, 8, 15]:
+          line += f"{value};"
+      print(line)
+      print(line[:-1])
+    why: "The loop puts a semicolon after every value, the last one too. The slice `[:-1]` drops the last character."
+
+  - type: fill
+    after: csv
+    code: |
+      ages = {"Ada": 36, "Ben": 28}
+      with open("ages.csv", "w") as file:
+          for name, age in ages.[[items]]():
+              file.write(f"{name};{age}\n")
+
+      with open("ages.csv") as file:
+          print(file.read())
+    why: "`items()` gives each key and value of the dictionary, which the f-string joins with a semicolon."
+
+  - type: runs
+    after: clear-and-delete
+    code: |
+      with open("empty.txt", "w") as file:
+      print("Cleared")
+    why: "Every block needs at least one indented statement, so Python can't read this program. A block that does nothing needs `pass`."
+
+  - type: predict
+    after: clear-and-delete
+    code: |
+      with open("a.txt", "w") as file:
+          file.write("hello\n")
+
+      with open("a.txt", "w") as file:
+          pass
+
+      with open("a.txt") as file:
+          print(len(file.read()))
+    why: "The second `with` opens the file with `\"w\"`, which empties it, and `pass` writes nothing. The file is left empty."
+
+  - type: predict
+    after: clear-and-delete
+    code: |
+      import os
+
+      with open("temp.txt", "w") as file:
+          file.write("x")
+      print(os.path.exists("temp.txt"))
+      os.remove("temp.txt")
+      print(os.path.exists("temp.txt"))
+    why: "Writing creates the file, so it exists. `os.remove` deletes it, and after that it doesn't."
+
+  - type: choice
+    after: clear-and-delete
+    prompt: How does a program usually change one line in the middle of a file?
+    choices:
+      - Opens the file with `"a"` and writes the new line
+      - Reads all the lines into a list, changes the list, then writes all of it back with `"w"`
+      - Opens the file with `"w"` and writes only the changed line
+    answer: 2
+    why: "`\"a\"` can only add to the end, and `\"w\"` empties the file. So the program keeps all the lines in a list and writes the whole file again."
+
+  - type: boss
+    after: clear-and-delete
+    prompt: |
+      Write a function `number_lines(source, target)` that writes a copy of the file `source` into the file `target`, with each line's number and a colon in front of it.
+
+      If `poem.txt` has
+
+      ```text
+      Roses are red
+      Code is too
+      ```
+
+      then `number_lines("poem.txt", "numbered.txt")` writes this `numbered.txt`:
+
+      ```text
+      1: Roses are red
+      2: Code is too
+      ```
+    seed: |
+      def number_lines(source, target):
+          pass
+
+
+      if __name__ == "__main__":
+          number_lines("poem.txt", "numbered.txt")
+    solution: |
+      def number_lines(source, target):
+          lines = []
+          with open(source) as file:
+              for line in file:
+                  lines.append(line.strip())
+
+          with open(target, "w") as file:
+              number = 1
+              for line in lines:
+                  file.write(f"{number}: {line}\n")
+                  number += 1
+
+
+      if __name__ == "__main__":
+          number_lines("poem.txt", "numbered.txt")
+    hints:
+      - Read the lines of `source` into a list, stripping each one.
+      - "Then open `target` with `\"w\"` and write each line with its number: `f\"{number}: {line}\\n\"`."
+    tests:
+      - call: number_lines("poem.txt", "numbered.txt")
+        files:
+          poem.txt: |
+            Roses are red
+            Code is too
+        writes: [numbered.txt]
+      - call: number_lines("list.txt", "out.txt")
+        files:
+          list.txt: |
+            milk
+            bread
+            jam
+        writes: [out.txt]
+        hidden: true

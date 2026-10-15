@@ -1,0 +1,1107 @@
+id: return-values
+summary: Trying out code in the interactive interpreter, testing and debugging your functions, parameters and arguments, functions that call functions, giving back a result with return, the difference between return and print, and type hints.
+steps:
+  - id: return-values-interpreter
+    slug: interpreter
+    title: The interactive interpreter
+    text: |
+      So far you have written whole programs: Python reads the file and runs it from top to bottom. Python has a second way of working too, the **interactive interpreter**. You type one line, press Enter, and Python runs it right away and shows the result. Programmers keep one open all the time to try out small things: what an expression gives, what a method does, whether a name exists at all.
+
+      On your own computer you start it by typing `python3` (on Windows, `python`) in a terminal. It shows a `>>>` prompt, which means "type a line of Python". This site has no interpreter window, but lessons show sessions like this one, with the prompts dimmed:
+
+      ```python repl
+      >>> 7 * 6
+      42
+      >>> 10 / 4
+      2.5
+      >>> "ab" * 3
+      'ababab'
+      ```
+
+      ### Values are shown, not printed
+
+      When the line you type is an expression (something that has a value), the interpreter shows its value, without any `print`. Look at how it shows a string: with quotes. The interpreter shows a value the way you would write it in Python code, so you can tell a string from a number. `print` shows the text itself, without quotes:
+
+      ```python repl
+      >>> word = "hello"
+      >>> word
+      'hello'
+      >>> print(word)
+      hello
+      >>> len(word)
+      5
+      >>> "5"
+      '5'
+      >>> 5
+      5
+      ```
+
+      A line that has no value, such as `word = "hello"`, shows nothing. The variable is remembered for the rest of the session, as it would be in a program.
+
+      The difference between `'5'` and `5` matters: the first is a string, the second a number. Later in this module, the checks of many challenges call your functions and show the values they give back in this same way. When a check expects `5` and shows that it got `'5'`, your function gave a string instead of a number.
+
+      ### Trying out methods
+
+      The interpreter is the quickest way to find out what something does. You've met string **methods** such as `find`: commands that you write after a string, with a dot in between. Strings have many more of them. Two handy ones are `upper` and `lower`, which give the string in capital letters or in small letters:
+
+      ```python repl
+      >>> "Python Arena".upper()
+      'PYTHON ARENA'
+      >>> name = "ADA"
+      >>> name.lower()
+      'ada'
+      >>> name
+      'ADA'
+      >>> name.lowercase()
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      AttributeError: 'str' object has no attribute 'lowercase'
+      ```
+
+      A method gives you a new string: `name` itself is still `'ADA'`. When a method doesn't exist, Python says so with an `AttributeError`. If you can almost remember a method's name, `dir("")` lists every method that strings have (ignore the names with underscores).
+
+      A common use of `lower` is comparing what the user typed without caring about capital letters:
+
+      ```python run
+      answer = input("Do you want to continue? ")
+      if answer.lower() == "yes":
+          print("Continuing")
+      else:
+          print("Stopping")
+      ```
+
+      ```input
+      YES
+      ```
+
+      ```output
+      Do you want to continue? YES
+      Continuing
+      ```
+
+      Whether the user types `yes`, `Yes` or `YES`, `answer.lower()` is `"yes"`.
+
+      To try something out on this site, put it inside `print` in a small program and run it, in any challenge's editor or in the **Playground** (in the menu at the top).
+
+      **Your turn:** fill in the blanks so the program prints the word the user types, first in capital letters and then in small letters:
+
+      ```
+      Word: PyThOn
+      PYTHON
+      python
+      ```
+    fill: |
+      word = input("Word: ")
+      print(word.[[upper]]())
+      print(word.[[lower]]())
+    hints:
+      - "Each blank is the name of a string method: one gives capital letters, the other small letters."
+      - "The method for capital letters is `upper`, and the one for small letters is `lower`."
+    tests:
+      - stdin: PyThOn
+      - stdin: Hello World
+        hidden: true
+    more:
+      - task: |
+          Write a quiz program. It asks `Which planet is called the red planet? ` until the user answers `mars`, written with any capital letters (`Mars`, `MARS` and `mars` are all right). After each wrong answer it prints `Try again`, and after the right one `Correct!`:
+
+          ```
+          Which planet is called the red planet? Venus
+          Try again
+          Which planet is called the red planet? jupiter
+          Try again
+          Which planet is called the red planet? MARS
+          Correct!
+          ```
+        seed: |
+          # Ask until the answer is mars, in any capital letters.
+        solution: |
+          # Ask until the answer is mars, in any capital letters.
+          while True:
+              answer = input("Which planet is called the red planet? ")
+              if answer.lower() == "mars":
+                  break
+              print("Try again")
+          print("Correct!")
+        hints:
+          - "A `while True:` loop that ends with `break` when the answer is right works well here."
+          - "Compare `answer.lower()` with `\"mars\"`: then the capital letters the user typed don't matter."
+          - Print `Try again` inside the loop after a wrong answer, and `Correct!` after the loop.
+        tests:
+          - stdin: |
+              Venus
+              jupiter
+              MARS
+          - stdin: mars
+            hidden: true
+          - stdin: |
+              Earth
+              MaRs
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          name = "Grace"
+          print(name.upper())
+          print(name)
+          print(name.lower() == "grace")
+          print(len(name.upper()))
+        hints:
+          - "`upper` gives a new string in capital letters. It doesn't change the variable `name`."
+          - "`name.lower()` is `\"grace\"`, so the comparison is true, and `print` shows `True`."
+          - The string in capital letters has as many characters as the original.
+
+  - id: return-values-trying-out
+    slug: trying-out
+    title: Trying out your functions
+    text: |
+      In the last module, you tried out a function by adding a call under its definition. Such calls have a catch. The checks of a function task **load** your program, the way Python loads a module, and then call your function themselves, with arguments of their own. Loading runs all the code at the top level of the file, so your own calls run too: they print extra lines before each check, and an `input()` among them stops the check, because the check types no input.
+
+      So the code that tries out your functions needs a place that runs when you run the program, but not when the checks load it. That place is a block at the end of the file:
+
+      ```python run
+      def stars(count):
+          print("*" * count)
+
+
+      if __name__ == "__main__":
+          stars(3)
+          stars(5)
+      ```
+
+      ```output
+      ***
+      *****
+      ```
+
+      `if __name__ == "__main__":` is a condition, and the code indented under it is called the **main block**. When you run the file, the condition is true and the block runs. When a check loads the file to call your function, the condition is false and the block is skipped. Module 31 explains how that works. For now, remember the rule: **code that tries out your functions by hand goes under `if __name__ == "__main__":`**. (A program that only uses its own functions, like most examples in the lessons, can call them at the top level: no check calls its functions on their own.)
+
+      From now on, the starter code of a function task has a main block with a call or two:
+
+      ```python fragment
+      def stars(count):
+          pass
+
+
+      if __name__ == "__main__":
+          stars(3)
+      ```
+
+      As before, `pass` holds the place of the body until you write it. Change the calls in the main block as much as you like: the checks ignore them. **Run with my input** runs your file as a program, main block included.
+
+      ### When a check fails
+
+      A failing check shows the call it made. The quickest way to see what goes wrong is often to make the same call yourself: copy it into the main block and run the program. Then you get Python's whole error message:
+
+      ```python run crash
+      def initial(name):
+          print(name[0] + ".")
+
+
+      if __name__ == "__main__":
+          initial("Grace")
+          initial("")
+      ```
+
+      ```output
+      G.
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 7, in <module>
+          initial("")
+          ~~~~~~~^^^^
+        File "main.py", line 2, in initial
+          print(name[0] + ".")
+                ~~~~^^^
+      IndexError: string index out of range
+      ```
+
+      As you saw in the last module, a traceback through a function has two parts. Read it from the bottom up: the last line names the error, the part above it shows the line in the function where it happened (line 2, in `initial`), and above that is the call that led there (line 7). Here the call gave an empty string, which has no character at index 0, so the function needs to handle that case on its own.
+
+      ### Debugging prints
+
+      Some bugs don't stop the program: it just prints the wrong thing. To see what happens inside a function, print its variables at the spot you want to see. This function should print the sum of the numbers from 1 to `limit`, but for 4 it prints 6 instead of 10:
+
+      ```python run
+      def sum_up_to(limit):
+          total = 0
+          number = 1
+          while number < limit:
+              total += number
+              print("number:", number, "total:", total)
+              number += 1
+          print("Sum:", total)
+
+
+      if __name__ == "__main__":
+          sum_up_to(4)
+      ```
+
+      ```output
+      number: 1 total: 1
+      number: 2 total: 3
+      number: 3 total: 6
+      Sum: 6
+      ```
+
+      The debugging print shows that the loop stops after 3, so the 4 is never added. The condition should be `number <= limit`. Once the bug is fixed, remove the debugging print: the checks compare everything your function prints.
+
+      **Your turn:** the function `banner` works, but the calls that try it out are at the top level, so they print extra lines whenever the checks load the program. Move the two calls under `if __name__ == "__main__":` at the end of the file. Run the program, and it prints:
+
+      ```
+      ==
+      Hi
+      ==
+      =======
+      Welcome
+      =======
+      ```
+    seed: |
+      def banner(text):
+          print("=" * len(text))
+          print(text)
+          print("=" * len(text))
+
+
+      banner("Hi")
+      banner("Welcome")
+    solution: |
+      def banner(text):
+          print("=" * len(text))
+          print(text)
+          print("=" * len(text))
+
+
+      if __name__ == "__main__":
+          banner("Hi")
+          banner("Welcome")
+    hints:
+      - "Add the line `if __name__ == \"__main__\":` after the function, at the left edge, with no indentation."
+      - "Indent the two calls by 4 spaces under it, so they belong to the main block."
+    require:
+      - pattern: '^if __name__ == ["'']__main__["'']:'
+        flags: m
+        raw: true
+        message: "Add the line `if __name__ == \"__main__\":` at the left edge, after the function."
+    forbid:
+      - pattern: ^banner\(
+        flags: m
+        message: "A call at the left edge runs when the checks load the program. Indent the calls under `if __name__ == \"__main__\":`."
+    tests:
+      - name: Run as a program
+      - call: banner("Python")
+        hidden: true
+    more:
+      - task: |
+          The function `middle_letter(word)` prints the letter in the middle of a word (for a word of even length, the second of the two middle letters). A check calls `middle_letter("")` and the program crashes. Make the function print `(empty)` when the word is empty, and the middle letter otherwise. For example, `middle_letter("cat")` prints:
+
+          ```
+          a
+          ```
+        seed: |
+          def middle_letter(word):
+              print(word[len(word) // 2])
+
+
+          if __name__ == "__main__":
+              middle_letter("cat")
+              middle_letter("door")
+        solution: |
+          def middle_letter(word):
+              if word == "":
+                  print("(empty)")
+              else:
+                  print(word[len(word) // 2])
+
+
+          if __name__ == "__main__":
+              middle_letter("cat")
+              middle_letter("door")
+        hints:
+          - "Add the call `middle_letter(\"\")` to the main block and run the program, to see the error the check sees."
+          - The empty string has no character at index 0, so check for the empty string before you use an index.
+          - "`if word == \"\":` prints `(empty)`, and `else:` prints the middle letter as before."
+        tests:
+          - call: middle_letter("cat")
+          - call: middle_letter("")
+          - call: middle_letter("door")
+            hidden: true
+          - call: middle_letter("python")
+            hidden: true
+      - task: |
+          The function `countdown(start)` should count down from `start` to 1, one number per line, and then print `Go!`. It forgets the last number. Find the bug (a debugging print helps) and fix it. `countdown(3)` should print:
+
+          ```
+          3
+          2
+          1
+          Go!
+          ```
+        seed: |
+          def countdown(start):
+              number = start
+              while number > 1:
+                  print(number)
+                  number -= 1
+              print("Go!")
+
+
+          if __name__ == "__main__":
+              countdown(3)
+        solution: |
+          def countdown(start):
+              number = start
+              while number > 0:
+                  print(number)
+                  number -= 1
+              print("Go!")
+
+
+          if __name__ == "__main__":
+              countdown(3)
+        hints:
+          - "Add `print(\"number is now\", number)` after the loop, before `Go!`, and run the program. Where does the loop stop?"
+          - The loop stops when `number` is 1, before printing it. The condition must still be true for 1.
+          - "Change the condition to `number > 0` (or `number >= 1`), and remove any debugging print."
+        tests:
+          - call: countdown(3)
+          - call: countdown(1)
+            hidden: true
+          - call: countdown(5)
+            hidden: true
+
+  - id: return-values-small-functions
+    slug: small-functions
+    title: Building with small functions
+    text: |
+      First a quick recap of two words you'll meet all the time. In a function's definition, the names in the parentheses are its **parameters**. In a call, the values in the parentheses are the **arguments**:
+
+      ```python run
+      def seat(name, row, number):
+          print(f"{name}: row {row}, seat {number}")
+
+
+      seat("Ada", 4, 12)
+      guest = "Linus"
+      seat(guest, 2 + 1, 7)
+      ```
+
+      ```output
+      Ada: row 4, seat 12
+      Linus: row 3, seat 7
+      ```
+
+      When a function is called, the value of each argument is assigned to the parameter in the same position, for that call only. An argument can be a variable or a calculation: only its value is passed on, so the variable `guest` becomes the parameter `name`, and `2 + 1` becomes `row`.
+
+      Since only the positions count, arguments in the wrong order go to the wrong parameters, and Python doesn't notice: `seat(12, 4, "Ada")` happily prints `12: row 4, seat Ada`. Python complains only about a wrong number of arguments, with a `TypeError` that names the parameter that got no value. Check the order of the arguments yourself.
+
+      ### Small functions, bigger shapes
+
+      In the last module you saw that a function can call another one. That's the key to writing larger programs: write a small function, try it until it works, and then build a bigger one on top of it. Here `row` draws one line, and `rectangle` calls it as many times as it needs:
+
+      ```python run
+      def row(width, char):
+          print(char * width)
+
+
+      def rectangle(width, height, char):
+          count = 0
+          while count < height:
+              row(width, char)
+              count += 1
+
+
+      rectangle(6, 2, "#")
+      print()
+      rectangle(3, 3, "o")
+      ```
+
+      ```output
+      ######
+      ######
+
+      ooo
+      ooo
+      ooo
+      ```
+
+      `rectangle` doesn't need to know how a row is drawn: it only decides how many rows there are. The arguments it passes on don't have to be its own parameters, either. Here the width of each row comes from a counter, so every call of `row` draws a longer line:
+
+      ```python run
+      def row(width, char):
+          print(char * width)
+
+
+      def triangle(height, char):
+          width = 1
+          while width <= height:
+              row(width, char)
+              width += 1
+
+
+      triangle(4, "*")
+      ```
+
+      ```output
+      *
+      **
+      ***
+      ****
+      ```
+
+      Each piece stays short and easy to check, and once `row` works, every shape built on it gets its rows right. When a bigger function goes wrong, try the smaller ones on their own in the main block first: that tells you which piece has the bug.
+
+      A good habit for any task bigger than a few lines: don't try to solve it all at once. Get one small part working, run it, and only then add the next part.
+
+      **Your turn:** fill in the blanks so that `square(size, char)` draws a square by calling `row`. `square(3, "#")` prints:
+
+      ```
+      ###
+      ###
+      ###
+      ```
+    fill: |
+      def row(width, char):
+          print(char * width)
+
+
+      def square(size, char):
+          count = 0
+          while count < size:
+              row([[size]], [[char]])
+              count += 1
+
+
+      if __name__ == "__main__":
+          square(3, "#")
+    hints:
+      - "A square is as wide as it is tall: each row is `size` characters wide."
+      - "Pass `square`'s own parameters on to `row`: the width is `size` and the character is `char`."
+    tests:
+      - call: square(3, "#")
+      - call: square(2, "o")
+        hidden: true
+      - call: square(4, "+")
+        hidden: true
+    more:
+      - task: |
+          Write the function `frame(width, height)`, which draws a hollow box of `#` characters: a full row at the top and at the bottom, and between them rows with a `#` at each end and spaces in the middle. The box is `width` characters wide and `height` rows tall (both at least 2). Use the two functions in the starter code to draw the rows. `frame(5, 4)` prints:
+
+          ```
+          #####
+          #   #
+          #   #
+          #####
+          ```
+        seed: |
+          def full_row(width):
+              print("#" * width)
+
+
+          def hollow_row(width):
+              print("#" + " " * (width - 2) + "#")
+
+
+          def frame(width, height):
+              pass
+
+
+          if __name__ == "__main__":
+              frame(5, 4)
+        solution: |
+          def full_row(width):
+              print("#" * width)
+
+
+          def hollow_row(width):
+              print("#" + " " * (width - 2) + "#")
+
+
+          def frame(width, height):
+              full_row(width)
+              count = 0
+              while count < height - 2:
+                  hollow_row(width)
+                  count += 1
+              full_row(width)
+
+
+          if __name__ == "__main__":
+              frame(5, 4)
+        hints:
+          - "Start with `full_row(width)` for the top and end with it for the bottom. Run it: that's already the box for height 2."
+          - "Between them come `height - 2` hollow rows: a `while` loop with a counter calls `hollow_row(width)` that many times."
+          - "Check `frame(4, 2)`: with no hollow rows, the loop must not run at all."
+        require:
+          - pattern: \bhollow_row\s*\(
+            min: 2
+            message: "Draw the middle rows by calling `hollow_row`."
+        tests:
+          - call: frame(5, 4)
+          - call: frame(3, 3)
+            hidden: true
+          - call: frame(4, 2)
+            hidden: true
+          - call: frame(8, 5)
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def show(first, second):
+              print(first, "then", second)
+
+
+          def swapped(first, second):
+              show(second, first)
+
+
+          first = "tea"
+          second = "cake"
+          show(second, first)
+          swapped(first, second)
+          show(first, first)
+        hints:
+          - "Arguments go to parameters by position, not by name: in `show(second, first)`, the parameter `first` gets the value `\"cake\"`."
+          - "`swapped(first, second)` calls `show` with its two values the other way around."
+          - "In the last call, both parameters get the value `\"tea\"`."
+
+  - id: return-values-return
+    slug: return
+    title: Returning a value
+    text: |
+      Some functions give something back. `input` gives back the text the user typed, `len` gives back a length and `int` gives back a number. Python replaces the call with that value, which you can store in a variable or use in a calculation:
+
+      ```python fragment
+      count = len("hello") + 1
+      ```
+
+      The value a function gives back is its **return value**. Your own functions give one back with the **`return`** statement:
+
+      ```python run
+      def double(number):
+          return number * 2
+
+
+      result = double(21)
+      print(result)
+      print(double(5) + 1)
+      ```
+
+      ```output
+      42
+      11
+      ```
+
+      `double` prints nothing itself. It works out `number * 2` and returns it, and the code that called it decides what to do with it: the first call stores it in `result`, the second adds 1 to it.
+
+      ### return ends the function
+
+      A `return` ends the function right away, even in the middle of a loop or an `if`. That makes it easy to return different values in different cases:
+
+      ```python run
+      def sign(number):
+          if number > 0:
+              return "positive"
+          if number < 0:
+              return "negative"
+          return "zero"
+
+
+      print(sign(15))
+      print(sign(-3))
+      print(sign(0))
+      ```
+
+      ```output
+      positive
+      negative
+      zero
+      ```
+
+      For 15 the first `return` runs and the function is over: the lines below it never run for that call. Only when neither condition is true does Python reach the last line. One call runs exactly one `return`.
+
+      A function can return anything: a number, a string, `True` or `False`. Here the function reads a number, so the code that uses it stays short:
+
+      ```python run
+      def ask_number(prompt):
+          return int(input(prompt))
+
+
+      width = ask_number("Width: ")
+      height = ask_number("Height: ")
+      print("Area:", width * height)
+      ```
+
+      ```input
+      4
+      5
+      ```
+
+      ```output
+      Width: 4
+      Height: 5
+      Area: 20
+      ```
+
+      ### A return without a value
+
+      A plain `return`, with no value after it, just ends the function. It's handy in a function that prints, to stop early when there's nothing sensible to do:
+
+      ```python run
+      def print_ratio(a, b):
+          if b == 0:
+              print("Can't divide by zero")
+              return
+          print(a / b)
+
+
+      print_ratio(7, 2)
+      print_ratio(7, 0)
+      ```
+
+      ```output
+      3.5
+      Can't divide by zero
+      ```
+
+      In a function task, the checks call your function and show what it returns the way the interpreter does: `42` for a number, `'positive'` with quotes for a string.
+
+      **Your turn:** fill in the blank so that `area(width, height)` returns the area of a rectangle. For example, `area(3, 4)` returns `12`.
+    fill: |
+      def area(width, height):
+          [[return]] width * height
+
+
+      if __name__ == "__main__":
+          print(area(3, 4))
+    hints:
+      - The function should give the result back to the code that called it, not print it.
+      - "The statement that gives a value back is `return`."
+    tests:
+      - call: area(3, 4)
+      - call: area(7, 2)
+        hidden: true
+      - call: area(10, 10)
+        hidden: true
+    more:
+      - task: |
+          A museum's ticket is free for children under 7, costs 8 euros from 7 to 17 years, 12 euros from 18 to 64 years and 6 euros from 65 years on. Write the function `ticket_price(age)`, which returns the price as a whole number. For example, `ticket_price(5)` returns `0` and `ticket_price(30)` returns `12`.
+        seed: |
+          def ticket_price(age):
+              pass
+
+
+          if __name__ == "__main__":
+              print(ticket_price(5))
+              print(ticket_price(30))
+        solution: |
+          def ticket_price(age):
+              if age < 7:
+                  return 0
+              if age < 18:
+                  return 8
+              if age < 65:
+                  return 12
+              return 6
+
+
+          if __name__ == "__main__":
+              print(ticket_price(5))
+              print(ticket_price(30))
+        hints:
+          - "Check the ages from the youngest up: `if age < 7:` returns `0`."
+          - Since `return` ends the function, the next `if` only runs for ages of 7 or more. So `if age < 18:` returns `8`.
+          - "After the last `if`, a final `return 6` covers everyone from 65 on."
+        tests:
+          - call: ticket_price(5)
+          - call: ticket_price(30)
+          - call: ticket_price(7)
+            hidden: true
+          - call: ticket_price(17)
+            hidden: true
+          - call: ticket_price(64)
+            hidden: true
+          - call: ticket_price(65)
+            hidden: true
+      - task: |
+          Write the function `initials(first_name, last_name)`, which returns a person's initials in capital letters, each followed by a dot. For example, `initials("ada", "Lovelace")` returns `'A.L.'`.
+        seed: |
+          def initials(first_name, last_name):
+              pass
+
+
+          if __name__ == "__main__":
+              print(initials("ada", "Lovelace"))
+        solution: |
+          def initials(first_name, last_name):
+              return first_name[0].upper() + "." + last_name[0].upper() + "."
+
+
+          if __name__ == "__main__":
+              print(initials("ada", "Lovelace"))
+        hints:
+          - "The first letter of a string is at index 0: `first_name[0]`."
+          - "`.upper()` gives a letter in capitals, and `+` joins strings together."
+          - "Return the whole string: `return first_name[0].upper() + \".\" + ...`."
+        tests:
+          - call: initials("ada", "Lovelace")
+          - call: initials("Grace", "hopper")
+            hidden: true
+          - call: initials("guido", "van rossum")
+            hidden: true
+
+  - id: return-values-return-or-print
+    slug: return-or-print
+    title: Return or print?
+    text: |
+      A return value is a value like any other. You can print it, store it, calculate with it, compare it or give it to another function as an argument:
+
+      ```python run
+      def to_minutes(hours, minutes):
+          return hours * 60 + minutes
+
+
+      def to_hours_text(minutes):
+          return str(minutes // 60) + " h " + str(minutes % 60) + " min"
+
+
+      film = to_minutes(1, 50)
+      series = 3 * to_minutes(0, 45)
+      print(film, series)
+      if film < series:
+          print("The film is shorter")
+      print(to_hours_text(film + series))
+      ```
+
+      ```output
+      110 135
+      The film is shorter
+      4 h 5 min
+      ```
+
+      In the last line, `film + series` is worked out first, its value 245 is given to `to_hours_text`, and the string it returns is given to `print`. Calls inside calls run from the inside out.
+
+      ### Return and print are different
+
+      A function that prints its result and a function that returns it can look alike when you try them out. Compare these two in the interpreter:
+
+      ```python repl
+      >>> def longer_print(a, b):
+      ...     if len(a) >= len(b):
+      ...         print(a)
+      ...     else:
+      ...         print(b)
+      ...
+      >>> def longer(a, b):
+      ...     if len(a) >= len(b):
+      ...         return a
+      ...     return b
+      ...
+      >>> longer_print("cat", "horse")
+      horse
+      >>> longer("cat", "horse")
+      'horse'
+      >>> longer("cat", "horse").upper()
+      'HORSE'
+      >>> result = longer_print("cat", "horse")
+      horse
+      >>> print(result)
+      None
+      ```
+
+      The interpreter shows the difference: `horse` without quotes is text that the function printed, while `'horse'` with quotes is a value that it returned. You can go on working with the returned value, like calling `upper` on it. The printed text is only on the screen: the code that called `longer_print` gets nothing back.
+
+      A function that ends without a `return` gives back the special value **`None`**, which means "no value". Using `None` as if it were a string or a number stops the program:
+
+      ```python run crash
+      def longer_print(a, b):
+          if len(a) >= len(b):
+              print(a)
+          else:
+              print(b)
+
+
+      word = longer_print("cat", "horse")
+      print(len(word))
+      ```
+
+      ```output
+      horse
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 9, in <module>
+          print(len(word))
+                ~~~^^^^^^
+      TypeError: object of type 'NoneType' has no len()
+      ```
+
+      `NoneType` is the type of `None`. When you see it in an error message, a function probably printed something instead of returning it, or forgot its `return`.
+
+      Returning is usually the better choice, because the result can still be used in any way, printing included. That's why the checks of a task that asks for a return value fail when your function prints the right text instead of returning it.
+
+      **Your turn:** `average(a, b, c)` prints the average of its three arguments, but it should return it. Change it so it returns the average and prints nothing. For example, `average(2, 4, 9)` returns `5.0`.
+    seed: |
+      def average(a, b, c):
+          print((a + b + c) / 3)
+
+
+      if __name__ == "__main__":
+          average(2, 4, 9)
+    solution: |
+      def average(a, b, c):
+          return (a + b + c) / 3
+
+
+      if __name__ == "__main__":
+          print(average(2, 4, 9))
+    hints:
+      - "Replace the `print(...)` with a `return` statement that gives back the same value."
+      - "Use `return` with the same calculation that `print` has now. To still see the result when you run the program, print the call in the main block: `print(average(2, 4, 9))`."
+    tests:
+      - call: average(2, 4, 9)
+      - call: average(1, 1, 2)
+        hidden: true
+      - call: average(10, 20, 30)
+        hidden: true
+    more:
+      - task: |
+          The function `minutes(hours, mins)` in the starter code turns a time of day into minutes since midnight. Use it to write the function `duration(start_h, start_m, end_h, end_m)`, which returns how many minutes there are from the start time to the end time on the same day. For example, `duration(9, 15, 10, 45)` returns `90`.
+        seed: |
+          def minutes(hours, mins):
+              return hours * 60 + mins
+
+
+          def duration(start_h, start_m, end_h, end_m):
+              pass
+
+
+          if __name__ == "__main__":
+              print(duration(9, 15, 10, 45))
+        solution: |
+          def minutes(hours, mins):
+              return hours * 60 + mins
+
+
+          def duration(start_h, start_m, end_h, end_m):
+              return minutes(end_h, end_m) - minutes(start_h, start_m)
+
+
+          if __name__ == "__main__":
+              print(duration(9, 15, 10, 45))
+        hints:
+          - "Turn both times into minutes since midnight with `minutes`: `minutes(start_h, start_m)` and `minutes(end_h, end_m)`."
+          - The duration is the end in minutes minus the start in minutes.
+          - "Check your function with `duration(12, 50, 13, 5)`: 13:05 is 785 minutes after midnight and 12:50 is 770, so it should return 15."
+        require:
+          - pattern: \bminutes\s*\(
+            min: 3
+            message: "Call `minutes` for both times instead of calculating them again."
+        tests:
+          - call: duration(9, 15, 10, 45)
+          - call: duration(8, 0, 16, 30)
+            hidden: true
+          - call: duration(12, 50, 13, 5)
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def shout(word):
+              print(word.upper())
+
+
+          def whisper(word):
+              return word.lower()
+
+
+          a = shout("hey")
+          b = whisper("HEY")
+          print(a)
+          print(b)
+          print(whisper("OK") + "!")
+        hints:
+          - "`shout` prints its word in capitals when it's called, and returns nothing."
+          - "A function without `return` gives back `None`, so `a` is `None`."
+          - "`whisper` prints nothing itself: its values are printed by the `print` lines at the end."
+
+  - id: return-values-type-hints
+    slug: type-hints
+    title: Argument types and type hints
+    text: |
+      Every value has a type. These are the ones you know so far:
+
+      ```python repl
+      >>> type(23)
+      <class 'int'>
+      >>> type(-0.5)
+      <class 'float'>
+      >>> type("Ada")
+      <class 'str'>
+      >>> type(3 > 2)
+      <class 'bool'>
+      ```
+
+      `int` is a whole number, `float` a number with a decimal point, `str` a string and `bool` one of `True` and `False`.
+
+      A function works only when its arguments are of a type it can handle. This one expects a string and a whole number:
+
+      ```python run crash
+      def repeat_word(word, times):
+          while times > 0:
+              print(word)
+              times -= 1
+
+
+      repeat_word("echo", 2)
+      repeat_word("echo", "2")
+      ```
+
+      ```output
+      echo
+      echo
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 8, in <module>
+          repeat_word("echo", "2")
+          ~~~~~~~~~~~^^^^^^^^^^^^^
+        File "main.py", line 2, in repeat_word
+          while times > 0:
+                ^^^^^^^^^
+      TypeError: '>' not supported between instances of 'str' and 'int'
+      ```
+
+      The second call gives `times` the string `"2"`, and a string can't be compared with the number 0. The error shows up inside the function, but the mistake is in the call. This happens most often with `input`, which always returns a string: a number the user types must go through `int` before it's passed on.
+
+      ### Type hints
+
+      To tell the people who use your function which types it expects, you can add **type hints**. A hint goes after a parameter, with a colon, and the type of the return value goes after an arrow `->` before the final colon:
+
+      ```python run
+      def repeat_text(word: str, times: int) -> str:
+          return word * times
+
+
+      print(repeat_text("ab", 3))
+      ```
+
+      ```output
+      ababab
+      ```
+
+      This says: `word` should be a string, `times` a whole number, and the function returns a string. Hints make a function easier to use correctly, and code editors use them to warn about mistakes.
+
+      Python itself doesn't check them, though. A hint is only a hint: a call with other types still runs, and the function does whatever its code does with those values:
+
+      ```python run
+      def double(number: int) -> int:
+          return number * 2
+
+
+      print(double(4))
+      print(double("ha"))
+      print(double(1.5))
+      ```
+
+      ```output
+      8
+      haha
+      3.0
+      ```
+
+      From now on, the starter code of many tasks has type hints. They tell you what the checks will give your function and what they expect back.
+
+      **Your turn:** the program asks for a word and a number, and prints the word that many times with `repeat_word`. It crashes, because the number is passed on as a string. Fix the program so it works:
+
+      ```
+      Word: hello
+      Times: 3
+      hello
+      hello
+      hello
+      ```
+    seed: |
+      def repeat_word(word: str, times: int):
+          while times > 0:
+              print(word)
+              times -= 1
+
+
+      word = input("Word: ")
+      times = input("Times: ")
+      repeat_word(word, times)
+    solution: |
+      def repeat_word(word: str, times: int):
+          while times > 0:
+              print(word)
+              times -= 1
+
+
+      word = input("Word: ")
+      times = int(input("Times: "))
+      repeat_word(word, times)
+    hints:
+      - "`input` always returns a string, but `times` should be an `int`, as its type hint says."
+      - "Convert the number with `int(...)` before passing it to the function: `int(input(\"Times: \"))`."
+    tests:
+      - stdin: |
+          hello
+          3
+      - stdin: |
+          bye
+          1
+        hidden: true
+      - stdin: |
+          ok
+          5
+        hidden: true
+    more:
+      - task: |
+          Write the function `time_text(seconds)`, which returns a number of seconds as text in minutes and seconds. Give it type hints: `seconds` is an `int`, and the function returns a `str`. For example, `time_text(125)` returns `'2 min 5 s'`.
+        seed: |
+          def time_text(seconds):
+              pass
+
+
+          if __name__ == "__main__":
+              print(time_text(125))
+        solution: |
+          def time_text(seconds: int) -> str:
+              return f"{seconds // 60} min {seconds % 60} s"
+
+
+          if __name__ == "__main__":
+              print(time_text(125))
+        hints:
+          - "The whole minutes are `seconds // 60`, and the seconds left over are `seconds % 60`."
+          - "Build the text with an f-string that has both numbers in it, and return it instead of printing it."
+          - "The hints go in the first line: `def time_text(seconds: int) -> str:`."
+        require:
+          - pattern: seconds\s*:\s*int
+            message: "Give the parameter its type hint: `seconds: int`."
+          - pattern: '->\s*str\s*:'
+            message: "Give the return value its type hint: `-> str` before the colon."
+        tests:
+          - call: time_text(125)
+          - call: time_text(59)
+            hidden: true
+          - call: time_text(3600)
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def combine(a: int, b: int) -> int:
+              return a + b
+
+
+          print(combine(2, 3))
+          print(combine("2", "3"))
+          print(type(combine(2.5, 1)))
+        hints:
+          - Type hints aren't checked by Python. The function does whatever `a + b` does with the values it gets.
+          - "With two strings, `+` joins them, so `\"2\" + \"3\"` is `\"23\"`."
+          - "`2.5 + 1` is a `float`, and `print(type(...))` shows `<class 'float'>`."

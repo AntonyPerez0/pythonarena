@@ -1,0 +1,322 @@
+topic: recursion-examples
+drills:
+  - type: predict
+    after: binary-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      tree = Node(5, Node(3), Node(8, Node(7)))
+      print(tree.right.left.value)
+      print(tree.left.right)
+    why: "The root's right child is 8, and its left child is 7. The node 3 has no children, so its `right` is `None`."
+
+  - type: runs
+    after: binary-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      print(Node(5).left.value)
+    why: "`Node(5)` has no left child, so its `left` is `None`, and `None` has no attribute `value`."
+
+  - type: predict
+    after: binary-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def count(node):
+          if node is None:
+              return 0
+          return 1 + count(node.left) + count(node.right)
+
+
+      print(count(Node(1, Node(2), Node(3, Node(4)))))
+    why: "Every node adds 1 and every missing child adds 0, so the result is the number of nodes: 1, 2, 3 and 4."
+
+  - type: choice
+    after: binary-trees
+    prompt: "Which nodes are leaves in the tree `Node(8, Node(3, Node(1), Node(6)), Node(10))`?"
+    choices:
+      - 1, 6 and 10
+      - 8 and 10
+      - 3 and 10
+    answer: 1
+    why: "A leaf is a node without children. 8 and 3 both have children, but 1, 6 and 10 have none."
+
+  - type: bug
+    after: binary-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def count(node):
+          if node is None:
+              return 1  # BUG
+          return 1 + count(node.left) + count(node.right)
+
+
+      print(count(Node(4, Node(2))))
+    fix: return 0
+    why: "An empty tree has no nodes. Returning 1 for it counts every missing child as a node."
+
+  - type: predict
+    after: sum-max-depth
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def tree_sum(node):
+          if node is None:
+              return 0
+          return node.value + tree_sum(node.left) + tree_sum(node.right)
+
+
+      print(tree_sum(Node(4, Node(-1), Node(2, None, Node(5)))))
+    why: "4 + (-1) + 2 + 5 is 10."
+
+  - type: predict
+    after: sum-max-depth
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def depth(node):
+          if node is None:
+              return 0
+          return 1 + max(depth(node.left), depth(node.right))
+
+
+      print(depth(Node(1, Node(2, Node(3)), Node(4))))
+    why: "The longest path from the root down is 1, 2, 3: three nodes."
+
+  - type: fill
+    after: sum-max-depth
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def depth(node):
+          if node is None:
+              return 0
+          return 1 + [[max]](depth(node.left), depth(node.right))
+
+
+      print(depth(Node(1, Node(2), Node(3, Node(4, Node(5))))))
+    why: "A tree is one level deeper than the deeper of its two subtrees, so the depths of the subtrees are compared with `max`."
+
+  - type: choice
+    after: sum-max-depth
+    prompt: "A function `greatest(node)` returns the greatest value in a tree. Why shouldn't it return 0 for an empty tree, `None`?"
+    choices:
+      - A tree of negative numbers would then get 0 as its greatest value
+      - "`None` can't be compared with numbers"
+      - It would cause a `RecursionError`
+    answer: 1
+    why: "If the empty subtrees gave 0, the 0 would beat every negative value. Start from the node's own value and only compare with subtrees that exist."
+
+  - type: choice
+    after: sorted-tree
+    prompt: Which of these is a sorted binary tree?
+    choices:
+      - "`Node(5, Node(3), Node(8))`"
+      - "`Node(5, Node(8), Node(3))`"
+      - "`Node(5, Node(6), Node(9))`"
+    answer: 1
+    why: "In a sorted binary tree, the left subtree has only smaller values and the right subtree only greater ones."
+
+  - type: predict
+    after: sorted-tree
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def show(node):
+          if node is not None:
+              show(node.left)
+              print(node.value)
+              show(node.right)
+
+
+      show(Node(5, Node(3, None, Node(4)), Node(8)))
+    why: "Left subtree first, then the node, then the right subtree: in a sorted tree, the values come out in increasing order."
+
+  - type: bug
+    after: sorted-tree
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def find(node, value):
+          if node is None:
+              return False
+          if value == node.value:
+              return True
+          if value > node.value:  # BUG
+              return find(node.left, value)
+          return find(node.right, value)
+
+
+      print(find(Node(5, Node(3), Node(8)), 8))
+    fix: "if value < node.value:"
+    why: "Smaller values are in the left subtree. With `>`, the search for 8 goes left and misses the 8 on the right."
+
+  - type: predict
+    after: nested-structures
+    code: |
+      def deep_sum(items):
+          total = 0
+          for item in items:
+              if type(item) == list:
+                  total += deep_sum(item)
+              else:
+                  total += item
+          return total
+
+
+      print(deep_sum([[1, 2], [3, [4]]]))
+    why: "The function adds up the numbers at every depth: 1 + 2 + 3 + 4."
+
+  - type: runs
+    after: nested-structures
+    code: |
+      print(sum([1, [2, 3]]))
+    why: "`sum` can only add numbers, and the second item is a list. Adding up nested lists needs a function that goes into the lists, such as a recursive one."
+
+  - type: predict
+    after: nested-structures
+    code: |
+      print(type([1, 2]) == list)
+      print(type("12") == list)
+    why: "`type` gives the type of a value. A list's type is `list`, a string's is `str`."
+
+  - type: predict
+    after: nested-structures
+    code: |
+      def depth(items):
+          deepest = 0
+          for item in items:
+              if type(item) == list:
+                  deepest = max(deepest, depth(item))
+          return 1 + deepest
+
+
+      print(depth([1, [2, [3]], [4]]))
+    why: "The outer list is level 1, `[2, [3]]` is level 2 and `[3]` is level 3, the deepest."
+
+  - type: boss
+    after: binary-trees
+    prompt: |
+      Write a recursive function `tree_values(node)` that returns a list of the values of a tree: first the node's own value, then the values of its left subtree, then those of its right subtree. An empty tree, `None`, gives an empty list.
+
+      For example, `tree_values(Node(8, Node(3, Node(1)), Node(10)))` returns:
+
+      ```
+      [8, 3, 1, 10]
+      ```
+    seed: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def tree_values(node):
+          pass
+
+
+      if __name__ == "__main__":
+          print(tree_values(Node(8, Node(3, Node(1)), Node(10))))
+    solution: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def tree_values(node):
+          if node is None:
+              return []
+          return [node.value] + tree_values(node.left) + tree_values(node.right)
+
+
+      if __name__ == "__main__":
+          print(tree_values(Node(8, Node(3, Node(1)), Node(10))))
+    hints:
+      - "The empty tree gives `[]`: that's the base case."
+      - "Join three lists with `+`: `[node.value]`, the values of the left subtree and the values of the right subtree."
+    require:
+      - pattern: def tree_values\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\btree_values\s*\(
+        message: Make `tree_values` call itself inside its own body.
+    tests:
+      - call: tree_values(Node(8, Node(3, Node(1)), Node(10)))
+      - call: tree_values(None)
+        hidden: true
+      - call: tree_values(Node(1, None, Node(2, Node(3), Node(4))))
+        hidden: true
+
+  - type: boss
+    after: nested-structures
+    prompt: |
+      Write a recursive function `deep_count(items, target)` that returns how many times `target` appears in a list whose items can be lists, nested to any depth.
+
+      For example, `deep_count([1, [2, 1], [[1, 3]]], 1)` returns:
+
+      ```
+      3
+      ```
+    seed: |
+      def deep_count(items, target):
+          pass
+
+
+      if __name__ == "__main__":
+          print(deep_count([1, [2, 1], [[1, 3]]], 1))
+    solution: |
+      def deep_count(items, target):
+          count = 0
+          for item in items:
+              if type(item) == list:
+                  count += deep_count(item, target)
+              elif item == target:
+                  count += 1
+          return count
+
+
+      if __name__ == "__main__":
+          print(deep_count([1, [2, 1], [[1, 3]]], 1))
+    hints:
+      - "Go through the items with a loop. An item that is a list is counted with a recursive call, `deep_count(item, target)`."
+      - "An item that isn't a list adds 1 to the count when it equals the target."
+    require:
+      - pattern: def deep_count\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bdeep_count\s*\(
+        message: Make `deep_count` call itself inside its own body.
+    tests:
+      - call: deep_count([1, [2, 1], [[1, 3]]], 1)
+      - call: deep_count(["a", ["b", ["a", ["a"]]]], "a")
+        hidden: true
+      - call: deep_count([], 5)
+        hidden: true
+      - call: deep_count([4, [5]], 6)
+        hidden: true

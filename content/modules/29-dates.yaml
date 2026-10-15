@@ -1,0 +1,529 @@
+id: dates
+summary: Dates and times with the datetime module. Making datetime objects and reading their parts, comparing them and calculating with timedelta, and turning them into text and back with strftime and strptime.
+steps:
+  - id: dates-datetime
+    slug: datetime-objects
+    title: Dates and times
+    text: |
+      Dates are trickier than they look. Months have 28 to 31 days, every fourth year or so has a February 29, and a week from December 28 is in another year. The standard library's **`datetime`** module knows all of that. Its most used part is a type that is also called `datetime`, so programs usually start with `from datetime import datetime`: from the module `datetime`, import the type `datetime`.
+
+      ### Making a datetime
+
+      A `datetime` value holds one moment: a date and a time of day. You make one by giving the year, the month and the day, and if you like, the hour and the minute:
+
+      ```python run
+      from datetime import datetime
+
+      moon_landing = datetime(1969, 7, 20, 20, 17)
+      print(moon_landing)
+      new_year = datetime(2027, 1, 1)
+      print(new_year)
+      ```
+
+      ```output
+      1969-07-20 20:17:00
+      2027-01-01 00:00:00
+      ```
+
+      Without a time, the moment is midnight, `00:00:00`. Printed, a datetime shows the year first, then the month and the day, then the hours, minutes and seconds: the international standard order, which sorts correctly as text too.
+
+      ### The parts of a datetime
+
+      A datetime stores its parts as **attributes**, values you reach with a dot and their name: `year`, `month`, `day`, `hour`, `minute` and `second`. They're stored values, not functions, so there are no parentheses after them. The method `weekday()` does have parentheses: it calculates the day of the week, 0 for Monday up to 6 for Sunday.
+
+      ```python run
+      from datetime import datetime
+
+      meeting = datetime(2026, 11, 3, 14, 30)
+      print("Year:", meeting.year)
+      print("Month:", meeting.month)
+      print("Day:", meeting.day)
+      print(f"Time: {meeting.hour}:{meeting.minute}")
+      print("Weekday:", meeting.weekday())
+      ```
+
+      ```output
+      Year: 2026
+      Month: 11
+      Day: 3
+      Time: 14:30
+      Weekday: 1
+      ```
+
+      November 3, 2026 is a Tuesday, day 1 when Monday is day 0.
+
+      ### Only real dates
+
+      A datetime can only hold a date that exists. Ask for one that doesn't, and Python stops with a `ValueError` that says what's wrong:
+
+      ```python run crash
+      from datetime import datetime
+
+      deadline = datetime(2026, 2, 30)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          deadline = datetime(2026, 2, 30)
+      ValueError: day 30 must be in range 1..28 for month 2 in year 2026
+      ```
+
+      That makes it a handy checker: with `try` and `except ValueError`, a program can find out whether a date a user typed exists.
+
+      ### The current time
+
+      `datetime.now()` gives the moment it's called, the date and time on the computer's clock. Its output is different every second, so the examples and checks on this site use fixed dates instead. On your own computer, try:
+
+      ```python fragment
+      from datetime import datetime
+
+      print(datetime.now())
+      ```
+
+      **Your turn:** Ada Lovelace was born on 10 December 1815. Fill in the blanks so the program makes that date and prints it, and then prints only its year.
+    fill: |
+      from datetime import datetime
+
+      birthday = datetime([[1815]], [[12]], [[10]])
+      print(birthday)
+      print(birthday.[[year]])
+    hints:
+      - "The parts go in the order year, month, day: the biggest unit first."
+      - "December is month 12. The last blank is the attribute that holds the year: `year`, without parentheses."
+    tests:
+      - expect: |
+          1815-12-10 00:00:00
+          1815
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          from datetime import datetime
+
+          moment = datetime(2026, 12, 31, 23, 59)
+          print(moment)
+          print(moment.month, moment.day)
+          print(moment.minute + 1)
+        hints:
+          - A printed datetime shows the date as year-month-day, then the time with seconds. The seconds weren't given, so they're 0.
+          - "`moment.month` and `moment.day` are plain integers, and `print` puts a space between them."
+          - "`moment.minute` is the integer 59. Adding 1 is ordinary arithmetic; it doesn't move the date to the next hour."
+      - task: |
+          Write a program that asks for a year, a month and a day, and tells whether that date exists. For a real date it prints the date and its weekday name, and otherwise `There is no such date.` Make the date with `datetime(...)` inside `try`, and catch the `ValueError` it raises for a date that doesn't exist. For example:
+
+          ```
+          Year: 2028
+          Month: 2
+          Day: 29
+          29.2.2028 is a Tuesday
+          ```
+
+          The weekday names are in the starter code: `weekday()` gives the index into the list.
+        seed: |
+          from datetime import datetime
+
+          weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        solution: |
+          from datetime import datetime
+
+          weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+          year = int(input("Year: "))
+          month = int(input("Month: "))
+          day = int(input("Day: "))
+          try:
+              date = datetime(year, month, day)
+              print(f"{date.day}.{date.month}.{date.year} is a {weekdays[date.weekday()]}")
+          except ValueError:
+              print("There is no such date.")
+        hints:
+          - Read the three numbers with `int(input(...))`, using the prompts of the example.
+          - Put `date = datetime(year, month, day)` and the line that prints it inside `try`. If the date doesn't exist, Python jumps to `except ValueError:`.
+          - "The weekday's name is `weekdays[date.weekday()]`."
+        tests:
+          - stdin: |
+              2028
+              2
+              29
+          - stdin: |
+              2026
+              2
+              29
+            hidden: true
+          - stdin: |
+              2026
+              4
+              31
+            hidden: true
+          - stdin: |
+              2026
+              12
+              31
+            hidden: true
+          - stdin: |
+              2026
+              13
+              1
+            hidden: true
+
+  - id: dates-differences
+    slug: differences
+    title: Comparing and calculating with dates
+    text: |
+      Datetimes can be compared and subtracted, and time can be added to them. The `datetime` type takes care of the calendar: month lengths, leap years, the turn of the year.
+
+      ### Comparing
+
+      The comparison operators work on datetimes. An earlier moment is smaller than a later one:
+
+      ```python run
+      from datetime import datetime
+
+      deadline = datetime(2026, 12, 14, 9, 0)
+      submitted = datetime(2026, 12, 14, 8, 45)
+
+      if submitted <= deadline:
+          print("Submitted in time")
+      else:
+          print("Too late")
+      ```
+
+      ```output
+      Submitted in time
+      ```
+
+      ### The difference: timedelta
+
+      Subtracting one datetime from another gives a **`timedelta`**: a length of time, rather than a moment. Its attribute `days` holds the whole days, and `seconds` holds the rest, less than a day, in seconds:
+
+      ```python run
+      from datetime import datetime
+
+      start = datetime(2026, 9, 1)
+      end = datetime(2026, 12, 18, 12, 0)
+      difference = end - start
+      print(difference)
+      print(difference.days)
+      print(difference.seconds)
+      ```
+
+      ```output
+      108 days, 12:00:00
+      108
+      43200
+      ```
+
+      A timedelta has no attribute for hours, and none for months or years either, because months and years don't all have the same length:
+
+      ```python run crash
+      from datetime import datetime
+
+      difference = datetime(2026, 3, 1, 18, 0) - datetime(2026, 3, 1, 9, 0)
+      print(difference.hours)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print(difference.hours)
+                ^^^^^^^^^^^^^^^^
+      AttributeError: 'datetime.timedelta' object has no attribute 'hours'
+      ```
+
+      Calculate hours from the seconds yourself: `difference.seconds // 3600` is 9 here.
+
+      ### Adding time
+
+      To move a moment forward or back, add or subtract a timedelta. You make one with `timedelta(...)`, giving the units you want as keyword arguments, like `end=` in `print`: `days`, `weeks`, `hours`, `minutes`. Import `timedelta` from the module too:
+
+      ```python run
+      from datetime import datetime, timedelta
+
+      order = datetime(2026, 11, 27, 16, 0)
+      print("Delivery:", order + timedelta(days=3))
+      print("Return by:", order + timedelta(weeks=4))
+      print("Reminder:", order - timedelta(hours=20))
+      ```
+
+      ```output
+      Delivery: 2026-11-30 16:00:00
+      Return by: 2026-12-25 16:00:00
+      Reminder: 2026-11-26 20:00:00
+      ```
+
+      Adding a plain number, as in `order + 3`, is a `TypeError`: Python can't know whether you mean days, hours or seconds.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      from datetime import datetime, timedelta
+
+      start = datetime(2026, 1, 30)
+      print(start + timedelta(days=3))
+      print((datetime(2026, 3, 1) - start).days)
+      print(start < datetime(2026, 1, 29))
+    hints:
+      - January has 31 days, so three days after January 30 is in February.
+      - "From January 30 to March 1 is 2 days of January, all 28 days of February in 2026, and 0 more."
+      - An earlier moment is smaller. Is January 30 earlier than January 29?
+    more:
+      - task: |
+          A library lends books for a given number of days. Write a function `due_date(borrowed, days)` that gets the day the book was borrowed, as a datetime, and the length of the loan in days, and returns the datetime when the book is due.
+
+          `due_date(datetime(2026, 2, 20), 14)` returns the datetime for March 6, 2026.
+        seed: |
+          from datetime import datetime, timedelta
+
+
+          def due_date(borrowed, days):
+              pass
+
+
+          if __name__ == "__main__":
+              print(due_date(datetime(2026, 2, 20), 14))
+        solution: |
+          from datetime import datetime, timedelta
+
+
+          def due_date(borrowed, days):
+              return borrowed + timedelta(days=days)
+
+
+          if __name__ == "__main__":
+              print(due_date(datetime(2026, 2, 20), 14))
+        hints:
+          - The due date is the day of borrowing plus a timedelta of that many days.
+          - "`timedelta(days=days)`: the name before `=` is the unit, and the one after is your parameter."
+        tests:
+          - call: print(due_date(datetime(2026, 2, 20), 14))
+          - call: print(due_date(datetime(2026, 12, 20), 21))
+            hidden: true
+          - call: print(due_date(datetime(2028, 2, 20), 10))
+            hidden: true
+          - call: due_date(datetime(2026, 5, 5), 1) == datetime(2026, 5, 6)
+            hidden: true
+      - task: |
+          A shop gives a warranty of 730 days from the day of purchase. Write a program that asks for the date of purchase and prints the last day of the warranty, and then either how many days are left or how many days ago it ended. The program calculates from the day stored in `today` in the starter code (so that its output is the same whatever the date really is). For example:
+
+          ```
+          Purchase year: 2025
+          Purchase month: 3
+          Purchase day: 14
+          Warranty ends 14.3.2027
+          Days left: 150
+          ```
+
+          When the warranty has ended, the last line is like `The warranty ended 136 days ago`. On the last day itself, there are 0 days left.
+        seed: |
+          from datetime import datetime, timedelta
+
+          today = datetime(2026, 10, 15)
+        solution: |
+          from datetime import datetime, timedelta
+
+          today = datetime(2026, 10, 15)
+
+          year = int(input("Purchase year: "))
+          month = int(input("Purchase month: "))
+          day = int(input("Purchase day: "))
+          end = datetime(year, month, day) + timedelta(days=730)
+          print(f"Warranty ends {end.day}.{end.month}.{end.year}")
+          if end >= today:
+              print("Days left:", (end - today).days)
+          else:
+              print(f"The warranty ended {(today - end).days} days ago")
+        hints:
+          - Make the purchase date with `datetime(year, month, day)`, and add `timedelta(days=730)` to get the end.
+          - "Print the end date from its attributes: `f\"Warranty ends {end.day}.{end.month}.{end.year}\"`."
+          - Compare `end` with `today`. If the end is still ahead, the days left are `(end - today).days`; otherwise subtract the other way round.
+        tests:
+          - stdin: |
+              2025
+              3
+              14
+          - stdin: |
+              2024
+              6
+              1
+            hidden: true
+          - stdin: |
+              2026
+              10
+              1
+            hidden: true
+          - stdin: |
+              2024
+              10
+              15
+            hidden: true
+
+  - id: dates-formatting
+    slug: formatting
+    title: Formatting and reading dates
+    text: |
+      A printed datetime looks like `2026-03-14 09:05:00`, which isn't how people usually write dates. The method **`strftime`** (string format time) turns a datetime into text in any format you like. You describe the format with codes that start with `%`:
+
+      ```python run
+      from datetime import datetime
+
+      moment = datetime(2026, 3, 14, 9, 5)
+      print(moment.strftime("%d.%m.%Y"))
+      print(moment.strftime("%m/%d/%Y %H:%M"))
+      print(moment.strftime("%A %d %B %Y"))
+      ```
+
+      ```output
+      14.03.2026
+      03/14/2026 09:05
+      Saturday 14 March 2026
+      ```
+
+      Everything in the format that isn't a code (the dots, slashes, spaces and any words) is copied into the result as it is. The most useful codes:
+
+      | Code | Means | For the moment above |
+      | --- | --- | --- |
+      | `%d` | day of the month, two digits | `14` |
+      | `%m` | month, two digits | `03` |
+      | `%Y` | year, four digits | `2026` |
+      | `%H` | hour, 00 to 23 | `09` |
+      | `%M` | minutes | `05` |
+      | `%S` | seconds | `00` |
+      | `%A` | name of the weekday | `Saturday` |
+      | `%B` | name of the month | `March` |
+
+      The full list is in the documentation of the `datetime` module.
+
+      ### Small m, capital M
+
+      The classic mistake: `%m` is the month, `%M` the minutes. Mix them up and there's no error, just a wrong date:
+
+      ```python run
+      from datetime import datetime
+
+      moment = datetime(2026, 3, 14, 9, 5)
+      print(moment.strftime("%d.%M.%Y"))
+      ```
+
+      ```output
+      14.05.2026
+      ```
+
+      Python can't know you meant the month, so check the output of date formatting carefully.
+
+      ### From text to a datetime
+
+      **`strptime`** (string parse time) works the other way round: it reads a date written as text in a format you describe, and makes a datetime of it. You call it on the type itself, `datetime.strptime(text, format)`:
+
+      ```python run
+      from datetime import datetime
+
+      text = input("Date (dd.mm.yyyy): ")
+      day = datetime.strptime(text, "%d.%m.%Y")
+      print(day)
+      print(day.strftime("%A"))
+      ```
+
+      ```input
+      24.12.2026
+      ```
+
+      ```output
+      Date (dd.mm.yyyy): 24.12.2026
+      2026-12-24 00:00:00
+      Thursday
+      ```
+
+      When reading, a single-digit day or month is fine too: `5.1.2026` reads as 5 January. But if the text doesn't match the format, or the date doesn't exist, `strptime` raises a `ValueError`, such as `ValueError: time data '2026-12-24' does not match format '%d.%m.%Y'`. Catch it with `try` and `except ValueError`, just like a failed `int(...)`.
+
+      **Your turn:** fill in the two format strings so the program prints the moment as day/month/year on the first line and as hours and minutes on the second:
+
+      ```
+      04/07/2026
+      18:30
+      ```
+    fill: |
+      from datetime import datetime
+
+      launch = datetime(2026, 7, 4, 18, 30)
+      print(launch.strftime("[[%d/%m/%Y]]"))
+      print(launch.strftime("[[%H:%M]]"))
+    hints:
+      - "Day, month and year are `%d`, `%m` and `%Y`, and the slashes between them are copied as they are."
+      - "Hours are `%H` and minutes are a capital `%M`, with a colon between them."
+    tests:
+      - expect: |
+          04/07/2026
+          18:30
+    more:
+      - task: |
+          Write a function `weekday_of(text)` that gets a date as text in the form year-month-day, such as `"2026-10-15"`, and returns the name of its weekday, such as `"Thursday"`. Read the text with `strptime` and get the name with `strftime`.
+        seed: |
+          from datetime import datetime
+
+
+          def weekday_of(text):
+              pass
+
+
+          if __name__ == "__main__":
+              print(weekday_of("2026-10-15"))
+        solution: |
+          from datetime import datetime
+
+
+          def weekday_of(text):
+              day = datetime.strptime(text, "%Y-%m-%d")
+              return day.strftime("%A")
+
+
+          if __name__ == "__main__":
+              print(weekday_of("2026-10-15"))
+        hints:
+          - "The format of the text is year, month and day separated by hyphens: `\"%Y-%m-%d\"`."
+          - "`datetime.strptime(text, \"%Y-%m-%d\")` gives a datetime. The code for the weekday's name is `%A`."
+        tests:
+          - call: weekday_of("2026-10-15")
+          - call: weekday_of("2000-01-01")
+            hidden: true
+          - call: weekday_of("1969-07-20")
+            hidden: true
+          - call: weekday_of("2028-02-29")
+            hidden: true
+      - task: |
+          A plant needs water every three days. Write a program that asks for the first watering day (as day.month.year) and the number of waterings, and prints each watering day with its weekday, in the format of the example:
+
+          ```
+          First watering (dd.mm.yyyy): 27.10.2026
+          How many times: 4
+          Tuesday 27.10.2026
+          Friday 30.10.2026
+          Monday 02.11.2026
+          Thursday 05.11.2026
+          ```
+        seed: |
+          from datetime import datetime, timedelta
+        solution: |
+          from datetime import datetime, timedelta
+
+          first = input("First watering (dd.mm.yyyy): ")
+          times = int(input("How many times: "))
+          day = datetime.strptime(first, "%d.%m.%Y")
+          for i in range(times):
+              print(day.strftime("%A %d.%m.%Y"))
+              day += timedelta(days=3)
+        hints:
+          - "Read the first day with `datetime.strptime(text, \"%d.%m.%Y\")`."
+          - "In a loop that runs as many times as asked, print the day with `strftime(\"%A %d.%m.%Y\")`."
+          - "After printing, move the day three days ahead: `day += timedelta(days=3)`."
+        tests:
+          - stdin: |
+              27.10.2026
+              4
+          - stdin: |
+              30.12.2026
+              3
+            hidden: true
+          - stdin: |
+              24.2.2028
+              5
+            hidden: true

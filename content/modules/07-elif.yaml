@@ -1,0 +1,670 @@
+id: elif
+summary: "Conditional statements with more than one branch: else for every other case, elif for more choices, why the order of the conditions matters, and comparing strings in alphabetical order."
+steps:
+  - id: elif-else
+    slug: else
+    title: Two branches with else
+    text: |
+      Often a program should do one thing when a condition is true and something else when it's false. With what you know so far, you would write two `if` statements with opposite conditions:
+
+      ```python run
+      age = int(input("Your age: "))
+      if age < 18:
+          print("Youth ticket: 6 euros")
+      if age >= 18:
+          print("Adult ticket: 10 euros")
+      ```
+
+      ```input
+      15
+      ```
+
+      ```output
+      Your age: 15
+      Youth ticket: 6 euros
+      ```
+
+      This works, but the two conditions must fit together exactly. Change the 18 in one of them and forget the other, and some ages get two tickets or none at all.
+
+      ### else
+
+      An **`else` branch** runs when the condition of its `if` is false. It covers every other case, so it needs no condition of its own:
+
+      ```python run
+      age = int(input("Your age: "))
+      if age < 18:
+          print("Youth ticket: 6 euros")
+      else:
+          print("Adult ticket: 10 euros")
+      print("Enjoy the movie!")
+      ```
+
+      ```input
+      34
+      ```
+
+      ```output
+      Your age: 34
+      Adult ticket: 10 euros
+      Enjoy the movie!
+      ```
+
+      `else` is followed by a colon and its own indented block, and it's at the same indentation as its `if`. Exactly one of the two blocks runs, never both and never neither. Together the `if` and the `else` form one conditional statement, so an `else` can't stand on its own: it always comes right after the block of an `if`.
+
+      ### Even or odd
+
+      A number is even when dividing it by 2 leaves no remainder. Without `else`, telling even and odd numbers apart takes two `if` statements. With `else`, one condition is enough:
+
+      ```python run
+      number = int(input("Type a whole number: "))
+      if number % 2 == 0:
+          print(f"{number} is even")
+      else:
+          print(f"{number} is odd")
+      ```
+
+      ```input
+      7
+      ```
+
+      ```output
+      Type a whole number: 7
+      7 is odd
+      ```
+
+      The same idea tells whether one number divides another evenly: `minutes % 60 == 0` is true when the minutes make whole hours.
+
+      A common mistake is to give `else` a condition, as if it were another `if`:
+
+      ```python run crash
+      temperature = 15
+      if temperature > 20:
+          print("Wear shorts")
+      else temperature <= 20:
+          print("Wear jeans")
+      ```
+
+      ```crash
+        File "main.py", line 4
+          else temperature <= 20:
+               ^^^^^^^^^^^
+      SyntaxError: expected ':'
+      ```
+
+      Python expects the colon right after `else`. Leave the condition out: `else` already means "in every other case".
+
+      **Your turn:** fill in the blank so the quiz says `Not quite. It's Jupiter.` for any other answer:
+
+      ```
+      What is the largest planet? Jupiter
+      Correct!
+      ```
+    fill: |
+      answer = input("What is the largest planet? ")
+      if answer == "Jupiter":
+          print("Correct!")
+      [[else]]:
+          print("Not quite. It's Jupiter.")
+    hints:
+      - The second branch should run whenever the condition of the `if` is false.
+      - "Type `else` into the blank. The colon after it is already there."
+    tests:
+      - stdin: Jupiter
+      - stdin: Saturn
+        hidden: true
+      - stdin: jupiter
+        hidden: true
+    more:
+      - task: |
+          A minibus has rows of 4 seats, and passengers fill the rows from the front. Write a program that asks how many passengers there are. If they fill every row exactly, it prints `Every row is full.` Otherwise it prints how many passengers sit in the last row.
+
+          ```
+          Passengers: 10
+          Passengers in the last row: 2
+          ```
+        seed: |
+          passengers = int(input("Passengers: "))
+        solution: |
+          passengers = int(input("Passengers: "))
+          if passengers % 4 == 0:
+              print("Every row is full.")
+          else:
+              print(f"Passengers in the last row: {passengers % 4}")
+        hints:
+          - "The remainder `passengers % 4` is the number of people left over after the full rows."
+          - "When the remainder is 0, every row is full: `if passengers % 4 == 0:`."
+          - "In the `else` block, print the remainder with an f-string."
+        require:
+          - pattern: \belse\b
+            message: Use an `if` with an `else` branch.
+        tests:
+          - stdin: "10"
+          - stdin: "12"
+            hidden: true
+          - stdin: "5"
+            hidden: true
+      - task: |
+          An online shop charges 5 euros for shipping, but shipping is free for orders of 50 euros or more. Write a program that asks for the order total (in whole euros) and prints the shipping cost and the total to pay. Store the shipping cost in a variable in each branch, and print both lines after the conditional statement.
+
+          ```
+          Order total: 30
+          Shipping: 5 euros
+          To pay: 35 euros
+          ```
+        seed: |
+          total = int(input("Order total: "))
+        solution: |
+          total = int(input("Order total: "))
+          if total >= 50:
+              shipping = 0
+          else:
+              shipping = 5
+          print(f"Shipping: {shipping} euros")
+          print(f"To pay: {total + shipping} euros")
+        hints:
+          - "Shipping is free from 50 euros up, so the condition is `total >= 50`."
+          - "Set `shipping = 0` in one branch and `shipping = 5` in the other. Whichever branch runs, the variable has a value afterwards."
+          - The two `print` lines come after the whole `if` and `else`, at the left edge, so they run every time.
+        require:
+          - pattern: \belse\b
+            message: Use an `if` with an `else` branch.
+        tests:
+          - stdin: "30"
+          - stdin: "60"
+            hidden: true
+          - stdin: "50"
+            hidden: true
+          - stdin: "49"
+            hidden: true
+
+  - id: elif-elif
+    slug: elif
+    title: More branches with elif
+    text: |
+      Some decisions have more than two outcomes. A guess in a number game can be too small, too big or just right. For cases like this, an **`elif` branch** (short for "else if") adds another condition to the same statement:
+
+      ```python run
+      secret = 37
+      guess = int(input("Guess the number: "))
+      if guess < secret:
+          print("Too small!")
+      elif guess > secret:
+          print("Too big!")
+      else:
+          print("You got it!")
+      ```
+
+      ```input
+      50
+      ```
+
+      ```output
+      Guess the number: 50
+      Too big!
+      ```
+
+      Python checks the conditions from top to bottom. The first one that is true has its block run, and the rest of the statement is skipped. The `else` block runs only when none of the conditions is true. So exactly one of the three messages is printed, whatever the guess.
+
+      ### As many as you need
+
+      A conditional statement can have any number of `elif` branches, and the `else` at the end is optional. Without an `else`, it's possible that no branch runs at all:
+
+      ```python run
+      day = input("Day: ")
+      if day == "Friday":
+          print("Tonight: disco swim at 7 pm")
+      elif day == "Saturday":
+          print("Today: swimming lessons for kids")
+      elif day == "Sunday":
+          print("Today: family swim all day")
+      print("The pool is open from 8 am to 8 pm.")
+      ```
+
+      ```input
+      Tuesday
+      ```
+
+      ```output
+      Day: Tuesday
+      The pool is open from 8 am to 8 pm.
+      ```
+
+      On a Tuesday no condition is true, so the program goes straight on to the line after the statement. With `Friday`, the first branch would run before it.
+
+      The order of the parts is always the same: one `if` first, then any `elif` branches, then at most one `else` last. Each one has its own colon and its own indented block, and all of them are at the same indentation.
+
+      ### elif is one word
+
+      Many languages write "else if" as two words, but Python only understands `elif`:
+
+      ```python run crash
+      guess = 40
+      if guess < 37:
+          print("Too small!")
+      else if guess > 37:
+          print("Too big!")
+      ```
+
+      ```crash
+        File "main.py", line 4
+          else if guess > 37:
+               ^^
+      SyntaxError: expected ':'
+      ```
+
+      Python reads `else` and expects a colon right after it. Writing `elif guess > 37:` fixes it.
+
+      **Your turn:** fill in the blanks so the program gives clothing advice: above 25 degrees a T-shirt, above 10 degrees a sweater, and otherwise a warm coat.
+
+      ```
+      Temperature: 30
+      T-shirt weather
+      ```
+    fill: |
+      temperature = int(input("Temperature: "))
+      if temperature > 25:
+          print("T-shirt weather")
+      [[elif]] temperature > 10:
+          print("Bring a sweater")
+      [[else]]:
+          print("Wear a warm coat")
+    hints:
+      - The middle branch has a condition of its own, and the last one covers every other case.
+      - "Type `elif` in the first blank and `else` in the second."
+    tests:
+      - stdin: "30"
+      - stdin: "15"
+        hidden: true
+      - stdin: "-3"
+        hidden: true
+      - stdin: "10"
+        hidden: true
+    more:
+      - task: |
+          Write a program for a traffic light. It asks for the color of the light and prints `Stop` for `red`, `Get ready` for `yellow` and `Go` for `green`. For anything else, it prints `Unknown color`.
+
+          ```
+          Light color: green
+          Go
+          ```
+        seed: |
+          color = input("Light color: ")
+        solution: |
+          color = input("Light color: ")
+          if color == "red":
+              print("Stop")
+          elif color == "yellow":
+              print("Get ready")
+          elif color == "green":
+              print("Go")
+          else:
+              print("Unknown color")
+        hints:
+          - "Compare the color with each word in turn: `if color == \"red\":`, then an `elif` for each of the other colors."
+          - The `else` at the end catches every other answer.
+        require:
+          - pattern: \belif\b
+            message: Use `elif` for the branches after the first.
+        tests:
+          - stdin: green
+          - stdin: red
+            hidden: true
+          - stdin: yellow
+            hidden: true
+          - stdin: blue
+            hidden: true
+      - task: |
+          Write a program that asks for the times of two runners in seconds and prints which one was faster and by how many seconds. If the times are equal, it prints `It's a tie!`
+
+          ```
+          Time of runner A: 52
+          Time of runner B: 49
+          Runner B was faster by 3 seconds.
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          time_a = int(input("Time of runner A: "))
+          time_b = int(input("Time of runner B: "))
+          if time_a < time_b:
+              print(f"Runner A was faster by {time_b - time_a} seconds.")
+          elif time_b < time_a:
+              print(f"Runner B was faster by {time_a - time_b} seconds.")
+          else:
+              print("It's a tie!")
+        hints:
+          - The faster runner is the one with the smaller time.
+          - "Check `time_a < time_b` first, then `time_b < time_a` with `elif`, and leave the tie to `else`."
+          - Subtract the smaller time from the bigger one, so the difference is never negative.
+        tests:
+          - stdin: |
+              52
+              49
+          - stdin: |
+              45
+              50
+            hidden: true
+          - stdin: |
+              50
+              50
+            hidden: true
+
+  - id: elif-order
+    slug: order-of-conditions
+    title: The order of conditions
+    text: |
+      Python checks the branches of a conditional statement from top to bottom and runs only the first one whose condition is true. That makes the order of the conditions important. This program should praise a great result, but it never does:
+
+      ```python run
+      points = 95
+      if points >= 50:
+          print("Passed")
+      elif points >= 90:
+          print("Passed with distinction")
+      else:
+          print("Failed")
+      ```
+
+      ```output
+      Passed
+      ```
+
+      95 is at least 50, so the first branch runs and the rest of the statement is skipped. In fact the `elif points >= 90` branch can never run: every number that is 90 or more is also 50 or more, so the first condition always catches it first. The fix is to check the stricter condition first:
+
+      ```python run
+      points = 95
+      if points >= 90:
+          print("Passed with distinction")
+      elif points >= 50:
+          print("Passed")
+      else:
+          print("Failed")
+      ```
+
+      ```output
+      Passed with distinction
+      ```
+
+      A good rule for limits like these: with `>=` or `>`, check the limits from the highest down; with `<=` or `<`, from the lowest up.
+
+      ### Each branch knows what came before
+
+      When Python gets to `elif points >= 50`, it already knows that `points >= 90` was false. So that branch is really for points from 50 to 89, without having to say so. You don't need to repeat the earlier conditions in the later ones.
+
+      ### One statement or several
+
+      A chain of `if`, `elif` and `else` is one statement, and at most one of its branches runs. Separate `if` statements are each checked on their own, so several of them can run:
+
+      ```python run
+      speed = 85
+      if speed > 80:
+          print("Fine: 200 euros")
+      if speed > 60:
+          print("Fine: 100 euros")
+      ```
+
+      ```output
+      Fine: 200 euros
+      Fine: 100 euros
+      ```
+
+      The driver gets two fines. Change the second `if` into `elif`, and only the first one is printed. Use separate `if` statements when the checks have nothing to do with each other, and one chain when exactly one of the results should come out.
+
+      **Your turn:** children under 7 get in free, but this program gives a 5-year-old a youth ticket. Fix the order of the conditions:
+
+      ```
+      Age: 5
+      Free entry
+      ```
+    seed: |
+      age = int(input("Age: "))
+      if age < 18:
+          print("Youth ticket: 6 euros")
+      elif age < 7:
+          print("Free entry")
+      elif age >= 65:
+          print("Senior ticket: 7 euros")
+      else:
+          print("Adult ticket: 10 euros")
+    solution: |
+      age = int(input("Age: "))
+      if age < 7:
+          print("Free entry")
+      elif age < 18:
+          print("Youth ticket: 6 euros")
+      elif age >= 65:
+          print("Senior ticket: 7 euros")
+      else:
+          print("Adult ticket: 10 euros")
+    hints:
+      - A 5-year-old is also under 18, so the first branch catches every child before Python ever gets to `age < 7`.
+      - "Swap the first two conditions and their blocks: `if age < 7:` first, then `elif age < 18:`."
+    tests:
+      - stdin: "5"
+      - stdin: "12"
+        hidden: true
+      - stdin: "7"
+        hidden: true
+      - stdin: "70"
+        hidden: true
+      - stdin: "30"
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          score = 72
+          if score >= 60:
+              print("C")
+          elif score >= 70:
+              print("B")
+          if score >= 50:
+              print("Passed")
+          else:
+              print("Failed")
+        hints:
+          - In the first statement, Python runs only the first branch whose condition is true. 72 is at least 60.
+          - "The second `if` starts a new statement, so it's checked on its own."
+      - task: |
+          Write a program that asks for the wind speed in meters per second (a whole number) and describes it:
+
+          - below 1: `Calm`
+          - 1 to 5: `Light breeze`
+          - 6 to 10: `Moderate wind`
+          - 11 to 17: `Strong wind`
+          - 18 or more: `Storm`
+
+          ```
+          Wind speed: 8
+          Moderate wind
+          ```
+        seed: |
+          speed = int(input("Wind speed: "))
+        solution: |
+          speed = int(input("Wind speed: "))
+          if speed < 1:
+              print("Calm")
+          elif speed <= 5:
+              print("Light breeze")
+          elif speed <= 10:
+              print("Moderate wind")
+          elif speed <= 17:
+              print("Strong wind")
+          else:
+              print("Storm")
+        hints:
+          - "Start from the lowest limit and go up: `if speed < 1:`, then `elif speed <= 5:` and so on."
+          - Each `elif` only runs when all the conditions above it were false, so it doesn't need a lower limit.
+          - The last case, 18 or more, is everything that's left, so it can be the `else`.
+        require:
+          - pattern: \belif\b
+            message: Use one conditional statement with `elif` branches.
+        tests:
+          - stdin: "8"
+          - stdin: "0"
+            hidden: true
+          - stdin: "5"
+            hidden: true
+          - stdin: "6"
+            hidden: true
+          - stdin: "17"
+            hidden: true
+          - stdin: "18"
+            hidden: true
+          - stdin: "30"
+            hidden: true
+
+  - id: elif-comparing-strings
+    slug: comparing-strings
+    title: Comparing strings
+    text: |
+      You have compared strings with `==` and `!=` already. Two strings are equal only when they have exactly the same characters, capital letters and spaces included:
+
+      ```python repl
+      >>> "Python" == "python"
+      False
+      >>> "yes" == "yes "
+      False
+      >>> "cat" != "dog"
+      True
+      ```
+
+      ### Alphabetical order
+
+      `<` and `>` work on strings too. A string is "less than" another when it comes first in alphabetical order, as in a dictionary:
+
+      ```python repl
+      >>> "apple" < "banana"
+      True
+      >>> "cat" > "car"
+      True
+      >>> "car" < "cart"
+      True
+      ```
+
+      Python compares two strings character by character from the start, and the first character that differs decides. `"cat"` and `"car"` differ at the third letter, and `t` comes after `r`. When one string runs out first, as `"car"` does next to `"cart"`, the shorter one comes first.
+
+      Together with `elif`, this puts two words in order:
+
+      ```python run
+      first = input("First word: ")
+      second = input("Second word: ")
+      if first < second:
+          print(f"{first} comes before {second}")
+      elif first > second:
+          print(f"{second} comes before {first}")
+      else:
+          print("The words are the same")
+      ```
+
+      ```input
+      pear
+      apple
+      ```
+
+      ```output
+      First word: pear
+      Second word: apple
+      apple comes before pear
+      ```
+
+      ### Capitals and digits
+
+      Python's order isn't quite a dictionary's. It compares the codes of the characters, and in them every capital letter comes before every small letter. Letters with marks, such as `é`, come after all of these. Digits in a string are just characters as well, compared one at a time:
+
+      ```python repl
+      >>> "Zebra" < "apple"
+      True
+      >>> "10" < "9"
+      True
+      >>> 10 < 9
+      False
+      ```
+
+      `"10"` comes before `"9"` because its first character, `1`, comes before `9`. So compare words written the same way (all in small letters, for example), and convert numbers that the user typed with `int` before you compare them.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      print("dog" < "cat")
+      print("Dog" < "cat")
+      print("pen" < "pencil")
+      print("7" > "10")
+    hints:
+      - "`d` comes after `c` in the alphabet, so `\"dog\"` is not less than `\"cat\"`."
+      - Every capital letter comes before every small letter.
+      - "`\"pen\"` runs out first, so it comes first. And `\"7\"` and `\"10\"` are strings: their first characters `7` and `1` decide."
+    more:
+      - task: |
+          Write a program that asks for two words, written in small letters, and prints them in alphabetical order. If the words are the same, it prints `You typed the same word twice.`
+
+          ```
+          First word: melon
+          Second word: grape
+          In order: grape, melon
+          ```
+        seed: |
+          first = input("First word: ")
+          second = input("Second word: ")
+        solution: |
+          first = input("First word: ")
+          second = input("Second word: ")
+          if first < second:
+              print(f"In order: {first}, {second}")
+          elif first > second:
+              print(f"In order: {second}, {first}")
+          else:
+              print("You typed the same word twice.")
+        hints:
+          - "`first < second` is true when the first word comes earlier in alphabetical order."
+          - "When `first > second`, the second word goes first in the line you print."
+          - Equal words are the case left over, so they go in the `else`.
+        tests:
+          - stdin: |
+              melon
+              grape
+          - stdin: |
+              apple
+              banana
+            hidden: true
+          - stdin: |
+              kiwi
+              kiwi
+            hidden: true
+          - stdin: |
+              car
+              cart
+            hidden: true
+      - task: |
+          A library shelves its books by the author's last name, in small letters. Names that come before `h` in alphabetical order go on shelf A, names from `h` up to (but not including) `p` on shelf B, and the rest on shelf C. Write a program that asks for the name and prints the shelf.
+
+          ```
+          Author's last name: orwell
+          Shelf B
+          ```
+        seed: |
+          name = input("Author's last name: ")
+        solution: |
+          name = input("Author's last name: ")
+          if name < "h":
+              print("Shelf A")
+          elif name < "p":
+              print("Shelf B")
+          else:
+              print("Shelf C")
+        hints:
+          - "Compare the whole name with a one-letter string: every name that starts with a to g is less than `\"h\"`."
+          - "Check the shelves in order: `if name < \"h\":`, then `elif name < \"p\":`, then `else`."
+          - "A name such as `hugo` is not less than `\"h\"` (the shorter string comes first), so it goes to shelf B, as it should."
+        tests:
+          - stdin: orwell
+          - stdin: austen
+            hidden: true
+          - stdin: hugo
+            hidden: true
+          - stdin: pratchett
+            hidden: true
+          - stdin: gaiman
+            hidden: true
+          - stdin: tolkien
+            hidden: true

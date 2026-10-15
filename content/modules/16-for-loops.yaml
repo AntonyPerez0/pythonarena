@@ -1,0 +1,814 @@
+id: for-loops
+summary: The for loop, which goes through the items of a list or the characters of a string one by one. Counting with range, turning a range into a list, building new lists in a loop, and finding the best or the worst item of a list.
+steps:
+  - id: for-loops-lists
+    slug: for-lists
+    title: Going through a list with for
+    text: |
+      You can go through a list with a `while` loop and an index, the way you went through strings:
+
+      ```python run
+      prices = [12, 5, 30]
+      index = 0
+      while index < len(prices):
+          print(prices[index])
+          index += 1
+      ```
+
+      ```output
+      12
+      5
+      30
+      ```
+
+      It works, but the index is only there to keep track of where you are, and getting its start, its condition or its `+= 1` wrong is easy. Python has a loop made for exactly this job, the **`for`** loop:
+
+      ```python run
+      prices = [12, 5, 30]
+      for price in prices:
+          print(price)
+      ```
+
+      ```output
+      12
+      5
+      30
+      ```
+
+      Read it as "for each price in prices". The loop takes the items of the list one at a time, from the first to the last. Each time, it assigns the item to the variable after `for` (here `price`) and runs the indented block. When the items run out, the program goes on after the loop. There's no index to manage and no condition to get wrong.
+
+      The variable can have any name. Choose one that says what an item is: `for price in prices`, `for name in names`.
+
+      ### Definite and indefinite loops
+
+      A `while` loop repeats as long as its condition is true, and you can't always tell in advance how many rounds that will be: it might wait for the user to type `quit`. That's called **indefinite iteration**. A `for` loop goes through a collection that's already there, so the number of rounds is known when it starts: one per item. That's **definite iteration**.
+
+      ### Working with each item
+
+      Most loops do more than print. A helper variable before the loop collects a result while the loop goes through the items:
+
+      ```python run
+      prices = [12, 5, 30, 8]
+      total = 0
+      cheap = 0
+      for price in prices:
+          total += price
+          if price < 10:
+              cheap += 1
+      print("Total:", total)
+      print("Under 10:", cheap)
+      ```
+
+      ```output
+      Total: 55
+      Under 10: 2
+      ```
+
+      `sum(prices)` would give the total too, but the loop can do anything with each item: here it also counts the cheap ones, which no ready function does.
+
+      Inside a function, a `return` in the loop ends the whole function at once. Put the `return` after the loop (not indented under it) when the function needs to see every item first.
+
+      **Your turn:** fill in the blanks so the loop prints every guest's name with a greeting:
+
+      ```
+      Welcome, Ada!
+      Welcome, Linus!
+      Welcome, Grace!
+      ```
+    fill: |
+      guests = ["Ada", "Linus", "Grace"]
+      [[for]] guest [[in]] guests:
+          print(f"Welcome, {guest}!")
+    hints:
+      - "The loop line reads like \"for each guest in guests\"."
+      - "The two missing words are the keywords `for` and `in`."
+    tests:
+      - expect: |
+          Welcome, Ada!
+          Welcome, Linus!
+          Welcome, Grace!
+    more:
+      - task: |
+          Write the function `count_over(numbers: list, limit: int) -> int`, which returns how many numbers in the list are greater than `limit`. For example, `count_over([3, 12, 7, 20], 5)` returns `3`.
+        seed: |
+          def count_over(numbers: list, limit: int) -> int:
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_over([3, 12, 7, 20], 5))
+        solution: |
+          def count_over(numbers: list, limit: int) -> int:
+              count = 0
+              for number in numbers:
+                  if number > limit:
+                      count += 1
+              return count
+
+
+          if __name__ == "__main__":
+              print(count_over([3, 12, 7, 20], 5))
+        hints:
+          - "Start a helper variable `count` at 0 before the loop."
+          - "Go through the list with `for number in numbers:` and add 1 to `count` when `number > limit`."
+          - "Return `count` after the loop, at the same indentation as the `for` line."
+        require:
+          - pattern: \bfor\b
+            message: "Go through the numbers with a `for` loop."
+        tests:
+          - call: count_over([3, 12, 7, 20], 5)
+          - call: count_over([1, 2, 3], 10)
+            hidden: true
+          - call: count_over([5, 6, 5, 6], 5)
+            hidden: true
+          - call: count_over([], 0)
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [4, -2, 7, -5]
+          total = 0
+          for number in numbers:
+              if number > 0:
+                  total += number
+              print(number, total)
+          print("Done:", total)
+        hints:
+          - The loop takes the numbers one at a time, in order, and prints a line for each of them.
+          - "Only positive numbers are added to `total`, but the `print` inside the loop runs for every number."
+          - "The last line is after the loop, so it's printed once, at the end."
+
+  - id: for-loops-strings
+    slug: for-strings
+    title: Going through a string
+    text: |
+      A `for` loop goes through a string too, one character at a time:
+
+      ```python run
+      word = input("Word: ")
+      for char in word:
+          print(char)
+      ```
+
+      ```input
+      Hello
+      ```
+
+      ```output
+      Word: Hello
+      H
+      e
+      l
+      l
+      o
+      ```
+
+      Spaces and punctuation are characters as well, so the loop sees them too. `char` is just a variable name; `letter` or `c` would work as well.
+
+      ### Counting characters
+
+      With a helper variable, the loop can count characters of some kind. Here `in` checks whether a character is one of the vowels in the string `"aeiou"`:
+
+      ```python run
+      text = "Programming is fun"
+      vowels = 0
+      for char in text.lower():
+          if char in "aeiou":
+              vowels += 1
+      print("Vowels:", vowels)
+      ```
+
+      ```output
+      Vowels: 5
+      ```
+
+      The loop goes through `text.lower()`, a copy of the text in small letters, so a capital `A` would be counted as well.
+
+      ### Building a new string
+
+      A loop can also build a new string, character by character. Start with the empty string `""` and add to it with `+=`:
+
+      ```python run
+      text = "a quiet, calm day"
+      result = ""
+      for char in text:
+          if char == " ":
+              result += "_"
+          else:
+              result += char
+      print(result)
+      ```
+
+      ```output
+      a_quiet,_calm_day
+      ```
+
+      The original string doesn't change: `result` is a new string, with an underscore wherever `text` has a space.
+
+      The same loops work in functions. A function that gets a string as a parameter goes through it in just the same way, and returns the count or the new string at the end:
+
+      ```python run
+      def count_char(text: str, wanted: str) -> int:
+          count = 0
+          for char in text:
+              if char == wanted:
+                  count += 1
+          return count
+
+
+      print(count_char("banana", "a"))
+      print(count_char("banana", "x"))
+      ```
+
+      ```output
+      3
+      0
+      ```
+
+      **Your turn:** fill in the blanks so the program counts how many times the letter `a` is in the text the user types, as a small or a capital letter:
+
+      ```
+      Text: Banana Split
+      Letter a: 3
+      ```
+    fill: |
+      text = input("Text: ")
+      count = 0
+      for char in [[text]]:
+          if char.[[lower]]() == "a":
+              count += 1
+      print("Letter a:", count)
+    hints:
+      - "The loop goes through the string that the user typed, in the variable `text`."
+      - "To count a capital `A` too, compare the character in small letters: `char.lower()`."
+    tests:
+      - stdin: Banana Split
+      - stdin: Ada and ANNA ate apples
+        hidden: true
+      - stdin: Python
+        hidden: true
+    more:
+      - task: |
+          Write the function `hide_digits(text: str) -> str`, which returns a copy of the text where every digit (0 to 9) is replaced with `#`. Everything else stays as it is. For example, `hide_digits("Call 555-0123")` returns `'Call ###-####'`.
+        seed: |
+          def hide_digits(text: str) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(hide_digits("Call 555-0123"))
+        solution: |
+          def hide_digits(text: str) -> str:
+              result = ""
+              for char in text:
+                  if char in "0123456789":
+                      result += "#"
+                  else:
+                      result += char
+              return result
+
+
+          if __name__ == "__main__":
+              print(hide_digits("Call 555-0123"))
+        hints:
+          - "Build a new string: start with `result = \"\"` and go through `text` with a `for` loop."
+          - "`char in \"0123456789\"` is true for a digit. Then add `\"#\"` to `result`, and otherwise the character itself."
+          - "Return `result` after the loop."
+        tests:
+          - call: hide_digits("Call 555-0123")
+          - call: hide_digits("no digits here")
+            hidden: true
+          - call: hide_digits("PIN 2580, code 7")
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          word = "stressed"
+          result = ""
+          for char in word:
+              result = char + result
+          print(result)
+          count = 0
+          for char in "mississippi":
+              if char == "s":
+                  count += 1
+          print(count)
+        hints:
+          - "In the first loop, each character is added to the front of `result`, not to its end."
+          - "Adding each character to the front turns the word around."
+          - "The second loop counts the letter s in mississippi."
+
+  - id: for-loops-range
+    slug: range
+    title: Counting with range
+    text: |
+      Often you want to repeat something a given number of times, or go through numbers in order. The function **`range`** gives the numbers, and `for` goes through them. With one argument, `range(n)` gives the numbers from 0 to `n - 1`:
+
+      ```python run
+      for i in range(4):
+          print(i)
+      ```
+
+      ```output
+      0
+      1
+      2
+      3
+      ```
+
+      That's 4 numbers, starting from 0. The end is left out, just as in a string slice. So `for i in range(4):` repeats its block 4 times, which is often all you need.
+
+      ### Start, end and step
+
+      With two arguments, `range(start, end)` starts from `start` instead of 0. The end is still left out:
+
+      ```python run
+      for number in range(1, 6):
+          print(number, "squared is", number * number)
+      ```
+
+      ```output
+      1 squared is 1
+      2 squared is 4
+      3 squared is 9
+      4 squared is 16
+      5 squared is 25
+      ```
+
+      To go up to 5, the end must be 6. Forgetting that is the most common `range` mistake: the loop stops one number too early.
+
+      A third argument is the **step**, how much the number changes each time:
+
+      ```python run
+      for year in range(2000, 2025, 8):
+          print(year)
+      ```
+
+      ```output
+      2000
+      2008
+      2016
+      2024
+      ```
+
+      The step can also be negative, which counts down. Then the start is the greater number, and the end (left out again) is the smaller one:
+
+      ```python run
+      for i in range(5, 0, -1):
+          print(i)
+      print("Liftoff!")
+      ```
+
+      ```output
+      5
+      4
+      3
+      2
+      1
+      Liftoff!
+      ```
+
+      Compare this with the `while` loop that would do the same: a counter, a condition and a `-= 1`. With `range`, all three are in one line.
+
+      The variable of the loop can be used like any other variable. Here a function uses it to build a line of numbers:
+
+      ```python run
+      def number_line(n: int) -> str:
+          line = ""
+          for i in range(1, n + 1):
+              line += str(i) + " "
+          return line
+
+
+      print(number_line(5))
+      ```
+
+      ```output
+      1 2 3 4 5
+      ```
+
+      **Your turn:** fill in the blanks so the loop prints the even numbers from 2 to 10:
+
+      ```
+      2
+      4
+      6
+      8
+      10
+      ```
+    fill: |
+      for number in range([[2]], [[11‖12]], [[2]]):
+          print(number)
+    hints:
+      - "Start from 2 and take steps of 2. The end is left out, so it must be greater than 10."
+      - "`range(2, 11, 2)` gives 2, 4, 6, 8 and 10."
+    tests:
+      - expect: |
+          2
+          4
+          6
+          8
+          10
+    more:
+      - task: |
+          Write a program that asks for a whole number and counts down from it to 1, one number per line, and then prints `Liftoff!`. Use `for` and `range`:
+
+          ```
+          Count down from: 3
+          3
+          2
+          1
+          Liftoff!
+          ```
+        seed: |
+          # Count down with for and range.
+        solution: |
+          # Count down with for and range.
+          start = int(input("Count down from: "))
+          for i in range(start, 0, -1):
+              print(i)
+          print("Liftoff!")
+        hints:
+          - "Counting down needs a negative step: `range(start, ..., -1)`."
+          - "The end is left out, so to stop at 1 the end must be 0."
+          - "`for i in range(start, 0, -1):` prints `i`, and `Liftoff!` comes after the loop."
+        require:
+          - pattern: \brange\s*\(
+            message: "Count down with `for` and `range`."
+        tests:
+          - stdin: "3"
+          - stdin: "1"
+            hidden: true
+          - stdin: "7"
+            hidden: true
+      - task: |
+          Write the function `sum_of_squares(n: int) -> int`, which returns the sum 1 · 1 + 2 · 2 + ... + n · n. For example, `sum_of_squares(3)` returns `14`, because 1 + 4 + 9 is 14.
+        seed: |
+          def sum_of_squares(n: int) -> int:
+              pass
+
+
+          if __name__ == "__main__":
+              print(sum_of_squares(3))
+        solution: |
+          def sum_of_squares(n: int) -> int:
+              total = 0
+              for i in range(1, n + 1):
+                  total += i * i
+              return total
+
+
+          if __name__ == "__main__":
+              print(sum_of_squares(3))
+        hints:
+          - "The numbers go from 1 to `n`, so the range is `range(1, n + 1)`."
+          - "Keep a helper variable `total` and add `i * i` to it in the loop."
+          - Return `total` after the loop.
+        tests:
+          - call: sum_of_squares(3)
+          - call: sum_of_squares(1)
+            hidden: true
+          - call: sum_of_squares(10)
+            hidden: true
+          - call: sum_of_squares(0)
+            hidden: true
+
+  - id: for-loops-building-lists
+    slug: building-lists
+    title: Ranges, lists and new lists
+    text: |
+      `range` doesn't give a list. It gives a range, which produces its numbers when a loop asks for them. Printing one shows only its description:
+
+      ```python run
+      numbers = range(2, 7)
+      print(numbers)
+      print(list(numbers))
+      print(list(range(10, 0, -3)))
+      ```
+
+      ```output
+      range(2, 7)
+      [2, 3, 4, 5, 6]
+      [10, 7, 4, 1]
+      ```
+
+      The function **`list`** turns a range into a real list with all its numbers. A `for` loop doesn't need that: it goes through a range just as well as through a list.
+
+      ### Building a new list
+
+      A common job is to make a new list from an old one. Start with an empty list and `append` to it in the loop. The new list can keep only some of the items:
+
+      ```python run
+      def passed(scores: list) -> list:
+          result = []
+          for score in scores:
+              if score >= 50:
+                  result.append(score)
+          return result
+
+
+      scores = [72, 35, 50, 90, 48]
+      print(passed(scores))
+      print(scores)
+      ```
+
+      ```output
+      [72, 50, 90]
+      [72, 35, 50, 90, 48]
+      ```
+
+      or change each item on the way:
+
+      ```python run
+      def half_price(prices: list) -> list:
+          result = []
+          for price in prices:
+              result.append(price / 2)
+          return result
+
+
+      print(half_price([10, 4, 30]))
+      ```
+
+      ```output
+      [5.0, 2.0, 15.0]
+      ```
+
+      Either way, the original list stays as it was, and the function returns the new one.
+
+      ### When you need the index
+
+      Sometimes the item alone isn't enough: you need its index too, for example to compare it with the item next to it, or with the item at the same index in another list. Then go through the indexes with `range(len(...))`:
+
+      ```python run
+      home = [2, 0, 3]
+      away = [1, 0, 4]
+      for i in range(len(home)):
+          print(f"Game {i + 1}: {home[i]}-{away[i]}")
+      ```
+
+      ```output
+      Game 1: 2-1
+      Game 2: 0-0
+      Game 3: 3-4
+      ```
+
+      `range(len(home))` gives the indexes 0, 1 and 2, and `home[i]` and `away[i]` are the items at the same index in the two lists.
+
+      **Your turn:** write the function `multiples(number: int, count: int) -> list`, which returns a list of the first `count` multiples of `number`. For example, `multiples(3, 4)` returns `[3, 6, 9, 12]`.
+    seed: |
+      def multiples(number: int, count: int) -> list:
+          pass
+
+
+      if __name__ == "__main__":
+          print(multiples(3, 4))
+    solution: |
+      def multiples(number: int, count: int) -> list:
+          result = []
+          for i in range(1, count + 1):
+              result.append(number * i)
+          return result
+
+
+      if __name__ == "__main__":
+          print(multiples(3, 4))
+    hints:
+      - "Start with an empty list `result`, and return it after a loop that adds one item in each round."
+      - "The items are `number * 1`, `number * 2` and so on, up to `number * count`. Go through those multipliers with `for i in range(1, count + 1):`."
+      - "In the loop, `result.append(number * i)`."
+    tests:
+      - call: multiples(3, 4)
+      - call: multiples(5, 1)
+        hidden: true
+      - call: multiples(7, 6)
+        hidden: true
+    more:
+      - task: |
+          Write the function `long_words(words: list, min_length: int) -> list`, which returns a new list of the words that have at least `min_length` characters, in their original order. For example, `long_words(["sun", "planet", "moon", "galaxy"], 5)` returns `['planet', 'galaxy']`.
+        seed: |
+          def long_words(words: list, min_length: int) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(long_words(["sun", "planet", "moon", "galaxy"], 5))
+        solution: |
+          def long_words(words: list, min_length: int) -> list:
+              result = []
+              for word in words:
+                  if len(word) >= min_length:
+                      result.append(word)
+              return result
+
+
+          if __name__ == "__main__":
+              print(long_words(["sun", "planet", "moon", "galaxy"], 5))
+        hints:
+          - "Start with an empty list `result` and go through `words` with a `for` loop."
+          - "Append a word when `len(word) >= min_length`."
+          - "Return `result` after the loop. A list with no long words gives the empty list `[]`."
+        tests:
+          - call: long_words(["sun", "planet", "moon", "galaxy"], 5)
+          - call: long_words(["a", "bb", "ccc"], 2)
+            hidden: true
+          - call: long_words(["tiny", "word"], 9)
+            hidden: true
+      - task: |
+          Write the function `changes(values: list) -> list`, which returns a list of how much each value changed from the one before it. The new list has one item less than the original. For example, `changes([3, 5, 4, 10])` returns `[2, -1, 6]`: 5 - 3 is 2, 4 - 5 is -1 and 10 - 4 is 6.
+        seed: |
+          def changes(values: list) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(changes([3, 5, 4, 10]))
+        solution: |
+          def changes(values: list) -> list:
+              result = []
+              for i in range(1, len(values)):
+                  result.append(values[i] - values[i - 1])
+              return result
+
+
+          if __name__ == "__main__":
+              print(changes([3, 5, 4, 10]))
+        hints:
+          - "Each change needs two items next to each other, so go through the indexes instead of the items."
+          - "Start from index 1, since the first item has no item before it: `for i in range(1, len(values)):`."
+          - "The change at index `i` is `values[i] - values[i - 1]`. Append it to a new list and return the list after the loop."
+        tests:
+          - call: changes([3, 5, 4, 10])
+          - call: changes([7])
+            hidden: true
+          - call: changes([10, 8, 8, 1, 20])
+            hidden: true
+
+  - id: for-loops-best-item
+    slug: best-item
+    title: Finding the best or the worst item
+    text: |
+      `max` and `min` find the greatest and the smallest number in a list. But often "best" means something else: the longest word, the day with the most rain, the cheapest product. Then you need a loop and a helper variable that remembers **the best item so far**:
+
+      ```python run
+      def longest(words: list) -> str:
+          best = words[0]
+          for word in words:
+              if len(word) > len(best):
+                  best = word
+          return best
+
+
+      print(longest(["fig", "banana", "kiwi", "cherry"]))
+      ```
+
+      ```output
+      banana
+      ```
+
+      The helper variable starts as the first word. The loop compares each word with the best one so far, and when a word is better, it becomes the new best. After the loop, `best` holds the best word of all. `cherry` is as long as `banana`, but not longer, so the first of the two stays.
+
+      ### Where to start
+
+      Start the helper variable from an item of the list, not from a number you made up. A start of 0 looks harmless, but it breaks for lists where every item is smaller than 0:
+
+      ```python run
+      def coldest(temperatures: list) -> int:
+          best = 0
+          for t in temperatures:
+              if t < best:
+                  best = t
+          return best
+
+
+      def warmest(temperatures: list) -> int:
+          best = 0
+          for t in temperatures:
+              if t > best:
+                  best = t
+          return best
+
+
+      winter = [-8, -3, -12, -5]
+      print(coldest(winter))
+      print(warmest(winter))
+      ```
+
+      ```output
+      -12
+      0
+      ```
+
+      The warmest temperature isn't 0: it's -3. No temperature beat the start value 0, so 0 was returned, though it isn't even in the list. With `best = temperatures[0]`, both functions are right for any list.
+
+      ### Remembering where the best item is
+
+      To know where the best item is, and not only what it is, remember its index. Go through the indexes, and keep the index of the best item so far:
+
+      ```python run
+      def rainiest_day(rain: list) -> int:
+          best = 0
+          for i in range(len(rain)):
+              if rain[i] > rain[best]:
+                  best = i
+          return best + 1
+
+
+      week = [2, 0, 14, 5, 14, 1, 0]
+      print("Most rain on day", rainiest_day(week))
+      ```
+
+      ```output
+      Most rain on day 3
+      ```
+
+      Here `best` is an index, so starting it from 0 is right: it means the first day. The function returns `best + 1` because people count days from 1.
+
+      **Your turn:** fill in the blanks so that `shortest(words)` returns the shortest word of the list. For example, `shortest(["melon", "fig", "apple"])` returns `'fig'`.
+    fill: |
+      def shortest(words: list) -> str:
+          best = words[0]
+          for word in words:
+              if len(word) < len([[best]]):
+                  best = [[word]]
+          return best
+
+
+      if __name__ == "__main__":
+          print(shortest(["melon", "fig", "apple"]))
+    hints:
+      - Compare each word's length with the length of the shortest word so far.
+      - "When the word is shorter than `best`, it becomes the new `best`: `best = word`."
+    tests:
+      - call: shortest(["melon", "fig", "apple"])
+      - call: shortest(["one"])
+        hidden: true
+      - call: shortest(["grape", "kiwi", "pear", "plum"])
+        hidden: true
+    more:
+      - task: |
+          Write the function `coldest_day(temperatures: list) -> int`, which returns the number of the day with the lowest temperature. Days are numbered from 1. If several days are equally cold, return the first of them. For example, `coldest_day([5, -2, 3, -2])` returns `2`.
+        seed: |
+          def coldest_day(temperatures: list) -> int:
+              pass
+
+
+          if __name__ == "__main__":
+              print(coldest_day([5, -2, 3, -2]))
+        solution: |
+          def coldest_day(temperatures: list) -> int:
+              best = 0
+              for i in range(len(temperatures)):
+                  if temperatures[i] < temperatures[best]:
+                      best = i
+              return best + 1
+
+
+          if __name__ == "__main__":
+              print(coldest_day([5, -2, 3, -2]))
+        hints:
+          - "Remember the index of the coldest day so far, starting from 0, and go through the indexes with `range(len(temperatures))`."
+          - "When `temperatures[i] < temperatures[best]`, set `best = i`. Using `<` and not `<=` keeps the first of equally cold days."
+          - "Days are counted from 1, so return `best + 1`."
+        tests:
+          - call: coldest_day([5, -2, 3, -2])
+          - call: coldest_day([10])
+            hidden: true
+          - call: coldest_day([3, 8, 1, 4, 0, 9])
+            hidden: true
+          - call: coldest_day([-1, -4, -7])
+            hidden: true
+      - task: |
+          Write the function `closest_to(numbers: list, target: int) -> int`, which returns the number in the list that is closest to `target`. If two numbers are equally close, return the one that comes first. For example, `closest_to([10, 25, 18, 40], 20)` returns `18`.
+
+          Python's function `abs` helps here: it returns a number without its minus sign, so `abs(18 - 20)` and `abs(22 - 20)` are both `2`, the distance from 20.
+        seed: |
+          def closest_to(numbers: list, target: int) -> int:
+              pass
+
+
+          if __name__ == "__main__":
+              print(closest_to([10, 25, 18, 40], 20))
+        solution: |
+          def closest_to(numbers: list, target: int) -> int:
+              best = numbers[0]
+              for number in numbers:
+                  if abs(number - target) < abs(best - target):
+                      best = number
+              return best
+
+
+          if __name__ == "__main__":
+              print(closest_to([10, 25, 18, 40], 20))
+        hints:
+          - "Start with `best = numbers[0]`, the best number so far."
+          - "A number is closer than `best` when `abs(number - target) < abs(best - target)`."
+          - "Use `<`, not `<=`, so that the first of two equally close numbers stays the best."
+        tests:
+          - call: closest_to([10, 25, 18, 40], 20)
+          - call: closest_to([7], 100)
+            hidden: true
+          - call: closest_to([1, 9, 11, 3], 10)
+            hidden: true
+          - call: closest_to([-5, -1, 4], 0)
+            hidden: true

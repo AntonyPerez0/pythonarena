@@ -1,0 +1,1118 @@
+id: object-references
+summary: Your own objects work like any other value. Keeping them in lists and dictionaries, two names for one object, `is` and `==`, objects as arguments to functions and methods, and methods that compare two objects of the same class.
+steps:
+  - id: object-references-lists
+    slug: lists-of-objects
+    title: Objects in lists and dictionaries
+    text: |
+      Every value in Python is an **object**: a number, a string, a list, and also every object you create from a class of your own. Your own objects work like any other value. You have already kept them in variables and lists and given them to functions. This part of the course looks more closely at how that works, starting with lists and dictionaries of objects.
+
+      ### A list of objects
+
+      Here a playlist is a list of `Song` objects. The loop takes the songs one at a time, and `song.title` reaches the title of the song the loop is at:
+
+      ```python run
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+
+      playlist = []
+      playlist.append(Song("Morning Light", 215))
+      playlist.append(Song("Slow River", 302))
+      playlist.append(Song("Neon Rain", 187))
+
+      total = 0
+      for song in playlist:
+          print(song.title)
+          total += song.seconds
+
+      print("Total length:", total, "seconds")
+      ```
+
+      ```output
+      Morning Light
+      Slow River
+      Neon Rain
+      Total length: 704 seconds
+      ```
+
+      Each `Song(...)` call creates a new object, and `append` puts it at the end of the list. In the loop, `song` is a `Song` object, so everything a song has is there behind the dot.
+
+      ### Finding the right object
+
+      A function can look through a list of objects and return one of them. Returning the whole object, not just its title, lets the caller use whatever it needs from it:
+
+      ```python run
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+          def __str__(self):
+              return f"{self.title} ({self.seconds} s)"
+
+
+      def longest(songs):
+          best = songs[0]
+          for song in songs:
+              if song.seconds > best.seconds:
+                  best = song
+          return best
+
+
+      playlist = [Song("Morning Light", 215), Song("Slow River", 302), Song("Neon Rain", 187)]
+      winner = longest(playlist)
+      print(winner)
+      print("Title only:", winner.title)
+      ```
+
+      ```output
+      Slow River (302 s)
+      Title only: Slow River
+      ```
+
+      `best` starts as the first song and is replaced whenever a longer one comes along. The comparison is between `song.seconds` and `best.seconds`, two numbers. Comparing the songs themselves doesn't work, because Python has no idea what would make one song "greater" than another:
+
+      ```python run crash
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+
+      first = Song("Morning Light", 215)
+      second = Song("Slow River", 302)
+      print(first > second)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 9, in <module>
+          print(first > second)
+                ^^^^^^^^^^^^^^
+      TypeError: '>' not supported between instances of 'Song' and 'Song'
+      ```
+
+      When you see this error, decide which attribute you meant to compare, and compare that.
+
+      ### Objects in a dictionary
+
+      Objects can be the values of a dictionary too. Here each song has a code, as on a jukebox:
+
+      ```python run
+      class Song:
+          def __init__(self, title, seconds):
+              self.title = title
+              self.seconds = seconds
+
+
+      jukebox = {}
+      jukebox["A1"] = Song("Morning Light", 215)
+      jukebox["B7"] = Song("Slow River", 302)
+
+      code = "B7"
+      print("Now playing:", jukebox[code].title)
+      ```
+
+      ```output
+      Now playing: Slow River
+      ```
+
+      `jukebox[code]` is a `Song` object, so `.title` can come right after it.
+
+      **Your turn:** the program should print the total running time of the movies in the list. Fill in the blanks so it prints:
+
+      ```
+      Total: 371 minutes
+      ```
+    fill: |
+      class Movie:
+          def __init__(self, title, minutes):
+              self.title = title
+              self.minutes = minutes
+
+
+      movies = [Movie("Space Cats", 98), Movie("The Long Road", 151), Movie("Tiny Giants", 122)]
+
+      total = 0
+      for movie in [[movies]]:
+          total += [[movie.minutes]]
+
+      print(f"Total: {total} minutes")
+    hints:
+      - The loop should go through the list of movies. What is the list called?
+      - "Each round, `movie` is one `Movie` object. Its length is in its attribute `minutes`, which you reach with a dot: `movie.minutes`."
+    tests:
+      - expect: "Total: 371 minutes"
+    more:
+      - task: |
+          Write a function `cheapest(products)`. It gets a list of `Product` objects and returns the cheapest product: the object itself, not its name. You can assume the list has at least one product and that no two products cost the same.
+
+          For example, this code:
+
+          ```python fragment
+          items = [Product("Tea", 3.5), Product("Bread", 2.25), Product("Cheese", 6.0)]
+          print(cheapest(items))
+          ```
+
+          prints:
+
+          ```
+          Bread (2.25)
+          ```
+        seed: |
+          class Product:
+              def __init__(self, name, price):
+                  self.name = name
+                  self.price = price
+
+              def __str__(self):
+                  return f"{self.name} ({self.price})"
+
+
+          def cheapest(products):
+              pass
+
+
+          if __name__ == "__main__":
+              items = [Product("Tea", 3.5), Product("Bread", 2.25), Product("Cheese", 6.0)]
+              print(cheapest(items))
+        solution: |
+          class Product:
+              def __init__(self, name, price):
+                  self.name = name
+                  self.price = price
+
+              def __str__(self):
+                  return f"{self.name} ({self.price})"
+
+
+          def cheapest(products):
+              best = products[0]
+              for product in products:
+                  if product.price < best.price:
+                      best = product
+              return best
+
+
+          if __name__ == "__main__":
+              items = [Product("Tea", 3.5), Product("Bread", 2.25), Product("Cheese", 6.0)]
+              print(cheapest(items))
+        hints:
+          - Start with the first product as the cheapest so far, then go through the list and compare each product with it.
+          - "Compare the prices, not the products: `if product.price < best.price:`."
+          - "After the loop, return the object you kept (`best`), not `best.name`."
+        tests:
+          - call: |
+              items = [Product("Tea", 3.5), Product("Bread", 2.25), Product("Cheese", 6.0)]
+              print(cheapest(items))
+          - call: print(cheapest([Product("Salt", 0.8), Product("Rice", 1.9)]))
+            hidden: true
+          - call: |
+              shelf = [Product("Jam", 4.1), Product("Honey", 7.5), Product("Oats", 1.2)]
+              found = cheapest(shelf)
+              print(found.name, found.price)
+            hidden: true
+          - call: print(cheapest([Product("Milk", 1.15)]))
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Pet:
+              def __init__(self, name, age):
+                  self.name = name
+                  self.age = age
+
+
+          pets = {"cat": Pet("Miso", 3), "dog": Pet("Rex", 7)}
+          pets["cat"].age += 1
+          for kind in pets:
+              print(kind, pets[kind].name, pets[kind].age)
+        hints:
+          - The dictionary's values are `Pet` objects, so `pets["cat"]` is the pet Miso.
+          - "`pets[\"cat\"].age += 1` changes Miso's age from 3 to 4. Rex isn't touched."
+          - The loop goes through the keys in the order they were added, and prints the key, the name and the age on one line.
+
+  - id: object-references-same-object
+    slug: same-object
+    title: Two names for one object
+    text: |
+      In the References module you saw that a variable doesn't hold a list itself, only a **reference** to it: the information about where the list is in the computer's memory. The same goes for every object, your own included. A variable, a list item or a parameter refers to an object, and the object itself lives elsewhere.
+
+      This matters as soon as you assign one variable to another. `b = a` doesn't copy the object. It copies the reference, so both names refer to the same object:
+
+      ```python run
+      class Plant:
+          def __init__(self, name):
+              self.name = name
+              self.height = 10
+
+          def __str__(self):
+              return f"{self.name}, {self.height} cm"
+
+
+      basil = Plant("Basil")
+      windowsill = basil
+      windowsill.height += 5
+
+      print(basil)
+      print(windowsill)
+      ```
+
+      ```output
+      Basil, 15 cm
+      Basil, 15 cm
+      ```
+
+      There is only one plant here, with two names. Only a call to `Plant(...)` creates a new object; an assignment never does.
+
+      ### The same object twice in a list
+
+      A list holds references too, so the same object can be in a list more than once. Changing it through one item changes what you see through the other:
+
+      ```python run
+      class Plant:
+          def __init__(self, name):
+              self.name = name
+              self.height = 10
+
+          def __str__(self):
+              return f"{self.name}, {self.height} cm"
+
+
+      sunflower = Plant("Sunflower")
+      row = [sunflower, sunflower, Plant("Sunflower")]
+      row[0].height = 40
+
+      for plant in row:
+          print(plant)
+      ```
+
+      ```output
+      Sunflower, 40 cm
+      Sunflower, 40 cm
+      Sunflower, 10 cm
+      ```
+
+      Items 0 and 1 refer to the same object. Item 2 is a different object that happens to have the same name, and changing one doesn't touch the other.
+
+      ### `is` or `==`
+
+      Python has two ways to ask whether two things are "the same". `==` asks whether two values are **equal**: do they have the same contents? The operator **`is`** asks whether they are **the very same object**, and `is not` is its opposite:
+
+      ```python repl
+      >>> first = [1, 2, 3]
+      >>> second = [1, 2, 3]
+      >>> third = first
+      >>> first == second
+      True
+      >>> first is second
+      False
+      >>> first is third
+      True
+      >>> first is not second
+      True
+      ```
+
+      `first` and `second` are two lists with equal contents. `third` is just another name for `first`.
+
+      For objects of your own classes, `==` doesn't look at the attributes. Python can't know which attributes make two plants "equal", so unless the class says how (a later module shows how), two objects are equal only when they are the same object. Compare the attributes you care about instead:
+
+      ```python run
+      class Plant:
+          def __init__(self, name):
+              self.name = name
+              self.height = 10
+
+
+      mint = Plant("Mint")
+      more_mint = Plant("Mint")
+      print(mint == more_mint)
+      print(mint is more_mint)
+      print(mint.name == more_mint.name)
+      ```
+
+      ```output
+      False
+      False
+      True
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Counter:
+          def __init__(self):
+              self.value = 0
+
+
+      a = Counter()
+      b = a
+      c = Counter()
+      b.value += 2
+      c.value += 5
+      print(a.value)
+      print(b.value)
+      print(c.value)
+      print(a is b)
+    hints:
+      - "`Counter()` is called twice, so there are two counter objects. Which names refer to which?"
+      - "`b = a` makes `b` a second name for the first counter, so adding 2 through `b` shows up through `a` as well."
+      - "`c` is the other counter, and `a is b` asks whether `a` and `b` are the same object."
+    more:
+      - task: |
+          The program should make two separate plants, a mint and a basil, but it prints the basil twice. Fix it so that it prints:
+
+          ```
+          Mint, 10 cm
+          Basil, 25 cm
+          ```
+        seed: |
+          class Plant:
+              def __init__(self, name):
+                  self.name = name
+                  self.height = 10
+
+              def __str__(self):
+                  return f"{self.name}, {self.height} cm"
+
+
+          mint = Plant("Mint")
+          basil = mint
+          basil.name = "Basil"
+          basil.height = 25
+
+          print(mint)
+          print(basil)
+        solution: |
+          class Plant:
+              def __init__(self, name):
+                  self.name = name
+                  self.height = 10
+
+              def __str__(self):
+                  return f"{self.name}, {self.height} cm"
+
+
+          mint = Plant("Mint")
+          basil = Plant("Basil")
+          basil.height = 25
+
+          print(mint)
+          print(basil)
+        hints:
+          - Only a call to `Plant(...)` creates a plant. How many calls does the program have?
+          - "`basil = mint` only gives the mint plant a second name, so changing `basil` changes the mint."
+          - "Create a new object for the basil instead: `basil = Plant(\"Basil\")`."
+        require:
+          - pattern: \bPlant\s*\(
+            min: 2
+            message: The program needs two plant objects, so it needs two calls to `Plant(...)`.
+        tests:
+          - expect: |
+              Mint, 10 cm
+              Basil, 25 cm
+      - task: |
+          Write a function `copy_of(plant)` that returns a new `Plant` object with the same name and height as the plant it gets. Changing the copy must not change the original.
+
+          For example, this code:
+
+          ```python fragment
+          fern = Plant("Fern")
+          fern.height = 30
+          twin = copy_of(fern)
+          twin.height += 5
+          print(fern)
+          print(twin)
+          print(twin is fern)
+          ```
+
+          prints:
+
+          ```
+          Fern, 30 cm
+          Fern, 35 cm
+          False
+          ```
+        seed: |
+          class Plant:
+              def __init__(self, name):
+                  self.name = name
+                  self.height = 10
+
+              def __str__(self):
+                  return f"{self.name}, {self.height} cm"
+
+
+          def copy_of(plant):
+              return plant
+
+
+          if __name__ == "__main__":
+              fern = Plant("Fern")
+              fern.height = 30
+              twin = copy_of(fern)
+              twin.height += 5
+              print(fern)
+              print(twin)
+              print(twin is fern)
+        solution: |
+          class Plant:
+              def __init__(self, name):
+                  self.name = name
+                  self.height = 10
+
+              def __str__(self):
+                  return f"{self.name}, {self.height} cm"
+
+
+          def copy_of(plant):
+              new_plant = Plant(plant.name)
+              new_plant.height = plant.height
+              return new_plant
+
+
+          if __name__ == "__main__":
+              fern = Plant("Fern")
+              fern.height = 30
+              twin = copy_of(fern)
+              twin.height += 5
+              print(fern)
+              print(twin)
+              print(twin is fern)
+        hints:
+          - The starter code returns `plant` itself, which gives the caller a second name for the same object. You need a new object, so call `Plant(...)`.
+          - The constructor takes only a name, so set the height of the new plant after creating it.
+          - "`new_plant = Plant(plant.name)`, then `new_plant.height = plant.height`, then return `new_plant`."
+        tests:
+          - call: |
+              fern = Plant("Fern")
+              fern.height = 30
+              twin = copy_of(fern)
+              twin.height += 5
+              print(fern)
+              print(twin)
+              print(twin is fern)
+          - call: |
+              cactus = Plant("Cactus")
+              cactus.height = 12
+              other = copy_of(cactus)
+              print(other)
+              print(other is cactus)
+            hidden: true
+          - call: |
+              ivy = Plant("Ivy")
+              copy = copy_of(ivy)
+              ivy.height = 50
+              copy.name = "Ivy 2"
+              print(ivy)
+              print(copy)
+            hidden: true
+
+  - id: object-references-arguments
+    slug: objects-as-arguments
+    title: Objects as arguments
+    text: |
+      ### A function can change the object it gets
+
+      You have written functions that change an object they get. Now you can see why that works: when you call a function with an object, the parameter refers to the same object as the argument. Nothing is copied. So when the function changes the object's attributes, the caller sees the change after the call, just as with lists in the References module:
+
+      ```python run
+      class Hero:
+          def __init__(self, name):
+              self.name = name
+              self.level = 1
+
+          def __str__(self):
+              return f"{self.name} (level {self.level})"
+
+
+      def level_up(hero):
+          hero.level += 1
+
+
+      ayla = Hero("Ayla")
+      print(ayla)
+      level_up(ayla)
+      level_up(ayla)
+      print(ayla)
+      ```
+
+      ```output
+      Ayla (level 1)
+      Ayla (level 3)
+      ```
+
+      During the call, `hero` inside the function and `ayla` outside it are two names for one object.
+
+      There is one catch. Giving the parameter a new value inside the function, such as `hero = Hero("Bram")`, only makes the local name refer to another object. The caller's variable still refers to the old one. To change the caller's object, change its attributes.
+
+      ### A function can create an object
+
+      A function can also create a new object and return it. The caller gets a reference to it, and can keep it in a variable or a list. This function turns a line of text into a `Hero`:
+
+      ```python run
+      class Hero:
+          def __init__(self, name):
+              self.name = name
+              self.level = 1
+
+          def __str__(self):
+              return f"{self.name} (level {self.level})"
+
+
+      def hero_from_text(line):
+          parts = line.split(";")
+          hero = Hero(parts[0])
+          hero.level = int(parts[1])
+          return hero
+
+
+      team = []
+      for line in ["Ayla;3", "Bram;5"]:
+          team.append(hero_from_text(line))
+
+      for hero in team:
+          print(hero)
+      ```
+
+      ```output
+      Ayla (level 3)
+      Bram (level 5)
+      ```
+
+      The object created inside the function lives on after the function ends, because the caller still has a reference to it.
+
+      ### A method can take an object too
+
+      Methods are functions that belong to a class, so they can take objects as arguments as well. A method that gets an object of another class can read and change that object, and its own object at the same time. Here a coach trains athletes: training makes the athlete faster, and the coach counts the sessions.
+
+      ```python run
+      class Athlete:
+          def __init__(self, name, speed):
+              self.name = name
+              self.speed = speed
+
+
+      class Coach:
+          def __init__(self, name, boost):
+              self.name = name
+              self.boost = boost
+              self.sessions = 0
+
+          def train(self, athlete):
+              athlete.speed += self.boost
+              self.sessions += 1
+              print(f"{self.name} trained {athlete.name}, speed now {athlete.speed}")
+
+
+      mia = Athlete("Mia", 20)
+      tom = Athlete("Tom", 25)
+      ray = Coach("Coach Ray", 3)
+      ray.train(mia)
+      ray.train(mia)
+      ray.train(tom)
+      print("Sessions:", ray.sessions)
+      ```
+
+      ```output
+      Coach Ray trained Mia, speed now 23
+      Coach Ray trained Mia, speed now 26
+      Coach Ray trained Tom, speed now 28
+      Sessions: 3
+      ```
+
+      Inside `train`, `self` is the coach the method is called on (the object before the dot), and `athlete` is the athlete in the parentheses. One call, `ray.train(mia)`, changes both objects: Mia's speed and Ray's count of sessions.
+
+      **Your turn:** a library lends books. Fill in the blanks in the method `lend`, so that it marks the book as lent and counts the loans of the library. The program should print:
+
+      ```
+      World Atlas lent out
+      World Atlas is already on loan
+      Cookbook lent out
+      Loans: 2
+      ```
+    fill: |
+      class Book:
+          def __init__(self, title):
+              self.title = title
+              self.on_loan = False
+
+
+      class Library:
+          def __init__(self):
+              self.loans = 0
+
+          def lend(self, book):
+              if book.on_loan:
+                  print(f"{book.title} is already on loan")
+              else:
+                  [[book]].on_loan = True
+                  [[self]].loans += 1
+                  print(f"{book.title} lent out")
+
+
+      library = Library()
+      atlas = Book("World Atlas")
+      library.lend(atlas)
+      library.lend(atlas)
+      library.lend(Book("Cookbook"))
+      print("Loans:", library.loans)
+    hints:
+      - "Inside `lend` there are two objects: the library the method is called on, and the book in the parentheses. What are their names inside the method?"
+      - "The book is the parameter `book`, and the library is `self`. `on_loan` belongs to the book, `loans` to the library."
+    tests:
+      - expect: |
+          World Atlas lent out
+          World Atlas is already on loan
+          Cookbook lent out
+          Loans: 2
+    more:
+      - task: |
+          Write a function `parse_book(line)`. It gets a line of text with a book's title, author and number of pages, separated by semicolons, such as `"The Quiet Sea;Ana Lind;318"`, and returns a new `Book` object made from it. The number of pages must be a number (an `int`), not text.
+
+          For example, this code:
+
+          ```python fragment
+          book = parse_book("The Quiet Sea;Ana Lind;318")
+          print(book)
+          print(book.pages + 1)
+          ```
+
+          prints:
+
+          ```
+          The Quiet Sea by Ana Lind, 318 pages
+          319
+          ```
+        seed: |
+          class Book:
+              def __init__(self, title, author, pages):
+                  self.title = title
+                  self.author = author
+                  self.pages = pages
+
+              def __str__(self):
+                  return f"{self.title} by {self.author}, {self.pages} pages"
+
+
+          def parse_book(line):
+              pass
+
+
+          if __name__ == "__main__":
+              book = parse_book("The Quiet Sea;Ana Lind;318")
+              print(book)
+              print(book.pages + 1)
+        solution: |
+          class Book:
+              def __init__(self, title, author, pages):
+                  self.title = title
+                  self.author = author
+                  self.pages = pages
+
+              def __str__(self):
+                  return f"{self.title} by {self.author}, {self.pages} pages"
+
+
+          def parse_book(line):
+              parts = line.split(";")
+              return Book(parts[0], parts[1], int(parts[2]))
+
+
+          if __name__ == "__main__":
+              book = parse_book("The Quiet Sea;Ana Lind;318")
+              print(book)
+              print(book.pages + 1)
+        hints:
+          - "`line.split(\";\")` gives a list of three strings: the title, the author and the pages."
+          - The pages are still text after splitting. Turn them into a number with `int(...)`.
+          - "Create the object with `Book(parts[0], parts[1], int(parts[2]))` and return it."
+        tests:
+          - call: |
+              book = parse_book("The Quiet Sea;Ana Lind;318")
+              print(book)
+              print(book.pages + 1)
+          - call: |
+              shelf = []
+              for line in ["Small Gods;Lee Park;290", "Rain Atlas;Omar Diaz;145"]:
+                  shelf.append(parse_book(line))
+              total = 0
+              for book in shelf:
+                  print(book)
+                  total += book.pages
+              print(total)
+            hidden: true
+          - call: |
+              book = parse_book("A;B;7")
+              print(book.title, book.author, book.pages * 2)
+            hidden: true
+      - task: |
+          A ferry has room for cars up to a total length in meters. Write the method `board(self, car)` in the class `Ferry`:
+
+          - If the car fits in the space that's left, it boards: the ferry's `space_left` goes down by the car's `length`, its `cars` goes up by one, and the method returns `True`.
+          - If the car doesn't fit, nothing changes and the method returns `False`.
+
+          For example, this code:
+
+          ```python fragment
+          ferry = Ferry(10)
+          print(ferry.board(Car("ABC-123", 4)))
+          print(ferry.board(Car("XYZ-789", 7)))
+          print(ferry)
+          ```
+
+          prints:
+
+          ```
+          True
+          False
+          cars: 1, space left: 6 m
+          ```
+        seed: |
+          class Car:
+              def __init__(self, plate, length):
+                  self.plate = plate
+                  self.length = length
+
+
+          class Ferry:
+              def __init__(self, space):
+                  self.space_left = space
+                  self.cars = 0
+
+              def board(self, car):
+                  pass
+
+              def __str__(self):
+                  return f"cars: {self.cars}, space left: {self.space_left} m"
+
+
+          if __name__ == "__main__":
+              ferry = Ferry(10)
+              print(ferry.board(Car("ABC-123", 4)))
+              print(ferry.board(Car("XYZ-789", 7)))
+              print(ferry)
+        solution: |
+          class Car:
+              def __init__(self, plate, length):
+                  self.plate = plate
+                  self.length = length
+
+
+          class Ferry:
+              def __init__(self, space):
+                  self.space_left = space
+                  self.cars = 0
+
+              def board(self, car):
+                  if car.length > self.space_left:
+                      return False
+                  self.space_left -= car.length
+                  self.cars += 1
+                  return True
+
+              def __str__(self):
+                  return f"cars: {self.cars}, space left: {self.space_left} m"
+
+
+          if __name__ == "__main__":
+              ferry = Ferry(10)
+              print(ferry.board(Car("ABC-123", 4)))
+              print(ferry.board(Car("XYZ-789", 7)))
+              print(ferry)
+        hints:
+          - "Inside `board`, the car's length is `car.length` and the space the ferry has left is `self.space_left`."
+          - First check whether the car is too long for the space that's left. If it is, return `False` right away.
+          - "Otherwise change the ferry's two attributes (`self.space_left -= car.length` and `self.cars += 1`) and return `True`."
+        tests:
+          - call: |
+              ferry = Ferry(10)
+              print(ferry.board(Car("ABC-123", 4)))
+              print(ferry.board(Car("XYZ-789", 7)))
+              print(ferry)
+          - call: |
+              ferry = Ferry(12)
+              print(ferry.board(Car("A-1", 5)))
+              print(ferry.board(Car("B-2", 7)))
+              print(ferry.board(Car("C-3", 1)))
+              print(ferry)
+            hidden: true
+          - call: |
+              ferry = Ferry(20)
+              for length in [6, 9, 8, 4, 1]:
+                  print(ferry.board(Car("X", length)))
+              print(ferry)
+            hidden: true
+
+  - id: object-references-compare
+    slug: comparing-objects
+    title: Comparing two objects of the same class
+    text: |
+      Often you want to compare two objects of the same kind: is this parcel heavier than that one? Is this runner faster? You could write a function that takes both objects:
+
+      ```python fragment
+      def heavier(first, second):
+          return first.weight > second.weight
+      ```
+
+      In object-oriented programming, though, the code that works on parcels belongs in the `Parcel` class, as a method. A method can take another object of its own class as a parameter. Then one parcel is `self`, the one the method is called on, and the other is the parameter, often called `other`:
+
+      ```python run
+      class Parcel:
+          def __init__(self, label, weight):
+              self.label = label
+              self.weight = weight
+
+          def heavier_than(self, other):
+              return self.weight > other.weight
+
+
+      books = Parcel("books", 12)
+      pillow = Parcel("pillow", 2)
+
+      if books.heavier_than(pillow):
+          print(f"The {books.label} parcel is heavier than the {pillow.label} parcel")
+      print(pillow.heavier_than(books))
+      ```
+
+      ```output
+      The books parcel is heavier than the pillow parcel
+      False
+      ```
+
+      In `books.heavier_than(pillow)`, the object to the left of the dot (`books`) is `self` inside the method, and the object in the parentheses (`pillow`) is `other`. Swap them and you ask the opposite question.
+
+      The method returns the comparison itself. `self.weight > other.weight` is already `True` or `False`, so there's no need for an `if` that returns `True` in one branch and `False` in the other.
+
+      If you write type hints, the hint for `other` is the class's own name: `def heavier_than(self, other: "Parcel"):`. Many programs put it in quotes, because older versions of Python read the hint before the class was finished and didn't know the name yet. Python 3.14, which runs your code on this site, accepts it with or without the quotes.
+
+      ### Helper variables: self or no self?
+
+      Sometimes a method needs a few values only while it works. As you have seen with helper methods, those are **local variables**, written without `self.`:
+
+      ```python run
+      class Order:
+          def __init__(self, item, unit_price, quantity):
+              self.item = item
+              self.unit_price = unit_price
+              self.quantity = quantity
+
+          def costs_more_than(self, other):
+              my_total = self.unit_price * self.quantity
+              other_total = other.unit_price * other.quantity
+              return my_total > other_total
+
+
+      pens = Order("pens", 2, 30)
+      paper = Order("paper", 7, 5)
+      print(pens.costs_more_than(paper))
+      print(paper.costs_more_than(pens))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      `my_total` and `other_total` disappear when the method ends, which is what you want. Writing `self.my_total = ...` would work too, but it would quietly add a new attribute to the object that stays there after the method is done. Other methods could then use it by accident, and some objects would have the attribute while others wouldn't, depending on which methods happened to run. Keep the rule simple: an attribute (`self.`) is something the object has to remember; a helper variable is scratch paper for one method.
+
+      **Your turn:** a runner is faster than another runner when their time in seconds is smaller. Fill in the blanks in `faster_than` so the program prints:
+
+      ```
+      False
+      True
+      ```
+    fill: |
+      class Runner:
+          def __init__(self, name, seconds):
+              self.name = name
+              self.seconds = seconds
+
+          def faster_than(self, other):
+              return self.seconds [[<]] [[other]].seconds
+
+
+      ana = Runner("Ana", 62)
+      ben = Runner("Ben", 58)
+      print(ana.faster_than(ben))
+      print(ben.faster_than(ana))
+    hints:
+      - "Inside the method, `self` is the runner before the dot and `other` is the runner in the parentheses."
+      - "A smaller time is faster, so compare with `<`: `self.seconds < other.seconds`."
+    tests:
+      - expect: |
+          False
+          True
+    more:
+      - task: |
+          Write the method `larger(self, other)` in the class `Rectangle`. It compares the areas (width times height) of the two rectangles and returns the one with the larger area: the object itself. When the areas are equal, it returns `self`.
+
+          For example, this code:
+
+          ```python fragment
+          tile = Rectangle(3, 4)
+          door = Rectangle(2, 7)
+          print(tile.larger(door))
+          print(door.larger(tile))
+          ```
+
+          prints:
+
+          ```
+          2 x 7
+          2 x 7
+          ```
+        seed: |
+          class Rectangle:
+              def __init__(self, width, height):
+                  self.width = width
+                  self.height = height
+
+              def larger(self, other):
+                  pass
+
+              def __str__(self):
+                  return f"{self.width} x {self.height}"
+
+
+          if __name__ == "__main__":
+              tile = Rectangle(3, 4)
+              door = Rectangle(2, 7)
+              print(tile.larger(door))
+              print(door.larger(tile))
+        solution: |
+          class Rectangle:
+              def __init__(self, width, height):
+                  self.width = width
+                  self.height = height
+
+              def larger(self, other):
+                  my_area = self.width * self.height
+                  other_area = other.width * other.height
+                  if other_area > my_area:
+                      return other
+                  return self
+
+              def __str__(self):
+                  return f"{self.width} x {self.height}"
+
+
+          if __name__ == "__main__":
+              tile = Rectangle(3, 4)
+              door = Rectangle(2, 7)
+              print(tile.larger(door))
+              print(door.larger(tile))
+        hints:
+          - Work out the two areas first, in two local variables (without `self.`).
+          - "The method returns an object, either `self` or `other`, not an area."
+          - "Return `other` only when its area is strictly larger; in every other case return `self`."
+        tests:
+          - call: |
+              tile = Rectangle(3, 4)
+              door = Rectangle(2, 7)
+              print(tile.larger(door))
+              print(door.larger(tile))
+          - call: |
+              a = Rectangle(6, 1)
+              b = Rectangle(2, 3)
+              print(a.larger(b))
+              print(b.larger(a))
+              print(a.larger(b) is a)
+            hidden: true
+          - call: |
+              big = Rectangle(10, 10)
+              small = Rectangle(1, 2)
+              print(small.larger(big))
+              print(big.larger(small).width)
+            hidden: true
+      - task: |
+          A program's version number has three parts, such as `2.10.3`: major, minor and patch. One version is newer than another when its major number is bigger. If the major numbers are the same, the minor numbers decide, and if those are the same too, the patch numbers decide.
+
+          Write the method `newer_than(self, other)` in the class `Version`. It returns `True` when `self` is newer than `other`, and `False` otherwise (also when they are the same version).
+
+          For example, this code:
+
+          ```python fragment
+          old = Version(2, 9, 7)
+          new = Version(2, 10, 0)
+          print(new.newer_than(old))
+          print(old.newer_than(new))
+          ```
+
+          prints:
+
+          ```
+          True
+          False
+          ```
+        seed: |
+          class Version:
+              def __init__(self, major, minor, patch):
+                  self.major = major
+                  self.minor = minor
+                  self.patch = patch
+
+              def newer_than(self, other):
+                  pass
+
+              def __str__(self):
+                  return f"{self.major}.{self.minor}.{self.patch}"
+
+
+          if __name__ == "__main__":
+              old = Version(2, 9, 7)
+              new = Version(2, 10, 0)
+              print(new.newer_than(old))
+              print(old.newer_than(new))
+        solution: |
+          class Version:
+              def __init__(self, major, minor, patch):
+                  self.major = major
+                  self.minor = minor
+                  self.patch = patch
+
+              def newer_than(self, other):
+                  if self.major != other.major:
+                      return self.major > other.major
+                  if self.minor != other.minor:
+                      return self.minor > other.minor
+                  return self.patch > other.patch
+
+              def __str__(self):
+                  return f"{self.major}.{self.minor}.{self.patch}"
+
+
+          if __name__ == "__main__":
+              old = Version(2, 9, 7)
+              new = Version(2, 10, 0)
+              print(new.newer_than(old))
+              print(old.newer_than(new))
+        hints:
+          - Compare the major numbers first. If they differ, they alone decide the answer.
+          - "`if self.major != other.major: return self.major > other.major`. Do the same for the minor numbers next."
+          - When both the major and the minor numbers are the same, the answer is `self.patch > other.patch`.
+        tests:
+          - call: |
+              old = Version(2, 9, 7)
+              new = Version(2, 10, 0)
+              print(new.newer_than(old))
+              print(old.newer_than(new))
+          - call: |
+              a = Version(3, 0, 0)
+              b = Version(2, 99, 99)
+              print(a.newer_than(b))
+              print(b.newer_than(a))
+            hidden: true
+          - call: |
+              a = Version(1, 4, 2)
+              b = Version(1, 4, 10)
+              print(a.newer_than(b))
+              print(b.newer_than(a))
+              print(a.newer_than(Version(1, 4, 2)))
+            hidden: true
+          - call: |
+              print(Version(5, 1, 0).newer_than(Version(4, 8, 9)))
+              print(Version(1, 2, 3).newer_than(Version(1, 1, 9)))
+            hidden: true

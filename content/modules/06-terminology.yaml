@@ -1,0 +1,595 @@
+id: terminology
+summary: "The words programmers use for the parts of a program: statements, blocks, expressions and their types, and functions with arguments and return values. Then errors while a program runs, and finding bugs with debugging prints."
+steps:
+  - id: terminology-statements-blocks
+    slug: statements-and-blocks
+    title: Statements and blocks
+    text: |
+      In part 1 you wrote programs without worrying much about what their parts are called. Programmers use a handful of words for those parts all the time, and knowing them makes error messages, documentation and the rest of this course easier to follow. This module goes through the most important ones.
+
+      ### Statements
+
+      A **statement** is one complete instruction in a program: it tells Python to do something. `print("Hi")` is a statement that prints a line, and `score = 10` is a statement that stores a value in a variable. Most statements fit on one line.
+
+      A statement can also contain other statements. An `if` statement is a single statement made of its first line, with the condition, and the lines that belong to it:
+
+      ```python run
+      temperature = 28
+
+      if temperature > 25:
+          print("It's a warm day.")
+          print("Remember to drink water.")
+
+      print("See you later!")
+      ```
+
+      ```output
+      It's a warm day.
+      Remember to drink water.
+      See you later!
+      ```
+
+      This program has three statements at the top level: an assignment, an `if` statement and a `print`. The `if` statement has two more statements inside it.
+
+      ### Blocks
+
+      You have used blocks since the `if` statement in part 1. A **block** is a group of statements that come one after another at the same level of indentation. The two indented `print` lines above form the block of the `if` statement: they run only when the condition is true. The block ends where the indentation ends, so the last `print` isn't part of it and runs every time. Which block a statement belongs to is decided by its indentation alone, so moving a line four spaces to the left or right can change what the program does.
+
+      The lines that aren't inside anything form the program's **main block**. It starts at the left edge of the file, so even one space too many at the start of a line is an error:
+
+      ```python run crash
+      print("Line one")
+       print("Line two")
+      ```
+
+      ```crash
+        File "main.py", line 2
+          print("Line two")
+      IndentationError: unexpected indent
+      ```
+
+      An `IndentationError` is a kind of syntax error, so Python runs nothing at all, not even line 1. The same goes for a block that is missing: after a line that ends with a colon, Python expects at least one indented line, and stops with `IndentationError: expected an indented block` if there isn't one.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      level = 3
+      if level > 5:
+          print("Expert")
+          print("Hard mode on")
+      print("Level", level)
+      if level > 1:
+          print("Past the tutorial")
+      print("Go!")
+    hints:
+      - The first condition is false (3 isn't greater than 5), so Python skips the whole block of that `if`, both lines.
+      - "`print(\"Level\", level)` starts at the left edge, so it isn't in any block and runs every time."
+      - The second condition is true, so its block runs. The last line is in the main block again.
+    more:
+      - task: |
+          Every player should see how many coins they have, and only players with at least 100 coins should be told to visit the shop. The thank-you line is for everyone. Two lines are in the wrong block. Fix the program, so that with 150 coins it prints:
+
+          ```
+          How many coins do you have? 150
+          You have 150 coins.
+          You can buy the sword.
+          Visit the shop!
+          Thanks for playing.
+          ```
+        seed: |
+          coins = int(input("How many coins do you have? "))
+          if coins >= 100:
+              print(f"You have {coins} coins.")
+              print("You can buy the sword.")
+          print("Visit the shop!")
+          print("Thanks for playing.")
+        solution: |
+          coins = int(input("How many coins do you have? "))
+          print(f"You have {coins} coins.")
+          if coins >= 100:
+              print("You can buy the sword.")
+              print("Visit the shop!")
+          print("Thanks for playing.")
+        hints:
+          - "Try it with 40 coins: the player isn't told how many coins they have, but is still sent to the shop."
+          - The line about the coins should run every time, so it belongs to the main block. Move it above the `if` line, at the left edge.
+          - "`Visit the shop!` belongs to the block of the `if`: indent it by four spaces, like the line above it."
+        tests:
+          - stdin: "150"
+          - stdin: "40"
+            hidden: true
+          - stdin: "100"
+            hidden: true
+      - task: |
+          A library charges 2 euros for every day a book is late. Write a program that asks how many days late the book is. If it's late (more than 0 days), the program prints two lines: `The book is late.` and the fee. It always ends with `Thank you for returning the book.`
+
+          ```
+          How many days late is the book? 4
+          The book is late.
+          Late fee: 8 euros
+          Thank you for returning the book.
+          ```
+        seed: |
+          # Write your program below this line.
+        solution: |
+          # Write your program below this line.
+          days = int(input("How many days late is the book? "))
+          if days > 0:
+              print("The book is late.")
+              print(f"Late fee: {days * 2} euros")
+          print("Thank you for returning the book.")
+        hints:
+          - "Read the number with `int(input(...))`, so you can compare it and calculate with it."
+          - The two lines about the fee form the block of an `if days > 0:` statement, indented by four spaces.
+          - "The fee is `days * 2`; an f-string puts it into the line: `f\"Late fee: {days * 2} euros\"`. The thank-you line is not indented."
+        require:
+          - pattern: \bif\b
+            message: Use an `if` statement to decide whether the book is late.
+        tests:
+          - stdin: "4"
+          - stdin: "0"
+            hidden: true
+          - stdin: "11"
+            hidden: true
+
+  - id: terminology-expressions-types
+    slug: expressions-and-types
+    title: Expressions, values and types
+    text: |
+      An **expression** is a piece of code that Python can work out to get a value. `2 + 3` is an expression, and its value is `5`. Working out the value is called **evaluating** the expression. A single number or a variable on its own is an expression too: the value of `score` is whatever the variable holds at that moment.
+
+      An expression can go anywhere Python expects a value: on the right side of `=`, inside the parentheses of `print`, inside the braces of an f-string, or as the condition of an `if`. That's the difference from a statement: a statement does something, and an expression has a value. `total = 5` is a statement, while `total + 5` is an expression.
+
+      Python's **interactive interpreter** shows this well. It runs one line at a time, and when you type an expression after its `>>>` prompt, it shows the expression's value. Here is what it prints for a few expressions:
+
+      ```python repl
+      >>> 2 + 4 + 3
+      9
+      >>> 11 / 2
+      5.5
+      >>> "rain" + "bow"
+      'rainbow'
+      >>> 2 * 5 > 9
+      True
+      ```
+
+      The interpreter shows a string in quotes, so you can see that `'rainbow'` is text. The last expression is a comparison, and its value is `True`.
+
+      ### Step by step
+
+      Small expressions combine into bigger ones, and Python evaluates a big one piece by piece, each time putting a value in place of a part. With `price = 4` and `count = 3`, the condition `price * count + 5 > 20` goes like this:
+
+      ```
+      price * count + 5 > 20
+      4 * 3 + 5 > 20
+      12 + 5 > 20
+      17 > 20
+      False
+      ```
+
+      Multiplication comes before addition, as in mathematics, and the comparison comes after the arithmetic.
+
+      ### Every expression has a type
+
+      Since an expression has a value, it also has a type: its **data type**. You met the function `type` in part 1. Give it any expression, and it tells the type of the expression's value:
+
+      ```python run
+      print(type(42))
+      print(type(3.5 * 2))
+      print(type("4" + "2"))
+      print(type(42 > 7))
+      ```
+
+      ```output
+      <class 'int'>
+      <class 'float'>
+      <class 'str'>
+      <class 'bool'>
+      ```
+
+      These are the four types you know: `int` for whole numbers, `float` for numbers with a decimal point, `str` for strings and `bool` for the truth values `True` and `False`. A comparison is an expression of the type `bool`, which is why it can be the condition of an `if`, or be printed:
+
+      ```python run
+      price = 4
+      count = 3
+      total = price * count + 5
+      print(f"Total: {total}, over 20: {total > 20}")
+      ```
+
+      ```output
+      Total: 17, over 20: False
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      a = 7
+      b = 2
+      print(a + b * 3)
+      print(a > b * 3)
+      print(str(a) + str(b))
+      print(type(a > b))
+    hints:
+      - "Multiplication comes first: `b * 3` is 6, in both the second and the third line."
+      - "`a > b * 3` is the comparison `7 > 6`, so its value is a Boolean. `str(a) + str(b)` joins two strings."
+      - "A comparison has the type `bool`, printed as `<class 'bool'>`."
+    more:
+      - task: |
+          Fill in each blank with a value of the type the comment asks for, so the program prints:
+
+          ```
+          <class 'int'>
+          <class 'float'>
+          <class 'str'>
+          <class 'bool'>
+          ```
+        fill: |
+          print(type([[25]]))  # a whole number
+          print(type([[2.5]]))  # a number with a decimal point
+          print(type([["25"]]))  # a piece of text
+          print(type([[True]]))  # a truth value
+        hints:
+          - "A whole number has no decimal point (`25`), and a float has one (`2.5`)."
+          - Text is a string, so it needs quotes around it, even when it's made of digits.
+          - "A truth value is `True` or `False`, with a capital letter and no quotes. A comparison such as `3 > 1` works too."
+        tests:
+          - expect: |
+              <class 'int'>
+              <class 'float'>
+              <class 'str'>
+              <class 'bool'>
+      - task: |
+          Write a program that asks for two whole numbers and prints the values of three comparisons about them. Put each comparison inside the braces of an f-string, so Python prints its value.
+
+          ```
+          First number: 5
+          Second number: 8
+          Is the first smaller? True
+          Are they equal? False
+          Is their sum over 10? True
+          ```
+        seed: |
+          first = int(input("First number: "))
+          second = int(input("Second number: "))
+        solution: |
+          first = int(input("First number: "))
+          second = int(input("Second number: "))
+          print(f"Is the first smaller? {first < second}")
+          print(f"Are they equal? {first == second}")
+          print(f"Is their sum over 10? {first + second > 10}")
+        hints:
+          - A comparison is an expression with the value `True` or `False`, so it can go inside the braces of an f-string like any other expression.
+          - "The three comparisons are `first < second`, `first == second` and `first + second > 10`."
+          - "For example: `print(f\"Are they equal? {first == second}\")`."
+        forbid:
+          - pattern: \bif\b
+            message: No `if` is needed. Print the value of each comparison itself.
+        tests:
+          - stdin: |
+              5
+              8
+          - stdin: |
+              8
+              5
+            hidden: true
+          - stdin: |
+              4
+              4
+            hidden: true
+          - stdin: |
+              5
+              5
+            hidden: true
+
+  - id: terminology-functions
+    slug: functions
+    title: Functions, arguments and return values
+    text: |
+      A **function** is a named piece of functionality that a program can use. You have used several already: `print`, `input`, `int`, `float`, `str` and `type`. Using a function is called **calling** it: you write its name followed by parentheses.
+
+      The values inside the parentheses are the function's **arguments**, the data it works on. In `print("Score:", score)` the two arguments are `"Score:"` and the value of `score`. Some functions can be called with no arguments at all (`print()` prints an empty line), and some take several, separated by commas. You may also hear arguments called **parameters**. There is a small difference between the two words, which matters once you write functions of your own. For now, both mean the data given to a function.
+
+      ### Return values
+
+      Many functions also give back a value, called their **return value**. When the call runs, Python puts the return value in its place, so a function call is an expression. `input` returns what the user typed, as a string, which is why you usually store it in a variable.
+
+      A new function shows this well. `len` returns the length of a string, the number of characters in it, spaces and punctuation included:
+
+      ```python run
+      word = "banana"
+      print(len(word))
+      print(len("Hi there!"))
+      print(len(""))
+      ```
+
+      ```output
+      6
+      9
+      0
+      ```
+
+      `""` is the **empty string**, a string with no characters at all, so its length is 0. Since `len(...)` gives an `int`, you can store it, calculate with it or compare it, like any other number:
+
+      ```python run
+      name = input("Choose a username: ")
+      length = len(name)
+      if length < 5:
+          print(f"{name} has only {length} characters. Use at least 5.")
+      ```
+
+      ```input
+      ada
+      ```
+
+      ```output
+      Choose a username: ada
+      ada has only 3 characters. Use at least 5.
+      ```
+
+      ### Calls inside calls
+
+      Since a call is an expression, it can be the argument of another call. You have done this since part 1: in `int(input("Age: "))`, Python first calls `input`, and its return value, a string, becomes the argument of `int`. The conversion functions `int`, `float` and `str` are functions like any other: each takes one argument and returns its value as another type.
+
+      Not every argument works with every function. `len` counts the characters of a string, but a number has no characters to count:
+
+      ```python run crash
+      year = 2026
+      print(len(year))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(len(year))
+                ~~~^^^^^^
+      TypeError: object of type 'int' has no len()
+      ```
+
+      The message says that a value of the type `int` has no length. Convert the number into a string first, and then count: `len(str(year))` is 4, since `str(year)` is the string `"2026"`.
+
+      **Your turn:** fill in the blank with a function call, so the program prints how many characters the word has:
+
+      ```
+      Type a word: keyboard
+      The word keyboard has 8 characters.
+      ```
+    fill: |
+      word = input("Type a word: ")
+      length = [[len(word)]]
+      print(f"The word {word} has {length} characters.")
+    hints:
+      - The function that gives the number of characters in a string is `len`.
+      - "Call it with the variable as its argument: `len(word)`."
+    tests:
+      - stdin: keyboard
+      - stdin: Python Arena
+        hidden: true
+      - stdin: a
+        hidden: true
+    more:
+      - task: |
+          The starter code reads a whole number with `int`. Add a line that prints how many digits the number has. Calling `len` with the number itself stops with an error, so convert it first.
+
+          ```
+          Type a whole number: 2026
+          The number 2026 has 4 digits.
+          ```
+        seed: |
+          number = int(input("Type a whole number: "))
+        solution: |
+          number = int(input("Type a whole number: "))
+          print(f"The number {number} has {len(str(number))} digits.")
+        hints:
+          - "`len` counts the characters of a string, so turn the number into a string with `str(number)` first."
+          - "Put one call inside the other: `len(str(number))`. Python calls `str` first and gives its return value to `len`."
+          - The whole expression can go inside the braces of an f-string.
+        require:
+          - pattern: \blen\s*\(\s*str\s*\(
+            raw: true
+            message: "Count the digits with `len(str(...))`."
+        tests:
+          - stdin: "2026"
+          - stdin: "7"
+            hidden: true
+          - stdin: "1000000"
+            hidden: true
+      - task: |
+          A status update can be at most 30 characters long. Write a program that asks for a status, prints how many characters it has, and if it has more than 30, also prints how many characters too long it is.
+
+          ```
+          Status: Learning Python one step at a time
+          34 characters
+          Too long by 4 characters.
+          ```
+        seed: |
+          status = input("Status: ")
+        solution: |
+          status = input("Status: ")
+          length = len(status)
+          print(f"{length} characters")
+          if length > 30:
+              print(f"Too long by {length - 30} characters.")
+        hints:
+          - "`len(status)` gives the number of characters. Store it in a variable, since you need it twice."
+          - "Print the first line with an f-string, then use `if length > 30:` for the second one."
+          - The number of extra characters is the length minus 30.
+        tests:
+          - stdin: Learning Python one step at a time
+          - stdin: Hello!
+            hidden: true
+          - stdin: This status is exactly 30 long
+            hidden: true
+
+  - id: terminology-errors-debugging
+    slug: errors-and-debugging
+    title: Errors and debugging
+    text: |
+      The **syntax** of a programming language is its set of rules for how code is written: an `if` line ends with a colon, a block is indented, a string has quotes at both ends. When code breaks a rule, Python can't read the program, so it runs none of it and reports a **syntax error**:
+
+      ```python run crash
+      speed = 50
+      if speed > 40
+          print("Slow down!")
+      ```
+
+      ```crash
+        File "main.py", line 2
+          if speed > 40
+                       ^
+      SyntaxError: expected ':'
+      ```
+
+      A program with correct syntax can still go wrong. An error that happens while the program runs is a **runtime error**. Python stops at the line it can't carry out, and the lines before it have already run:
+
+      ```python run crash
+      pizzas = 3
+      people = 0
+      print("Sharing the pizzas...")
+      share = pizzas / people
+      print(share)
+      ```
+
+      ```output
+      Sharing the pizzas...
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          share = pizzas / people
+                  ~~~~~~~^~~~~~~~
+      ZeroDivisionError: division by zero
+      ```
+
+      `NameError`, `TypeError` and `ValueError` are runtime errors too. The traceback names the line that was running, and its last line says what went wrong. The real cause may be somewhere else, though: here the mistake is that `people` is 0.
+
+      ### Bugs and debugging
+
+      The trickiest mistakes cause no error at all: the program runs, but its result is wrong. A mistake like that is a **bug**, and finding and fixing bugs is called **debugging**. This program should take 5 euros off for members, but it doesn't:
+
+      ```python run
+      price = 20
+      member = "yes"
+      if member == "Yes":
+          price - 5
+      print(f"You pay {price} euros.")
+      ```
+
+      ```output
+      You pay 20 euros.
+      ```
+
+      A simple and very effective way to debug is to add **debugging prints**: extra `print` lines that show the values of variables and conditions while the program runs.
+
+      ```python run
+      price = 20
+      member = "yes"
+      print("condition:", member == "Yes")
+      if member == "Yes":
+          print("price before:", price)
+          price - 5
+          print("price after:", price)
+      print(f"You pay {price} euros.")
+      ```
+
+      ```output
+      condition: False
+      You pay 20 euros.
+      ```
+
+      The prints inside the block don't appear at all, and the condition is `False`: `"yes"` and `"Yes"` are different strings. After fixing the condition, the prints show `price before: 20` and `price after: 20`. That points at the second bug: `price - 5` calculates a value but doesn't store it anywhere. It should be `price = price - 5`, or `price -= 5` for short.
+
+      Two more tips. While you debug a program that reads input, you can comment out the `input` line and give the variable a fixed value, so you don't have to type it on every run. And when the bug is fixed, remove the debugging prints, or the checks on this site will see them in the output.
+
+      **Your turn:** this program has four syntax errors. Fix them one at a time (Python reports one error at a time), so the program works like this:
+
+      ```
+      How many tickets? 6
+      Group discount!
+      Total: 50 euros
+      ```
+    seed: |
+      tickets = int(input("How many tickets? ")
+      price = tickets * 10
+      if tickets >= 5
+          print("Group discount!")
+           price = price - 10
+      print("Total: " + str(price) + " euros)
+    solution: |
+      tickets = int(input("How many tickets? "))
+      price = tickets * 10
+      if tickets >= 5:
+          print("Group discount!")
+          price = price - 10
+      print("Total: " + str(price) + " euros")
+    hints:
+      - Press Check and read the message. It names a line, and the `^` mark shows where Python got stuck. Fix that one, then check again.
+      - "The first message is about the last line: its last string has no closing quote. Line 1 has three `(` but only two `)`."
+      - The `if` line must end with a colon, and both lines in its block need the same indentation, four spaces.
+    tests:
+      - stdin: "6"
+      - stdin: "2"
+        hidden: true
+      - stdin: "5"
+        hidden: true
+    more:
+      - task: |
+          This quiz never says `Correct!`, not even when the answer is right. Add debugging prints to find out why: print the value of the condition, and the type of `answer`. Then fix the bug and remove the debugging prints. With the right answer it prints:
+
+          ```
+          What is 6 * 7? 42
+          Correct!
+          Thanks for playing.
+          ```
+        seed: |
+          answer = input("What is 6 * 7? ")
+          if answer == 42:
+              print("Correct!")
+          print("Thanks for playing.")
+        solution: |
+          answer = int(input("What is 6 * 7? "))
+          if answer == 42:
+              print("Correct!")
+          print("Thanks for playing.")
+        hints:
+          - "Try `print(\"condition:\", answer == 42)` and `print(type(answer))` right after the `input` line."
+          - "`input` always returns a string, and the string `\"42\"` is not equal to the number `42`."
+          - "Convert the answer into an integer with `int(...)` around the `input` call, or compare it with the string `\"42\"`."
+        tests:
+          - stdin: "42"
+          - stdin: "41"
+            hidden: true
+          - stdin: "24"
+            hidden: true
+      - task: |
+          This program should print the average of two exam scores, but it stops with an error. Fix it. Once it runs, check its result too: the average of 80 and 90 is 85, and there's a second bug.
+
+          ```
+          First score: 80
+          Second score: 90
+          Average: 85.0
+          ```
+        seed: |
+          first = input("First score: ")
+          second = input("Second score: ")
+          average = first + second / 2
+          print(f"Average: {average}")
+        solution: |
+          first = int(input("First score: "))
+          second = int(input("Second score: "))
+          average = (first + second) / 2
+          print(f"Average: {average}")
+        hints:
+          - "The error says Python can't divide a `str` by an `int`. Which type does `input` return?"
+          - "Convert both inputs with `int(...)`. Then the program runs, but prints 125.0 for 80 and 90."
+          - Division comes before addition, so only `second` is divided by 2. Put the sum in parentheses.
+        tests:
+          - stdin: |
+              80
+              90
+          - stdin: |
+              7
+              8
+            hidden: true
+          - stdin: |
+              100
+              0
+            hidden: true

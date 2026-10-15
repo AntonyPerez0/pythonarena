@@ -1,0 +1,612 @@
+id: randomness
+summary: Random numbers with the random module. Rolling dice with randint, picking and shuffling with choice and shuffle, drawing raffle winners without repeats with sample, and the seeds that random numbers grow from.
+steps:
+  - id: randomness-randint
+    slug: randint
+    title: Random whole numbers
+    text: |
+      Games, simulations and quizzes need numbers nobody can predict: the roll of a die, the next card, the order of the questions. The standard library's **`random`** module makes them.
+
+      ### randint
+
+      `random.randint(a, b)` gives a random whole number from `a` to `b`. This program rolls a die five times:
+
+      ```python run
+      import random
+
+      random.seed(2026)
+      for i in range(5):
+          print("You rolled", random.randint(1, 6))
+      ```
+
+      ```output
+      You rolled 1
+      You rolled 3
+      You rolled 5
+      You rolled 5
+      You rolled 6
+      ```
+
+      What about the line `random.seed(2026)`? It makes the program pick the same "random" numbers on every run, so the output shown here is what you'll see when you run it too. Every example in these lessons that uses random numbers starts with such a line, and step 3 of this module explains how it works. Leave it out, and the numbers change on every run, which is what a real game wants.
+
+      ### Both ends included
+
+      Unlike `range(1, 6)`, which stops before 6, `randint(1, 6)` can give 1 and 6 and everything between. Roll a thousand times and both ends turn up:
+
+      ```python run
+      import random
+
+      random.seed(1)
+      rolls = []
+      for i in range(1000):
+          rolls.append(random.randint(1, 6))
+      print("Smallest:", min(rolls))
+      print("Largest:", max(rolls))
+      ```
+
+      ```output
+      Smallest: 1
+      Largest: 6
+      ```
+
+      ### Using the number
+
+      A random number is an ordinary integer, so it works in calculations and conditions like any other. Here `randint(0, 1)` tosses a coin, and the functions come in with `from`, as in the previous module:
+
+      ```python run
+      from random import randint, seed
+
+      seed(7)
+      for i in range(4):
+          if randint(0, 1) == 0:
+              print("Heads")
+          else:
+              print("Tails")
+      ```
+
+      ```output
+      Tails
+      Heads
+      Tails
+      Heads
+      ```
+
+      ### One call, one number
+
+      Every call of `randint` gives a new number, but a variable keeps the one it was given. This program rolls the die once and prints that same roll three times:
+
+      ```python run
+      import random
+
+      random.seed(3)
+      roll = random.randint(1, 6)
+      for i in range(3):
+          print(roll)
+      ```
+
+      ```output
+      2
+      2
+      2
+      ```
+
+      For three different rolls, call `random.randint(1, 6)` inside the loop, once for each roll.
+
+      **Your turn:** fill in the blanks so the program rolls a 20-sided die (the numbers 1 to 20) three times.
+    fill: |
+      import random
+
+      random.seed(20)
+      for i in range(3):
+          print(random.[[randint]](1, [[20]]))
+    hints:
+      - The function that gives a random whole number between two numbers is the one this step is about.
+      - "Type `randint` into the first blank. Both ends are included, so the largest number is the second argument: 20."
+    more:
+      - task: |
+          Write a function `roll_dice(count)` that rolls a six-sided die `count` times with `randint` and returns the rolls in a list, in the order they were rolled.
+
+          The checks set the seed themselves, so leave `random.seed` out of the function.
+        seed: |
+          import random
+
+
+          def roll_dice(count):
+              pass
+
+
+          if __name__ == "__main__":
+              print(roll_dice(5))
+        solution: |
+          import random
+
+
+          def roll_dice(count):
+              rolls = []
+              for i in range(count):
+                  rolls.append(random.randint(1, 6))
+              return rolls
+
+
+          if __name__ == "__main__":
+              print(roll_dice(5))
+        hints:
+          - Start with an empty list, and loop `count` times.
+          - "Each time round, append a new roll: `rolls.append(random.randint(1, 6))`. Return the list after the loop."
+        forbid:
+          - pattern: \bseed\s*\(
+            message: Leave `random.seed` out of the function; the checks set the seed before they call it.
+        tests:
+          - call: |
+              import random
+              random.seed(5)
+              print(roll_dice(6))
+          - call: print(len(roll_dice(10)))
+          - call: |
+              import random
+              random.seed(8)
+              rolls = roll_dice(500)
+              print(min(rolls), max(rolls))
+            hidden: true
+          - call: roll_dice(0)
+            hidden: true
+          - call: |
+              import random
+              random.seed(13)
+              print(roll_dice(3))
+            hidden: true
+      - task: |
+          Write a number guessing game. The program first asks for a game number and passes it to `random.seed`, so the same game number always gives the same secret number (handy for testing, and for challenging a friend to the very same game). Then it picks the secret number with `random.randint(1, 100)` and asks for guesses until the player finds it. It answers each wrong guess with `Too small` or `Too big`, and the right one with `Correct!` and the number of guesses. For example:
+
+          ```
+          Game number: 1
+          Guess: 50
+          Too big
+          Guess: 25
+          Too big
+          Guess: 12
+          Too small
+          Guess: 18
+          Correct! Guesses: 4
+          ```
+        seed: |
+          import random
+
+          game = int(input("Game number: "))
+          random.seed(game)
+        solution: |
+          import random
+
+          game = int(input("Game number: "))
+          random.seed(game)
+          secret = random.randint(1, 100)
+          guesses = 0
+          while True:
+              guess = int(input("Guess: "))
+              guesses += 1
+              if guess < secret:
+                  print("Too small")
+              elif guess > secret:
+                  print("Too big")
+              else:
+                  print("Correct! Guesses:", guesses)
+                  break
+        hints:
+          - "Pick the secret number once, right after the seed: `secret = random.randint(1, 100)`. Picking it inside the loop would change it after every guess."
+          - Use a `while True` loop that reads a guess and adds one to a counter each time round.
+          - Compare the guess with the secret number. When they're equal, print the message with the counter and leave the loop with `break`.
+        tests:
+          - stdin: |
+              1
+              50
+              25
+              12
+              18
+          - stdin: |
+              7
+              42
+            hidden: true
+          - stdin: |
+              12
+              50
+              75
+              60
+              61
+            hidden: true
+
+  - id: randomness-choice-shuffle
+    slug: choice-and-shuffle
+    title: Choosing and shuffling
+    text: |
+      Random numbers are often just a way to pick something: a question, a card, a player. The `random` module has functions that do the picking directly.
+
+      ### choice
+
+      `random.choice(items)` picks one item of a list, each with the same chance. It works on a string too, and then picks one character:
+
+      ```python run
+      import random
+
+      random.seed(3)
+      snacks = ["apple", "nuts", "yogurt", "carrot sticks"]
+      print("Today's snack:", random.choice(snacks))
+      print("A random letter:", random.choice("ABCDEFG"))
+      ```
+
+      ```output
+      Today's snack: nuts
+      A random letter: E
+      ```
+
+      You could get the same with `snacks[random.randint(0, len(snacks) - 1)]`, but `choice` is shorter, and there's no index to get wrong.
+
+      ### shuffle
+
+      `random.shuffle(items)` puts the items of a list in a random order. Like the `sort` method, it changes the list itself, **in place**, and returns nothing:
+
+      ```python run
+      import random
+
+      random.seed(4)
+      cards = ["ace", "king", "queen", "jack"]
+      random.shuffle(cards)
+      print(cards)
+      ```
+
+      ```output
+      ['queen', 'ace', 'jack', 'king']
+      ```
+
+      Since it returns nothing, a common mistake is to store its result. `shuffle` returns `None`, so the next line replaces the list with `None`, and the program fails when it uses the list:
+
+      ```python run crash
+      import random
+
+      cards = ["ace", "king", "queen", "jack"]
+      cards = random.shuffle(cards)
+      print(cards[0])
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          print(cards[0])
+                ~~~~~^^^
+      TypeError: 'NoneType' object is not subscriptable
+      ```
+
+      Call it on a line of its own: `random.shuffle(cards)`.
+
+      ### Keeping the original order
+
+      Because `shuffle` changes the list, the original order is gone. When you need both, shuffle a copy. As you saw with references, `cards[:]` makes a new list with the same items:
+
+      ```python run
+      import random
+
+      random.seed(4)
+      cards = ["ace", "king", "queen", "jack"]
+      deck = cards[:]
+      random.shuffle(deck)
+      print("Shuffled:", deck)
+      print("Original:", cards)
+      ```
+
+      ```output
+      Shuffled: ['queen', 'ace', 'jack', 'king']
+      Original: ['ace', 'king', 'queen', 'jack']
+      ```
+
+      A string can't be shuffled at all: strings can't be changed, and `shuffle` works by moving items around inside the list it's given.
+
+      **Your turn:** what does this program print? Type each line it prints. (You can answer without knowing the random order.)
+    predict: |
+      import random
+
+      cards = ["A", "K", "Q"]
+      result = random.shuffle(cards)
+      print(result)
+      print(len(cards))
+      print(sorted(cards))
+    hints:
+      - "`shuffle` changes the list in place. What does it return?"
+      - Shuffling only moves the items around, so the list still has the same items.
+      - "`sorted` puts them back in order, whatever order the shuffle left them in. Capital letters sort alphabetically."
+    more:
+      - task: |
+          Write a function `random_greeting(name)` that picks one greeting from the list `greetings` with `random.choice` and returns it with the name, such as `"Hi, Ada!"`.
+
+          The checks set the seed themselves before they call the function.
+        seed: |
+          import random
+
+          greetings = ["Hello", "Hi", "Welcome", "Good to see you"]
+
+
+          def random_greeting(name):
+              pass
+
+
+          if __name__ == "__main__":
+              print(random_greeting("Ada"))
+        solution: |
+          import random
+
+          greetings = ["Hello", "Hi", "Welcome", "Good to see you"]
+
+
+          def random_greeting(name):
+              greeting = random.choice(greetings)
+              return f"{greeting}, {name}!"
+
+
+          if __name__ == "__main__":
+              print(random_greeting("Ada"))
+        hints:
+          - "`random.choice(greetings)` picks one of the greetings."
+          - "Return an f-string with the greeting, a comma, the name and an exclamation mark: `f\"{greeting}, {name}!\"`."
+        require:
+          - pattern: \bchoice\s*\(
+            message: Pick the greeting with `random.choice`.
+        tests:
+          - call: |
+              import random
+              random.seed(1)
+              print(random_greeting("Ada"))
+              print(random_greeting("Linus"))
+          - call: |
+              import random
+              random.seed(6)
+              print(random_greeting("Grace"))
+              print(random_greeting("Guido"))
+              print(random_greeting("Margaret"))
+            hidden: true
+          - call: |
+              import random
+              random.seed(10)
+              print(random_greeting("Alan"))
+            hidden: true
+      - task: |
+          Write a function `shuffled(items)` that returns a new list with the items of `items` in a random order, made with `random.shuffle`. The list given as the argument must stay as it was.
+        seed: |
+          import random
+
+
+          def shuffled(items):
+              pass
+
+
+          if __name__ == "__main__":
+              letters = ["a", "b", "c", "d"]
+              print(shuffled(letters))
+              print(letters)
+        solution: |
+          import random
+
+
+          def shuffled(items):
+              mixed = items[:]
+              random.shuffle(mixed)
+              return mixed
+
+
+          if __name__ == "__main__":
+              letters = ["a", "b", "c", "d"]
+              print(shuffled(letters))
+              print(letters)
+        hints:
+          - "If you shuffle `items` itself, the caller's list changes too. Make a copy first: `mixed = items[:]`."
+          - Shuffle the copy on a line of its own, then return the copy.
+        require:
+          - pattern: \bshuffle\s*\(
+            message: Shuffle the list with `random.shuffle`.
+        tests:
+          - call: |
+              import random
+              random.seed(8)
+              letters = ["a", "b", "c", "d", "e"]
+              mixed = shuffled(letters)
+              print(mixed)
+              print(letters)
+          - call: print(sorted(shuffled([3, 1, 2])))
+            hidden: true
+          - call: |
+              import random
+              random.seed(2)
+              numbers = [1, 2, 3, 4, 5, 6]
+              print(shuffled(numbers))
+              print(numbers)
+            hidden: true
+
+  - id: randomness-drawing
+    slug: drawing-and-seeds
+    title: Drawing without repeats, and seeds
+    text: |
+      A school fair sells 60 raffle tickets, numbered 1 to 60, and draws 8 winners. A ticket can't win twice. Calling `randint` eight times doesn't promise that:
+
+      ```python run
+      import random
+
+      random.seed(2)
+      for i in range(8):
+          print(random.randint(1, 60), end=" ")
+      print()
+      ```
+
+      ```output
+      56 55 4 6 6 24 54 11
+      ```
+
+      Ticket 6 came up twice. Every call of `randint` is independent: it doesn't know which numbers came before.
+
+      ### Draw until there are enough
+
+      One fix is to keep drawing, and keep only the numbers that aren't in the list yet:
+
+      ```python run
+      import random
+
+      random.seed(2)
+      winners = []
+      while len(winners) < 8:
+          ticket = random.randint(1, 60)
+          if ticket not in winners:
+              winners.append(ticket)
+      print(sorted(winners))
+      ```
+
+      ```output
+      [4, 6, 11, 24, 48, 54, 55, 56]
+      ```
+
+      ### sample
+
+      The `random` module has a function for exactly this. `random.sample(items, count)` picks `count` different items and returns them in a new list. Here the items are the ticket numbers 1 to 60, from `range(1, 61)`:
+
+      ```python run
+      import random
+
+      random.seed(5)
+      winners = random.sample(range(1, 61), 8)
+      print(sorted(winners))
+      ```
+
+      ```output
+      [17, 23, 40, 45, 48, 51, 54, 58]
+      ```
+
+      `sample` never picks the same item twice, so if the items have no repeats, neither does the result. Asking for more items than there are is a `ValueError: Sample larger than population or is negative` (the **population** is what the items are called).
+
+      ### Where random numbers come from
+
+      A computer follows its instructions exactly, so it can't really roll a die. Instead, `random` calculates its numbers with a formula: each new number comes from the state the previous one left behind. The value the whole series starts from is called the **seed**. The same seed always gives the same series of numbers:
+
+      ```python repl
+      >>> import random
+      >>> random.seed(42)
+      >>> random.randint(1, 100)
+      82
+      >>> random.randint(1, 100)
+      15
+      >>> random.seed(42)
+      >>> random.randint(1, 100)
+      82
+      ```
+
+      When a program doesn't set a seed, Python picks one from something that changes all the time, which is why every run is different. Numbers made like this are called **pseudorandom**: they look random and are good enough for games and simulations, but whoever knows the seed can repeat them. (For passwords and other secrets, Python has the `secrets` module.)
+
+      A fixed seed is useful in its own right. A program that misbehaves only now and then can be made to misbehave on every run, so you can find the bug. The checks on this site use seeds the same way to test functions that use random numbers.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      import random
+
+      random.seed(10)
+      first = random.randint(1, 100)
+      random.seed(10)
+      second = random.randint(1, 100)
+      print(first == second)
+      numbers = random.sample(range(1, 6), 5)
+      print(sorted(numbers))
+    hints:
+      - Setting the same seed again starts the same series of numbers again.
+      - "`range(1, 6)` is the numbers 1 to 5, and the sample takes all five of them, in some order."
+      - "`sorted` puts them in order, so the order the sample picked them in doesn't matter."
+    more:
+      - task: |
+          A bingo card has columns of 5 different numbers. Write a function `bingo_column(lowest, highest)` that returns a list of 5 different random numbers from `lowest` to `highest` (both included), sorted from smallest to largest.
+
+          `bingo_column(1, 5)` can only return `[1, 2, 3, 4, 5]`. `bingo_column(1, 15)` returns something like `[2, 7, 8, 11, 15]`.
+        seed: |
+          import random
+
+
+          def bingo_column(lowest, highest):
+              pass
+
+
+          if __name__ == "__main__":
+              print(bingo_column(1, 15))
+              print(bingo_column(16, 30))
+        solution: |
+          import random
+
+
+          def bingo_column(lowest, highest):
+              numbers = random.sample(range(lowest, highest + 1), 5)
+              return sorted(numbers)
+
+
+          if __name__ == "__main__":
+              print(bingo_column(1, 15))
+              print(bingo_column(16, 30))
+        hints:
+          - "`random.sample` picks different items. The numbers to pick from are `range(lowest, highest + 1)`: a range stops before its end, so add one."
+          - "Return the sample sorted: `sorted(numbers)`."
+        tests:
+          - call: bingo_column(1, 5)
+          - call: |
+              column = bingo_column(16, 30)
+              print(len(column) == 5)  # five numbers
+              print(column == sorted(column))  # in order
+              print(len(set(column)) == 5)  # all different
+              print(min(column) >= 16 and max(column) <= 30)  # all in range
+            hidden: true
+          - call: bingo_column(46, 50)
+            hidden: true
+          - call: |
+              column = bingo_column(1, 1000)
+              print(len(set(column)) == 5, column == sorted(column))
+            hidden: true
+      - task: |
+          Write a program that splits players into two random teams. It first asks for a seed and passes it to `random.seed`, then reads player names until an empty line. It shuffles the names with `random.shuffle` and prints the first half as team 1 and the rest as team 2. With an odd number of players, team 2 gets the extra player (`len(names) // 2` names go to team 1). For example:
+
+          ```
+          Seed: 3
+          Name: Ada
+          Name: Ben
+          Name: Cy
+          Name: Di
+          Name: Eve
+          Name:
+          Team 1:
+          Ada
+          Cy
+          Team 2:
+          Di
+          Eve
+          Ben
+          ```
+        seed: |
+          import random
+
+          random.seed(int(input("Seed: ")))
+        solution: |
+          import random
+
+          random.seed(int(input("Seed: ")))
+          names = []
+          while True:
+              name = input("Name: ")
+              if name == "":
+                  break
+              names.append(name)
+
+          random.shuffle(names)
+          half = len(names) // 2
+          print("Team 1:")
+          for name in names[:half]:
+              print(name)
+          print("Team 2:")
+          for name in names[half:]:
+              print(name)
+        hints:
+          - Read names in a `while True` loop and append them to a list; leave the loop with `break` when the name is empty.
+          - Shuffle the list once, after all the names are read, on a line of its own.
+          - "With `half = len(names) // 2`, team 1 is the slice `names[:half]` and team 2 is `names[half:]`. Print each name with a `for` loop."
+        tests:
+          - stdin: "3\nAda\nBen\nCy\nDi\nEve\n\n"
+          - stdin: "10\nNoor\nOtto\nPia\nQuinn\n\n"
+            hidden: true
+          - stdin: "77\nRay\nSam\n\n"
+            hidden: true

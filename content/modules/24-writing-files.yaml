@@ -1,0 +1,823 @@
+id: writing-files
+summary: Writing text files. Creating a file with the mode "w", adding to its end with "a", writing CSV lines from lists and dictionaries, and clearing, rewriting and deleting files.
+steps:
+  - id: writing-files-create
+    slug: create
+    title: Creating and writing a file
+    text: |
+      Programs also save data to files: results to keep for later, a report for a person to read, or data for another program to use. Writing uses the same `open` function as reading, with a second argument, the **mode**. The mode `"w"` opens the file for **writing**:
+
+      ```python run
+      with open("greeting.txt", "w") as file:
+          file.write("Hello, file!\n")
+          file.write("This is the second line.\n")
+
+      with open("greeting.txt") as file:
+          print(file.read())
+      ```
+
+      ```output
+      Hello, file!
+      This is the second line.
+      ```
+
+      - `open("greeting.txt", "w")` creates the file in the program's folder.
+      - The file handle's method **`write`** writes a string into the file.
+      - The second `with` block opens the file for reading (with no mode, `open` reads) only to show what the program wrote. On this site, the tests of a task look at the files your program leaves in its folder.
+
+      ### write doesn't add line breaks
+
+      `print` ends each line for you, but `write` writes exactly the string it gets and nothing more. Line breaks are up to you: end each line with `\n`. Forget them, and the lines run together:
+
+      ```python run
+      with open("numbers.txt", "w") as file:
+          file.write("one")
+          file.write("two\n")
+          file.write("three\n")
+
+      with open("numbers.txt") as file:
+          print(file.read())
+      ```
+
+      ```output
+      onetwo
+      three
+      ```
+
+      ### Only strings
+
+      `write` takes exactly one string. Give it a number and Python stops:
+
+      ```python run crash
+      points = 42
+      with open("points.txt", "w") as file:
+          file.write(points)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          file.write(points)
+          ~~~~~~~~~~^^^^^^^^
+      TypeError: write() argument must be str, not int
+      ```
+
+      Turn the number into a string first. An f-string is the handiest way, and it adds the line break at the same time: `file.write(f"{points}\n")`. It works just as well for a line with several values, such as `file.write(f"{name} scored {points}\n")`.
+
+      ### "w" starts from scratch
+
+      If a file with that name already exists, opening it with `"w"` empties it first. Everything that was in it is gone, without any warning:
+
+      ```python run
+      with open("status.txt", "w") as file:
+          file.write("Version 1\n")
+
+      with open("status.txt", "w") as file:
+          file.write("Version 2\n")
+
+      with open("status.txt") as file:
+          print(file.read())
+      ```
+
+      ```output
+      Version 2
+      ```
+
+      That's what you want when a program writes a fresh result every time it runs, but think twice about the name you give `open` with `"w"`: a typo can wipe out the wrong file.
+
+      **Your turn:** fill in the blanks so the program creates the file `todo.txt` with these two lines in it:
+
+      ```text
+      Buy milk
+      Fix the bike
+      ```
+    fill: |
+      with open("todo.txt", [["w"‖'w']]) as file:
+          file.[[write]]("Buy milk\n")
+          file.write("Fix the bike\n")
+    hints:
+      - The second argument of `open` is the mode, as a string. The mode for writing is the letter w.
+      - "The first blank is `\"w\"`, with its quotes. The second is the method that writes a string into the file, the same as on the line below it."
+    tests:
+      - writes: [todo.txt]
+    more:
+      - task: |
+          Write a program that asks for the user's name and favorite color and saves them to the file `profile.txt`, as two lines like `Name: Ada` and `Color: green`. Then it prints `Saved profile.txt`.
+
+          A run looks like this:
+
+          ```
+          Your name: Ada
+          Your favorite color: green
+          Saved profile.txt
+          ```
+
+          and leaves this in `profile.txt`:
+
+          ```text
+          Name: Ada
+          Color: green
+          ```
+        seed: |
+          name = input("Your name: ")
+          color = input("Your favorite color: ")
+        solution: |
+          name = input("Your name: ")
+          color = input("Your favorite color: ")
+          with open("profile.txt", "w") as file:
+              file.write(f"Name: {name}\n")
+              file.write(f"Color: {color}\n")
+          print("Saved profile.txt")
+        hints:
+          - Open `profile.txt` with the mode `"w"` and write each line with `file.write`.
+          - "An f-string builds each line, and the line ends with `\\n`: `file.write(f\"Name: {name}\\n\")`."
+          - Print the message after the `with` block, when the file is written and closed.
+        tests:
+          - stdin: |
+              Ada
+              green
+            writes: [profile.txt]
+          - stdin: |
+              Linus
+              dark blue
+            writes: [profile.txt]
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          with open("log.txt", "w") as file:
+              file.write("start")
+              file.write("stop\n")
+              file.write(f"{2 * 3}\n")
+
+          with open("log.txt") as file:
+              for line in file:
+                  print(line.strip())
+        hints:
+          - "`write` doesn't add line breaks: the first two strings end up on the same line of the file."
+          - "The f-string calculates `2 * 3` and writes the result, followed by a line break."
+
+  - id: writing-files-append
+    slug: append
+    title: Adding to the end of a file
+    text: |
+      Opening a file with `"w"` always starts from an empty file. To add lines to the end of a file and keep what's already in it, open it in **append** mode, `"a"`:
+
+      ```file visitors.txt
+      Ana
+      Bo
+      ```
+
+      ```python run
+      with open("visitors.txt", "a") as file:
+          file.write("Cy\n")
+          file.write("Dee\n")
+
+      with open("visitors.txt") as file:
+          print(file.read())
+      ```
+
+      ```output
+      Ana
+      Bo
+      Cy
+      Dee
+      ```
+
+      If the file doesn't exist yet, `"a"` creates it, just as `"w"` would. So the three modes so far are:
+
+      - no mode (or `"r"`, for read): read a file that must exist;
+      - `"w"`, write: start a new, empty file, wiping out any old one with that name;
+      - `"a"`, append: add to the end of a file, creating it if needed.
+
+      ### A log that grows
+
+      Append mode suits files that only ever grow, such as a **log**: a file where a program notes what it has done. Each call of this function opens the file, adds one line and closes it again:
+
+      ```python run
+      def log(message):
+          with open("log.txt", "a") as file:
+              file.write(message + "\n")
+
+
+      log("Program started")
+      log("Loaded 3 users")
+      log("Program ended")
+
+      with open("log.txt") as file:
+          for line in file:
+              print("LOG:", line.strip())
+      ```
+
+      ```output
+      LOG: Program started
+      LOG: Loaded 3 users
+      LOG: Program ended
+      ```
+
+      If you ran this program again on your own computer, the file would get three more lines below these. That's the difference from `"w"`, which would leave only the newest three. (On this site, every run starts in a fresh folder with only the files the task gives.)
+
+      Appending is handy, but it can only add to the end. A program that needs to change something in the middle of a file, or remove a line from it, reads the whole file, changes the data and writes all of it again with `"w"`. The last step of this module shows how.
+
+      **Your turn:** the file `shopping.txt` already has a shopping list in it. Fill in the blank so the program adds `bananas` to the end of the list and keeps the items that are already there. With this file
+
+      ```text
+      eggs
+      flour
+      ```
+
+      the program leaves this in `shopping.txt`:
+
+      ```text
+      eggs
+      flour
+      bananas
+      ```
+    fill: |
+      with open("shopping.txt", [["a"‖'a']]) as file:
+          file.write("bananas\n")
+    hints:
+      - "`\"w\"` would wipe out the list. The mode that adds to the end is a different letter."
+      - "Append mode is `\"a\"`, with its quotes."
+    tests:
+      - files:
+          shopping.txt: |
+            eggs
+            flour
+        writes: [shopping.txt]
+      - files:
+          shopping.txt: |
+            rice
+            coffee
+            soap
+        writes: [shopping.txt]
+        hidden: true
+    more:
+      - task: |
+          Write a function `add_note(note)` that adds the note as a new line to the end of the file `notes.txt`. Whatever was in the file before stays there. If the file doesn't exist yet, the function creates it.
+
+          For example, if `notes.txt` has
+
+          ```text
+          Buy stamps
+          ```
+
+          then after `add_note("Water the plants")` it has:
+
+          ```text
+          Buy stamps
+          Water the plants
+          ```
+        seed: |
+          def add_note(note):
+              pass
+
+
+          if __name__ == "__main__":
+              add_note("Water the plants")
+        solution: |
+          def add_note(note):
+              with open("notes.txt", "a") as file:
+                  file.write(note + "\n")
+
+
+          if __name__ == "__main__":
+              add_note("Water the plants")
+        hints:
+          - Open `notes.txt` in append mode, `"a"`, which also creates the file when it's missing.
+          - "Write the note with a line break after it: `file.write(note + \"\\n\")`."
+        tests:
+          - call: add_note("Water the plants")
+            files:
+              notes.txt: |
+                Buy stamps
+            writes: [notes.txt]
+          - call: |
+              add_note("Call the dentist")
+              add_note("Return library books")
+            files:
+              notes.txt: |
+                Pay rent
+                Buy stamps
+            writes: [notes.txt]
+            hidden: true
+          - call: add_note("First note")
+            writes: [notes.txt]
+            hidden: true
+      - task: |
+          The file `scores.csv` holds the high scores of a game, one `name;score` line per game played. Write a program that asks for a player's name and score, adds them as a new line to the end of the file, and then prints every line of the file, numbered, as in the example.
+
+          If `scores.csv` has
+
+          ```text
+          Ana;950
+          Bo;720
+          ```
+
+          a run looks like this:
+
+          ```
+          Name: Cleo
+          Score: 870
+          1. Ana: 950
+          2. Bo: 720
+          3. Cleo: 870
+          ```
+
+          and the file ends up with three lines, the last one `Cleo;870`.
+        seed: |
+          name = input("Name: ")
+          score = input("Score: ")
+        solution: |
+          name = input("Name: ")
+          score = input("Score: ")
+
+          with open("scores.csv", "a") as file:
+              file.write(f"{name};{score}\n")
+
+          number = 0
+          with open("scores.csv") as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  number += 1
+                  print(f"{number}. {parts[0]}: {parts[1]}")
+        hints:
+          - First append the new line with the mode `"a"`, then open the file again for reading. The second `open` sees the line you just added.
+          - Read the file line by line, strip and split each line at `;`, and count the lines as you go.
+          - "Print each line as `f\"{number}. {parts[0]}: {parts[1]}\"`."
+        tests:
+          - stdin: |
+              Cleo
+              870
+            files:
+              scores.csv: |
+                Ana;950
+                Bo;720
+            writes: [scores.csv]
+          - stdin: |
+              Dee
+              1200
+            files:
+              scores.csv: |
+                Eli;300
+            writes: [scores.csv]
+            hidden: true
+
+  - id: writing-files-csv
+    slug: csv
+    title: Writing CSV files
+    text: |
+      A CSV file is written like any other text file, one line at a time. Each line is the values of one record with the separator between them, and a line break at the end. An f-string builds such a line neatly. Here the data comes from a dictionary, with a header line first:
+
+      ```python run
+      stock = {"pens": 120, "notebooks": 45, "staplers": 7}
+
+      with open("stock.csv", "w") as file:
+          file.write("item;amount\n")
+          for item, amount in stock.items():
+              file.write(f"{item};{amount}\n")
+
+      with open("stock.csv") as file:
+          print(file.read())
+      ```
+
+      ```output
+      item;amount
+      pens;120
+      notebooks;45
+      staplers;7
+      ```
+
+      The f-string turns the numbers into text on the way, so `write` gets the string it needs.
+
+      ### Lines with many values
+
+      When a record has many values, such as a list of ten numbers, writing out every one in an f-string gets long. A loop can build the line instead: add each value with a separator after it, then cut off the last separator with the slice `[:-1]`, which is everything except the last character:
+
+      ```python repl
+      >>> row = [3, 1, 4, 1, 5]
+      >>> line = ""
+      >>> for value in row:
+      ...     line += f"{value};"
+      ...
+      >>> line
+      '3;1;4;1;5;'
+      >>> line[:-1]
+      '3;1;4;1;5'
+      ```
+
+      ### Read, process, write
+
+      A very common shape for a program is to read data from one file, work something out and write the results to another file. Dividing it into functions keeps each part simple: one function reads, one calculates, one writes. Here the input has the sales of each seller, and the program writes a report with each seller's total and bonus:
+
+      ```file sales.csv
+      Ana;300;450;600
+      Bo;200;150
+      Cy;900;400
+      ```
+
+      ```python run
+      def read_sales(filename):
+          sales = {}
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  sales[parts[0]] = []
+                  for amount in parts[1:]:
+                      sales[parts[0]].append(int(amount))
+          return sales
+
+
+      def bonus(total):
+          if total >= 1000:
+              return total // 10
+          return 0
+
+
+      def write_report(filename, sales):
+          with open(filename, "w") as file:
+              for name, amounts in sales.items():
+                  total = sum(amounts)
+                  file.write(f"{name};{total};{bonus(total)}\n")
+
+
+      sales = read_sales("sales.csv")
+      write_report("report.csv", sales)
+
+      with open("report.csv") as file:
+          print(file.read())
+      ```
+
+      ```output
+      Ana;1350;135
+      Bo;350;0
+      Cy;1300;130
+      ```
+
+      Each function has one job, and the file names come in as arguments. That makes each function easy to check on its own, and easy to change: if the bonus rules change, only `bonus` changes, and everything that uses it follows.
+
+      **Your turn:** fill in the blanks so the program writes the scores in the dictionary to `scores.csv`, one `name;score` line per player. The file should hold:
+
+      ```text
+      Ada;31
+      Ben;27
+      Cleo;35
+      ```
+    fill: |
+      scores = {"Ada": 31, "Ben": 27, "Cleo": 35}
+      with open("scores.csv", [["w"‖'w']]) as file:
+          for name, score in scores.items():
+              file.write(f"{name};{score}[[\n]]")
+    hints:
+      - The file is created from scratch, so it's opened for writing.
+      - "Each line must end with a line break, which is written `\\n` inside the string."
+    tests:
+      - writes: [scores.csv]
+    more:
+      - task: |
+          Write a function `save_inventory(filename, inventory)`. The parameter `inventory` is a dictionary from item names to amounts. The function writes the file with a header line `item;count` and then one `item;count` line per item, in the dictionary's order.
+
+          For example, `save_inventory("inventory.csv", {"bolts": 250, "nuts": 310, "washers": 75})` writes this file:
+
+          ```text
+          item;count
+          bolts;250
+          nuts;310
+          washers;75
+          ```
+        seed: |
+          def save_inventory(filename, inventory):
+              pass
+
+
+          if __name__ == "__main__":
+              save_inventory("inventory.csv", {"bolts": 250, "nuts": 310, "washers": 75})
+        solution: |
+          def save_inventory(filename, inventory):
+              with open(filename, "w") as file:
+                  file.write("item;count\n")
+                  for item, count in inventory.items():
+                      file.write(f"{item};{count}\n")
+
+
+          if __name__ == "__main__":
+              save_inventory("inventory.csv", {"bolts": 250, "nuts": 310, "washers": 75})
+        hints:
+          - Open the file named by the parameter `filename` with the mode `"w"`, and write the header line first.
+          - "Go through `inventory.items()` and write each pair as an f-string: `f\"{item};{count}\\n\"`."
+        tests:
+          - call: |
+              save_inventory("inventory.csv", {"bolts": 250, "nuts": 310, "washers": 75})
+            writes: [inventory.csv]
+          - call: |
+              save_inventory("kitchen.csv", {"plates": 12, "cups": 9})
+            writes: [kitchen.csv]
+            hidden: true
+      - task: |
+          Each line of an exam file has a student's name and points (`name;points`). Write a function `write_results(source, target)` that reads the file `source` and writes the file `target`, where each line has the name, the points and `pass` (50 points or more) or `fail`.
+
+          If `exam.csv` has
+
+          ```text
+          Ana;72
+          Bo;49
+          Cy;50
+          ```
+
+          then `write_results("exam.csv", "results.csv")` writes this `results.csv`:
+
+          ```text
+          Ana;72;pass
+          Bo;49;fail
+          Cy;50;pass
+          ```
+        seed: |
+          def write_results(source, target):
+              pass
+
+
+          if __name__ == "__main__":
+              write_results("exam.csv", "results.csv")
+        solution: |
+          def write_results(source, target):
+              lines = []
+              with open(source) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      points = int(parts[1])
+                      if points >= 50:
+                          result = "pass"
+                      else:
+                          result = "fail"
+                      lines.append(f"{parts[0]};{points};{result}")
+
+              with open(target, "w") as file:
+                  for line in lines:
+                      file.write(line + "\n")
+
+
+          if __name__ == "__main__":
+              write_results("exam.csv", "results.csv")
+        hints:
+          - "Read the source file line by line: strip, split at `;`, and turn the points into an `int` to compare them with 50."
+          - Build each new line as a string and collect them in a list, then write the list to the target file with the mode `"w"`.
+          - You could also open both files at once, one `with` inside the other, and write each line as soon as you've read it.
+        tests:
+          - call: write_results("exam.csv", "results.csv")
+            files:
+              exam.csv: |
+                Ana;72
+                Bo;49
+                Cy;50
+            writes: [results.csv]
+          - call: write_results("retake.csv", "final.csv")
+            files:
+              retake.csv: |
+                Dee;12
+                Eli;95
+            writes: [final.csv]
+            hidden: true
+
+  - id: writing-files-rewrite
+    slug: clear-and-delete
+    title: Clearing, rewriting and deleting files
+    text: |
+      ### Clearing a file
+
+      Opening a file with `"w"` empties it. So to clear a file, open it with `"w"` and write nothing. But a `with` block can't be empty: Python requires at least one statement in every indented block. For a block that should do nothing, Python has the statement **`pass`**, which does exactly nothing:
+
+      ```file log.txt
+      old line 1
+      old line 2
+      ```
+
+      ```python run
+      with open("log.txt", "w") as file:
+          pass
+
+      with open("log.txt") as file:
+          contents = file.read()
+      print(len(contents))
+      ```
+
+      ```output
+      0
+      ```
+
+      You have seen `pass` before: the starter code of a function task has `pass` as the function's body, so that the program runs before the real body is written.
+
+      ### Changing lines in the middle
+
+      `"a"` can only add to the end, and `"w"` starts from an empty file. To change or remove something in the middle of a file, a program reads the whole file into a list, changes the list, and writes the whole list back with `"w"`:
+
+      ```file tasks.txt
+      wash the car
+      buy stamps
+      call the bank
+      ```
+
+      ```python run
+      tasks = []
+      with open("tasks.txt") as file:
+          for line in file:
+              tasks.append(line.strip())
+
+      tasks.remove("buy stamps")
+      tasks.append("water the plants")
+
+      with open("tasks.txt", "w") as file:
+          for task in tasks:
+              file.write(task + "\n")
+
+      with open("tasks.txt") as file:
+          print(file.read())
+      ```
+
+      ```output
+      wash the car
+      call the bank
+      water the plants
+      ```
+
+      The order matters: read first, then write. Opening the file with `"w"` empties it at once, so a program that opens it for writing before reading it has nothing left to read.
+
+      ### Deleting a file
+
+      To delete a file completely, a program asks the operating system. Python's functions for that are in the `os` module, which a program takes into use with the line `import os` at its start (a later module tells more about modules). `os.remove(name)` deletes a file, and `os.path.exists(name)` tells whether a file exists:
+
+      ```python run
+      import os
+
+      with open("draft.txt", "w") as file:
+          file.write("Just a draft\n")
+
+      print(os.path.exists("draft.txt"))
+      os.remove("draft.txt")
+      print(os.path.exists("draft.txt"))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      A deleted file doesn't go to a recycle bin: it's gone. Deleting a file that doesn't exist stops the program with a `FileNotFoundError`.
+
+      **Your turn:** fill in the blanks so the function `clear_file(filename)` empties the file it's given, without deleting it.
+    fill: |
+      def clear_file(filename):
+          with open(filename, [["w"‖'w']]) as file:
+              [[pass]]
+
+
+      if __name__ == "__main__":
+          clear_file("log.txt")
+    hints:
+      - Opening a file in one of the modes empties it straight away.
+      - "The mode is `\"w\"`. The block then needs a statement that does nothing: `pass`."
+    tests:
+      - call: clear_file("log.txt")
+        files:
+          log.txt: |
+            Started
+            Stopped
+        writes:
+          log.txt: ""
+      - call: clear_file("old.txt")
+        files:
+          old.txt: |
+            something old
+        writes:
+          old.txt: ""
+        hidden: true
+    more:
+      - task: |
+          Write a function `remove_line(filename, text)` that removes every line that is exactly `text` from the file and keeps the other lines in their order.
+
+          If `tasks.txt` has
+
+          ```text
+          wash the car
+          buy stamps
+          call the bank
+          ```
+
+          then after `remove_line("tasks.txt", "buy stamps")` it has:
+
+          ```text
+          wash the car
+          call the bank
+          ```
+        seed: |
+          def remove_line(filename, text):
+              pass
+
+
+          if __name__ == "__main__":
+              remove_line("tasks.txt", "buy stamps")
+        solution: |
+          def remove_line(filename, text):
+              kept = []
+              with open(filename) as file:
+                  for line in file:
+                      line = line.strip()
+                      if line != text:
+                          kept.append(line)
+
+              with open(filename, "w") as file:
+                  for line in kept:
+                      file.write(line + "\n")
+
+
+          if __name__ == "__main__":
+              remove_line("tasks.txt", "buy stamps")
+        hints:
+          - First read the file into a list, keeping only the stripped lines that aren't `text`.
+          - When the reading `with` block has ended, open the same file with `"w"` and write each kept line back, with a line break after it.
+        tests:
+          - call: remove_line("tasks.txt", "buy stamps")
+            files:
+              tasks.txt: |
+                wash the car
+                buy stamps
+                call the bank
+            writes: [tasks.txt]
+          - call: remove_line("words.txt", "the")
+            files:
+              words.txt: |
+                the
+                cat
+                sat
+                the
+                end
+            writes: [words.txt]
+            hidden: true
+      - task: |
+          At the end of each day, the notes in a file are moved to `archive.txt`. Write a function `archive(filename)` that adds the contents of the file `filename` to the end of `archive.txt` (creating it if it's missing) and then deletes the file `filename`.
+
+          If `today.txt` has
+
+          ```text
+          Met the plumber
+          ```
+
+          and `archive.txt` has
+
+          ```text
+          Fixed the fence
+          ```
+
+          then after `archive("today.txt")`, `today.txt` is gone and `archive.txt` has:
+
+          ```text
+          Fixed the fence
+          Met the plumber
+          ```
+        seed: |
+          import os
+
+
+          def archive(filename):
+              pass
+
+
+          if __name__ == "__main__":
+              archive("today.txt")
+        solution: |
+          import os
+
+
+          def archive(filename):
+              with open(filename) as file:
+                  contents = file.read()
+              with open("archive.txt", "a") as file:
+                  file.write(contents)
+              os.remove(filename)
+
+
+          if __name__ == "__main__":
+              archive("today.txt")
+        hints:
+          - Read the whole file with `read()`, then open `archive.txt` in append mode and write what you read.
+          - "When both files are closed, delete the original with `os.remove(filename)`."
+        tests:
+          - name: Archive today.txt
+            call: |
+              archive("today.txt")
+              print("today.txt still there:", os.path.exists("today.txt"))
+            files:
+              today.txt: |
+                Met the plumber
+              archive.txt: |
+                Fixed the fence
+            writes: [archive.txt]
+          - name: No archive yet
+            call: |
+              archive("monday.txt")
+              print("monday.txt still there:", os.path.exists("monday.txt"))
+            files:
+              monday.txt: |
+                Painted the door
+                Bought nails
+            writes: [archive.txt]
+            hidden: true

@@ -1,0 +1,766 @@
+id: conditionals
+summary: Programs that make decisions. The if statement and its block, comparison operators, indentation and the errors it causes, several conditions one after another, and the Boolean values True and False.
+steps:
+  - id: conditionals-if
+    slug: if-statement
+    title: The if statement
+    text: |
+      So far, every line of a program has run every time, from top to bottom. Often a program should do something only in some situations: warn when it's hot, congratulate the winner, ask for a password only from a new user. A **conditional statement** runs a group of lines only when a **condition** is true.
+
+      ```python run
+      temperature = int(input("Temperature: "))
+      if temperature > 25:
+          print("It's hot today.")
+          print("Remember to drink water.")
+      print("Have a nice day!")
+      ```
+
+      ```input
+      30
+      ```
+
+      ```output
+      Temperature: 30
+      It's hot today.
+      Remember to drink water.
+      Have a nice day!
+      ```
+
+      If the user types 18 instead, the condition `temperature > 25` is false. Python skips the two indented lines, and the whole run is just this:
+
+      ```text
+      Temperature: 18
+      Have a nice day!
+      ```
+
+      ### The parts of an if statement
+
+      - The keyword `if` starts the statement.
+      - `temperature > 25` is the condition. `>` means "greater than"; the next step shows the other ways to compare.
+      - The line ends with a colon `:`.
+      - The lines below it that are **indented**, moved to the right by four spaces, form a **block**. They run only when the condition is true.
+      - The first line back at the left edge, `print("Have a nice day!")`, is no longer part of the block. It runs every time, whatever the condition was.
+
+      The input decides which lines run, so the same program can behave differently each time. That's why the checks on this site run your program with several inputs: each one should take the right path.
+
+      ### Don't forget the colon
+
+      Without the colon at the end of the `if` line, Python can't read the program:
+
+      ```python run crash
+      temperature = 30
+      if temperature > 25
+          print("It's hot today.")
+      ```
+
+      ```crash
+        File "main.py", line 2
+          if temperature > 25
+                             ^
+      SyntaxError: expected ':'
+      ```
+
+      The `^` points to the end of line 2, where Python expected the colon. As with every syntax error, nothing runs at all.
+
+      **Your turn:** fill in the blank so the program praises big orders. If the user types `150`, the run looks like this:
+
+      ```
+      How many items? 150
+      That's a big order!
+      Thank you!
+      ```
+    fill: |
+      items = int(input("How many items? "))
+      if items > 100[[:]]
+          print("That's a big order!")
+      print("Thank you!")
+    hints:
+      - Something is missing at the end of the `if` line.
+      - "Every `if` line ends with a colon: `:`."
+    tests:
+      - stdin: "150"
+      - stdin: "20"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a car's speed and prints `Too fast!` when the speed is over 50. When it isn't, the program prints nothing more. If the user types `62`, the run looks like this:
+
+          ```
+          Speed: 62
+          Too fast!
+          ```
+        seed: |
+          speed = int(input("Speed: "))
+        solution: |
+          speed = int(input("Speed: "))
+          if speed > 50:
+              print("Too fast!")
+        hints:
+          - "Use an `if` with the condition `speed > 50`, and end the line with a colon."
+          - "The `print` goes on the next line, indented by four spaces, so it belongs to the `if`."
+        tests:
+          - stdin: "62"
+          - stdin: "45"
+            hidden: true
+          - stdin: "50"
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          points = 12
+          if points > 10:
+              print("Bonus!")
+              points = points + 5
+          if points > 20:
+              print("Super bonus!")
+          print(points)
+        hints:
+          - "12 is greater than 10, so the first block runs: it prints and adds 5 to `points`."
+          - The second condition is checked with the new value of `points`. The last line runs in any case.
+
+  - id: conditionals-comparisons
+    slug: comparisons
+    title: Comparison operators
+    text: |
+      A condition usually compares two values. These are Python's **comparison operators**:
+
+      | Operator | Means | Example |
+      |:-:|---|---|
+      | `==` | equal to | `a == b` |
+      | `!=` | not equal to | `a != b` |
+      | `<` | less than | `a < b` |
+      | `<=` | less than or equal to | `a <= b` |
+      | `>` | greater than | `a > b` |
+      | `>=` | greater than or equal to | `a >= b` |
+
+      The difference between `<` and `<=` matters at the edge: `18 < 18` is false, but `18 <= 18` is true.
+
+      A program can have several `if` statements one after another. This guessing game has three:
+
+      ```python run
+      secret = 7
+      guess = int(input("Guess a number from 1 to 10: "))
+      if guess < secret:
+          print("Too small.")
+      if guess > secret:
+          print("Too big.")
+      if guess == secret:
+          print("Right! Well done.")
+      ```
+
+      ```input
+      4
+      ```
+
+      ```output
+      Guess a number from 1 to 10: 4
+      Too small.
+      ```
+
+      Python checks each `if` on its own, in order. A number can't be smaller than 7, bigger than 7 and equal to 7 at the same time, so exactly one of the three messages is printed.
+
+      ### = is not ==
+
+      A single `=` stores a value in a variable. Two, `==`, compare two values. Mixing them up is one of the most common mistakes, and in a condition Python catches it:
+
+      ```python run crash
+      guess = 7
+      if guess = 7:
+          print("Right!")
+      ```
+
+      ```crash
+        File "main.py", line 2
+          if guess = 7:
+             ^^^^^^^^^
+      SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
+      ```
+
+      Python suggests `==` or `:=`. The second is a rarer operator that this course doesn't need: `==` is the one you want.
+
+      ### Comparing strings
+
+      `==` and `!=` work for strings too. Two strings are equal only when they are exactly the same, character by character, capitals and spaces included:
+
+      ```python run
+      answer = input("Do you like Python? ")
+      if answer == "yes":
+          print("Great!")
+      if answer != "yes":
+          print("Give it a few more weeks.")
+      ```
+
+      ```input
+      Yes
+      ```
+
+      ```output
+      Do you like Python? Yes
+      Give it a few more weeks.
+      ```
+
+      `Yes` with a capital Y is not the same string as `yes`. `!=` is handy for doing something whenever a value is anything but one particular value.
+
+      **Your turn:** fill in the blank so the program unlocks only with the PIN `4321`. If the user types `4321`, the run looks like this:
+
+      ```
+      PIN: 4321
+      Unlocked
+      ```
+    fill: |
+      code = input("PIN: ")
+      if code [[==]] "4321":
+          print("Unlocked")
+    hints:
+      - The condition should be true when the two strings are the same.
+      - "The operator for \"equal to\" is two equals signs: `==`."
+    tests:
+      - stdin: "4321"
+      - stdin: "1234"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for two whole numbers and tells which one is bigger, with one of these three messages:
+
+          - `The first number is bigger.`
+          - `The second number is bigger.`
+          - `The numbers are equal.`
+
+          If the user types `5` and `8`, the run looks like this:
+
+          ```
+          First: 5
+          Second: 8
+          The second number is bigger.
+          ```
+        seed: |
+          first = int(input("First: "))
+          second = int(input("Second: "))
+        solution: |
+          first = int(input("First: "))
+          second = int(input("Second: "))
+          if first > second:
+              print("The first number is bigger.")
+          if second > first:
+              print("The second number is bigger.")
+          if first == second:
+              print("The numbers are equal.")
+        hints:
+          - Write three separate `if` statements, one for each message.
+          - "The conditions are `first > second`, `second > first` and `first == second`."
+        tests:
+          - stdin: |
+              5
+              8
+          - stdin: |
+              9
+              3
+            hidden: true
+          - stdin: |
+              4
+              4
+            hidden: true
+      - task: |
+          At the museum, a ticket costs 5 for visitors under 12 and 10 for everyone 12 or older. Write a program that asks for the visitor's age and prints the price. If the user types `12`, the run looks like this:
+
+          ```
+          Age: 12
+          Ticket: 10 euros
+          ```
+
+          Make sure that a visitor who is exactly 12 pays 10.
+        seed: |
+          age = int(input("Age: "))
+        solution: |
+          age = int(input("Age: "))
+          if age < 12:
+              print("Ticket: 5 euros")
+          if age >= 12:
+              print("Ticket: 10 euros")
+        hints:
+          - You need two `if` statements, one for each price.
+          - "\"Under 12\" is `age < 12`. \"12 or older\" includes 12 itself, so it's `age >= 12`."
+        tests:
+          - stdin: "12"
+          - stdin: "11"
+            hidden: true
+          - stdin: "40"
+            hidden: true
+          - stdin: "3"
+            hidden: true
+
+  - id: conditionals-indentation
+    slug: indentation
+    title: Indentation and blocks
+    text: |
+      Python decides which lines belong to an `if` by their **indentation**: the spaces at the start of each line. All the lines of a block must be indented by the same amount, and four spaces is the standard. In the editor on this site, the Tab key indents a line by four spaces, and after a line that ends with a colon, Enter indents the next line for you. To end the block, go back to the left edge with Backspace.
+
+      Indentation isn't just for looks. These two programs have the same lines, but the last line is indented differently:
+
+      ```python run
+      score = 3
+      print(f"Score: {score}")
+      if score > 5:
+          print("You win!")
+          print("Game over.")
+      ```
+
+      ```output
+      Score: 3
+      ```
+
+      ```python run
+      score = 3
+      print(f"Score: {score}")
+      if score > 5:
+          print("You win!")
+      print("Game over.")
+      ```
+
+      ```output
+      Score: 3
+      Game over.
+      ```
+
+      In the first program, `print("Game over.")` is part of the block, so it's skipped along with `print("You win!")`. In the second, it's back at the left edge, after the block, so it runs every time.
+
+      ### Indentation errors
+
+      When the indentation doesn't make sense, Python stops with an `IndentationError` before running anything. Here are the three you'll meet most often. A line after a colon that isn't indented leaves the `if` with an empty block:
+
+      ```python run crash
+      code = input("Code: ")
+      if code == "1234":
+      print("Access granted")
+      ```
+
+      ```crash
+        File "main.py", line 3
+          print("Access granted")
+          ^^^^^
+      IndentationError: expected an indented block after 'if' statement on line 2
+      ```
+
+      A line indented for no reason, with no colon before it:
+
+      ```python run crash
+      print("Hello")
+          print("World")
+      ```
+
+      ```crash
+        File "main.py", line 2
+          print("World")
+      IndentationError: unexpected indent
+      ```
+
+      And lines of the same block indented by different amounts:
+
+      ```python run crash
+      score = 8
+      if score > 5:
+          print("You win!")
+        print("Well played.")
+      ```
+
+      ```crash
+        File "main.py", line 4
+          print("Well played.")
+                               ^
+      IndentationError: unindent does not match any outer indentation level
+      ```
+
+      Line 4 has two spaces: that's neither the block's four nor the left edge, so Python can't tell where the line belongs. Whatever the message, the fix is the same: look at the line it names and give it the indentation of the block it belongs to.
+
+      **Your turn:** the program stops with an `IndentationError`. Fix it, so that the right code grants access and `Goodbye` is printed every time. With the code `1234`, the run looks like this:
+
+      ```
+      Code: 1234
+      Access granted
+      Goodbye
+      ```
+    seed: |
+      code = input("Code: ")
+      if code == "1234":
+      print("Access granted")
+      print("Goodbye")
+    solution: |
+      code = input("Code: ")
+      if code == "1234":
+          print("Access granted")
+      print("Goodbye")
+    hints:
+      - Read the error message. Which line does Python expect to be indented?
+      - Indent `print("Access granted")` by four spaces, so it belongs to the `if`. Leave `print("Goodbye")` at the left edge, so it runs every time.
+    tests:
+      - stdin: "1234"
+      - stdin: "0000"
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          x = 3
+          if x > 5:
+              print("A")
+              print("B")
+          print("C")
+          if x < 5:
+              print("D")
+          print("E")
+        hints:
+          - "`x > 5` is false, so both indented lines under the first `if` are skipped."
+          - The lines at the left edge run every time, and `x < 5` is true.
+      - task: |
+          The restaurant's program offers free ice cream to everyone, but only kids under 13 should get it. Fix the indentation, so that the ice cream line belongs to the `if`. If the user types `8`, the run looks like this:
+
+          ```
+          Age: 8
+          Kids' menu available.
+          Free ice cream for kids!
+          Enjoy your meal.
+          ```
+        seed: |
+          age = int(input("Age: "))
+          if age < 13:
+              print("Kids' menu available.")
+          print("Free ice cream for kids!")
+          print("Enjoy your meal.")
+        solution: |
+          age = int(input("Age: "))
+          if age < 13:
+              print("Kids' menu available.")
+              print("Free ice cream for kids!")
+          print("Enjoy your meal.")
+        hints:
+          - Run it with an adult's age, such as 30. Which line shouldn't be there?
+          - "A line belongs to the `if` when it's indented like the other lines of its block: indent the ice cream line by four spaces."
+        tests:
+          - stdin: "8"
+          - stdin: "30"
+            hidden: true
+          - stdin: "13"
+            hidden: true
+
+  - id: conditionals-using
+    slug: conditions-at-work
+    title: Conditions at work
+    text: |
+      A block can hold any code: calculations, assignments and prints. A common pattern changes a variable only in some cases, and then carries on with whatever the variable holds:
+
+      ```python run
+      price = float(input("Price: "))
+      if price > 100:
+          price = price * 0.9
+          print("You get a 10% discount.")
+      print(f"To pay: {price}")
+      ```
+
+      ```input
+      150
+      ```
+
+      ```output
+      Price: 150
+      You get a 10% discount.
+      To pay: 135.0
+      ```
+
+      With a price of 80, the block is skipped, `price` stays 80.0, and the program prints just `To pay: 80.0` after the input.
+
+      ### Several ifs in a row
+
+      Each `if` is checked on its own, so when several conditions are true, several blocks run:
+
+      ```python run
+      height = int(input("Height in cm: "))
+      if height >= 100:
+          print("You can ride the carousel.")
+      if height >= 120:
+          print("You can ride the bumper cars.")
+      if height >= 140:
+          print("You can ride the roller coaster.")
+      print("Have fun!")
+      ```
+
+      ```input
+      125
+      ```
+
+      ```output
+      Height in cm: 125
+      You can ride the carousel.
+      You can ride the bumper cars.
+      Have fun!
+      ```
+
+      ### When one block changes what the next one checks
+
+      The `if` statements run in order, and a later condition sees the variables as the earlier blocks left them. That can catch you out. In this game, players with fewer than 100 coins should get 10 more, and players with 100 or more should get 50:
+
+      ```python run
+      coins = int(input("Coins: "))
+      if coins < 100:
+          coins = coins + 10
+      if coins >= 100:
+          coins = coins + 50
+      print(f"You now have {coins} coins.")
+      ```
+
+      ```input
+      95
+      ```
+
+      ```output
+      Coins: 95
+      You now have 155 coins.
+      ```
+
+      The player started with 95, so the first block adds 10. But that makes 105, and now the second condition is true as well, so the player gets both bonuses. One fix is to work out the bonus in a variable of its own, so both conditions check the original number of coins:
+
+      ```python run
+      coins = int(input("Coins: "))
+      bonus = 0
+      if coins < 100:
+          bonus = 10
+      if coins >= 100:
+          bonus = 50
+      coins = coins + bonus
+      print(f"You now have {coins} coins.")
+      ```
+
+      ```input
+      95
+      ```
+
+      ```output
+      Coins: 95
+      You now have 105 coins.
+      ```
+
+      Part 2 of the course adds `else`, which makes either-or choices like this one simpler.
+
+      **Your turn:** orders of 50 or more get 5 off. Fill in the blank so the program takes the discount off the total. If the user types `60`, the run looks like this:
+
+      ```
+      Order total: 60
+      To pay: 55
+      ```
+    fill: |
+      total = int(input("Order total: "))
+      if total >= 50:
+          total = [[total - 5]]
+      print(f"To pay: {total}")
+    hints:
+      - The new total is the old total minus 5.
+      - "Build the new value from the old one: `total - 5`."
+    tests:
+      - stdin: "60"
+      - stdin: "40"
+        hidden: true
+      - stdin: "50"
+        hidden: true
+    more:
+      - task: |
+          A fitness app gives badges for the steps walked in a day: a bronze badge for 5000 steps or more, a silver badge for 10000 or more and a gold badge for 20000 or more. A walker gets every badge they reach. Write a program that asks for the steps, prints each badge earned and then `Keep walking!`. If the user types `12000`, the run looks like this:
+
+          ```
+          Steps today: 12000
+          Bronze badge
+          Silver badge
+          Keep walking!
+          ```
+        seed: |
+          steps = int(input("Steps today: "))
+        solution: |
+          steps = int(input("Steps today: "))
+          if steps >= 5000:
+              print("Bronze badge")
+          if steps >= 10000:
+              print("Silver badge")
+          if steps >= 20000:
+              print("Gold badge")
+          print("Keep walking!")
+        hints:
+          - "Write one `if` for each badge. Each one is checked on its own, so all the badges the walker reached are printed."
+          - "\"5000 or more\" is `steps >= 5000`."
+          - "`Keep walking!` is printed every time, so it goes after the blocks, at the left edge."
+        tests:
+          - stdin: "12000"
+          - stdin: "3000"
+            hidden: true
+          - stdin: "25000"
+            hidden: true
+          - stdin: "5000"
+            hidden: true
+      - task: |
+          At the coffee shop, a customer with fewer than 10 stamps on their card gets 1 stamp per coffee, and a customer with 10 or more gets 2. But a customer with 9 stamps gets 3. Fix the program, so that a run looks like this:
+
+          ```
+          Stamps on your card: 9
+          You now have 10 stamps.
+          ```
+        seed: |
+          stamps = int(input("Stamps on your card: "))
+          if stamps < 10:
+              stamps = stamps + 1
+          if stamps >= 10:
+              stamps = stamps + 2
+          print(f"You now have {stamps} stamps.")
+        solution: |
+          stamps = int(input("Stamps on your card: "))
+          extra = 0
+          if stamps < 10:
+              extra = 1
+          if stamps >= 10:
+              extra = 2
+          stamps = stamps + extra
+          print(f"You now have {stamps} stamps.")
+        hints:
+          - With 9 stamps, the first block makes it 10. What does the second condition see then?
+          - Work out the new stamps in a variable of its own, such as `extra`, and add it to `stamps` only after both `if` statements.
+          - Another fix is to swap the two `if` statements, so the one for 10 or more is checked first. Try both with 9 and with 10.
+        tests:
+          - stdin: "9"
+          - stdin: "4"
+            hidden: true
+          - stdin: "10"
+            hidden: true
+          - stdin: "15"
+            hidden: true
+
+  - id: conditionals-booleans
+    slug: true-and-false
+    title: True and False
+    text: |
+      A condition has a value, just like a calculation. A comparison is either true or false, and Python has two values for that: `True` and `False`. They are called **Boolean values**, after the mathematician George Boole, and their type is `bool`:
+
+      ```python repl
+      >>> 5 > 3
+      True
+      >>> 5 == 3
+      False
+      >>> type(5 > 3)
+      <class 'bool'>
+      ```
+
+      Any piece of code whose value is `True` or `False` is a **Boolean expression**. The condition of an `if` is always one: the block runs when the condition's value is `True`, and is skipped when it's `False`.
+
+      ### A condition in a variable
+
+      The value of a comparison can be stored in a variable like any other value, and the variable can then be the condition of an `if`:
+
+      ```python run
+      age = int(input("Age: "))
+      is_adult = age >= 18
+      print(is_adult)
+      if is_adult:
+          print("You can vote.")
+      ```
+
+      ```input
+      20
+      ```
+
+      ```output
+      Age: 20
+      True
+      You can vote.
+      ```
+
+      `is_adult = age >= 18` works out the comparison first and stores its value, `True`, in `is_adult`. Then `if is_adult:` reads almost like English. A good name for a Boolean variable answers a yes-or-no question: `is_adult`, `has_ticket`, `game_over`.
+
+      ### Writing True and False yourself
+
+      You can also write `True` and `False` straight into the code. A setting at the top of a program is a typical use:
+
+      ```python run
+      show_tips = True
+      print("Welcome!")
+      if show_tips:
+          print("Tip: the Tab key indents a line.")
+      ```
+
+      ```output
+      Welcome!
+      Tip: the Tab key indents a line.
+      ```
+
+      Change the first line to `show_tips = False`, and the tip disappears. Both values start with a capital letter. In small letters, `true` is just a name that Python doesn't know:
+
+      ```python run crash
+      show_tips = true
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 1, in <module>
+          show_tips = true
+                      ^^^^
+      NameError: name 'true' is not defined. Did you mean: 'True'?
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      a = 10
+      b = 3
+      print(a > b)
+      print(a == b * 3)
+      print(a != 10)
+      big = a >= 10
+      print(big)
+    hints:
+      - Each comparison prints `True` or `False`.
+      - "`b * 3` is 9, which isn't 10. `a >= 10` is true when `a` is exactly 10."
+    more:
+      - task: |
+          Fill in the blank so the program finds out whether a number is even. If the user types `14`, the run looks like this:
+
+          ```
+          Number: 14
+          Even: True
+          It splits into two equal halves.
+          ```
+        fill: |
+          number = int(input("Number: "))
+          is_even = number % 2 [[==]] 0
+          print(f"Even: {is_even}")
+          if is_even:
+              print("It splits into two equal halves.")
+        hints:
+          - A number is even when the remainder of dividing it by 2 is zero.
+          - "The comparison \"equal to\" is `==`, so `is_even` holds `True` or `False`."
+        tests:
+          - stdin: "14"
+          - stdin: "7"
+            hidden: true
+      - task: |
+          A shop ships orders of 50 or more for free. Write a program that asks for the order total, stores whether the order ships for free in a Boolean variable, prints that value and, when it's `True`, a message. If the user types `62.5`, the run looks like this:
+
+          ```
+          Order total: 62.5
+          Free shipping: True
+          Your order ships for free!
+          ```
+
+          Use the Boolean variable itself as the condition of the `if`.
+        seed: |
+          total = float(input("Order total: "))
+        solution: |
+          total = float(input("Order total: "))
+          free_shipping = total >= 50
+          print(f"Free shipping: {free_shipping}")
+          if free_shipping:
+              print("Your order ships for free!")
+        hints:
+          - "Store the comparison in a variable: `free_shipping = total >= 50`."
+          - "Print it with an f-string, then write `if free_shipping:` with the message in its block."
+        require:
+          - pattern: '\bif\s+\w+\s*:'
+            message: Store the comparison in a variable and use that variable alone as the condition of the `if`.
+        tests:
+          - stdin: "62.5"
+          - stdin: "49.99"
+            hidden: true
+          - stdin: "50"
+            hidden: true

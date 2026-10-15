@@ -1,0 +1,1460 @@
+id: library-desk
+title: A library loan desk
+after: objects-as-attributes
+summary: "The loan desk of a small neighborhood library, built from classes. Books and members, a search, loans that know their book and their member, due days and late returns, a limit per member, and a desk that takes commands."
+intro: |
+  The neighborhood library on Elm Street has a few shelves of books and a loan desk run by volunteers. In this project you write the program for that desk. Days are plain day numbers (day 1, day 2, and so on), so no calendar is needed. A loan lasts 14 days: a book lent on day 3 is due back on day 17.
+
+  When it's finished, the program reads the library's books and members from the file `library.txt`, one per line:
+
+  ```text
+  book;B1;Emma;Jane Austen
+  book;B2;Dracula;Bram Stoker
+  book;B3;Persuasion;Jane Austen
+  member;M1;Ada
+  member;M2;Ben
+  ```
+
+  Then the volunteer at the desk types commands. These ones
+
+  ```text
+  books
+  lend B1 M1
+  lend B1 M2
+  day 20
+  late
+  return B1
+  lend B3 M2
+  member M2
+  search austen
+  dance
+  quit
+  ```
+
+  get these answers:
+
+  ```text
+  Day 1 at the desk.
+  > books
+  B1 Emma by Jane Austen
+  B2 Dracula by Bram Stoker
+  B3 Persuasion by Jane Austen
+  > lend B1 M1
+  Lent: Emma (B1) to Ada (M1), due day 15
+  > lend B1 M2
+  Emma is out until day 15.
+  > day 20
+  It is day 20.
+  > late
+  Emma (B1) to Ada (M1), due day 15, 5 days late
+  > return B1
+  Emma is back, 5 days late.
+  > lend B3 M2
+  Lent: Persuasion (B3) to Ben (M2), due day 34
+  > member M2
+  Ben (M2) has 1 book:
+  Persuasion (B3) to Ben (M2), due day 34
+  > search austen
+  B1 Emma by Jane Austen
+  B3 Persuasion by Jane Austen
+  > dance
+  I don't know that command.
+  > quit
+  The desk is closed.
+  ```
+
+  Ben can't borrow Emma while Ada has it, so the desk says so instead of lending one book twice.
+
+  ### The classes
+
+  The program has four classes, and much of the work is in how their objects point to each other:
+
+  - A `Book` has a code, a title and an author, and its current loan: `None` while it's on the shelf.
+  - A `Member` has a library card (the card's code, such as `M1`), a name, and a list of their loans.
+  - A `Loan` has a book, a member and the day the book is due. Its book and its member are objects, not codes.
+  - The `Library` keeps lists of all its books, members and loans, and does the lending.
+
+  ### What you need
+
+  Everything up to module 38: reading a file (module 23), `try` and `except` (module 25), and above all classes: attributes and the constructor `__init__` (module 34), methods (module 35), `__str__` (module 36), objects in lists and as arguments, and `is` (module 37), and objects as attributes of other objects, and `None` (module 38).
+
+  ### How you build it
+
+  1. **Books and members:** the first classes, and a library that lists them.
+  2. **Finding things:** a book by its code, a member by their card, and books by a word.
+  3. **Loans:** a class for a loan, which knows its book and its member.
+  4. **Returns and late books:** give a book back, and find what's late.
+  5. **A member's books:** each member's own loans, and a limit of 3 books.
+  6. **The desk:** read the library from a file and take commands.
+
+  The checks of the first five milestones call your classes' methods directly, as the lessons' checks do. The desk itself comes last.
+seed: |
+  # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+
+  class Book:
+      def __init__(self, code: str, title: str, author: str):
+          self.code = code
+          self.title = title
+          self.author = author
+
+      def __str__(self):
+          return f"{self.code} {self.title} by {self.author}"
+
+
+  # Write the classes Member and Library here.
+
+
+  if __name__ == "__main__":
+      library = Library()
+      library.add_book(Book("B1", "Emma", "Jane Austen"))
+      library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+      library.add_member(Member("M1", "Ada"))
+      library.print_books()
+      library.print_members()
+milestones:
+  - id: books-and-members
+    title: Books and members
+    task: |
+      The class `Book` is ready: a book has a code, such as `B1`, a title and an author, and `print` shows it as `B1 Emma by Jane Austen`. The main block uses two classes that don't exist yet. Write them:
+
+      1. `Member`, with a constructor `Member(card, name)` that stores the member's library card (its code, such as `M1`) and name in the attributes `card` and `name`, and a `__str__` method that returns the name and the card in parentheses: `Ada (M1)`.
+      2. `Library`, whose constructor takes no arguments and creates two empty lists, the attributes `books` and `members`, and these methods:
+         - `add_book(book)` adds a `Book` object to the library, and `add_member(member)` adds a `Member` object.
+         - `print_books()` prints the books one per line, in the order they were added, or `No books.` when there are none.
+         - `print_members()` prints the members the same way, or `No members.`
+
+      The check runs:
+
+      ```python fragment
+      library = Library()
+      library.add_book(Book("B1", "Emma", "Jane Austen"))
+      library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+      library.add_member(Member("M1", "Ada"))
+      library.add_member(Member("M2", "Ben"))
+      library.print_books()
+      library.print_members()
+      ```
+
+      and expects:
+
+      ```
+      B1 Emma by Jane Austen
+      B2 Dracula by Bram Stoker
+      Ada (M1)
+      Ben (M2)
+      ```
+    hints:
+      - "`Member` looks much like `Book`: a constructor with the parameters `self, card, name` that stores both in `self`, and a `__str__` that returns an f-string, `f\"{self.name} ({self.card})\"`."
+      - "The constructor of `Library` has only `self` as a parameter, and creates the lists: `self.books = []` and `self.members = []`. `add_book` appends to `self.books`."
+      - "`print_books` loops `for book in self.books:` and prints each one: `print(book)` uses the book's `__str__`. Check `len(self.books) == 0` for the message of an empty library."
+    tests:
+      - name: Two books and two members
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          library.print_books()
+          library.print_members()
+      - name: A member's attributes
+        hidden: true
+        call: |
+          member = Member("M7", "Grace")
+          print(member)
+          print(member.card, member.name)
+      - name: An empty library
+        hidden: true
+        call: |
+          library = Library()
+          library.print_books()
+          library.print_members()
+          print(library.books, library.members)
+      - name: Books in the order they came
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B9", "Little Women", "Louisa May Alcott"))
+          library.add_book(Book("B3", "The Time Machine", "H. G. Wells"))
+          library.add_book(Book("B5", "Frankenstein", "Mary Shelley"))
+          library.print_books()
+          library.print_members()
+          print(len(library.books))
+    solution: |
+      # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+
+      class Book:
+          def __init__(self, code: str, title: str, author: str):
+              self.code = code
+              self.title = title
+              self.author = author
+
+          def __str__(self):
+              return f"{self.code} {self.title} by {self.author}"
+
+
+      class Member:
+          def __init__(self, card: str, name: str):
+              self.card = card
+              self.name = name
+
+          def __str__(self):
+              return f"{self.name} ({self.card})"
+
+
+      class Library:
+          def __init__(self):
+              self.books = []
+              self.members = []
+
+          def add_book(self, book: Book):
+              self.books.append(book)
+
+          def add_member(self, member: Member):
+              self.members.append(member)
+
+          def print_books(self):
+              if len(self.books) == 0:
+                  print("No books.")
+              for book in self.books:
+                  print(book)
+
+          def print_members(self):
+              if len(self.members) == 0:
+                  print("No members.")
+              for member in self.members:
+                  print(member)
+
+
+      if __name__ == "__main__":
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.print_books()
+          library.print_members()
+
+  - id: finding
+    title: Finding things
+    task: |
+      At the desk, people say a code or a word, and the program has to find what they mean. Add three methods to `Library`:
+
+      1. `find_book(code)` returns the `Book` object with that code, or `None` when the library has no such book.
+      2. `find_member(card)` returns the `Member` object with that card, or `None`.
+      3. `search(word)` returns a list of the books whose title or author contains the word, in the order of the library's list. Upper and lower case don't matter: `austen` finds Jane Austen's books, and so does `AUSTEN`. The string method `lower()` returns a string in lower case, so compare the lower-case versions.
+
+      The check runs:
+
+      ```python fragment
+      library = Library()
+      library.add_book(Book("B1", "Emma", "Jane Austen"))
+      library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+      library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+      library.add_member(Member("M1", "Ada"))
+      print(library.find_book("B2"))
+      print(library.find_book("B9"))
+      print(library.find_member("M1"))
+      print(library.find_member("M2"))
+      for book in library.search("austen"):
+          print(book)
+      print(len(library.search("zombies")))
+      ```
+
+      and expects:
+
+      ```
+      B2 Dracula by Bram Stoker
+      None
+      Ada (M1)
+      None
+      B1 Emma by Jane Austen
+      B3 Persuasion by Jane Austen
+      0
+      ```
+    hints:
+      - "`find_book` loops over `self.books` and returns a book as soon as `book.code == code`. After the loop, nothing was found: `return None`."
+      - "`search` starts from an empty list, `found = []`, and appends each book that matches. Return the list after the loop, even when it's empty."
+      - "A book matches when `word.lower() in book.title.lower() or word.lower() in book.author.lower()`."
+    tests:
+      - name: Find by code and by word
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+          library.add_member(Member("M1", "Ada"))
+          print(library.find_book("B2"))
+          print(library.find_book("B9"))
+          print(library.find_member("M1"))
+          print(library.find_member("M2"))
+          for book in library.search("austen"):
+              print(book)
+          print(len(library.search("zombies")))
+      - name: The very same object
+        hidden: true
+        call: |
+          library = Library()
+          book = Book("B4", "Frankenstein", "Mary Shelley")
+          member = Member("M3", "Chloe")
+          library.add_book(book)
+          library.add_member(member)
+          print(library.find_book("B4") is book)
+          print(library.find_member("M3") is member)
+          print(library.find_member("m3"))
+      - name: Searching titles in any case
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_book(Book("B3", "The Time Machine", "H. G. Wells"))
+          for book in library.search("ULA"):
+              print(book)
+          for book in library.search("the"):
+              print(book)
+          print(library.search("B1"))
+          print(Library().find_book("B1"))
+    solution: |
+      # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+
+      class Book:
+          def __init__(self, code: str, title: str, author: str):
+              self.code = code
+              self.title = title
+              self.author = author
+
+          def __str__(self):
+              return f"{self.code} {self.title} by {self.author}"
+
+
+      class Member:
+          def __init__(self, card: str, name: str):
+              self.card = card
+              self.name = name
+
+          def __str__(self):
+              return f"{self.name} ({self.card})"
+
+
+      class Library:
+          def __init__(self):
+              self.books = []
+              self.members = []
+
+          def add_book(self, book: Book):
+              self.books.append(book)
+
+          def add_member(self, member: Member):
+              self.members.append(member)
+
+          def print_books(self):
+              if len(self.books) == 0:
+                  print("No books.")
+              for book in self.books:
+                  print(book)
+
+          def print_members(self):
+              if len(self.members) == 0:
+                  print("No members.")
+              for member in self.members:
+                  print(member)
+
+          def find_book(self, code: str):
+              for book in self.books:
+                  if book.code == code:
+                      return book
+              return None
+
+          def find_member(self, card: str):
+              for member in self.members:
+                  if member.card == card:
+                      return member
+              return None
+
+          def search(self, word: str):
+              found = []
+              for book in self.books:
+                  if word.lower() in book.title.lower() or word.lower() in book.author.lower():
+                      found.append(book)
+              return found
+
+
+      if __name__ == "__main__":
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.print_books()
+          library.print_members()
+
+  - id: loans
+    title: Loans
+    task: |
+      Now the desk lends books. A loan lasts 14 days: a book lent on day 3 is due on day 17.
+
+      1. Write the class `Loan`. Its constructor `Loan(book, member, due_day)` stores a `Book` object, a `Member` object and the due day, a whole number, in the attributes `book`, `member` and `due_day`. Its `__str__` returns the book's title and code, the member, and the due day: `Emma (B1) to Ada (M1), due day 17`.
+      2. A book gets the attribute `loan`, which is `None` when the book is on the shelf and the `Loan` object while it's lent.
+      3. The library gets a third list, the attribute `loans`, empty at first.
+      4. `lend(code, card, today)` in `Library` lends the book with that code to the member with that card on the day `today`, and returns a message as a string, checking in this order:
+         - `There is no book B9.` when no book has that code;
+         - `There is no member M9.` when no member has that card;
+         - `Emma is out until day 17.` when the book is already lent (with the book's title and its loan's due day);
+         - otherwise it creates the loan, adds it to the library's loans, sets it as the book's `loan`, and returns `Lent: ` followed by the loan: `Lent: Emma (B1) to Ada (M1), due day 17`.
+      5. `print_loans()` prints the loans one per line, in the order they were made, or `No loans.`
+      6. `print_books()` shows a lent book with its due day after it: `B1 Emma by Jane Austen, out until day 17`.
+
+      The check runs:
+
+      ```python fragment
+      library = Library()
+      library.add_book(Book("B1", "Emma", "Jane Austen"))
+      library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+      library.add_member(Member("M1", "Ada"))
+      library.add_member(Member("M2", "Ben"))
+      print(library.lend("B1", "M1", 3))
+      print(library.lend("B1", "M2", 5))
+      print(library.lend("B9", "M2", 5))
+      print(library.lend("B2", "M9", 5))
+      library.print_loans()
+      library.print_books()
+      ```
+
+      and expects:
+
+      ```
+      Lent: Emma (B1) to Ada (M1), due day 17
+      Emma is out until day 17.
+      There is no book B9.
+      There is no member M9.
+      Emma (B1) to Ada (M1), due day 17
+      B1 Emma by Jane Austen, out until day 17
+      B2 Dracula by Bram Stoker
+      ```
+    hints:
+      - "In `Loan.__str__`, the book and the member are objects, so you can reach their attributes: `self.book.title` and `self.book.code`. `{self.member}` in an f-string uses the member's own `__str__`."
+      - "In `lend`, find both objects first with `find_book` and `find_member`, and return the message as soon as one of them `is None`. `book.loan is not None` means the book is out."
+      - "Create the loan with `Loan(book, member, today + 14)`, then `self.loans.append(loan)` and `book.loan = loan`, and return `f\"Lent: {loan}\"`."
+    tests:
+      - name: Lend and list
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          print(library.lend("B1", "M1", 3))
+          print(library.lend("B1", "M2", 5))
+          print(library.lend("B9", "M2", 5))
+          print(library.lend("B2", "M9", 5))
+          library.print_loans()
+          library.print_books()
+      - name: A loan on its own
+        hidden: true
+        call: |
+          book = Book("B5", "Frankenstein", "Mary Shelley")
+          member = Member("M4", "Dev")
+          loan = Loan(book, member, 30)
+          print(loan)
+          print(loan.book is book, loan.member is member, loan.due_day)
+          print(book.loan)
+      - name: The loan belongs to the book
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_member(Member("M1", "Ada"))
+          library.print_loans()
+          print(library.find_book("B1").loan)
+          print(library.lend("B1", "M1", 10))
+          loan = library.find_book("B1").loan
+          print(loan.member.name, loan.due_day)
+          print(library.lend("B1", "M1", 11))
+          print(library.lend("B7", "M7", 11))
+          print(len(library.loans))
+      - name: Several loans in order
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          print(library.lend("B3", "M2", 1))
+          print(library.lend("B1", "M1", 20))
+          library.print_loans()
+          library.print_books()
+    solution: |
+      # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+      LOAN_DAYS = 14
+
+
+      class Book:
+          def __init__(self, code: str, title: str, author: str):
+              self.code = code
+              self.title = title
+              self.author = author
+              self.loan = None
+
+          def __str__(self):
+              return f"{self.code} {self.title} by {self.author}"
+
+
+      class Member:
+          def __init__(self, card: str, name: str):
+              self.card = card
+              self.name = name
+
+          def __str__(self):
+              return f"{self.name} ({self.card})"
+
+
+      class Loan:
+          def __init__(self, book: Book, member: Member, due_day: int):
+              self.book = book
+              self.member = member
+              self.due_day = due_day
+
+          def __str__(self):
+              return f"{self.book.title} ({self.book.code}) to {self.member}, due day {self.due_day}"
+
+
+      class Library:
+          def __init__(self):
+              self.books = []
+              self.members = []
+              self.loans = []
+
+          def add_book(self, book: Book):
+              self.books.append(book)
+
+          def add_member(self, member: Member):
+              self.members.append(member)
+
+          def print_books(self):
+              if len(self.books) == 0:
+                  print("No books.")
+              for book in self.books:
+                  if book.loan is None:
+                      print(book)
+                  else:
+                      print(f"{book}, out until day {book.loan.due_day}")
+
+          def print_members(self):
+              if len(self.members) == 0:
+                  print("No members.")
+              for member in self.members:
+                  print(member)
+
+          def find_book(self, code: str):
+              for book in self.books:
+                  if book.code == code:
+                      return book
+              return None
+
+          def find_member(self, card: str):
+              for member in self.members:
+                  if member.card == card:
+                      return member
+              return None
+
+          def search(self, word: str):
+              found = []
+              for book in self.books:
+                  if word.lower() in book.title.lower() or word.lower() in book.author.lower():
+                      found.append(book)
+              return found
+
+          def lend(self, code: str, card: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              member = self.find_member(card)
+              if member is None:
+                  return f"There is no member {card}."
+              if book.loan is not None:
+                  return f"{book.title} is out until day {book.loan.due_day}."
+              loan = Loan(book, member, today + LOAN_DAYS)
+              self.loans.append(loan)
+              book.loan = loan
+              return f"Lent: {loan}"
+
+          def print_loans(self):
+              if len(self.loans) == 0:
+                  print("No loans.")
+              for loan in self.loans:
+                  print(loan)
+
+
+      if __name__ == "__main__":
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.print_books()
+          library.print_members()
+
+  - id: returns
+    title: Returns and late books
+    task: |
+      Books come back, some of them late.
+
+      1. Give `Loan` a method `days_late(today)`, which returns how many days after the due day `today` is: 3 for a book due on day 17 when today is day 20. A book that isn't late, returned on its due day or before, is 0 days late.
+      2. Write a function `plural(count, word)` outside the classes, which returns the count and the word, with an `s` added when the count isn't 1: `plural(3, "day")` returns `"3 days"`, and `plural(1, "day")` returns `"1 day"`.
+      3. `give_back(code, today)` in `Library` returns the book with that code on the day `today`, and returns a message, checking in this order:
+         - `There is no book B9.` when no book has that code;
+         - `Emma is not on loan.` when the book is on the shelf;
+         - otherwise the loan is removed from the library's loans, the book's `loan` is `None` again, and the message is `Emma is back.`, or `Emma is back, 3 days late.` for a late book.
+      4. `print_late(today)` prints each loan that is late on the day `today`, in the order of the loans, with how late it is after it: `Emma (B1) to Ada (M1), due day 15, 4 days late`. When nothing is late, it prints `Nothing is late.`
+
+      The check runs:
+
+      ```python fragment
+      library = Library()
+      library.add_book(Book("B1", "Emma", "Jane Austen"))
+      library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+      library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+      library.add_member(Member("M1", "Ada"))
+      library.lend("B1", "M1", 1)
+      library.lend("B2", "M1", 4)
+      library.lend("B3", "M1", 10)
+      library.print_late(19)
+      print(library.give_back("B1", 19))
+      print(library.give_back("B1", 19))
+      print(library.give_back("B3", 20))
+      library.print_late(19)
+      library.print_loans()
+      ```
+
+      and expects:
+
+      ```
+      Emma (B1) to Ada (M1), due day 15, 4 days late
+      Dracula (B2) to Ada (M1), due day 18, 1 day late
+      Emma is back, 4 days late.
+      Emma is not on loan.
+      Persuasion is back.
+      Dracula (B2) to Ada (M1), due day 18, 1 day late
+      Dracula (B2) to Ada (M1), due day 18
+      ```
+    hints:
+      - "`days_late` is an `if`: when `today > self.due_day`, return the difference, and otherwise 0."
+      - "In `give_back`, the book's own `loan` attribute tells you which loan to end: `loan = book.loan`. `self.loans.remove(loan)` takes that very object out of the list."
+      - "In `print_late`, count the late loans as you print them, and print `Nothing is late.` after the loop when the count is still 0. The text `4 days late` is `f\"{plural(days, 'day')} late\"`."
+    tests:
+      - name: Give back on time and late
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+          library.add_member(Member("M1", "Ada"))
+          library.lend("B1", "M1", 1)
+          library.lend("B2", "M1", 4)
+          library.lend("B3", "M1", 10)
+          library.print_late(19)
+          print(library.give_back("B1", 19))
+          print(library.give_back("B1", 19))
+          print(library.give_back("B3", 20))
+          library.print_late(19)
+          library.print_loans()
+      - name: Days late and plurals
+        hidden: true
+        call: |
+          loan = Loan(Book("B5", "Frankenstein", "Mary Shelley"), Member("M4", "Dev"), 17)
+          print(loan.days_late(10), loan.days_late(17), loan.days_late(18), loan.days_late(30))
+          print(plural(1, "day"), plural(2, "day"), plural(0, "book"), plural(1, "book"))
+      - name: Lent again after a return
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          library.print_late(100)
+          print(library.lend("B1", "M1", 1))
+          print(library.give_back("B9", 2))
+          print(library.give_back("B1", 16))
+          print(library.find_book("B1").loan)
+          library.print_loans()
+          print(library.lend("B1", "M2", 16))
+          library.print_books()
+          library.print_late(30)
+          library.print_late(31)
+    solution: |
+      # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+      LOAN_DAYS = 14
+
+
+      class Book:
+          def __init__(self, code: str, title: str, author: str):
+              self.code = code
+              self.title = title
+              self.author = author
+              self.loan = None
+
+          def __str__(self):
+              return f"{self.code} {self.title} by {self.author}"
+
+
+      class Member:
+          def __init__(self, card: str, name: str):
+              self.card = card
+              self.name = name
+
+          def __str__(self):
+              return f"{self.name} ({self.card})"
+
+
+      class Loan:
+          def __init__(self, book: Book, member: Member, due_day: int):
+              self.book = book
+              self.member = member
+              self.due_day = due_day
+
+          def days_late(self, today: int):
+              if today > self.due_day:
+                  return today - self.due_day
+              return 0
+
+          def __str__(self):
+              return f"{self.book.title} ({self.book.code}) to {self.member}, due day {self.due_day}"
+
+
+      def plural(count: int, word: str):
+          if count == 1:
+              return f"{count} {word}"
+          return f"{count} {word}s"
+
+
+      class Library:
+          def __init__(self):
+              self.books = []
+              self.members = []
+              self.loans = []
+
+          def add_book(self, book: Book):
+              self.books.append(book)
+
+          def add_member(self, member: Member):
+              self.members.append(member)
+
+          def print_books(self):
+              if len(self.books) == 0:
+                  print("No books.")
+              for book in self.books:
+                  if book.loan is None:
+                      print(book)
+                  else:
+                      print(f"{book}, out until day {book.loan.due_day}")
+
+          def print_members(self):
+              if len(self.members) == 0:
+                  print("No members.")
+              for member in self.members:
+                  print(member)
+
+          def find_book(self, code: str):
+              for book in self.books:
+                  if book.code == code:
+                      return book
+              return None
+
+          def find_member(self, card: str):
+              for member in self.members:
+                  if member.card == card:
+                      return member
+              return None
+
+          def search(self, word: str):
+              found = []
+              for book in self.books:
+                  if word.lower() in book.title.lower() or word.lower() in book.author.lower():
+                      found.append(book)
+              return found
+
+          def lend(self, code: str, card: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              member = self.find_member(card)
+              if member is None:
+                  return f"There is no member {card}."
+              if book.loan is not None:
+                  return f"{book.title} is out until day {book.loan.due_day}."
+              loan = Loan(book, member, today + LOAN_DAYS)
+              self.loans.append(loan)
+              book.loan = loan
+              return f"Lent: {loan}"
+
+          def give_back(self, code: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              loan = book.loan
+              if loan is None:
+                  return f"{book.title} is not on loan."
+              self.loans.remove(loan)
+              book.loan = None
+              days = loan.days_late(today)
+              if days > 0:
+                  return f"{book.title} is back, {plural(days, 'day')} late."
+              return f"{book.title} is back."
+
+          def print_loans(self):
+              if len(self.loans) == 0:
+                  print("No loans.")
+              for loan in self.loans:
+                  print(loan)
+
+          def print_late(self, today: int):
+              late = 0
+              for loan in self.loans:
+                  days = loan.days_late(today)
+                  if days > 0:
+                      print(f"{loan}, {plural(days, 'day')} late")
+                      late += 1
+              if late == 0:
+                  print("Nothing is late.")
+
+
+      if __name__ == "__main__":
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.print_books()
+          library.print_members()
+
+  - id: members-loans
+    title: A member's books
+    task: |
+      The library's rule is that a member may have at most 3 books at a time. To know how many books a member has, each member now keeps a list of their own loans.
+
+      1. A member gets the attribute `loans`, a list that is empty for a new member.
+      2. `lend` adds the new loan to the member's list as well as to the library's, and `give_back` removes it from both. Before lending, `lend` checks one more thing, after the other checks: a member who already has 3 books gets `Ada already has 3 books.` (with their name), and no loan is made.
+      3. `print_member(card)` in `Library` prints the member and how many books they have, and then their loans, one per line, in the order they were made:
+
+         ```text
+         Ada (M1) has 2 books:
+         Emma (B1) to Ada (M1), due day 16
+         Dracula (B2) to Ada (M1), due day 16
+         ```
+
+         With exactly one book, the first line says `has 1 book:`, and a member without books prints only `Ben (M2) has no books.` When no member has that card, it prints `There is no member M9.`
+
+      The library's list and the member's list hold the very same `Loan` objects: a loan isn't copied when you add it to a second list.
+
+      The check runs:
+
+      ```python fragment
+      library = Library()
+      library.add_book(Book("B1", "Emma", "Jane Austen"))
+      library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+      library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+      library.add_book(Book("B4", "Frankenstein", "Mary Shelley"))
+      library.add_member(Member("M1", "Ada"))
+      library.add_member(Member("M2", "Ben"))
+      print(library.lend("B1", "M1", 2))
+      print(library.lend("B2", "M1", 2))
+      print(library.lend("B3", "M1", 3))
+      print(library.lend("B4", "M1", 3))
+      library.print_member("M1")
+      library.print_member("M2")
+      print(library.give_back("B2", 9))
+      print(library.lend("B4", "M1", 9))
+      library.print_member("M1")
+      ```
+
+      and expects:
+
+      ```
+      Lent: Emma (B1) to Ada (M1), due day 16
+      Lent: Dracula (B2) to Ada (M1), due day 16
+      Lent: Persuasion (B3) to Ada (M1), due day 17
+      Ada already has 3 books.
+      Ada (M1) has 3 books:
+      Emma (B1) to Ada (M1), due day 16
+      Dracula (B2) to Ada (M1), due day 16
+      Persuasion (B3) to Ada (M1), due day 17
+      Ben (M2) has no books.
+      Dracula is back.
+      Lent: Frankenstein (B4) to Ada (M1), due day 23
+      Ada (M1) has 3 books:
+      Emma (B1) to Ada (M1), due day 16
+      Persuasion (B3) to Ada (M1), due day 17
+      Frankenstein (B4) to Ada (M1), due day 23
+      ```
+    hints:
+      - "Add `self.loans = []` to the constructor of `Member`. In `lend`, `len(member.loans) >= 3` is the new check, and after creating the loan, `member.loans.append(loan)` next to the library's own append."
+      - "In `give_back`, the loan knows its member: `loan.member.loans.remove(loan)` takes it off the member's list."
+      - "`print_member` uses `find_member` and checks for `None` first. The `plural` function from the last milestone gives `1 book` and `3 books`."
+    tests:
+      - name: Three books at most
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_book(Book("B3", "Persuasion", "Jane Austen"))
+          library.add_book(Book("B4", "Frankenstein", "Mary Shelley"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          print(library.lend("B1", "M1", 2))
+          print(library.lend("B2", "M1", 2))
+          print(library.lend("B3", "M1", 3))
+          print(library.lend("B4", "M1", 3))
+          library.print_member("M1")
+          library.print_member("M2")
+          print(library.give_back("B2", 9))
+          print(library.lend("B4", "M1", 9))
+          library.print_member("M1")
+      - name: One book and no member
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          print(library.lend("B2", "M2", 5))
+          library.print_member("M2")
+          library.print_member("M1")
+          library.print_member("M9")
+          print(library.give_back("B2", 5))
+          library.print_member("M2")
+          print(Member("M5", "Eve").loans)
+      - name: The same loan in two lists
+        hidden: true
+        call: |
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_member(Member("M1", "Ada"))
+          library.lend("B1", "M1", 1)
+          member = library.find_member("M1")
+          print(member.loans[0] is library.loans[0])
+          print(member.loans[0] is library.find_book("B1").loan)
+          print(library.give_back("B1", 40))
+          print(len(member.loans), len(library.loans))
+      - name: The limit holds for each member alone
+        hidden: true
+        call: |
+          library = Library()
+          for number in range(1, 8):
+              library.add_book(Book(f"B{number}", f"Book {number}", "Anonymous"))
+          library.add_member(Member("M1", "Ada"))
+          library.add_member(Member("M2", "Ben"))
+          for number in range(1, 5):
+              print(library.lend(f"B{number}", "M1", number))
+          for number in range(4, 8):
+              print(library.lend(f"B{number}", "M2", 10))
+          library.print_member("M2")
+    solution: |
+      # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+      LOAN_DAYS = 14
+      MAX_BOOKS = 3
+
+
+      class Book:
+          def __init__(self, code: str, title: str, author: str):
+              self.code = code
+              self.title = title
+              self.author = author
+              self.loan = None
+
+          def __str__(self):
+              return f"{self.code} {self.title} by {self.author}"
+
+
+      class Member:
+          def __init__(self, card: str, name: str):
+              self.card = card
+              self.name = name
+              self.loans = []
+
+          def __str__(self):
+              return f"{self.name} ({self.card})"
+
+
+      class Loan:
+          def __init__(self, book: Book, member: Member, due_day: int):
+              self.book = book
+              self.member = member
+              self.due_day = due_day
+
+          def days_late(self, today: int):
+              if today > self.due_day:
+                  return today - self.due_day
+              return 0
+
+          def __str__(self):
+              return f"{self.book.title} ({self.book.code}) to {self.member}, due day {self.due_day}"
+
+
+      def plural(count: int, word: str):
+          if count == 1:
+              return f"{count} {word}"
+          return f"{count} {word}s"
+
+
+      class Library:
+          def __init__(self):
+              self.books = []
+              self.members = []
+              self.loans = []
+
+          def add_book(self, book: Book):
+              self.books.append(book)
+
+          def add_member(self, member: Member):
+              self.members.append(member)
+
+          def print_books(self):
+              if len(self.books) == 0:
+                  print("No books.")
+              for book in self.books:
+                  if book.loan is None:
+                      print(book)
+                  else:
+                      print(f"{book}, out until day {book.loan.due_day}")
+
+          def print_members(self):
+              if len(self.members) == 0:
+                  print("No members.")
+              for member in self.members:
+                  print(member)
+
+          def find_book(self, code: str):
+              for book in self.books:
+                  if book.code == code:
+                      return book
+              return None
+
+          def find_member(self, card: str):
+              for member in self.members:
+                  if member.card == card:
+                      return member
+              return None
+
+          def search(self, word: str):
+              found = []
+              for book in self.books:
+                  if word.lower() in book.title.lower() or word.lower() in book.author.lower():
+                      found.append(book)
+              return found
+
+          def lend(self, code: str, card: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              member = self.find_member(card)
+              if member is None:
+                  return f"There is no member {card}."
+              if book.loan is not None:
+                  return f"{book.title} is out until day {book.loan.due_day}."
+              if len(member.loans) >= MAX_BOOKS:
+                  return f"{member.name} already has {MAX_BOOKS} books."
+              loan = Loan(book, member, today + LOAN_DAYS)
+              self.loans.append(loan)
+              member.loans.append(loan)
+              book.loan = loan
+              return f"Lent: {loan}"
+
+          def give_back(self, code: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              loan = book.loan
+              if loan is None:
+                  return f"{book.title} is not on loan."
+              self.loans.remove(loan)
+              loan.member.loans.remove(loan)
+              book.loan = None
+              days = loan.days_late(today)
+              if days > 0:
+                  return f"{book.title} is back, {plural(days, 'day')} late."
+              return f"{book.title} is back."
+
+          def print_loans(self):
+              if len(self.loans) == 0:
+                  print("No loans.")
+              for loan in self.loans:
+                  print(loan)
+
+          def print_late(self, today: int):
+              late = 0
+              for loan in self.loans:
+                  days = loan.days_late(today)
+                  if days > 0:
+                      print(f"{loan}, {plural(days, 'day')} late")
+                      late += 1
+              if late == 0:
+                  print("Nothing is late.")
+
+          def print_member(self, card: str):
+              member = self.find_member(card)
+              if member is None:
+                  print(f"There is no member {card}.")
+              elif len(member.loans) == 0:
+                  print(f"{member} has no books.")
+              else:
+                  print(f"{member} has {plural(len(member.loans), 'book')}:")
+                  for loan in member.loans:
+                      print(loan)
+
+
+      if __name__ == "__main__":
+          library = Library()
+          library.add_book(Book("B1", "Emma", "Jane Austen"))
+          library.add_book(Book("B2", "Dracula", "Bram Stoker"))
+          library.add_member(Member("M1", "Ada"))
+          library.print_books()
+          library.print_members()
+
+  - id: the-desk
+    title: The desk
+    task: |
+      Everything is ready for the desk itself. The library's books and members are in the file `library.txt`, one per line, with the parts separated by `;`:
+
+      ```text
+      book;B1;Emma;Jane Austen
+      member;M1;Ada
+      ```
+
+      1. Write a function `read_library(filename)`, outside the classes, which reads the file and returns a new `Library` with its books and members, in the order of the file.
+      2. Write a function `main()`, and replace everything in the main block with a call to it. `main` reads `library.txt`, starts on day 1, and prints `Day 1 at the desk.` Then it reads commands with the prompt `> ` until `quit`:
+         - `books`, `loans` and `late` print the books, the loans, and the loans that are late today.
+         - `lend B1 M1` lends that book to that member today, and `return B1` gives that book back today. Both print the message they get.
+         - `member M1` prints that member and their books.
+         - `search austen` prints the books that match the word, or `No books found.`
+         - `day 20` makes it day 20, and prints `It is day 20.` When the day isn't a whole number, it prints `The day must be a whole number.` instead, and the day stays as it was.
+         - `quit` prints `The desk is closed.` and ends the program.
+         - Anything else, also a known command with the wrong number of words, prints `I don't know that command.`
+
+      With the `library.txt` and the commands shown at the top of this page, the program prints:
+
+      ```
+      Day 1 at the desk.
+      > books
+      B1 Emma by Jane Austen
+      B2 Dracula by Bram Stoker
+      B3 Persuasion by Jane Austen
+      > lend B1 M1
+      Lent: Emma (B1) to Ada (M1), due day 15
+      > lend B1 M2
+      Emma is out until day 15.
+      > day 20
+      It is day 20.
+      > late
+      Emma (B1) to Ada (M1), due day 15, 5 days late
+      > return B1
+      Emma is back, 5 days late.
+      > lend B3 M2
+      Lent: Persuasion (B3) to Ben (M2), due day 34
+      > member M2
+      Ben (M2) has 1 book:
+      Persuasion (B3) to Ben (M2), due day 34
+      > search austen
+      B1 Emma by Jane Austen
+      B3 Persuasion by Jane Austen
+      > dance
+      I don't know that command.
+      > quit
+      The desk is closed.
+      ```
+    hints:
+      - "`read_library` reads the file as in module 23: `with open(filename) as file:`, then for each line `parts = line.strip().split(\";\")`. A line whose `parts[0]` is `\"book\"` becomes `Book(parts[1], parts[2], parts[3])`, added with `add_book`."
+      - "In `main`, keep `today = 1` before the loop. Split each command into words, and tell the commands apart by the first word and the number of words: `len(words) == 3 and words[0] == \"lend\"`."
+      - "For `day`, put `today = int(words[1])` inside `try:`, and catch the `ValueError` that `int` raises for a text that isn't a whole number."
+    tests:
+      - name: A day at the desk
+        files:
+          library.txt: |
+            book;B1;Emma;Jane Austen
+            book;B2;Dracula;Bram Stoker
+            book;B3;Persuasion;Jane Austen
+            member;M1;Ada
+            member;M2;Ben
+        stdin: |
+          books
+          lend B1 M1
+          lend B1 M2
+          day 20
+          late
+          return B1
+          lend B3 M2
+          member M2
+          search austen
+          dance
+          quit
+      - name: Mistakes at the desk
+        hidden: true
+        files:
+          library.txt: |
+            book;B1;Emma;Jane Austen
+            book;B2;Dracula;Bram Stoker
+            member;M1;Ada
+        stdin: |
+          day soon
+          day 7.5
+          lend B9 M1
+          lend B1
+          lend B1 M9
+          return B2
+          return
+          member M9
+          search zombies
+          LOANS
+          loans
+          late
+          quit
+      - name: Four books for one member
+        hidden: true
+        files:
+          library.txt: |
+            member;M1;Ada
+            book;B1;Emma;Jane Austen
+            book;B2;Dracula;Bram Stoker
+            book;B3;Persuasion;Jane Austen
+            book;B4;Frankenstein;Mary Shelley
+            member;M2;Ben
+        stdin: |
+          lend B1 M1
+          day 3
+          lend B2 M1
+          lend B3 M1
+          lend B4 M1
+          books
+          loans
+          day 18
+          late
+          return B2
+          return B1
+          lend B4 M1
+          member M1
+          member M2
+          quit
+      - name: Reading the library file
+        hidden: true
+        files:
+          library.txt: |
+            book;B7;The Time Machine;H. G. Wells
+            member;M3;Chloe
+            book;B8;Little Women;Louisa May Alcott
+        call: |
+          library = read_library("library.txt")
+          library.print_books()
+          library.print_members()
+          print(library.find_book("B8").author)
+    solution: |
+      # The loan desk of a small library. Days are plain numbers: day 1, day 2, and so on.
+
+      LOAN_DAYS = 14
+      MAX_BOOKS = 3
+
+
+      class Book:
+          def __init__(self, code: str, title: str, author: str):
+              self.code = code
+              self.title = title
+              self.author = author
+              self.loan = None
+
+          def __str__(self):
+              return f"{self.code} {self.title} by {self.author}"
+
+
+      class Member:
+          def __init__(self, card: str, name: str):
+              self.card = card
+              self.name = name
+              self.loans = []
+
+          def __str__(self):
+              return f"{self.name} ({self.card})"
+
+
+      class Loan:
+          def __init__(self, book: Book, member: Member, due_day: int):
+              self.book = book
+              self.member = member
+              self.due_day = due_day
+
+          def days_late(self, today: int):
+              if today > self.due_day:
+                  return today - self.due_day
+              return 0
+
+          def __str__(self):
+              return f"{self.book.title} ({self.book.code}) to {self.member}, due day {self.due_day}"
+
+
+      def plural(count: int, word: str):
+          if count == 1:
+              return f"{count} {word}"
+          return f"{count} {word}s"
+
+
+      class Library:
+          def __init__(self):
+              self.books = []
+              self.members = []
+              self.loans = []
+
+          def add_book(self, book: Book):
+              self.books.append(book)
+
+          def add_member(self, member: Member):
+              self.members.append(member)
+
+          def print_books(self):
+              if len(self.books) == 0:
+                  print("No books.")
+              for book in self.books:
+                  if book.loan is None:
+                      print(book)
+                  else:
+                      print(f"{book}, out until day {book.loan.due_day}")
+
+          def print_members(self):
+              if len(self.members) == 0:
+                  print("No members.")
+              for member in self.members:
+                  print(member)
+
+          def find_book(self, code: str):
+              for book in self.books:
+                  if book.code == code:
+                      return book
+              return None
+
+          def find_member(self, card: str):
+              for member in self.members:
+                  if member.card == card:
+                      return member
+              return None
+
+          def search(self, word: str):
+              found = []
+              for book in self.books:
+                  if word.lower() in book.title.lower() or word.lower() in book.author.lower():
+                      found.append(book)
+              return found
+
+          def lend(self, code: str, card: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              member = self.find_member(card)
+              if member is None:
+                  return f"There is no member {card}."
+              if book.loan is not None:
+                  return f"{book.title} is out until day {book.loan.due_day}."
+              if len(member.loans) >= MAX_BOOKS:
+                  return f"{member.name} already has {MAX_BOOKS} books."
+              loan = Loan(book, member, today + LOAN_DAYS)
+              self.loans.append(loan)
+              member.loans.append(loan)
+              book.loan = loan
+              return f"Lent: {loan}"
+
+          def give_back(self, code: str, today: int):
+              book = self.find_book(code)
+              if book is None:
+                  return f"There is no book {code}."
+              loan = book.loan
+              if loan is None:
+                  return f"{book.title} is not on loan."
+              self.loans.remove(loan)
+              loan.member.loans.remove(loan)
+              book.loan = None
+              days = loan.days_late(today)
+              if days > 0:
+                  return f"{book.title} is back, {plural(days, 'day')} late."
+              return f"{book.title} is back."
+
+          def print_loans(self):
+              if len(self.loans) == 0:
+                  print("No loans.")
+              for loan in self.loans:
+                  print(loan)
+
+          def print_late(self, today: int):
+              late = 0
+              for loan in self.loans:
+                  days = loan.days_late(today)
+                  if days > 0:
+                      print(f"{loan}, {plural(days, 'day')} late")
+                      late += 1
+              if late == 0:
+                  print("Nothing is late.")
+
+          def print_member(self, card: str):
+              member = self.find_member(card)
+              if member is None:
+                  print(f"There is no member {card}.")
+              elif len(member.loans) == 0:
+                  print(f"{member} has no books.")
+              else:
+                  print(f"{member} has {plural(len(member.loans), 'book')}:")
+                  for loan in member.loans:
+                      print(loan)
+
+
+      def read_library(filename: str):
+          library = Library()
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "book":
+                      library.add_book(Book(parts[1], parts[2], parts[3]))
+                  elif parts[0] == "member":
+                      library.add_member(Member(parts[1], parts[2]))
+          return library
+
+
+      def main():
+          library = read_library("library.txt")
+          today = 1
+          print(f"Day {today} at the desk.")
+          while True:
+              command = input("> ")
+              words = command.split()
+              if command == "quit":
+                  print("The desk is closed.")
+                  break
+              if command == "books":
+                  library.print_books()
+              elif command == "loans":
+                  library.print_loans()
+              elif command == "late":
+                  library.print_late(today)
+              elif len(words) == 3 and words[0] == "lend":
+                  print(library.lend(words[1], words[2], today))
+              elif len(words) == 2 and words[0] == "return":
+                  print(library.give_back(words[1], today))
+              elif len(words) == 2 and words[0] == "member":
+                  library.print_member(words[1])
+              elif len(words) == 2 and words[0] == "search":
+                  books = library.search(words[1])
+                  if len(books) == 0:
+                      print("No books found.")
+                  for book in books:
+                      print(book)
+              elif len(words) == 2 and words[0] == "day":
+                  try:
+                      today = int(words[1])
+                      print(f"It is day {today}.")
+                  except ValueError:
+                      print("The day must be a whole number.")
+              else:
+                  print("I don't know that command.")
+
+
+      if __name__ == "__main__":
+          main()

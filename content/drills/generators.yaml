@@ -1,0 +1,222 @@
+topic: generators
+drills:
+  - type: predict
+    after: yield
+    code: |
+      def countdown(n):
+          while n > 0:
+              yield n
+              n -= 1
+
+
+      print(list(countdown(3)))
+    why: "Each `yield` hands out one value and pauses the function. `list` asks for values until the function ends: 3, 2 and 1."
+
+  - type: predict
+    after: yield
+    code: |
+      def pair():
+          print("A")
+          yield 1
+          print("B")
+          yield 2
+
+
+      for value in pair():
+          print(value)
+    why: "The function runs only when a value is asked for, and pauses at each `yield`. So its prints and the loop's prints take turns."
+
+  - type: fill
+    after: yield
+    code: |
+      def doubles(numbers):
+          for n in numbers:
+              [[yield]] n * 2
+
+
+      print(list(doubles([1, 2, 3])))
+    why: "`yield` hands out one value and lets the loop carry on with the next number."
+
+  - type: bug
+    after: yield
+    code: |
+      def squares(limit):
+          for n in range(1, limit + 1):
+              return n * n  # BUG
+
+
+      for square in squares(3):
+          print(square)
+    fix: yield n * n
+    why: "`return` ends the function at once and gives back one number, which a `for` loop can't go through. `yield` hands out each square and continues."
+
+  - type: choice
+    after: yield
+    prompt: "What happens when you call a generator function, such as `countdown(3)`?"
+    choices:
+      - It runs the whole function and returns a list of the values
+      - It returns a generator, and none of the function's code runs yet
+      - It runs the function up to the first `yield` and returns that value
+    answer: 2
+    why: "Calling it only makes the generator. The code runs bit by bit, each time a value is asked for with a loop or `next`."
+
+  - type: predict
+    after: next-and-stopiteration
+    code: |
+      def letters():
+          yield "x"
+          yield "y"
+          yield "z"
+
+
+      first = letters()
+      second = letters()
+      print(next(first), next(first), next(second))
+    why: "Each call of `letters()` makes a generator of its own. `first` has given x and y, while `second` starts again from x."
+
+  - type: runs
+    after: next-and-stopiteration
+    code: |
+      def one():
+          yield 1
+
+
+      gen = one()
+      print(next(gen))
+      print(next(gen))
+    why: "The generator has only one value. The second `next` finds nothing more and raises `StopIteration`."
+
+  - type: predict
+    after: next-and-stopiteration
+    code: |
+      def sizes():
+          yield "S"
+          yield "M"
+
+
+      gen = sizes()
+      try:
+          print(next(gen))
+          print(next(gen))
+          print(next(gen))
+      except StopIteration:
+          print("sold out")
+    why: "The third `next` raises `StopIteration`, which the `except` block catches."
+
+  - type: predict
+    after: next-and-stopiteration
+    code: |
+      def numbers():
+          for n in range(1, 5):
+              yield n
+
+
+      gen = numbers()
+      next(gen)
+      for n in gen:
+          print(n)
+    why: "`next(gen)` takes the 1, so the loop continues from where the generator paused: 2, 3 and 4."
+
+  - type: fill
+    after: next-and-stopiteration
+    code: |
+      def tea():
+          yield "green"
+
+
+      cups = tea()
+      try:
+          print(next(cups))
+          print(next(cups))
+      except [[StopIteration]]:
+          print("empty pot")
+    why: "`next` on a finished generator raises `StopIteration`, so that's the exception to catch."
+
+  - type: predict
+    after: generator-expressions
+    code: |
+      values = (n * 10 for n in range(4))
+      print(sum(values))
+      print(sum(values))
+    why: "The first `sum` uses up every value of the generator. Nothing is left for the second one, so it's 0."
+
+  - type: runs
+    after: generator-expressions
+    code: |
+      cubes = (n ** 3 for n in range(5))
+      print(cubes[2])
+    why: "A generator gives its values one at a time and has no indexes, so `cubes[2]` raises `TypeError: 'generator' object is not subscriptable`. A list comprehension would work."
+
+  - type: predict
+    after: generator-expressions
+    code: |
+      words = ["map", "yield", "lambda"]
+      print(max(len(word) for word in words))
+      print("-".join(word[0] for word in words))
+    why: "A generator expression as the only argument needs no brackets of its own. The longest word has 6 letters, and the first letters are joined with dashes."
+
+  - type: choice
+    after: generator-expressions
+    prompt: Which line makes a generator?
+    choices:
+      - "`data = [n * 2 for n in range(5)]`"
+      - "`data = (n * 2 for n in range(5))`"
+      - "`data = {n: n * 2 for n in range(5)}`"
+    answer: 2
+    why: "Round brackets make a generator expression. Square brackets make a list and curly brackets with `key: value` make a dictionary."
+
+  - type: boss
+    after: next-and-stopiteration
+    prompt: |
+      Write an endless generator function `cycle(items)` that gives the items of the list in order, and after the last one starts again from the first, forever. For example,
+
+      ```python fragment
+      turns = cycle(["Ann", "Bo", "Cy"])
+      for i in range(5):
+          print(next(turns))
+      ```
+
+      should print:
+
+      ```
+      Ann
+      Bo
+      Cy
+      Ann
+      Bo
+      ```
+    seed: |
+      def cycle(items):
+          pass
+
+
+      if __name__ == "__main__":
+          turns = cycle(["Ann", "Bo", "Cy"])
+          for i in range(5):
+              print(next(turns))
+    solution: |
+      def cycle(items):
+          while True:
+              for item in items:
+                  yield item
+
+
+      if __name__ == "__main__":
+          turns = cycle(["Ann", "Bo", "Cy"])
+          for i in range(5):
+              print(next(turns))
+    hints:
+      - A `for` loop with `yield` gives the items once. Repeat that loop forever.
+      - "Put the `for` loop inside a `while True:` loop."
+    require:
+      - pattern: \byield\b
+        message: Make it a generator function with `yield`.
+    tests:
+      - call: |
+          turns = cycle(["Ann", "Bo", "Cy"])
+          for i in range(5):
+              print(next(turns))
+      - call: |
+          lights = cycle(["green", "yellow", "red"])
+          print([next(lights) for i in range(7)])
+        hidden: true

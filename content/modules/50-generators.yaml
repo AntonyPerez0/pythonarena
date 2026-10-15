@@ -1,0 +1,628 @@
+id: generators
+summary: Generators produce the values of a series one at a time, only when they're asked for. Generator functions with yield, taking values one by one with next, the StopIteration that marks the end, and generator expressions.
+steps:
+  - id: generators-yield
+    slug: yield
+    title: Generator functions and yield
+    text: |
+      Some series of values are long, and some never end: all the odd numbers, the next ticket number at a counter, the lines of a huge file. Building the whole series in a list before using it wastes time and memory, and for an endless series it's impossible. A **generator** solves this by producing the values one at a time, only when they're asked for.
+
+      ### yield
+
+      A function that contains the keyword **`yield`** is a **generator function**. `yield` hands out one value, much like `return`, but the function doesn't end there. It pauses, and when the next value is asked for, it continues from the same spot with the same variables. A `for` loop asks for values until the function ends:
+
+      ```python run
+      def countdown(start):
+          number = start
+          while number > 0:
+              yield number
+              number -= 1
+
+
+      for number in countdown(3):
+          print(number)
+      print("Liftoff!")
+      ```
+
+      ```output
+      3
+      2
+      1
+      Liftoff!
+      ```
+
+      `countdown(3)` doesn't return 3, 2 and 1 at once. It returns a **generator**: an object that produces the values on request. The loop asks it for a value three times. The fourth time, the `while` condition is false, the function ends, and so does the loop.
+
+      ### Pausing and continuing
+
+      A few prints inside a generator function show exactly when its code runs:
+
+      ```python run
+      def steps():
+          print("start")
+          yield "one"
+          print("after one")
+          yield "two"
+          print("done")
+
+
+      for value in steps():
+          print("got", value)
+      ```
+
+      ```output
+      start
+      got one
+      after one
+      got two
+      done
+      ```
+
+      Calling `steps()` runs none of its code yet. When the loop asks for the first value, the function runs up to the first `yield` and pauses there. The loop prints `got one` and asks again, and the function continues right after that `yield`. When the function's code runs out, the generator is finished and the loop ends.
+
+      That's the difference from `return`, which ends the call for good and forgets the function's variables. `yield` keeps them for the next value.
+
+      ### Endless generators, and lists
+
+      A generator doesn't have to end. This one gives odd numbers forever, so the loop needs a `break`, or it would never stop:
+
+      ```python run
+      def odd_numbers():
+          number = 1
+          while True:
+              yield number
+              number += 2
+
+
+      for number in odd_numbers():
+          if number > 7:
+              break
+          print(number)
+      ```
+
+      ```output
+      1
+      3
+      5
+      7
+      ```
+
+      A generator that does end can be turned into a list with `list()`, which asks for every value. Printing the generator itself shows no values, only something like `<generator object countdown at 0x7f3a2c>`, since the values don't exist yet:
+
+      ```python repl
+      >>> def countdown(start):
+      ...     number = start
+      ...     while number > 0:
+      ...         yield number
+      ...         number -= 1
+      ...
+      >>> list(countdown(5))
+      [5, 4, 3, 2, 1]
+      ```
+
+      **Your turn:** the generator function `multiples` should give the multiples of `n` up to `limit`. Fill in the blank so that the program prints:
+
+      ```
+      7
+      14
+      21
+      28
+      ```
+    fill: |
+      def multiples(n, limit):
+          number = n
+          while number <= limit:
+              [[yield]] number
+              number += n
+
+
+      for value in multiples(7, 30):
+          print(value)
+    hints:
+      - The function should hand out `number` and then carry on with the loop, not end.
+      - "The keyword that hands out a value and pauses the function is `yield`."
+    tests:
+      - expect: |
+          7
+          14
+          21
+          28
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def shout(word):
+              print("begin")
+              for letter in word:
+                  yield letter.upper()
+              print("end")
+
+
+          for letter in shout("hi"):
+              print(letter)
+        hints:
+          - The function's code doesn't run until the loop asks for the first value. Then it runs up to the first `yield`.
+          - "`begin` is printed before the first letter, and `end` only after the last letter, when the loop asks for one more value."
+      - task: |
+          Write a generator function `repeat_each(items, times)` that gives each item of the list `times` times in a row. Use `yield`. For example,
+
+          ```python fragment
+          for item in repeat_each(["a", "b"], 3):
+              print(item)
+          ```
+
+          should print:
+
+          ```
+          a
+          a
+          a
+          b
+          b
+          b
+          ```
+        seed: |
+          def repeat_each(items, times):
+              pass
+
+
+          if __name__ == "__main__":
+              for item in repeat_each(["a", "b"], 3):
+                  print(item)
+        solution: |
+          def repeat_each(items, times):
+              for item in items:
+                  for i in range(times):
+                      yield item
+
+
+          if __name__ == "__main__":
+              for item in repeat_each(["a", "b"], 3):
+                  print(item)
+        hints:
+          - Go through the items with a `for` loop, and inside it repeat `times` times with a second loop.
+          - "Inside the inner loop, `yield item`. Don't build a list: each `yield` hands out one value."
+        require:
+          - pattern: \byield\b
+            message: Make it a generator function, which hands out its values with `yield`.
+        tests:
+          - call: |
+              for item in repeat_each(["a", "b"], 3):
+                  print(item)
+          - call: list(repeat_each([1, 2, 3], 2))
+            hidden: true
+          - call: list(repeat_each(["x", "y"], 0))
+            hidden: true
+
+  - id: generators-next
+    slug: next-and-stopiteration
+    title: next and StopIteration
+    text: |
+      A `for` loop takes every value of a generator. Sometimes you want one value at a time, at different places in your program. The built-in function **`next`** asks a generator for its next value:
+
+      ```python run
+      def ticket_numbers(first):
+          number = first
+          while True:
+              yield number
+              number += 1
+
+
+      tickets = ticket_numbers(101)
+      print("Your ticket:", next(tickets))
+      print("Your ticket:", next(tickets))
+      print("Now serving", next(tickets))
+      ```
+
+      ```output
+      Your ticket: 101
+      Your ticket: 102
+      Now serving 103
+      ```
+
+      Keep the generator in a variable, as `tickets` above: each `next(tickets)` continues that same generator. Calling `ticket_numbers(101)` again makes a new generator, which starts from 101 again. Two generators made by the same function don't affect each other.
+
+      ### When the values run out
+
+      A generator that has ended has nothing more to give. Then `next` raises a **`StopIteration`** exception:
+
+      ```python run crash
+      def colors():
+          yield "red"
+          yield "green"
+
+
+      palette = colors()
+      print(next(palette))
+      print(next(palette))
+      print(next(palette))
+      ```
+
+      ```output
+      red
+      green
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 9, in <module>
+          print(next(palette))
+                ~~~~^^^^^^^^^
+      StopIteration
+      ```
+
+      You can catch it like any other exception, with `try` and `except`:
+
+      ```python run
+      def colors():
+          yield "red"
+          yield "green"
+
+
+      palette = colors()
+      try:
+          while True:
+              print(next(palette))
+      except StopIteration:
+          print("No more colors")
+      ```
+
+      ```output
+      red
+      green
+      No more colors
+      ```
+
+      This is also how a `for` loop knows when to stop. It calls `next` again and again and ends quietly at the `StopIteration`. It's the same signal the `__next__` method of your own iterator classes raised in part 10.
+
+      ### Used up for good
+
+      A finished generator stays finished. Going through it a second time gives nothing, and `next` raises `StopIteration` again. To get the values again, make a new generator by calling the function again:
+
+      ```python repl
+      >>> def colors():
+      ...     yield "red"
+      ...     yield "green"
+      ...
+      >>> palette = colors()
+      >>> list(palette)
+      ['red', 'green']
+      >>> list(palette)
+      []
+      >>> list(colors())
+      ['red', 'green']
+      ```
+
+      **Your turn:** the generator `weekdays` gives the names of the work days. Fill in the blanks so that the program takes the first two days one at a time and the rest with a loop, and prints:
+
+      ```
+      First: Mon
+      Second: Tue
+      Wed
+      Thu
+      Fri
+      ```
+    fill: |
+      def weekdays():
+          for day in ["Mon", "Tue", "Wed", "Thu", "Fri"]:
+              yield day
+
+
+      days = weekdays()
+      print("First:", [[next]](days))
+      print("Second:", [[next]](days))
+      for day in days:
+          print(day)
+    hints:
+      - The built-in function that asks a generator for one value is in the step's title.
+      - "Both blanks are `next`: `next(days)` gives the next day. The loop then carries on from where `next` left off."
+    tests:
+      - expect: |
+          First: Mon
+          Second: Tue
+          Wed
+          Thu
+          Fri
+    more:
+      - task: |
+          Write an endless generator function `fibonacci()` that gives the Fibonacci numbers 1, 1, 2, 3, 5, 8, 13, and so on: after the first two ones, each number is the sum of the two before it. For example,
+
+          ```python fragment
+          numbers = fibonacci()
+          for i in range(7):
+              print(next(numbers))
+          ```
+
+          should print:
+
+          ```
+          1
+          1
+          2
+          3
+          5
+          8
+          13
+          ```
+        seed: |
+          def fibonacci():
+              pass
+
+
+          if __name__ == "__main__":
+              numbers = fibonacci()
+              for i in range(7):
+                  print(next(numbers))
+        solution: |
+          def fibonacci():
+              a = 1
+              b = 1
+              while True:
+                  yield a
+                  a, b = b, a + b
+
+
+          if __name__ == "__main__":
+              numbers = fibonacci()
+              for i in range(7):
+                  print(next(numbers))
+        hints:
+          - Keep the two latest numbers in two variables, both 1 to begin with.
+          - "In an endless `while True` loop, `yield` the first of them, then move both one step forward."
+          - "Moving forward: the new first number is the old second one, and the new second is their sum: `a, b = b, a + b`."
+        tests:
+          - call: |
+              numbers = fibonacci()
+              for i in range(7):
+                  print(next(numbers))
+          - call: |
+              numbers = fibonacci()
+              print([next(numbers) for i in range(12)])
+            hidden: true
+          - call: |
+              first = fibonacci()
+              second = fibonacci()
+              next(first)
+              next(first)
+              next(first)
+              print(next(first), next(second))
+            hidden: true
+      - task: |
+          Write a function `take(generator, count)` that returns a list of the next `count` values of the generator it gets. If the generator runs out before that, the list holds the values there were. It's an ordinary function, not a generator: take the values with `next`, and catch the `StopIteration`. For example,
+
+          ```python fragment
+          numbers = countdown(5)
+          print(take(numbers, 2))
+          print(take(numbers, 2))
+          print(take(numbers, 9))
+          ```
+
+          should print:
+
+          ```
+          [5, 4]
+          [3, 2]
+          [1]
+          ```
+        seed: |
+          def countdown(start):
+              number = start
+              while number > 0:
+                  yield number
+                  number -= 1
+
+
+          def take(generator, count):
+              pass
+
+
+          if __name__ == "__main__":
+              numbers = countdown(5)
+              print(take(numbers, 2))
+              print(take(numbers, 2))
+              print(take(numbers, 9))
+        solution: |
+          def countdown(start):
+              number = start
+              while number > 0:
+                  yield number
+                  number -= 1
+
+
+          def take(generator, count):
+              values = []
+              try:
+                  for i in range(count):
+                      values.append(next(generator))
+              except StopIteration:
+                  pass
+              return values
+
+
+          if __name__ == "__main__":
+              numbers = countdown(5)
+              print(take(numbers, 2))
+              print(take(numbers, 2))
+              print(take(numbers, 9))
+        hints:
+          - "Start with an empty list and repeat `count` times: append `next(generator)` to it."
+          - "Put the loop in a `try` block. When `next` raises `StopIteration`, the `except StopIteration:` block runs, and the loop is over."
+          - "Return the list after the `try` and `except`, so it's returned in both cases."
+        require:
+          - pattern: \bnext\s*\(
+            message: Take the values one at a time with `next`.
+        tests:
+          - call: |
+              numbers = countdown(5)
+              print(take(numbers, 2))
+              print(take(numbers, 2))
+              print(take(numbers, 9))
+          - call: |
+              def evens():
+                  number = 0
+                  while True:
+                      yield number
+                      number += 2
+
+
+              gen = evens()
+              print(take(gen, 3))
+              print(take(gen, 4))
+              print(take(evens(), 0))
+            hidden: true
+          - call: take(countdown(0), 3)
+            hidden: true
+
+  - id: generators-expressions
+    slug: generator-expressions
+    title: Generator expressions
+    text: |
+      In part 11 you built lists with list comprehensions. Write the same thing in round brackets instead of square ones, and you get a **generator expression** (also called a generator comprehension): a generator made without writing a function.
+
+      ```python run
+      squares = (n * n for n in range(1, 6))
+      print(next(squares))
+      print(next(squares))
+      for square in squares:
+          print(square)
+      ```
+
+      ```output
+      1
+      4
+      9
+      16
+      25
+      ```
+
+      Like a generator function, it computes nothing in advance: each value is calculated when it's asked for. `next` works, a `for` loop works, and it's used up after one pass. Printing it shows only `<generator object <genexpr> at 0x7f3a2c>`, but `type` tells what it is:
+
+      ```python repl
+      >>> squares = (n * n for n in range(1, 6))
+      >>> type(squares)
+      <class 'generator'>
+      >>> sum(squares)
+      55
+      >>> sum(squares)
+      0
+      ```
+
+      The second sum is 0 because the first one already used up every value.
+
+      ### Straight into a function
+
+      Functions such as `sum`, `max`, `min` and the string method `join` accept any series of values, a generator too. When a generator expression is a function's only argument, you can leave out its own brackets. A condition at the end works as it does in list comprehensions:
+
+      ```python run
+      words = ["generators", "are", "lazy", "and", "thrifty"]
+      print(sum(len(word) for word in words))
+      print(max(len(word) for word in words))
+      print(" ".join(word.upper() for word in words if len(word) > 3))
+      ```
+
+      ```output
+      27
+      10
+      GENERATORS LAZY THRIFTY
+      ```
+
+      ### A list or a generator?
+
+      A list comprehension builds the whole list at once and keeps it. Choose it when you need the values more than once, need to know how many there are with `len`, or need an item by its index. A generator can't do those things:
+
+      ```python run crash
+      squares = (n * n for n in range(1, 6))
+      print(squares[0])
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(squares[0])
+                ~~~~~~~^^^
+      TypeError: 'generator' object is not subscriptable
+      ```
+
+      "Not subscriptable" means the value doesn't support `[]`. A generator expression is the better choice when you go through the values just once, especially when there are many: `sum(n * n for n in range(1000000))` adds up a million squares without ever storing a list of a million numbers.
+
+      **Your turn:** fill in the blank with the value the generator expression gives for each `part`, so that the program adds up the numbers in the text and prints:
+
+      ```
+      Total: 49
+      ```
+    fill: |
+      text = "12,7,30"
+      total = sum([[int(part)]] for part in text.split(","))
+      print("Total:", total)
+    hints:
+      - "`text.split(\",\")` gives the strings `\"12\"`, `\"7\"` and `\"30\"`. `sum` needs numbers."
+      - "For each `part`, the generator should give the part as a whole number: `int(part)`."
+    tests:
+      - expect: "Total: 49"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          evens = (n for n in range(10) if n % 2 == 0)
+          print(next(evens))
+          print(next(evens))
+          print(list(evens))
+          print(list(evens))
+        hints:
+          - The generator gives the even numbers 0, 2, 4, 6 and 8, one at a time.
+          - "`list` takes all the values that are left, after the two `next` calls."
+          - After that the generator is used up, so the last list is empty.
+      - task: |
+          Write a function `long_words(text, minimum)` that **returns a generator** giving the words of `text` that have at least `minimum` letters, in capital letters. Make it with a generator expression. For example,
+
+          ```python fragment
+          words = long_words("a lazy generator makes values on demand", 5)
+          print(next(words))
+          print(next(words))
+          print(list(words))
+          ```
+
+          should print:
+
+          ```
+          GENERATOR
+          MAKES
+          ['VALUES', 'DEMAND']
+          ```
+        seed: |
+          def long_words(text, minimum):
+              pass
+
+
+          if __name__ == "__main__":
+              words = long_words("a lazy generator makes values on demand", 5)
+              print(next(words))
+              print(next(words))
+              print(list(words))
+        solution: |
+          def long_words(text, minimum):
+              return (word.upper() for word in text.split() if len(word) >= minimum)
+
+
+          if __name__ == "__main__":
+              words = long_words("a lazy generator makes values on demand", 5)
+              print(next(words))
+              print(next(words))
+              print(list(words))
+        hints:
+          - "`text.split()` gives the words. A generator expression goes through them: `(... for word in text.split() ...)`."
+          - "Add a condition at the end, `if len(word) >= minimum`, and give `word.upper()` for each word that passes."
+          - Return the generator expression itself, in round brackets, not a list.
+        tests:
+          - call: |
+              words = long_words("a lazy generator makes values on demand", 5)
+              print(next(words))
+              print(next(words))
+              print(list(words))
+          - call: list(long_words("one three five", 4))
+            hidden: true
+          - call: |
+              words = long_words("tiny bits", 9)
+              print(list(words))
+              print(next(long_words("Python", 3)))
+            hidden: true

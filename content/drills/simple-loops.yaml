@@ -1,0 +1,283 @@
+topic: simple-loops
+drills:
+  - type: predict
+    after: while-true
+    code: |
+      while True:
+          print("A")
+          break
+          print("B")
+      print("C")
+    why: "`break` ends the loop at once, so `B` is never printed. The program goes on after the loop and prints `C`."
+
+  - type: predict
+    after: while-true
+    stdin: |
+      go
+      stop
+    code: |
+      while True:
+          word = input("Word: ")
+          if word == "stop":
+              break
+          print(word)
+    why: "The first word isn't `stop`, so it's printed and the loop starts again. On the second iteration `break` ends the loop before the `print`."
+
+  - type: runs
+    after: while-true
+    code: |
+      x = 5
+      if x > 3:
+          break
+      print(x)
+    why: "`break` only works inside a loop. Here there is no loop, so Python stops with `SyntaxError: 'break' outside loop`."
+
+  - type: choice
+    after: while-true
+    prompt: What does `break` do?
+    choices:
+      - Ends the loop, and the program goes on after it
+      - Ends the whole program
+      - Jumps back to the start of the loop
+    answer: 1
+    why: "`break` leaves the loop it is in. The lines after the loop's block still run."
+
+  - type: predict
+    after: counting
+    code: |
+      n = 1
+      while True:
+          print(n)
+          n += 1
+          if n > 3:
+              break
+    why: "Each iteration prints `n` and then adds one. After 3 is printed, `n` becomes 4 and the loop ends."
+
+  - type: predict
+    after: counting
+    code: |
+      n = 0
+      while True:
+          n += 1
+          if n == 4:
+              break
+          print(n)
+    why: "`n` grows before it is printed, so the first value is 1. When `n` reaches 4, the loop ends before printing it."
+
+  - type: fill
+    after: counting
+    code: |
+      n = 10
+      while True:
+          print(n)
+          n [[-=]] 5
+          if n < 0:
+              break
+    why: "`n -= 5` takes 5 off each time: 10, 5, 0, and then -5 ends the loop."
+
+  - type: bug
+    after: counting
+    prompt: The program should print the numbers 1 to 3. Which line has the bug?
+    code: |
+      n = 1
+      while True:
+          print(n)
+          if n > 3:  # BUG
+              break
+          n += 1
+    fix: "if n == 3:"
+    why: "With `n > 3`, the loop ends only after 4 has been printed. It should stop right after printing 3."
+
+  - type: predict
+    after: helper-variables
+    code: |
+      n = 0
+      while True:
+          total = 0
+          n += 1
+          total += n
+          if n == 3:
+              break
+      print(total)
+    why: "`total = 0` is inside the loop, so the total starts over on every iteration. At the end it holds only the last number, 3."
+
+  - type: predict
+    after: helper-variables
+    stdin: |
+      5
+      7
+      0
+    code: |
+      total = 0
+      while True:
+          x = int(input("x: "))
+          if x == 0:
+              break
+          total += x
+      print(total)
+    why: "The total starts at 0 before the loop and grows by each number. The 0 ends the loop before it's added."
+
+  - type: bug
+    after: helper-variables
+    stdin: |
+      cat
+      dog
+      owl
+      end
+    code: |
+      count = 0
+      while True:
+          word = input("Word: ")
+          if word == "end":
+              break
+          count = 1  # BUG
+      print(count)
+    fix: count += 1
+    why: "`count = 1` sets the count to 1 again on every iteration. `count += 1` adds one to it."
+
+  - type: choice
+    after: helper-variables
+    prompt: A program adds up numbers in a loop. Where does `total = 0` go?
+    choices:
+      - Before the loop
+      - Inside the loop, as its first line
+      - After the loop
+    answer: 1
+    why: "The total must start at 0 once, before the first number. Inside the loop it would start over on every iteration."
+
+  - type: predict
+    after: debugging-loops
+    code: |
+      a = 1
+      while True:
+          a = a * 3
+          print("a:", a)
+          if a > 20:
+              break
+    why: "`a` is tripled before each `print`: 3, 9, 27. The check comes after the `print`, so 27 is printed too."
+
+  - type: predict
+    after: debugging-loops
+    stdin: |
+      000
+      123
+    code: |
+      tries = 0
+      while True:
+          code = input("Code: ")
+          tries += 1
+          if tries == 2:
+              print("Locked")
+              break
+          if code == "123":
+              print("Open")
+              break
+    why: "On the second try both conditions are true, but the attempt limit is checked first, so the right code is never noticed. The order of the checks matters."
+
+  - type: predict
+    after: building-strings
+    code: |
+      s = ""
+      n = 1
+      while True:
+          s += str(n)
+          n += 1
+          if n > 4:
+              break
+      print(s)
+    why: "Each iteration adds one digit to the end of the string. `+=` joins strings, it doesn't add numbers, so the result is `1234`."
+
+  - type: runs
+    after: building-strings
+    code: |
+      line = ""
+      line += 5
+      print(line)
+    why: "`+` and `+=` join only strings. Adding a number to a string stops with a `TypeError`: write `line += str(5)`."
+
+  - type: boss
+    after: building-strings
+    prompt: |
+      Write a program that asks for a limit and prints the even numbers from 2 up to the limit on one line, separated by spaces.
+
+      ```
+      Limit: 9
+      2 4 6 8
+      ```
+    seed: |
+      limit = int(input("Limit: "))
+    solution: |
+      limit = int(input("Limit: "))
+      line = ""
+      number = 2
+      while True:
+          if number > limit:
+              break
+          if line == "":
+              line = str(number)
+          else:
+              line += " " + str(number)
+          number += 2
+      print(line)
+    hints:
+      - "Count with a variable that starts at 2 and grows by 2, and stop when it goes over the limit."
+      - "Build the line in a string, converting each number with `str`. Add a space before every number except the first."
+    require:
+      - pattern: \bwhile\s+True\b
+        message: Use a `while True` loop.
+    tests:
+      - stdin: "9"
+      - stdin: "2"
+        hidden: true
+      - stdin: "16"
+        hidden: true
+
+  - type: boss
+    after: helper-variables
+    prompt: |
+      Write a program that reads exam points until the user types -1. Then it prints how many of the scores were passing (50 or more) and the best score. You can assume at least one score is typed.
+
+      ```
+      Points: 45
+      Points: 78
+      Points: 62
+      Points: -1
+      Passed: 2
+      Best: 78
+      ```
+    seed: |
+      # Write your program below this line.
+    solution: |
+      # Write your program below this line.
+      passed = 0
+      best = 0
+      while True:
+          points = int(input("Points: "))
+          if points == -1:
+              break
+          if points >= 50:
+              passed += 1
+          if points > best:
+              best = points
+      print(f"Passed: {passed}")
+      print(f"Best: {best}")
+    hints:
+      - "Two helper variables start before the loop: a count of passing scores, and the best score so far."
+      - "Inside the loop, `if points >= 50:` adds one to the count, and `if points > best:` stores a new best score."
+    tests:
+      - stdin: |
+          45
+          78
+          62
+          -1
+      - stdin: |
+          20
+          -1
+        hidden: true
+      - stdin: |
+          50
+          100
+          49
+          99
+          -1
+        hidden: true

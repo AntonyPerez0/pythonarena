@@ -1,0 +1,579 @@
+id: functional
+summary: Functional programming builds a program from functions that return new values instead of changing variables. The map and filter functions and the iterators they return, and reduce from the functools module, with numbers and with your own objects.
+steps:
+  - id: functional-map
+    slug: map
+    title: Transforming with map
+    text: |
+      Python lets you write programs in different styles, called **programming paradigms**. You've used several already. In **imperative** programming a program is a series of commands run in order. In **procedural** programming those commands are grouped into functions. In **object-oriented** programming the data and the code that handles it live together in objects.
+
+      **Functional programming** is one more style. It builds a program from functions that take values and return new values, and it avoids changing variables along the way. Lambda expressions and comprehensions are tools of this style. Python lets you mix styles freely, so you can pick whichever makes each part of a program clearest. This step and the next two show three classic functional tools: `map`, `filter` and `reduce`.
+
+      ### map
+
+      The function **`map`** calls a function on every item of a series and gives the results. You write it as `map(function, series)`:
+
+      ```python run
+      texts = ["12", "-4", "30"]
+      numbers = map(int, texts)
+      for number in numbers:
+          print(number * 2)
+      ```
+
+      ```output
+      24
+      -8
+      60
+      ```
+
+      The function can be any function that takes one argument: one of Python's own, one you wrote, or a lambda:
+
+      ```python run
+      def initial(name):
+          return name[0] + "."
+
+
+      names = ["Ada", "Linus", "Grace"]
+      print(list(map(initial, names)))
+      print(list(map(lambda name: name.upper(), names)))
+      ```
+
+      ```output
+      ['A.', 'L.', 'G.']
+      ['ADA', 'LINUS', 'GRACE']
+      ```
+
+      A list comprehension does the same: `[initial(name) for name in names]`. Neither is more correct than the other, so choose whichever reads better to you.
+
+      ### map gives an iterator
+
+      `map` doesn't return a list. It returns a `map` object, an **iterator**: like a generator, it computes each value only when it's asked for, and it's used up after one pass. Printing it shows only `<map object at 0x7f3a2c>`, which is why the example above wraps it in `list()`. Going through the same map twice gives nothing the second time:
+
+      ```python run
+      prices = [2.0, 3.5, 10.0]
+      with_tax = map(lambda price: price * 1.25, prices)
+
+      for price in with_tax:
+          print(price)
+      print("Once more:")
+      for price in with_tax:
+          print(price)
+      ```
+
+      ```output
+      2.5
+      4.375
+      12.5
+      Once more:
+      ```
+
+      When you need the values more than once, store a list instead: `with_tax = list(map(...))`.
+
+      ### map and your own objects
+
+      `map` works with any items, objects of your own classes too. The lambda can read an attribute of each object, or call one of its methods:
+
+      ```python run
+      class Account:
+          def __init__(self, owner, balance):
+              self.owner = owner
+              self.__balance = balance
+
+          def balance(self):
+              return self.__balance
+
+
+      accounts = [Account("Ines", 120), Account("Omar", 75), Account("Pia", 300)]
+      print(list(map(lambda account: account.owner, accounts)))
+      print(list(map(lambda account: account.balance(), accounts)))
+      ```
+
+      ```output
+      ['Ines', 'Omar', 'Pia']
+      [120, 75, 300]
+      ```
+
+      **Your turn:** fill in the blanks so that the program converts the temperatures to Fahrenheit with `map` and prints them as a list:
+
+      ```
+      [32.0, 77.0, 212.0]
+      ```
+    fill: |
+      def to_fahrenheit(celsius):
+          return celsius * 9 / 5 + 32
+
+
+      temperatures = [0, 25, 100]
+      print([[list]]([[map]](to_fahrenheit, temperatures)))
+    hints:
+      - The inner function calls `to_fahrenheit` on every temperature. The outer one turns the result into a list.
+      - "`map(to_fahrenheit, temperatures)` gives an iterator, and `list(...)` around it gives the list to print."
+    tests:
+      - expect: "[32.0, 77.0, 212.0]"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          words = ["one", "two", "three"]
+          lengths = map(len, words)
+          print(list(lengths))
+          print(list(lengths))
+          print(list(map(lambda word: word[::-1], words)))
+        hints:
+          - "`map(len, words)` gives the length of each word."
+          - The first `list` uses up the iterator `lengths`, so the second one gets nothing.
+          - "`word[::-1]` is the word backwards."
+      - task: |
+          The class `Product` holds a product's name and price. Write a function `price_tags(products)` that uses `map` to return a list of price tags, one string for each product: the name, a colon and a space, and the price with two decimals. For example,
+
+          ```python fragment
+          products = [Product("tea", 3.5), Product("honey", 7), Product("lemon", 0.45)]
+          print(price_tags(products))
+          ```
+
+          should print:
+
+          ```
+          ['tea: 3.50', 'honey: 7.00', 'lemon: 0.45']
+          ```
+        seed: |
+          class Product:
+              def __init__(self, name, price):
+                  self.name = name
+                  self.price = price
+
+
+          def price_tags(products):
+              pass
+
+
+          if __name__ == "__main__":
+              products = [Product("tea", 3.5), Product("honey", 7), Product("lemon", 0.45)]
+              print(price_tags(products))
+        solution: |
+          class Product:
+              def __init__(self, name, price):
+                  self.name = name
+                  self.price = price
+
+
+          def price_tags(products):
+              return list(map(lambda product: f"{product.name}: {product.price:.2f}", products))
+
+
+          if __name__ == "__main__":
+              products = [Product("tea", 3.5), Product("honey", 7), Product("lemon", 0.45)]
+              print(price_tags(products))
+        hints:
+          - "The function given to `map` gets one `Product` and returns its tag. An f-string makes the tag: `f\"{product.name}: {product.price:.2f}\"`."
+          - "`map` gives an iterator, but the function should return a list: wrap it in `list(...)`."
+        require:
+          - pattern: \bmap\s*\(
+            message: Make the tags with `map`.
+        tests:
+          - call: |
+              products = [Product("tea", 3.5), Product("honey", 7), Product("lemon", 0.45)]
+              print(price_tags(products))
+          - call: price_tags([Product("bread", 2.199), Product("jam", 12)])
+            hidden: true
+          - call: price_tags([])
+            hidden: true
+
+  - id: functional-filter
+    slug: filter
+    title: Selecting with filter
+    text: |
+      `map` changes every item. **`filter`** keeps some of the items as they are and drops the rest. You write it as `filter(function, series)`: it calls the function on each item and keeps the items for which the function returns `True`:
+
+      ```python run
+      numbers = [8, 3, 15, 4, 23, 42]
+      for number in filter(lambda n: n > 10, numbers):
+          print(number)
+      ```
+
+      ```output
+      15
+      23
+      42
+      ```
+
+      A named function works just as well, and a longer condition often reads better with a name:
+
+      ```python run
+      def is_palindrome(word):
+          return word == word[::-1]
+
+
+      words = ["level", "python", "radar", "map", "noon"]
+      print(list(filter(is_palindrome, words)))
+      ```
+
+      ```output
+      ['level', 'radar', 'noon']
+      ```
+
+      That's the same as the comprehension `[word for word in words if is_palindrome(word)]`.
+
+      ### filter gives an iterator too
+
+      Like `map`, `filter` returns an iterator, which is used up after one pass. That can bite when you use the result twice, for example to count the items and then to print them:
+
+      ```python run
+      class Task:
+          def __init__(self, name, done):
+              self.name = name
+              self.done = done
+
+
+      tasks = [Task("shop", True), Task("cook", False), Task("call Grandma", False)]
+      open_tasks = filter(lambda task: not task.done, tasks)
+      print("Tasks left:", len(list(open_tasks)))
+      for task in open_tasks:
+          print(task.name)
+      ```
+
+      ```output
+      Tasks left: 2
+      ```
+
+      The loop printed nothing: `list(open_tasks)` already took every item, so nothing was left for the loop. Store the list once and use it as often as you like:
+
+      ```python run
+      class Task:
+          def __init__(self, name, done):
+              self.name = name
+              self.done = done
+
+
+      tasks = [Task("shop", True), Task("cook", False), Task("call Grandma", False)]
+      open_tasks = list(filter(lambda task: not task.done, tasks))
+      print("Tasks left:", len(open_tasks))
+      for name in map(lambda task: task.name.upper(), open_tasks):
+          print(name)
+      ```
+
+      ```output
+      Tasks left: 2
+      COOK
+      CALL GRANDMA
+      ```
+
+      ### filter and map together
+
+      The second program also used `map` on what `filter` kept. Both take a series and give a series, so one's result can go straight into the other. Such a chain is read from the inside out:
+
+      ```python fragment
+      names = list(map(lambda task: task.name, filter(lambda task: not task.done, tasks)))
+      ```
+
+      First `filter` keeps the open tasks, then `map` takes their names. The comprehension `[task.name for task in tasks if not task.done]` does the same in one go.
+
+      **Your turn:** fill in the blank with the condition, so that `filter` keeps only the numbers that are divisible by 3. The program should print:
+
+      ```
+      [9, 21, 3, 30]
+      ```
+    fill: |
+      numbers = [9, 14, 21, 3, 8, 30]
+      print(list(filter(lambda n: [[n % 3 == 0]], numbers)))
+    hints:
+      - The lambda gets one number and must return `True` for the numbers to keep.
+      - "A number is divisible by 3 when the remainder is zero: `n % 3 == 0`."
+    tests:
+      - expect: "[9, 21, 3, 30]"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          numbers = [5, 12, 7, 20, 3]
+          big = filter(lambda n: n > 6, numbers)
+          print(next(big))
+          print(list(big))
+          print(list(map(lambda n: n * 2, filter(lambda n: n < 6, numbers))))
+        hints:
+          - "`filter` gives an iterator, so `next` works on it, just as on a generator. The first number over 6 is 12."
+          - "`list(big)` takes the numbers over 6 that are left after that."
+          - On the last line, read from the inside out. `filter` keeps 5 and 3, then `map` doubles them.
+      - task: |
+          The class `Book` holds a book's title and whether it's on loan. Write a function `available_titles(books)` that returns a list of the titles of the books that are **not** on loan, in alphabetical order. Use `filter` and `map`. For example,
+
+          ```python fragment
+          books = [Book("Matilda", False), Book("Dracula", True), Book("Beloved", False)]
+          print(available_titles(books))
+          ```
+
+          should print:
+
+          ```
+          ['Beloved', 'Matilda']
+          ```
+        seed: |
+          class Book:
+              def __init__(self, title, on_loan):
+                  self.title = title
+                  self.on_loan = on_loan
+
+
+          def available_titles(books):
+              pass
+
+
+          if __name__ == "__main__":
+              books = [Book("Matilda", False), Book("Dracula", True), Book("Beloved", False)]
+              print(available_titles(books))
+        solution: |
+          class Book:
+              def __init__(self, title, on_loan):
+                  self.title = title
+                  self.on_loan = on_loan
+
+
+          def available_titles(books):
+              available = filter(lambda book: not book.on_loan, books)
+              titles = map(lambda book: book.title, available)
+              return sorted(titles)
+
+
+          if __name__ == "__main__":
+              books = [Book("Matilda", False), Book("Dracula", True), Book("Beloved", False)]
+              print(available_titles(books))
+        hints:
+          - "First `filter` the books whose `on_loan` is `False`: the lambda can return `not book.on_loan`."
+          - Then `map` each of those books to its title.
+          - "`sorted` accepts an iterator and returns a sorted list, which is just what the function should return."
+        require:
+          - pattern: \bfilter\s*\(
+            message: Pick the books with `filter`.
+          - pattern: \bmap\s*\(
+            message: Take the titles with `map`.
+        tests:
+          - call: |
+              books = [Book("Matilda", False), Book("Dracula", True), Book("Beloved", False)]
+              print(available_titles(books))
+          - call: available_titles([Book("Ulysses", True), Book("Emma", False), Book("Carrie", False), Book("Anna", False)])
+            hidden: true
+          - call: available_titles([Book("Ulysses", True)])
+            hidden: true
+
+  - id: functional-reduce
+    slug: reduce
+    title: Combining with reduce
+    text: |
+      `map` and `filter` turn a series into another series. **`reduce`** turns a whole series into a single value, such as a total. It isn't a built-in function: it lives in the module **`functools`**, so you import it first.
+
+      `reduce(function, series, start)` works like a loop with a running result. The result begins as `start`. For each item, `reduce` calls the function with two arguments, the result so far and the item, and what the function returns becomes the new result. After the last item, `reduce` returns that result. A named function with a print shows each round:
+
+      ```python run
+      from functools import reduce
+
+
+      def add(total, item):
+          print(f"total {total}, item {item}")
+          return total + item
+
+
+      result = reduce(add, [4, 8, 3], 0)
+      print("Result:", result)
+      ```
+
+      ```output
+      total 0, item 4
+      total 4, item 8
+      total 12, item 3
+      Result: 15
+      ```
+
+      For a sum you'd use `sum`, of course, but `reduce` can combine items in any way you write. Lambdas keep it short:
+
+      ```python run
+      from functools import reduce
+
+      numbers = [2, 5, 3, 4]
+      print(reduce(lambda product, n: product * n, numbers, 1))
+
+      words = ["map", "filter", "reduce", "lambda"]
+      print(reduce(lambda longest, word: word if len(word) > len(longest) else longest, words, ""))
+      ```
+
+      ```output
+      120
+      filter
+      ```
+
+      The start value matters. A product starts from 1, since a product that starts from 0 stays 0. The longest word starts from the empty string, which any word is longer than.
+
+      ### Without a start value
+
+      You can leave the start value out. Then `reduce` takes the first item as the starting result and goes on from the second one, so `reduce(lambda a, b: a + b, [4, 8, 3])` is 15 too. But with an empty list there's nothing to start from, and `reduce` stops with `TypeError: reduce() of empty iterable with no initial value`.
+
+      ### reduce and your own objects
+
+      With objects, give the start value. The function adds something taken from each object to the result:
+
+      ```python run
+      from functools import reduce
+
+
+      class Parcel:
+          def __init__(self, label, weight):
+              self.label = label
+              self.weight = weight
+
+
+      parcels = [Parcel("books", 4.5), Parcel("lamp", 2.0), Parcel("plates", 6.5)]
+      total = reduce(lambda result, parcel: result + parcel.weight, parcels, 0)
+      print("Total weight:", total)
+      ```
+
+      ```output
+      Total weight: 13.0
+      ```
+
+      Without the 0, `reduce` would take the first parcel itself as the starting result, and the first round would try to add a weight to a `Parcel` object:
+
+      ```python run crash
+      from functools import reduce
+
+
+      class Parcel:
+          def __init__(self, label, weight):
+              self.label = label
+              self.weight = weight
+
+
+      parcels = [Parcel("books", 4.5), Parcel("lamp", 2.0), Parcel("plates", 6.5)]
+      total = reduce(lambda result, parcel: result + parcel.weight, parcels)
+      print("Total weight:", total)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          total = reduce(lambda result, parcel: result + parcel.weight, parcels)
+        File "main.py", line 11, in <lambda>
+          total = reduce(lambda result, parcel: result + parcel.weight, parcels)
+                                                ~~~~~~~^~~~~~~~~~~~~~~
+      TypeError: unsupported operand type(s) for +: 'Parcel' and 'float'
+      ```
+
+      So when the items are objects and the result is a number, always give a start value of the right type.
+
+      **Your turn:** the program should add up the playing times of the songs with `reduce`, but it stops with an error. Fix it, so that it prints:
+
+      ```
+      Total: 11 min
+      ```
+    seed: |
+      from functools import reduce
+
+
+      class Song:
+          def __init__(self, title, minutes):
+              self.title = title
+              self.minutes = minutes
+
+
+      songs = [Song("Intro", 2), Song("Theme", 5), Song("Outro", 4)]
+      total = reduce(lambda result, song: result + song.minutes, songs)
+      print("Total:", total, "min")
+    solution: |
+      from functools import reduce
+
+
+      class Song:
+          def __init__(self, title, minutes):
+              self.title = title
+              self.minutes = minutes
+
+
+      songs = [Song("Intro", 2), Song("Theme", 5), Song("Outro", 4)]
+      total = reduce(lambda result, song: result + song.minutes, songs, 0)
+      print("Total:", total, "min")
+    hints:
+      - Read the error message. What is `reduce` trying to add a number to in the first round?
+      - "Without a start value, the first `Song` object is the starting result. Give `reduce` a third argument, the start value `0`."
+    require:
+      - pattern: \breduce\s*\(
+        message: Keep adding up the minutes with `reduce`.
+    forbid:
+      - pattern: \b11\b
+        message: Let `reduce` calculate the total instead of typing 11.
+    tests:
+      - expect: "Total: 11 min"
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          from functools import reduce
+
+          numbers = [3, 9, 2]
+          print(reduce(lambda a, b: a * 10 + b, numbers, 0))
+          print(reduce(lambda a, b: a if a > b else b, numbers))
+          print(reduce(lambda text, n: text + str(n) + "-", numbers, ">"))
+        hints:
+          - "Go round by round. On the first line the result is 0, then 0 * 10 + 3, then 3 * 10 + 9, and so on."
+          - The second line has no start value, so it starts from 3 and keeps the larger of the result and the next number.
+          - "The last line starts from the string `\">\"` and adds each number and a dash."
+      - task: |
+          The class `CartItem` holds the name, the unit price and the quantity of an item in a shopping cart. Write a function `cart_total(items)` that uses `reduce` to return the total price of the cart: the sum of price times quantity of every item. An empty cart costs 0. For example,
+
+          ```python fragment
+          cart = [CartItem("pen", 1.5, 4), CartItem("notebook", 3.25, 2), CartItem("eraser", 0.75, 1)]
+          print(cart_total(cart))
+          ```
+
+          should print:
+
+          ```
+          13.25
+          ```
+        seed: |
+          class CartItem:
+              def __init__(self, name, price, quantity):
+                  self.name = name
+                  self.price = price
+                  self.quantity = quantity
+
+
+          def cart_total(items):
+              pass
+
+
+          if __name__ == "__main__":
+              cart = [CartItem("pen", 1.5, 4), CartItem("notebook", 3.25, 2), CartItem("eraser", 0.75, 1)]
+              print(cart_total(cart))
+        solution: |
+          from functools import reduce
+
+
+          class CartItem:
+              def __init__(self, name, price, quantity):
+                  self.name = name
+                  self.price = price
+                  self.quantity = quantity
+
+
+          def cart_total(items):
+              return reduce(lambda total, item: total + item.price * item.quantity, items, 0)
+
+
+          if __name__ == "__main__":
+              cart = [CartItem("pen", 1.5, 4), CartItem("notebook", 3.25, 2), CartItem("eraser", 0.75, 1)]
+              print(cart_total(cart))
+        hints:
+          - "Import it first: `from functools import reduce`."
+          - "The function given to `reduce` gets the total so far and one item, and returns the total plus that item's price times its quantity."
+          - "Give `0` as the start value. Without it, the first round would add to a `CartItem` object, and an empty cart would be an error."
+        require:
+          - pattern: \breduce\s*\(
+            message: Calculate the total with `reduce`.
+        tests:
+          - call: |
+              cart = [CartItem("pen", 1.5, 4), CartItem("notebook", 3.25, 2), CartItem("eraser", 0.75, 1)]
+              print(cart_total(cart))
+          - call: cart_total([CartItem("melon", 2.5, 2)])
+            hidden: true
+          - call: cart_total([])
+            hidden: true
+          - call: cart_total([CartItem("cup", 4, 3), CartItem("plate", 6, 2), CartItem("fork", 1, 10)])
+            hidden: true

@@ -1,0 +1,354 @@
+topic: encapsulation
+drills:
+  - type: runs
+    after: private-attributes
+    code: |
+      class Safe:
+          def __init__(self):
+              self.__gold = 10
+
+
+      safe = Safe()
+      print(safe.__gold)
+    why: "`__gold` is private, so code outside the class can't use it by that name: `AttributeError: 'Safe' object has no attribute '__gold'`."
+
+  - type: predict
+    after: private-attributes
+    code: |
+      class Safe:
+          def __init__(self):
+              self.__gold = 10
+
+          def gold(self):
+              return self.__gold
+
+
+      safe = Safe()
+      print(safe.gold())
+    why: "Inside the class, `self.__gold` works as usual. The method `gold` is public, so the client can call it and get the value."
+
+  - type: predict
+    after: private-attributes
+    code: |
+      class Safe:
+          def __init__(self):
+              self.__gold = 10
+
+          def gold(self):
+              return self.__gold
+
+
+      safe = Safe()
+      safe.__gold = 999
+      print(safe.gold())
+    why: "Outside the class, `safe.__gold = 999` doesn't reach the private attribute. It quietly creates a new, unrelated attribute, so the method still returns 10."
+
+  - type: choice
+    after: private-attributes
+    prompt: Which attribute is private?
+    choices:
+      - "`self.balance`"
+      - "`self.__balance`"
+      - "`self.__balance__`"
+      - "`self._balance_`"
+    answer: 2
+    why: "A private name starts with two underscores. Names with two underscores at both ends, like `__init__`, are Python's special names and aren't private."
+
+  - type: predict
+    after: getters
+    code: |
+      class Circle:
+          def __init__(self, radius):
+              self.__radius = radius
+
+          @property
+          def diameter(self):
+              return self.__radius * 2
+
+
+      wheel = Circle(30)
+      print(wheel.diameter)
+    why: "`diameter` is a property, so `wheel.diameter` runs the getter without parentheses. It calculates 30 * 2."
+
+  - type: runs
+    after: getters
+    code: |
+      class Circle:
+          def __init__(self, radius):
+              self.__radius = radius
+
+          @property
+          def radius(self):
+              return self.__radius
+
+
+      wheel = Circle(30)
+      print(wheel.radius())
+    why: "`wheel.radius` is already the number 30, and the parentheses then try to call 30 like a function: `TypeError: 'int' object is not callable`. A property is used without parentheses."
+
+  - type: runs
+    after: getters
+    code: |
+      class Circle:
+          def __init__(self, radius):
+              self.__radius = radius
+
+          @property
+          def radius(self):
+              return self.__radius
+
+
+      wheel = Circle(30)
+      wheel.radius = 40
+    why: "`radius` has a getter but no setter, so it's read-only. Assigning to it stops with `AttributeError: property 'radius' of 'Circle' object has no setter`."
+
+  - type: fill
+    after: getters
+    code: |
+      class Pet:
+          def __init__(self, name):
+              self.__name = name
+
+          @[[property]]
+          def name(self):
+              return self.__name
+
+
+      print(Pet("Luna").name)
+    why: "`@property` turns the method into a getter that's used like an attribute: `Pet(\"Luna\").name`."
+
+  - type: predict
+    after: setters
+    code: |
+      class Volume:
+          def __init__(self):
+              self.__level = 5
+
+          @property
+          def level(self):
+              return self.__level
+
+          @level.setter
+          def level(self, level):
+              if 0 <= level <= 10:
+                  self.__level = level
+
+
+      radio = Volume()
+      radio.level = 8
+      radio.level = 11
+      print(radio.level)
+    why: "The setter accepts 8. It ignores 11, which is out of range, so the level stays 8."
+
+  - type: bug
+    after: setters
+    code: |
+      class Volume:
+          def __init__(self):
+              self.__level = 5
+
+          @property
+          def level(self):
+              return self.__level
+
+          @level.setter
+          def level(self, level):
+              self.level = level  # BUG
+
+
+      radio = Volume()
+      radio.level = 8
+      print(radio.level)
+    fix: self.__level = level
+    why: "`self.level = level` inside the setter calls the setter again, which calls itself again, until Python stops with a `RecursionError`. Store the value in the private attribute, `self.__level`."
+
+  - type: bug
+    after: setters
+    code: |
+      class Volume:
+          def __init__(self):
+              self.__level = 5
+
+          @property
+          def level(self):
+              return self.__level
+
+          @level.setter
+          def level(self):  # BUG
+              self.__level = 0
+
+
+      radio = Volume()
+      radio.level = 8
+      print(radio.level)
+    fix: "def level(self, level):"
+    why: "A setter gets the new value as a parameter. Without one, `radio.level = 8` stops with a `TypeError`, because Python passes the 8 to a method that can't take it. The fixed method still has to store `level`, though: here it stores 0."
+
+  - type: predict
+    after: setters
+    code: |
+      class Age:
+          def __init__(self, years):
+              self.years = years
+
+          @property
+          def years(self):
+              return self.__years
+
+          @years.setter
+          def years(self, years):
+              self.__years = max(0, years)
+
+
+      print(Age(-3).years)
+    why: "`self.years = years` in `__init__` goes through the setter, which turns -3 into 0 before storing it."
+
+  - type: runs
+    after: setters
+    code: |
+      class Age:
+          def __init__(self, years):
+              self.years = years
+
+          @property
+          def years(self):
+              return self.__years
+
+          @years.setter
+          def years(self, years):
+              if years < 0:
+                  raise ValueError("Age can't be negative")
+              self.__years = years
+
+
+      baby = Age(-1)
+    why: "The constructor uses the setter, and the setter raises a `ValueError` for -1. So no object with a bad age can ever be created."
+
+  - type: runs
+    after: private-methods
+    code: |
+      class Lock:
+          def __init__(self):
+              self.__code = "1234"
+
+          def __check(self, code):
+              return code == self.__code
+
+
+      lock = Lock()
+      print(lock.__check("1234"))
+    why: "`__check` is a private method, so the client can't call it: `AttributeError: 'Lock' object has no attribute '__check'`."
+
+  - type: predict
+    after: private-methods
+    code: |
+      class Lock:
+          def __init__(self):
+              self.__code = "1234"
+
+          def __check(self, code):
+              return code == self.__code
+
+          def open(self, code):
+              if self.__check(code):
+                  return "open"
+              return "locked"
+
+
+      lock = Lock()
+      print(lock.open("0000"))
+      print(lock.open("1234"))
+    why: "The public method `open` may call the private `__check` with `self.`, and returns a word depending on its answer."
+
+  - type: choice
+    after: private-methods
+    prompt: When is a method a good candidate to be private?
+    choices:
+      - When it returns a value
+      - When it's a helper for the class's own methods that the client has no reason to call
+      - When it changes an attribute
+    answer: 2
+    why: "Private methods are helpers for the class itself. Make a method private when the client doesn't need it, especially if calling it at the wrong time could break the object."
+
+  - type: boss
+    after: setters
+    prompt: |
+      Write the class `Speaker`. Its constructor takes a volume, and `volume` is a property with a getter and a setter. A volume must be from 0 to 10: for any other value, the setter raises `ValueError("Volume must be from 0 to 10")`. The constructor uses the setter too.
+
+      For example, this code:
+
+      ```python fragment
+      speaker = Speaker(3)
+      speaker.volume = 7
+      print(speaker.volume)
+      try:
+          speaker.volume = 12
+      except ValueError as error:
+          print(error)
+      ```
+
+      prints:
+
+      ```
+      7
+      Volume must be from 0 to 10
+      ```
+    seed: |
+      class Speaker:
+          def __init__(self, volume):
+              pass
+
+
+      if __name__ == "__main__":
+          speaker = Speaker(3)
+          speaker.volume = 7
+          print(speaker.volume)
+          try:
+              speaker.volume = 12
+          except ValueError as error:
+              print(error)
+    solution: |
+      class Speaker:
+          def __init__(self, volume):
+              self.volume = volume
+
+          @property
+          def volume(self):
+              return self.__volume
+
+          @volume.setter
+          def volume(self, volume):
+              if volume < 0 or volume > 10:
+                  raise ValueError("Volume must be from 0 to 10")
+              self.__volume = volume
+
+
+      if __name__ == "__main__":
+          speaker = Speaker(3)
+          speaker.volume = 7
+          print(speaker.volume)
+          try:
+              speaker.volume = 12
+          except ValueError as error:
+              print(error)
+    hints:
+      - "Write the getter with `@property` first, then the setter with `@volume.setter`. The setter stores the value in `self.__volume`."
+      - "In `__init__`, write `self.volume = volume` so the setter checks the starting volume."
+    tests:
+      - call: |
+          speaker = Speaker(3)
+          speaker.volume = 7
+          print(speaker.volume)
+          try:
+              speaker.volume = 12
+          except ValueError as error:
+              print(error)
+      - call: |
+          try:
+              Speaker(-1)
+          except ValueError as error:
+              print(error)
+          speaker = Speaker(10)
+          speaker.volume = 0
+          print(speaker.volume)
+        hidden: true

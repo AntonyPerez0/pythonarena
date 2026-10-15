@@ -1,0 +1,15 @@
+node_modules
+/dist
+public/engine
+public/lessons
+public/images
+fidelity/out
+test-results
+lhci
+.lighthouseci
+screenshots
+*.log
+/src/generated
+__pycache__/
+.pytest_cache/
+.venv/

@@ -1,0 +1,128 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { clearEngineCache, downloadMegabytes, engineCached, engineSupported, ensureEngine } from "../engine/client";
+import { patchSettings, resetProgress, useStore, type Theme } from "../state/store";
+import { challengesDone, stepsDone } from "../state/derived";
+import { TEXT_SIZES } from "../lib/appearance";
+import { useTitle } from "../lib/title";
+import { useEngineStatus } from "../components/Engine";
+import { ProgressTransfer } from "../components/Transfer";
+
+const THEMES: { value: Theme; label: string }[] = [
+  { value: "system", label: "Same as my device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+
+export default function Settings() {
+  useTitle("Settings");
+  const s = useStore((x) => x);
+  const status = useEngineStatus();
+  const [mb, setMb] = useState<number | null>(null);
+  const [cached, setCached] = useState<boolean | null>(null);
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    downloadMegabytes().then(setMb);
+    engineCached().then(setCached);
+  }, [status.state]);
+
+  return (
+    <div className="narrow settings">
+      <div className="page-head">
+        <h1>Settings</h1>
+        <p className="muted">Everything here is saved in this browser only.</p>
+      </div>
+
+      <section className="card" aria-labelledby="look-h">
+        <h2 id="look-h" className="h3">
+          Appearance
+        </h2>
+        <fieldset className="radio-row">
+          <legend>Theme</legend>
+          {THEMES.map((t) => (
+            <label key={t.value}>
+              <input type="radio" name="theme" value={t.value} checked={s.settings.theme === t.value} onChange={() => patchSettings({ theme: t.value })} /> {t.label}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="radio-row">
+          <legend>Text size</legend>
+          {TEXT_SIZES.map((t) => (
+            <label key={t.value}>
+              <input type="radio" name="size" value={t.value} checked={s.settings.textScale === t.value} onChange={() => patchSettings({ textScale: t.value })} /> {t.label}
+            </label>
+          ))}
+        </fieldset>
+      </section>
+
+      <section className="card" aria-labelledby="engine-h">
+        <h2 id="engine-h" className="h3">
+          Python
+        </h2>
+        {!engineSupported() ? (
+          <p>This browser can't run Python here: it needs WebAssembly, web workers and Cache Storage, which recent Chrome, Edge, Firefox and Safari have.</p>
+        ) : (
+          <>
+            <p>
+              Python (CPython compiled to WebAssembly) is a one-time download of {mb ? `${mb} MB` : "about 6 MB"}, kept in this browser.{" "}
+              {status.state === "ready" ? "It's running now." : cached ? "It's saved in this browser." : cached === false ? "It isn't downloaded yet." : ""}
+            </p>
+            <label className="inline-check">
+              <input type="checkbox" checked={s.settings.mobileData} onChange={(e) => patchSettings({ mobileData: e.target.checked })} /> Download without asking, even on mobile data
+            </label>
+            <div className="actions">
+              {status.state !== "ready" && status.state !== "loading" && (
+                <button type="button" className="btn" onClick={() => ensureEngine()}>
+                  Download now
+                </button>
+              )}
+              {cached && (
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={async () => {
+                    await clearEngineCache();
+                    setCached(false);
+                    setMessage("The saved copy of Python was removed. It downloads again the next time it's needed.");
+                  }}
+                >
+                  Remove the saved copy of Python
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="card" aria-labelledby="progress-h" id="your-progress">
+        <h2 id="progress-h" className="h3">
+          Your progress
+        </h2>
+        <p>
+          {stepsDone(s)} {stepsDone(s) === 1 ? "step" : "steps"} and {challengesDone(s)} {challengesDone(s) === 1 ? "challenge" : "challenges"} done. Progress is saved in this browser. To continue on another device, move it there with a transfer link or a progress file.
+        </p>
+        <p>
+          <Link to="/record/">Your record</Link> lists the modules and projects you finished, with their dates, and prints or saves as a PDF.
+        </p>
+        <ProgressTransfer />
+        <h3 className="h4">Start over</h3>
+        <div className="actions">
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => {
+              if (!confirm("Delete all your progress and saved code on this device, including your Playground program? This can't be undone.")) return;
+              resetProgress();
+              setMessage("All progress and saved code on this device were deleted.");
+            }}
+          >
+            Delete all progress
+          </button>
+        </div>
+      </section>
+      <p role="status" className="small">
+        {message}
+      </p>
+    </div>
+  );
+}

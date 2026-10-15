@@ -1,0 +1,186 @@
+topic: comprehensions
+drills:
+  - type: predict
+    after: new-lists
+    code: |
+      print([n + 1 for n in [1, 2, 3]])
+    why: "The comprehension adds 1 to each number and collects the results in a new list."
+
+  - type: predict
+    after: new-lists
+    code: |
+      words = ["a", "bb"]
+      print([w * 2 for w in words])
+    why: "A string times 2 is the string twice, so each word is doubled: `'aa'` and `'bbbb'`."
+
+  - type: runs
+    after: new-lists
+    code: |
+      doubled = [for n in [1, 2]: n * 2]
+    why: "In a comprehension the expression comes first and the `for` after it, with no colon: `[n * 2 for n in [1, 2]]`."
+
+  - type: fill
+    after: new-lists
+    code: |
+      squares = [[[n * n‖n ** 2]] for n in range(1, 4)]
+      print(squares)
+    why: "The expression in front of the `for` is what goes into the list: `n * n` for each n from 1 to 3."
+
+  - type: predict
+    after: new-lists
+    code: |
+      x = 10
+      values = [x * 2 for x in range(3)]
+      print(values)
+      print(x)
+    why: "The `x` of a comprehension belongs to the comprehension alone. The `x` outside it keeps its value, 10."
+
+  - type: choice
+    after: new-lists
+    prompt: "`words` is a list of 5 words. How many items does `[len(w) for w in words]` have?"
+    choices:
+      - "5"
+      - It depends on how long the words are
+      - "1"
+    answer: 1
+    why: "A comprehension without a filter makes exactly one new item for each item of the series."
+
+  - type: predict
+    after: filtering
+    code: |
+      print([n for n in range(10) if n % 3 == 0])
+    why: "Only the numbers that divide evenly by 3 pass the filter: 0, 3, 6 and 9."
+
+  - type: bug
+    after: filtering
+    code: |
+      names = ["Ann", "Bob", "Ann"]
+      anns = [n for n in names if n = "Ann"]  # BUG
+      print(len(anns))
+    fix: anns = [n for n in names if n == "Ann"]
+    why: "A comparison is `==`. A single `=` assigns a value, and it can't stand in a condition."
+
+  - type: choice
+    after: if-else
+    prompt: Which comprehension turns every negative number in `nums` into 0 and keeps the other numbers as they are?
+    choices:
+      - "`[n for n in nums if n >= 0]`"
+      - "`[n if n >= 0 else 0 for n in nums]`"
+      - "`[0 for n in nums if n < 0]`"
+    answer: 2
+    why: "Every number must stay in the list in one form or the other, so you need `if` with `else` before the `for`. A filter at the end would drop the negative numbers."
+
+  - type: runs
+    after: if-else
+    code: |
+      print([n for n in [1, -1] if n > 0 else 0])
+    why: "A filter at the end can't have an `else`. To choose between two values, put `n if n > 0 else 0` before the `for`."
+
+  - type: predict
+    after: if-else
+    code: |
+      print(["odd" if n % 2 == 1 else "even" for n in [1, 2, 3]])
+    why: "Each number gives one string: `\"odd\"` when the remainder is 1, else `\"even\"`."
+
+  - type: fill
+    after: if-else
+    code: |
+      labels = ["hot" if t > 25 [[else]] "ok" for t in [30, 20]]
+      print(labels)
+    why: "A conditional expression is `value1 if condition else value2`."
+
+  - type: predict
+    after: instead-of-loops
+    code: |
+      print(sum([n for n in [3, 8, 2, 9] if n > 5]))
+    why: "The filter keeps 8 and 9, and `sum` adds them up."
+
+  - type: bug
+    after: instead-of-loops
+    code: |
+      prices = [5, 12, 8]
+      total = len([p for p in prices if p > 6])  # BUG
+      print("Total of prices over 6:", total)
+    fix: total = sum([p for p in prices if p > 6])
+    why: "`len` counts the items that pass the filter. To add up their values, use `sum`."
+
+  - type: predict
+    after: instead-of-loops
+    code: |
+      pairs = [(w, len(w)) for w in ["ox", "cat"]]
+      print(pairs)
+    why: "The expression `(w, len(w))` makes a tuple of the word and its length for each word."
+
+  - type: boss
+    after: instead-of-loops
+    prompt: |
+      Write a function `passing_names(students, limit)` that gets a list of tuples, each with a student's name and points, and returns a list of the names of the students whose points are at least `limit`. Use a list comprehension.
+
+      For example, `passing_names([("Ann", 12), ("Bo", 7), ("Cy", 9)], 9)` returns:
+
+      ```
+      ['Ann', 'Cy']
+      ```
+    seed: |
+      def passing_names(students, limit):
+          pass
+
+
+      if __name__ == "__main__":
+          print(passing_names([("Ann", 12), ("Bo", 7), ("Cy", 9)], 9))
+    solution: |
+      def passing_names(students, limit):
+          return [name for name, points in students if points >= limit]
+
+
+      if __name__ == "__main__":
+          print(passing_names([("Ann", 12), ("Bo", 7), ("Cy", 9)], 9))
+    hints:
+      - "Take each tuple apart in the `for`: `for name, points in students`."
+      - "Keep only the names with a filter at the end: `if points >= limit`."
+    require:
+      - pattern: \[[^\n]*\bfor\b
+        message: Build the list with a list comprehension.
+    tests:
+      - call: passing_names([("Ann", 12), ("Bo", 7), ("Cy", 9)], 9)
+      - call: passing_names([("Dee", 3), ("Eli", 30)], 10)
+        hidden: true
+      - call: passing_names([("Fay", 1)], 5)
+        hidden: true
+
+  - type: boss
+    after: instead-of-loops
+    prompt: |
+      Write a function `clip(numbers, limit)` that returns a new list in which every number greater than `limit` is replaced with `limit`, and the other numbers stay as they are. Use a list comprehension.
+
+      For example, `clip([3, 15, 8, 40], 10)` returns:
+
+      ```
+      [3, 10, 8, 10]
+      ```
+    seed: |
+      def clip(numbers, limit):
+          pass
+
+
+      if __name__ == "__main__":
+          print(clip([3, 15, 8, 40], 10))
+    solution: |
+      def clip(numbers, limit):
+          return [limit if n > limit else n for n in numbers]
+
+
+      if __name__ == "__main__":
+          print(clip([3, 15, 8, 40], 10))
+    hints:
+      - Every number stays in the list in one form or the other, so use `if` and `else` before the `for`.
+      - "The expression is `limit if n > limit else n`."
+    require:
+      - pattern: \[[^\n]*\bfor\b
+        message: Build the list with a list comprehension.
+    tests:
+      - call: clip([3, 15, 8, 40], 10)
+      - call: clip([100, -5, 7], 0)
+        hidden: true
+      - call: clip([], 3)
+        hidden: true

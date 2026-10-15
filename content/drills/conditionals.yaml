@@ -1,0 +1,220 @@
+topic: conditionals
+drills:
+  - type: predict
+    after: if-statement
+    code: |
+      x = 5
+      if x > 3:
+          print("big")
+      print("done")
+    why: "5 is greater than 3, so the block runs. The last line is outside the block, so it runs every time."
+
+  - type: runs
+    after: if-statement
+    code: |
+      x = 5
+      if x > 3
+          print("big")
+    why: "The `if` line has no colon at its end, so Python stops with `SyntaxError: expected ':'` and runs nothing."
+
+  - type: predict
+    after: comparisons
+    code: |
+      age = 18
+      if age > 18:
+          print("A")
+      if age >= 18:
+          print("B")
+    why: "`18 > 18` is false, but `18 >= 18` is true: \"or equal to\" includes 18 itself."
+
+  - type: runs
+    after: comparisons
+    code: |
+      x = 5
+      if x = 5:
+          print("five")
+    why: "A single `=` stores a value; comparing needs `==`. Python stops with a `SyntaxError` and suggests `==`."
+
+  - type: predict
+    after: comparisons
+    stdin: "Yes"
+    code: |
+      answer = input("Ready? ")
+      if answer == "yes":
+          print("Go!")
+      if answer != "yes":
+          print("Wait.")
+    why: "Strings must match exactly, capitals included: `Yes` is not `yes`, so the second condition is the true one."
+
+  - type: choice
+    after: comparisons
+    prompt: "Which line checks whether `name` holds the string `Ada`?"
+    choices:
+      - "`if name = \"Ada\":`"
+      - "`if name == \"Ada\":`"
+      - "`if name == Ada:`"
+    answer: 2
+    why: "Comparing needs `==`, and the string needs quotes. Without them, `Ada` would be a variable's name."
+
+  - type: bug
+    after: comparisons
+    code: |
+      age = 18
+      if age > 18:  # BUG
+          print("You can vote.")
+      print("Done")
+    fix: 'if age >= 18:'
+    why: "The rule is 18 or older, so 18 itself must pass. `age > 18` is false for 18, but `age >= 18` is true."
+
+  - type: bug
+    after: comparisons
+    stdin: "yes"
+    code: |
+      answer = input("Continue? ")
+      if answer == yes:  # BUG
+          print("OK")
+    fix: 'if answer == "yes":'
+    why: "Without quotes, `yes` is a variable's name, and there is no such variable, so Python stops with a `NameError`. The text to compare with needs quotes."
+
+  - type: fill
+    after: comparisons
+    stdin: "4"
+    code: |
+      n = int(input("Number: "))
+      if n [[<]] 10:
+          print("one digit")
+    why: "`<` is \"less than\": numbers below 10 have one digit."
+
+  - type: predict
+    after: indentation
+    code: |
+      x = 1
+      if x > 5:
+          print("A")
+          print("B")
+      print("C")
+    why: "Both indented lines belong to the block, so both are skipped. Only the line at the left edge runs."
+
+  - type: runs
+    after: indentation
+    code: |
+      x = 10
+      if x > 5:
+      print("big")
+    why: "The line after the colon isn't indented, so the `if` has no block. Python stops with an `IndentationError`."
+
+  - type: predict
+    after: conditions-at-work
+    code: |
+      n = 15
+      if n > 5:
+          print("A")
+      if n > 10:
+          print("B")
+      if n > 20:
+          print("C")
+    why: "Each `if` is checked on its own, so every block whose condition is true runs: 15 is over 5 and over 10."
+
+  - type: predict
+    after: conditions-at-work
+    code: |
+      x = 9
+      if x < 10:
+          x = x + 5
+      if x >= 10:
+          x = x * 2
+      print(x)
+    why: "The first block makes `x` 14, and the second condition sees that new value, so it doubles it to 28."
+
+  - type: predict
+    after: true-and-false
+    code: |
+      print(10 > 3)
+      print(10 == 3)
+    why: "A comparison has a value of its own: `True` or `False`."
+
+  - type: predict
+    after: true-and-false
+    code: |
+      is_big = 7 > 10
+      print(is_big)
+      if is_big:
+          print("big")
+    why: "`7 > 10` is `False`, and that value is stored in `is_big`. The block runs only when the condition is `True`."
+
+  - type: runs
+    after: true-and-false
+    code: |
+      done = true
+      print(done)
+    why: "Python's Boolean values are `True` and `False`, with a capital first letter. `true` is a name Python doesn't know, so it stops with a `NameError`."
+
+  - type: boss
+    after: conditions-at-work
+    prompt: |
+      Write a program that asks for a whole number and tells whether it's even or odd. If the user types `7`, the run looks like this:
+
+      ```
+      Number: 7
+      7 is odd
+      ```
+
+      For an even number, such as 10, it prints `10 is even`.
+    seed: |
+      number = int(input("Number: "))
+    solution: |
+      number = int(input("Number: "))
+      if number % 2 == 0:
+          print(f"{number} is even")
+      if number % 2 != 0:
+          print(f"{number} is odd")
+    hints:
+      - "`number % 2` is the remainder of dividing by 2: 0 for an even number."
+      - "Use two `if` statements: one with `number % 2 == 0` and one with `number % 2 != 0`."
+    tests:
+      - stdin: "7"
+      - stdin: "10"
+        hidden: true
+      - stdin: "0"
+        hidden: true
+
+  - type: boss
+    after: true-and-false
+    prompt: |
+      Write a distance converter. It asks for a distance and a unit, `km` or `mi`, and converts the distance to the other unit: a mile is 1.6 kilometers. For any other unit, it prints `Unknown unit`. If the user types `10` and `mi`, the run looks like this:
+
+      ```
+      Distance: 10
+      Unit (km or mi): mi
+      10.0 mi = 16.0 km
+      ```
+    seed: |
+      distance = float(input("Distance: "))
+      unit = input("Unit (km or mi): ")
+    solution: |
+      distance = float(input("Distance: "))
+      unit = input("Unit (km or mi): ")
+      unknown = True
+      if unit == "mi":
+          print(f"{distance} mi = {distance * 1.6} km")
+          unknown = False
+      if unit == "km":
+          print(f"{distance} km = {distance / 1.6} mi")
+          unknown = False
+      if unknown:
+          print("Unknown unit")
+    hints:
+      - "Compare the unit with `==`: one `if` for `\"mi\"` (multiply by 1.6) and one for `\"km\"` (divide by 1.6)."
+      - "For `Unknown unit`, a Boolean variable helps: start with `unknown = True`, set it to `False` in both blocks, and print the message `if unknown:`."
+    tests:
+      - stdin: |
+          10
+          mi
+      - stdin: |
+          8
+          km
+        hidden: true
+      - stdin: |
+          5
+          miles
+        hidden: true

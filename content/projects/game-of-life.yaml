@@ -1,0 +1,991 @@
+id: game-of-life
+title: The Game of Life
+after: more-lists
+summary: "A grid of cells that live and die by four simple rules, kept in a list of lists. Print the grid, count each cell's neighbors, work out the next generation, type in a starting pattern, and watch it change until it dies out or settles down."
+intro: |
+  The **Game of Life** was invented by the mathematician John Horton Conway in 1970. Nobody plays it: you set up a pattern of cells and watch what happens to it. The board is a grid of **cells**, and each cell is either alive or dead. Every cell has eight **neighbors**, the cells that touch it: above, below, left, right and the four diagonals. From one **generation** to the next, every cell follows the same rules, all at the same time:
+
+  - A live cell with 2 or 3 live neighbors stays alive.
+  - A live cell with fewer than 2 live neighbors dies, as if of loneliness, and one with more than 3 dies of overcrowding.
+  - A dead cell with exactly 3 live neighbors comes alive.
+  - Any other dead cell stays dead.
+
+  That's all. Yet some patterns blink forever, some freeze, some die out, and some even crawl across the board.
+
+  In this project the grid is a **list of lists**, as in module 19: one list per row, with `1` for a live cell and `0` for a dead one. On the screen, a live cell is `#` and a dead one is `.`.
+
+  When it's finished, the program asks for a starting pattern, typed one row at a time and ended with an empty line, and for the number of generations to show. With this input:
+
+  ```text
+  ......
+  .###..
+  .#....
+  ......
+  ......
+
+  9
+  ```
+
+  it prints:
+
+  ```text
+  Type the grid, one row per line, and an empty line at the end:
+  ......
+  .###..
+  .#....
+  ......
+  ......
+
+  Generations: 9
+  Generation 0: 4 alive
+  ......
+  .###..
+  .#....
+  ......
+  ......
+
+  Generation 1: 4 alive
+  ..#...
+  .##...
+  .#....
+  ......
+  ......
+
+  Generation 2: 6 alive
+  .##...
+  .##...
+  .##...
+  ......
+  ......
+
+  Generation 3: 6 alive
+  .##...
+  #..#..
+  .##...
+  ......
+  ......
+
+  Nothing changes any more.
+  ```
+
+  Nine generations were asked for, but after the third one the pattern has settled into a shape that never changes, so the program stops there.
+
+  ### What you need
+
+  Everything up to module 19: functions that return values, with the program's own code under `if __name__ == "__main__":` (modules 13 and 14), lists and `for` loops with `range` (modules 15 and 16), f-strings (module 17), and above all lists of lists, read with two indexes such as `grid[row][column]` (module 19).
+
+  ### How you build it
+
+  Each milestone starts from your own code of the milestone before, and adds a function or two:
+
+  1. **The grid:** print it, and count its live cells.
+  2. **Neighbors:** count the live cells around a cell, and decide whether it lives on.
+  3. **The next generation:** a whole new grid, worked out from the old one.
+  4. **A start from input:** read the starting pattern that the user types.
+  5. **Several generations:** run as many generations as the user asks for.
+  6. **Stopping early:** stop when everything is dead or nothing changes any more.
+
+  The checks of the first milestones call your functions directly, as in the lessons. From milestone 4 on, others type into the whole program and compare everything it prints.
+seed: |
+  # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+  # Write print_grid and count_alive here.
+
+
+  if __name__ == "__main__":
+      glider = [
+          [0, 1, 0, 0, 0],
+          [0, 0, 1, 0, 0],
+          [1, 1, 1, 0, 0],
+          [0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0],
+      ]
+      print_grid(glider)
+      print(count_alive(glider), "cells are alive")
+milestones:
+  - id: grid
+    title: The grid
+    task: |
+      The starting code has a grid called `glider`: a list of 5 rows, each a list of 5 cells, where `1` is a live cell and `0` a dead one. Its main block uses two functions that aren't written yet. Write them:
+
+      1. `print_grid(grid)` prints the grid, one row per line: `#` for a live cell and `.` for a dead one, with nothing between the cells.
+      2. `count_alive(grid)` returns how many cells of the grid are alive.
+
+      Both work for a grid of any size: any number of rows, each with the same number of cells. The check runs:
+
+      ```python fragment
+      grid = [[0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 1]]
+      print_grid(grid)
+      print(count_alive(grid))
+      ```
+
+      and expects:
+
+      ```
+      .#..
+      .##.
+      ...#
+      4
+      ```
+    hints:
+      - "Both functions go through every cell with two loops, one inside the other: `for row in grid:` gives each row, a list, and `for cell in row:` each cell of it."
+      - "In `print_grid`, build one line of text per row: start it as `\"\"` before the inner loop, add `\"#\"` or `\".\"` for each cell, and print it after the inner loop."
+      - "In `count_alive`, keep a count that starts at 0. A live cell is 1 and a dead one 0, so adding every cell to the count gives the number of live cells."
+    tests:
+      - name: A small grid
+        call: |
+          grid = [[0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 1]]
+          print_grid(grid)
+          print(count_alive(grid))
+      - name: An empty grid
+        hidden: true
+        call: |
+          grid = [[0, 0], [0, 0], [0, 0]]
+          print_grid(grid)
+          print(count_alive(grid))
+      - name: One row and one column
+        hidden: true
+        call: |
+          print_grid([[1, 1, 0, 1, 1, 1]])
+          print(count_alive([[1, 1, 0, 1, 1, 1]]))
+          print_grid([[1], [0], [1]])
+          print(count_alive([[1], [0], [1]]))
+      - name: The glider in the main block
+        hidden: true
+    solution: |
+      # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+      def print_grid(grid):
+          for row in grid:
+              line = ""
+              for cell in row:
+                  if cell == 1:
+                      line += "#"
+                  else:
+                      line += "."
+              print(line)
+
+
+      def count_alive(grid):
+          count = 0
+          for row in grid:
+              for cell in row:
+                  count += cell
+          return count
+
+
+      if __name__ == "__main__":
+          glider = [
+              [0, 1, 0, 0, 0],
+              [0, 0, 1, 0, 0],
+              [1, 1, 1, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+          ]
+          print_grid(glider)
+          print(count_alive(glider), "cells are alive")
+
+  - id: neighbors
+    title: Neighbors
+    task: |
+      Whether a cell lives on depends on its eight neighbors. Add two functions:
+
+      1. `count_neighbors(grid, row, column)` returns how many of the eight cells around the cell `grid[row][column]` are alive. The cell itself doesn't count. A cell on the edge of the grid has fewer neighbors: a place outside the grid counts as a dead cell.
+      2. `will_live(grid, row, column)` returns `True` when the cell is alive in the next generation, and `False` when it isn't, by the rules of the game:
+         - a live cell stays alive with 2 or 3 live neighbors, and dies otherwise;
+         - a dead cell comes alive with exactly 3 live neighbors, and stays dead otherwise.
+
+      Watch out at the edges. Rows and columns are counted from 0, so the cell above row 0 would be in row -1, and Python reads `grid[-1]` without any error: it is the **last** row. The edges would then wrap around to the other side of the grid without you noticing. Check that a row and a column are inside the grid before you read the cell.
+
+      The check runs:
+
+      ```python fragment
+      grid = [
+          [0, 1, 1, 0, 0],
+          [1, 1, 0, 0, 1],
+          [0, 0, 0, 1, 1],
+          [0, 0, 0, 0, 1],
+      ]
+      print(count_neighbors(grid, 1, 1), count_neighbors(grid, 1, 2), count_neighbors(grid, 0, 0), count_neighbors(grid, 0, 4), count_neighbors(grid, 3, 0))
+      print(will_live(grid, 1, 1), will_live(grid, 1, 2), will_live(grid, 0, 0), will_live(grid, 0, 4), will_live(grid, 3, 4))
+      ```
+
+      and expects:
+
+      ```
+      3 4 3 1 0
+      True False True False True
+      ```
+    hints:
+      - "The neighbors are in the rows from `row - 1` to `row + 1` and the columns from `column - 1` to `column + 1`. Two loops over `range(row - 1, row + 2)` and `range(column - 1, column + 2)` go through that block of 3 by 3 cells; skip the one in the middle with `continue`."
+      - "A place `r`, `c` is inside the grid when `r >= 0 and r < len(grid) and c >= 0 and c < len(grid[0])`. Add `grid[r][c]` to the count only then."
+      - "In `will_live`, count the neighbors once and keep the number in a variable. For a live cell, return `neighbors == 2 or neighbors == 3`; for a dead one, `neighbors == 3`."
+    tests:
+      - name: Cells inside and on the edges
+        call: |
+          grid = [
+              [0, 1, 1, 0, 0],
+              [1, 1, 0, 0, 1],
+              [0, 0, 0, 1, 1],
+              [0, 0, 0, 0, 1],
+          ]
+          print(count_neighbors(grid, 1, 1), count_neighbors(grid, 1, 2), count_neighbors(grid, 0, 0), count_neighbors(grid, 0, 4), count_neighbors(grid, 3, 0))
+          print(will_live(grid, 1, 1), will_live(grid, 1, 2), will_live(grid, 0, 0), will_live(grid, 0, 4), will_live(grid, 3, 4))
+      - name: A full grid
+        hidden: true
+        call: |
+          grid = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+          print(count_neighbors(grid, 1, 1), count_neighbors(grid, 0, 0), count_neighbors(grid, 2, 1))
+          print(will_live(grid, 1, 1), will_live(grid, 0, 0), will_live(grid, 2, 1))
+      - name: The edges don't wrap around
+        hidden: true
+        call: |
+          grid = [[1, 0, 1], [0, 0, 0], [1, 0, 1]]
+          print(count_neighbors(grid, 0, 0), count_neighbors(grid, 2, 2), count_neighbors(grid, 1, 1), count_neighbors(grid, 0, 1))
+          print(will_live(grid, 0, 0), will_live(grid, 1, 1), will_live(grid, 0, 1))
+      - name: A single row
+        hidden: true
+        call: |
+          grid = [[1, 1, 0, 1]]
+          print(count_neighbors(grid, 0, 2), count_neighbors(grid, 0, 0), count_neighbors(grid, 0, 3))
+          print(will_live(grid, 0, 0), will_live(grid, 0, 2))
+    solution: |
+      # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+      def print_grid(grid):
+          for row in grid:
+              line = ""
+              for cell in row:
+                  if cell == 1:
+                      line += "#"
+                  else:
+                      line += "."
+              print(line)
+
+
+      def count_alive(grid):
+          count = 0
+          for row in grid:
+              for cell in row:
+                  count += cell
+          return count
+
+
+      def count_neighbors(grid, row, column):
+          count = 0
+          for r in range(row - 1, row + 2):
+              for c in range(column - 1, column + 2):
+                  if r == row and c == column:
+                      continue
+                  if r >= 0 and r < len(grid) and c >= 0 and c < len(grid[0]):
+                      count += grid[r][c]
+          return count
+
+
+      def will_live(grid, row, column):
+          neighbors = count_neighbors(grid, row, column)
+          if grid[row][column] == 1:
+              return neighbors == 2 or neighbors == 3
+          return neighbors == 3
+
+
+      if __name__ == "__main__":
+          glider = [
+              [0, 1, 0, 0, 0],
+              [0, 0, 1, 0, 0],
+              [1, 1, 1, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+          ]
+          print_grid(glider)
+          print(count_alive(glider), "cells are alive")
+
+  - id: next-generation
+    title: The next generation
+    task: |
+      Now the whole grid takes a step. Every cell changes **at the same time**: the next generation is worked out from the current grid alone. So you can't change the cells of `grid` one by one, because a cell you have already changed would give its neighbors a wrong count. Build the next generation as a new grid instead.
+
+      Write `next_generation(grid)`, which returns a **new** grid of the same size, where each cell is 1 when `will_live` says it lives and 0 otherwise. The grid it was given stays as it was.
+
+      To watch it in your own program, add `print()` and `print_grid(next_generation(glider))` to the end of the main block. The check runs:
+
+      ```python fragment
+      grid = [
+          [0, 0, 0, 0, 0],
+          [0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0],
+          [0, 0, 0, 0, 0],
+      ]
+      print_grid(next_generation(grid))
+      print()
+      print_grid(grid)
+      ```
+
+      and expects the next generation, then the grid it was given, unchanged:
+
+      ```
+      .....
+      .....
+      .###.
+      .....
+      .....
+
+      .....
+      ..#..
+      ..#..
+      ..#..
+      .....
+      ```
+
+      This pattern is called a **blinker**: it turns from standing to lying and back again, forever.
+    hints:
+      - "Build the new grid the way you build any list: start from `new_grid = []`, and for each row of the old grid append a new row, which you build from `[]` too, one cell at a time."
+      - "Loop over the indexes, as `will_live` needs them: `for row in range(len(grid)):` outside, and `for column in range(len(grid[0])):` inside."
+      - "Inside, `if will_live(grid, row, column):` appends 1 to the new row, and `else` appends 0. After the inner loop, append the new row to `new_grid`, and return `new_grid` at the very end."
+    tests:
+      - name: A blinker turns
+        call: |
+          grid = [
+              [0, 0, 0, 0, 0],
+              [0, 0, 1, 0, 0],
+              [0, 0, 1, 0, 0],
+              [0, 0, 1, 0, 0],
+              [0, 0, 0, 0, 0],
+          ]
+          print_grid(next_generation(grid))
+          print()
+          print_grid(grid)
+      - name: A glider crawls
+        hidden: true
+        call: |
+          grid = [
+              [0, 1, 0, 0, 0, 0],
+              [0, 0, 1, 0, 0, 0],
+              [1, 1, 1, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0, 0],
+          ]
+          for step in range(4):
+              grid = next_generation(grid)
+              print_grid(grid)
+              print(count_alive(grid))
+      - name: A block stays a block
+        hidden: true
+        call: |
+          grid = [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]]
+          print_grid(next_generation(grid))
+          print(next_generation(grid) == grid)
+      - name: A lonely cell dies
+        hidden: true
+        call: |
+          grid = [[1]]
+          print(next_generation(grid))
+          print(grid)
+    solution: |
+      # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+      def print_grid(grid):
+          for row in grid:
+              line = ""
+              for cell in row:
+                  if cell == 1:
+                      line += "#"
+                  else:
+                      line += "."
+              print(line)
+
+
+      def count_alive(grid):
+          count = 0
+          for row in grid:
+              for cell in row:
+                  count += cell
+          return count
+
+
+      def count_neighbors(grid, row, column):
+          count = 0
+          for r in range(row - 1, row + 2):
+              for c in range(column - 1, column + 2):
+                  if r == row and c == column:
+                      continue
+                  if r >= 0 and r < len(grid) and c >= 0 and c < len(grid[0]):
+                      count += grid[r][c]
+          return count
+
+
+      def will_live(grid, row, column):
+          neighbors = count_neighbors(grid, row, column)
+          if grid[row][column] == 1:
+              return neighbors == 2 or neighbors == 3
+          return neighbors == 3
+
+
+      def next_generation(grid):
+          new_grid = []
+          for row in range(len(grid)):
+              new_row = []
+              for column in range(len(grid[0])):
+                  if will_live(grid, row, column):
+                      new_row.append(1)
+                  else:
+                      new_row.append(0)
+              new_grid.append(new_row)
+          return new_grid
+
+
+      if __name__ == "__main__":
+          glider = [
+              [0, 1, 0, 0, 0],
+              [0, 0, 1, 0, 0],
+              [1, 1, 1, 0, 0],
+              [0, 0, 0, 0, 0],
+              [0, 0, 0, 0, 0],
+          ]
+          print_grid(glider)
+          print(count_alive(glider), "cells are alive")
+          print()
+          print_grid(next_generation(glider))
+
+  - id: from-input
+    title: A start from input
+    task: |
+      Typing a pattern into the code as a list of lists is slow. From now on, the user types it, one row per line, as it looks on the screen: `#` for a live cell and `.` for a dead one. An empty line ends the grid.
+
+      1. Write `read_grid()`, which reads the rows with `input()` (with no prompt) until it reads an empty line, and returns the grid as a list of lists of 1s and 0s. Every character other than `#` is a dead cell.
+      2. Write `print_generation(grid, number)`, which prints a line such as `Generation 0: 5 alive` (the number it's given, and how many cells are alive), then the grid, and then an empty line.
+      3. Write a function `main()`, and replace everything in the main block with a call to it. `main` prints `Type the grid, one row per line, and an empty line at the end:`, reads the grid, and prints it as generation 0 and its next generation as generation 1.
+
+      When the user types a glider and an empty line:
+
+      ```text
+      .....
+      ..#..
+      ...#.
+      .###.
+      .....
+      ```
+
+      the program prints (the typed rows show up in the output, as on a terminal):
+
+      ```
+      Type the grid, one row per line, and an empty line at the end:
+      .....
+      ..#..
+      ...#.
+      .###.
+      .....
+
+      Generation 0: 5 alive
+      .....
+      ..#..
+      ...#.
+      .###.
+      .....
+
+      Generation 1: 5 alive
+      .....
+      .....
+      .#.#.
+      ..##.
+      ..#..
+      ```
+    hints:
+      - "`read_grid` is a `while True:` loop that reads a line, and leaves the loop with `break` when `line == \"\"`. The grid starts as `[]` before the loop."
+      - "For each line that isn't empty, build a row: `for character in line:` goes through its characters, and each `#` appends 1, anything else 0. Then append the row to the grid."
+      - "`print_generation` prints `f\"Generation {number}: {count_alive(grid)} alive\"`, calls `print_grid(grid)`, and ends with `print()`. Then `main` needs only four lines: print the instruction, `grid = read_grid()`, and two calls to `print_generation`."
+    tests:
+      - name: A glider typed in
+        stdin: |+
+          .....
+          ..#..
+          ...#.
+          .###.
+          .....
+
+      - name: Reading a grid
+        stdin: |+
+          #..#
+          .##.
+
+        call: |
+          grid = read_grid()
+          print(grid)
+          print(count_alive(grid))
+      - name: A pattern that grows
+        hidden: true
+        stdin: |+
+          ......
+          ..##..
+          .##...
+          ..#...
+          ......
+
+      - name: Other characters are dead cells
+        hidden: true
+        stdin: "#x#\n#-#\n\n"
+        call: |
+          grid = read_grid()
+          print(grid)
+      - name: Printing one generation
+        hidden: true
+        call: |
+          print_generation([[1, 1], [1, 0]], 7)
+          print("end")
+    solution: |
+      # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+      def print_grid(grid):
+          for row in grid:
+              line = ""
+              for cell in row:
+                  if cell == 1:
+                      line += "#"
+                  else:
+                      line += "."
+              print(line)
+
+
+      def count_alive(grid):
+          count = 0
+          for row in grid:
+              for cell in row:
+                  count += cell
+          return count
+
+
+      def count_neighbors(grid, row, column):
+          count = 0
+          for r in range(row - 1, row + 2):
+              for c in range(column - 1, column + 2):
+                  if r == row and c == column:
+                      continue
+                  if r >= 0 and r < len(grid) and c >= 0 and c < len(grid[0]):
+                      count += grid[r][c]
+          return count
+
+
+      def will_live(grid, row, column):
+          neighbors = count_neighbors(grid, row, column)
+          if grid[row][column] == 1:
+              return neighbors == 2 or neighbors == 3
+          return neighbors == 3
+
+
+      def next_generation(grid):
+          new_grid = []
+          for row in range(len(grid)):
+              new_row = []
+              for column in range(len(grid[0])):
+                  if will_live(grid, row, column):
+                      new_row.append(1)
+                  else:
+                      new_row.append(0)
+              new_grid.append(new_row)
+          return new_grid
+
+
+      def read_grid():
+          grid = []
+          while True:
+              line = input()
+              if line == "":
+                  break
+              row = []
+              for character in line:
+                  if character == "#":
+                      row.append(1)
+                  else:
+                      row.append(0)
+              grid.append(row)
+          return grid
+
+
+      def print_generation(grid, number):
+          print(f"Generation {number}: {count_alive(grid)} alive")
+          print_grid(grid)
+          print()
+
+
+      def main():
+          print("Type the grid, one row per line, and an empty line at the end:")
+          grid = read_grid()
+          print_generation(grid, 0)
+          print_generation(next_generation(grid), 1)
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: generations
+    title: Several generations
+    replaces: [A glider typed in]
+    task: |
+      Two generations show only the beginning of the story. After reading the grid, the program now asks how many generations to show, with the prompt `Generations: `. Then it prints generation 0, the grid as it was typed, and after it each new generation up to the number asked for, each worked out from the one before.
+
+      With the input
+
+      ```text
+      .....
+      .....
+      .###.
+      .....
+      .....
+
+      2
+      ```
+
+      the program prints:
+
+      ```
+      Type the grid, one row per line, and an empty line at the end:
+      .....
+      .....
+      .###.
+      .....
+      .....
+
+      Generations: 2
+      Generation 0: 3 alive
+      .....
+      .....
+      .###.
+      .....
+      .....
+
+      Generation 1: 3 alive
+      .....
+      ..#..
+      ..#..
+      ..#..
+      .....
+
+      Generation 2: 3 alive
+      .....
+      .....
+      .###.
+      .....
+      .....
+      ```
+
+      With 0 generations, the program prints only generation 0.
+    hints:
+      - "Read the number with `int(input(\"Generations: \"))` right after `read_grid()`, and print generation 0 before a loop."
+      - "Loop with `for number in range(1, generations + 1):`. In each round, work out the next generation and print it with its number."
+      - "Each new generation is worked out from the one before, not from the first one: `grid = next_generation(grid)` replaces the old grid with the new one, ready for the next round."
+    tests:
+      - name: A blinker for two generations
+        stdin: |
+          .....
+          .....
+          .###.
+          .....
+          .....
+
+          2
+      - name: A glider for four generations
+        hidden: true
+        stdin: |
+          .#....
+          ..#...
+          ###...
+          ......
+          ......
+          ......
+
+          4
+      - name: No generations at all
+        hidden: true
+        stdin: |
+          ##
+          #.
+
+          0
+      - name: A toad
+        hidden: true
+        stdin: |
+          ......
+          ......
+          ..###.
+          .###..
+          ......
+          ......
+
+          3
+    solution: |
+      # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+      def print_grid(grid):
+          for row in grid:
+              line = ""
+              for cell in row:
+                  if cell == 1:
+                      line += "#"
+                  else:
+                      line += "."
+              print(line)
+
+
+      def count_alive(grid):
+          count = 0
+          for row in grid:
+              for cell in row:
+                  count += cell
+          return count
+
+
+      def count_neighbors(grid, row, column):
+          count = 0
+          for r in range(row - 1, row + 2):
+              for c in range(column - 1, column + 2):
+                  if r == row and c == column:
+                      continue
+                  if r >= 0 and r < len(grid) and c >= 0 and c < len(grid[0]):
+                      count += grid[r][c]
+          return count
+
+
+      def will_live(grid, row, column):
+          neighbors = count_neighbors(grid, row, column)
+          if grid[row][column] == 1:
+              return neighbors == 2 or neighbors == 3
+          return neighbors == 3
+
+
+      def next_generation(grid):
+          new_grid = []
+          for row in range(len(grid)):
+              new_row = []
+              for column in range(len(grid[0])):
+                  if will_live(grid, row, column):
+                      new_row.append(1)
+                  else:
+                      new_row.append(0)
+              new_grid.append(new_row)
+          return new_grid
+
+
+      def read_grid():
+          grid = []
+          while True:
+              line = input()
+              if line == "":
+                  break
+              row = []
+              for character in line:
+                  if character == "#":
+                      row.append(1)
+                  else:
+                      row.append(0)
+              grid.append(row)
+          return grid
+
+
+      def print_generation(grid, number):
+          print(f"Generation {number}: {count_alive(grid)} alive")
+          print_grid(grid)
+          print()
+
+
+      def main():
+          print("Type the grid, one row per line, and an empty line at the end:")
+          grid = read_grid()
+          generations = int(input("Generations: "))
+          print_generation(grid, 0)
+          for number in range(1, generations + 1):
+              grid = next_generation(grid)
+              print_generation(grid, number)
+
+
+      if __name__ == "__main__":
+          main()
+
+  - id: stopping-early
+    title: Stopping early
+    task: |
+      Many patterns die out or freeze after a while, and printing the same empty grid fifty times helps nobody. Before it works out each new generation, the program now looks at the generation it printed last:
+
+      - When it has no live cells, the program prints `Everything is dead.` and stops.
+      - When the next generation would be exactly the same as it, the program prints `Nothing changes any more.` and stops.
+
+      Otherwise it goes on as before, up to the number of generations asked for. Comparing two grids takes no loops: `==` compares two lists item by item, and the lists inside them as well, so `new_grid == grid` is `True` when every cell is the same.
+
+      With the input
+
+      ```text
+      #...
+      .#..
+      ....
+
+      5
+      ```
+
+      the two lonely cells die at once, and the program prints:
+
+      ```
+      Type the grid, one row per line, and an empty line at the end:
+      #...
+      .#..
+      ....
+
+      Generations: 5
+      Generation 0: 2 alive
+      #...
+      .#..
+      ....
+
+      Generation 1: 0 alive
+      ....
+      ....
+      ....
+
+      Everything is dead.
+      ```
+    hints:
+      - "Both checks go at the start of each round of the `for` loop, before the program prints the next generation, and both leave the loop with `break` after their message."
+      - "`count_alive(grid) == 0` tells you everything is dead. For the other check, keep the next generation in a variable of its own, `new_grid = next_generation(grid)`, so you can compare it with `grid` before it replaces it."
+      - "When `new_grid == grid`, print the message and `break`. Otherwise `grid = new_grid` and print it as before."
+    tests:
+      - name: Dying out
+        stdin: |
+          #...
+          .#..
+          ....
+
+          5
+      - name: A block never changes
+        hidden: true
+        stdin: |
+          ....
+          .##.
+          .##.
+          ....
+
+          10
+      - name: Settling into a beehive
+        hidden: true
+        stdin: |
+          ......
+          .###..
+          .#....
+          ......
+          ......
+
+          9
+      - name: A blinker never stops
+        hidden: true
+        stdin: |
+          ...
+          ###
+          ...
+
+          3
+      - name: Nothing alive from the start
+        hidden: true
+        stdin: |
+          ...
+          ...
+
+          4
+    solution: |
+      # Conway's Game of Life on a grid of 0s and 1s: 1 is a live cell, 0 a dead one.
+
+
+      def print_grid(grid):
+          for row in grid:
+              line = ""
+              for cell in row:
+                  if cell == 1:
+                      line += "#"
+                  else:
+                      line += "."
+              print(line)
+
+
+      def count_alive(grid):
+          count = 0
+          for row in grid:
+              for cell in row:
+                  count += cell
+          return count
+
+
+      def count_neighbors(grid, row, column):
+          count = 0
+          for r in range(row - 1, row + 2):
+              for c in range(column - 1, column + 2):
+                  if r == row and c == column:
+                      continue
+                  if r >= 0 and r < len(grid) and c >= 0 and c < len(grid[0]):
+                      count += grid[r][c]
+          return count
+
+
+      def will_live(grid, row, column):
+          neighbors = count_neighbors(grid, row, column)
+          if grid[row][column] == 1:
+              return neighbors == 2 or neighbors == 3
+          return neighbors == 3
+
+
+      def next_generation(grid):
+          new_grid = []
+          for row in range(len(grid)):
+              new_row = []
+              for column in range(len(grid[0])):
+                  if will_live(grid, row, column):
+                      new_row.append(1)
+                  else:
+                      new_row.append(0)
+              new_grid.append(new_row)
+          return new_grid
+
+
+      def read_grid():
+          grid = []
+          while True:
+              line = input()
+              if line == "":
+                  break
+              row = []
+              for character in line:
+                  if character == "#":
+                      row.append(1)
+                  else:
+                      row.append(0)
+              grid.append(row)
+          return grid
+
+
+      def print_generation(grid, number):
+          print(f"Generation {number}: {count_alive(grid)} alive")
+          print_grid(grid)
+          print()
+
+
+      def main():
+          print("Type the grid, one row per line, and an empty line at the end:")
+          grid = read_grid()
+          generations = int(input("Generations: "))
+          print_generation(grid, 0)
+          for number in range(1, generations + 1):
+              if count_alive(grid) == 0:
+                  print("Everything is dead.")
+                  break
+              new_grid = next_generation(grid)
+              if new_grid == grid:
+                  print("Nothing changes any more.")
+                  break
+              grid = new_grid
+              print_generation(grid, number)
+
+
+      if __name__ == "__main__":
+          main()

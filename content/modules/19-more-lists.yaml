@@ -1,0 +1,874 @@
+id: more-lists
+summary: Lists of strings, floats and mixed values, three bugs that hide in functions that go through lists, lists inside lists as records, and matrices with rows and columns, up to a game board.
+steps:
+  - id: more-lists-any-type
+    slug: any-type
+    title: Lists of strings, floats and more
+    text: |
+      So far most of your lists have held whole numbers. A list can hold values of any type: strings, floating point numbers, Booleans, even other lists (step 3 of this module shows those). Everything you know about lists works the same way, whatever is inside.
+
+      ### A list of strings
+
+      ```python run
+      guests = ["Maya", "Leo", "Iris"]
+      guests.append("Omar")
+      print(guests)
+      print("Guests:", len(guests))
+
+      guests.sort()
+      for guest in guests:
+          print(guest)
+      ```
+
+      ```output
+      ['Maya', 'Leo', 'Iris', 'Omar']
+      Guests: 4
+      Iris
+      Leo
+      Maya
+      Omar
+      ```
+
+      When Python prints a whole list, it shows each string in quotes, so you can see where one ends and the next begins. `sort` puts strings in alphabetical order.
+
+      Careful with capital letters: Python compares strings character by character, and every capital letter comes before every small letter. So `"Zoe"` comes before `"adam"`:
+
+      ```python repl
+      >>> sorted(["adam", "Zoe", "bea"])
+      ['Zoe', 'adam', 'bea']
+      ```
+
+      ### A list of floats
+
+      A list of floating point numbers works with `sum`, `min` and `max` just like a list of integers:
+
+      ```python run
+      rainfall = [12.5, 0.0, 3.2, 8.8, 0.4]
+
+      print("Wettest day:", max(rainfall))
+      mean = sum(rainfall) / len(rainfall)
+      print(f"Mean: {mean:.2f} mm")
+      ```
+
+      ```output
+      Wettest day: 12.5
+      Mean: 4.98 mm
+      ```
+
+      ### Mixing types
+
+      One list can even hold values of different types, such as a name, an age and a height: `["Maya", 34, 1.68]`. That's allowed, but some things stop working. To sort a list, Python compares its items with each other, and it can't say whether a number is smaller than a string:
+
+      ```python run crash
+      mixed = [34, "Maya", 1.68]
+      mixed.sort()
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          mixed.sort()
+          ~~~~~~~~~~^^
+      TypeError: '<' not supported between instances of 'str' and 'int'
+      ```
+
+      The `<` in the message is the comparison that `sort` tried. Most lists hold one type of value, and step 3 shows when a mixed list makes sense.
+
+      **Your turn:** a frog's jumps are stored in meters. Fill in the blanks so the program prints the longest jump and the mean of the jumps:
+
+      ```
+      Longest: 3.15
+      Mean: 2.50
+      ```
+    fill: |
+      jumps = [2.4, 3.15, 1.8, 2.65]
+
+      print("Longest:", [[max]](jumps))
+      mean = [[sum]](jumps) / [[len]](jumps)
+      print(f"Mean: {mean:.2f}")
+    hints:
+      - Python has a built-in function for each blank. They work on a list of floats just as on a list of integers.
+      - "The largest item is `max(jumps)`. The mean is the sum of the items divided by how many there are: `sum(jumps) / len(jumps)`."
+    tests:
+      - expect: |
+          Longest: 3.15
+          Mean: 2.50
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          names = ["eve", "Bob", "alice", "Dan"]
+          names.sort()
+          print(names[0])
+          print(names[-1])
+          print(len(names[2]))
+        hints:
+          - "`sort` puts the strings in alphabetical order, but every capital letter comes before every small letter."
+          - "After sorting, the list is `['Bob', 'Dan', 'alice', 'eve']`."
+          - "`names[2]` is `'alice'`, and `len` counts its letters."
+      - task: |
+          Write a function `above_average(values)` that takes a list of floats and returns a new list with the values that are greater than the mean of all the values, in their original order.
+
+          For example, the mean of `[2.5, 4.0, 1.5, 6.0]` is 3.5, so `above_average([2.5, 4.0, 1.5, 6.0])` returns `[4.0, 6.0]`. When no value is greater than the mean, the function returns an empty list.
+        seed: |
+          def above_average(values: list) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(above_average([2.5, 4.0, 1.5, 6.0]))
+        solution: |
+          def above_average(values: list) -> list:
+              mean = sum(values) / len(values)
+              result = []
+              for value in values:
+                  if value > mean:
+                      result.append(value)
+              return result
+
+
+          if __name__ == "__main__":
+              print(above_average([2.5, 4.0, 1.5, 6.0]))
+        hints:
+          - First calculate the mean, once, before the loop. Then go through the values and compare each one with it.
+          - "Start with an empty list, `result = []`, and `append` each value that is greater than the mean. Return `result` after the loop."
+          - "The mean is `sum(values) / len(values)`."
+        tests:
+          - call: above_average([2.5, 4.0, 1.5, 6.0])
+          - call: above_average([10.0, 10.0])
+          - call: above_average([0.5, 9.75, 3.0])
+            hidden: true
+          - call: above_average([-1.5, 2.0, 0.25, 7.5, -3.0])
+            hidden: true
+
+  - id: more-lists-function-bugs
+    slug: function-bugs
+    title: Three bugs that hide in functions
+    text: |
+      Functions that go through a list have a few classic bugs. None of them gives an error message: the function runs and returns a wrong answer, which makes them hard to spot. It pays to know them on sight.
+
+      ### Bug 1: using a variable from outside the function
+
+      A function can see the variables of the main program, and using one of them by accident gives a function that only seems to work:
+
+      ```python run
+      def print_items(items: list):
+          for item in shopping:
+              print(item)
+
+
+      shopping = ["milk", "eggs"]
+      print_items(shopping)
+      print_items(["tea", "rice"])
+      ```
+
+      ```output
+      milk
+      eggs
+      milk
+      eggs
+      ```
+
+      The loop goes through `shopping`, not the parameter `items`, so the function prints the same list whatever you give it. It gets worse: in your programs, the lines that try out a function go under `if __name__ == "__main__":`, and the checks on this site call your function without running that block. Then `shopping` doesn't exist at all, and the function stops with a `NameError`. Inside a function, use only its parameters and the variables it creates itself.
+
+      ### Bug 2: overwriting a parameter
+
+      This function should count the scores that are at least the given limit:
+
+      ```python run
+      def count_at_least(scores: list, score: int) -> int:
+          count = 0
+          for score in scores:
+              if score >= score:
+                  count += 1
+          return count
+
+
+      print(count_at_least([3, 8, 5, 10], 6))
+      ```
+
+      ```output
+      4
+      ```
+
+      It should print 2 (for 8 and 10). The loop variable has the same name as the second parameter, so the first round of the loop replaces the limit 6 with the score 3. From then on, `score >= score` compares a number with itself, which is always true. Give every variable a name of its own:
+
+      ```python fragment
+      def count_at_least(scores: list, limit: int) -> int:
+          count = 0
+          for score in scores:
+              if score >= limit:
+                  count += 1
+          return count
+      ```
+
+      The same happens when a helper list inside the function gets the parameter's name, as in `scores = []`: the list the function was given is gone.
+
+      ### Bug 3: returning too early
+
+      `return` ends the function at once, even in the middle of a loop. This function should tell whether a list has a negative number in it:
+
+      ```python run
+      def has_negative(numbers: list) -> bool:
+          for number in numbers:
+              if number < 0:
+                  return True
+              else:
+                  return False
+
+
+      print(has_negative([4, -2, 7]))
+      ```
+
+      ```output
+      False
+      ```
+
+      The first number, 4, isn't negative, so the `else` branch returns `False` before the loop ever reaches -2. One negative number is enough to answer yes, but to answer no, the function has to check every number. So `return False` belongs after the loop:
+
+      ```python run
+      def has_negative(numbers: list) -> bool:
+          for number in numbers:
+              if number < 0:
+                  return True
+          return False
+
+
+      print(has_negative([4, -2, 7]))
+      print(has_negative([4, 2, 7]))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      **Your turn:** `all_even(numbers)` should return `True` when every number in the list is even, and `False` otherwise. It returns too early: `all_even([2, 4, 5])` gives `True`. Fix it.
+    seed: |
+      def all_even(numbers: list) -> bool:
+          for number in numbers:
+              if number % 2 == 0:
+                  return True
+              else:
+                  return False
+
+
+      if __name__ == "__main__":
+          print(all_even([2, 4, 6]))
+          print(all_even([2, 4, 5]))
+    solution: |
+      def all_even(numbers: list) -> bool:
+          for number in numbers:
+              if number % 2 != 0:
+                  return False
+          return True
+
+
+      if __name__ == "__main__":
+          print(all_even([2, 4, 6]))
+          print(all_even([2, 4, 5]))
+    hints:
+      - Which answer can the function give as soon as it finds one number, and which answer needs every number checked?
+      - One odd number is enough to return `False`, so return `False` inside the loop when a number is odd (`number % 2 != 0`).
+      - "`return True` goes after the loop, at the same indentation as `for`: if the loop ends, no number was odd."
+    tests:
+      - call: all_even([2, 4, 5])
+      - call: all_even([2, 4, 6])
+      - call: all_even([6, 3, 4])
+        hidden: true
+      - call: all_even([8])
+        hidden: true
+      - call: all_even([1, 2])
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          def count_word(words: list, word: str) -> int:
+              count = 0
+              for word in words:
+                  if word == word:
+                      count += 1
+              return count
+
+
+          print(count_word(["cat", "dog", "cat"], "cat"))
+          print(count_word(["cat", "dog", "cat"], "fish"))
+        hints:
+          - The loop variable has the same name as the second parameter. What happens to the word that was given?
+          - "On every round, `word` is the current word of the list, so `word == word` compares it with itself."
+          - The condition is true on every round, so the function counts every word in the list.
+      - task: |
+          Write a function `first_long_word(words, min_length)` that returns the first word in the list that has at least `min_length` characters. If no word is that long, it returns an empty string `""`.
+
+          For example, `first_long_word(["sun", "planet", "galaxy"], 5)` returns `"planet"`, and `first_long_word(["sun", "moon"], 5)` returns `""`.
+        seed: |
+          def first_long_word(words: list, min_length: int) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(first_long_word(["sun", "planet", "galaxy"], 5))
+              print(first_long_word(["sun", "moon"], 5))
+        solution: |
+          def first_long_word(words: list, min_length: int) -> str:
+              for word in words:
+                  if len(word) >= min_length:
+                      return word
+              return ""
+
+
+          if __name__ == "__main__":
+              print(first_long_word(["sun", "planet", "galaxy"], 5))
+              print(first_long_word(["sun", "moon"], 5))
+        hints:
+          - Go through the words with a `for` loop. As soon as one is long enough, you have the answer, so you can return it right away.
+          - "The empty string is the answer only when no word was long enough, so `return \"\"` goes after the loop, not in an `else`."
+          - Name the loop variable something other than the parameters, such as `word`.
+        tests:
+          - call: first_long_word(["sun", "planet", "galaxy"], 5)
+          - call: first_long_word(["sun", "moon"], 5)
+          - call: first_long_word(["comet", "orbit", "nebula"], 5)
+            hidden: true
+          - call: first_long_word(["a", "bb", "ccc", "dddd"], 4)
+            hidden: true
+          - call: first_long_word([], 1)
+            hidden: true
+
+  - id: more-lists-nested
+    slug: lists-in-lists
+    title: Lists inside lists
+    text: |
+      The items of a list can be lists themselves:
+
+      ```python run
+      teams = [["Ana", "Ben"], ["Cleo", "Dev", "Eli"], ["Finn"]]
+      print(teams)
+      print(teams[1])
+      print(teams[1][0])
+      print(len(teams), len(teams[1]))
+      ```
+
+      ```output
+      [['Ana', 'Ben'], ['Cleo', 'Dev', 'Eli'], ['Finn']]
+      ['Cleo', 'Dev', 'Eli']
+      Cleo
+      3 3
+      ```
+
+      Read `teams[1][0]` from left to right: `teams[1]` is the second team, which is a list, and `[0]` picks the first name in that list. The outer list has three items, and each of them happens to be a list.
+
+      ### A list as a record
+
+      A short list can also hold the facts about one thing, each at its own index. For a book, the title could be at index 0, the year at index 1 and the number of pages at index 2:
+
+      ```python fragment
+      ["The Glass Garden", 2011, 312]
+      ```
+
+      A list of such lists is a small database. A `for` loop goes through it one record at a time:
+
+      ```python run
+      books = [
+          ["The Glass Garden", 2011, 312],
+          ["Night Trains", 1998, 205],
+          ["River of Salt", 2020, 448],
+      ]
+
+      for book in books:
+          title = book[0]
+          year = book[1]
+          pages = book[2]
+          print(f"{title} ({year}), {pages} pages")
+      ```
+
+      ```output
+      The Glass Garden (2011), 312 pages
+      Night Trains (1998), 205 pages
+      River of Salt (2020), 448 pages
+      ```
+
+      On each round, `book` is one of the inner lists. Copying its items into variables with clear names makes the rest of the loop easy to read.
+
+      Adding a record is an `append` of a whole list. Finding the best record works as it did with plain numbers, except that you compare one item of each record and keep the whole record:
+
+      ```python run
+      books = [
+          ["The Glass Garden", 2011, 312],
+          ["Night Trains", 1998, 205],
+          ["River of Salt", 2020, 448],
+      ]
+      books.append(["Paper Moons", 1987, 260])
+
+      oldest = books[0]
+      for book in books:
+          if book[1] < oldest[1]:
+              oldest = book
+
+      print("Oldest:", oldest[0], oldest[1])
+      ```
+
+      ```output
+      Oldest: Paper Moons 1987
+      ```
+
+      The weak spot of such a record is that you have to remember what each index means: nothing in `book[2]` says "pages". The dictionaries, a little later in this part, give each value a name instead.
+
+      **Your turn:** each pet is a list of its name, its kind and its age. Fill in the blanks so the program prints:
+
+      ```
+      Rex is a dog, 4 years old
+      Tom is a cat, 7 years old
+      Polly is a parrot, 12 years old
+      ```
+    fill: |
+      pets = [
+          ["Rex", "dog", 4],
+          ["Tom", "cat", 7],
+          ["Polly", "parrot", 12],
+      ]
+
+      for pet in pets:
+          name = pet[[[0]]]
+          kind = pet[[[1]]]
+          age = pet[[[2]]]
+          print(f"{name} is a {kind}, {age} years old")
+    hints:
+      - On each round of the loop, `pet` is one inner list, such as `["Rex", "dog", 4]`.
+      - The name is at index 0, the kind at index 1 and the age at index 2.
+    tests:
+      - expect: |
+          Rex is a dog, 4 years old
+          Tom is a cat, 7 years old
+          Polly is a parrot, 12 years old
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          groups = [[4, 7], [1, 5, 9], [2]]
+          print(groups[1])
+          print(groups[1][2])
+          print(len(groups))
+          print(groups[2][0] * groups[0][0])
+        hints:
+          - "`groups[1]` is the second inner list, and Python prints it with its brackets."
+          - "`groups[1][2]` is the third number of that inner list."
+          - "`len(groups)` counts the inner lists, not the numbers in them. `groups[2][0]` is 2 and `groups[0][0]` is 4."
+      - task: |
+          A shopping cart is a list of items, and each item is a list of a product's name, its price and the quantity: `["milk", 1.25, 2]` is two bottles of milk at 1.25 each.
+
+          Write a function `total_price(cart)` that returns the total price of the cart. For example, `total_price([["milk", 1.25, 2], ["bread", 2.5, 1]])` returns `5.0`.
+        seed: |
+          def total_price(cart: list) -> float:
+              pass
+
+
+          if __name__ == "__main__":
+              print(total_price([["milk", 1.25, 2], ["bread", 2.5, 1]]))
+        solution: |
+          def total_price(cart: list) -> float:
+              total = 0
+              for item in cart:
+                  price = item[1]
+                  quantity = item[2]
+                  total += price * quantity
+              return total
+
+
+          if __name__ == "__main__":
+              print(total_price([["milk", 1.25, 2], ["bread", 2.5, 1]]))
+        hints:
+          - Go through the cart with a `for` loop. On each round the loop variable is one item, such as `["milk", 1.25, 2]`.
+          - The price is at index 1 and the quantity at index 2. Their product is what that item costs.
+          - "Add each item's cost to a total that starts at 0, and return the total after the loop."
+        tests:
+          - call: total_price([["milk", 1.25, 2], ["bread", 2.5, 1]])
+          - call: total_price([["apples", 0.75, 4], ["cheese", 6.5, 1], ["tea", 3.25, 2]])
+            hidden: true
+          - call: total_price([["pen", 1.5, 3]])
+            hidden: true
+
+  - id: more-lists-matrices
+    slug: matrices
+    title: "Matrices: rows and columns"
+    text: |
+      A table of numbers with rows and columns is called a **matrix**. In Python it's a list of rows, and each row is a list of numbers. Here are a café's sales for three days, one row per day and one column per product (coffee, tea and cake):
+
+      ```python run
+      sales = [
+          [14, 6, 3],
+          [20, 4, 7],
+          [11, 9, 5],
+      ]
+
+      print(sales[1][2])
+      sales[1][2] = 8
+      print(sales[1])
+      ```
+
+      ```output
+      7
+      [20, 4, 8]
+      ```
+
+      The first index picks the row and the second the column, both counting from zero: `sales[1][2]` is the cakes of the second day. The same two indexes change one value.
+
+      ### Going through a matrix
+
+      A `for` loop over a matrix gets one row at a time. A second loop inside the first goes through the numbers of that row:
+
+      ```python run
+      sales = [
+          [14, 6, 3],
+          [20, 4, 7],
+          [11, 9, 5],
+      ]
+
+      total = 0
+      for row in sales:
+          for amount in row:
+              print(amount, end=" ")
+              total += amount
+          print()
+
+      print("Total:", total)
+      ```
+
+      ```output
+      14 6 3
+      20 4 7
+      11 9 5
+      Total: 79
+      ```
+
+      ### A row and a column
+
+      One row is easy to get: it's `sales[0]`, a list of its own. A column is spread over all the rows, at the same index in each of them. So a function for a column goes through the rows and takes one item from each:
+
+      ```python run
+      def row_total(matrix: list, row_index: int) -> int:
+          return sum(matrix[row_index])
+
+
+      def column_total(matrix: list, column_index: int) -> int:
+          total = 0
+          for row in matrix:
+              total += row[column_index]
+          return total
+
+
+      sales = [
+          [14, 6, 3],
+          [20, 4, 7],
+          [11, 9, 5],
+      ]
+      print("Day 1:", row_total(sales, 0))
+      print("Tea:", column_total(sales, 1))
+      ```
+
+      ```output
+      Day 1: 23
+      Tea: 19
+      ```
+
+      ### Changing every value
+
+      This attempt to multiply every number by ten changes nothing:
+
+      ```python run
+      grid = [[1, 2], [3, 4]]
+      for row in grid:
+          for number in row:
+              number *= 10
+      print(grid)
+      ```
+
+      ```output
+      [[1, 2], [3, 4]]
+      ```
+
+      `number *= 10` changes only the variable `number`, not the list it came from. To change the list, the loop needs the indexes. With `range`, the rows go from 0 to `len(grid) - 1`, and the columns of row `i` from 0 to `len(grid[i]) - 1`:
+
+      ```python run
+      grid = [[1, 2], [3, 4]]
+      for i in range(len(grid)):
+          for j in range(len(grid[i])):
+              grid[i][j] *= 10
+      print(grid)
+      ```
+
+      ```output
+      [[10, 20], [30, 40]]
+      ```
+
+      **Your turn:** fill in the blanks so the function `column_max(matrix, column_index)` returns the largest number in the given column. For example, `column_max([[3, 9], [7, 2], [5, 4]], 0)` returns `7`.
+    fill: |
+      def column_max(matrix: list, column_index: int) -> int:
+          largest = matrix[0][column_index]
+          for row in matrix:
+              if row[[[column_index]]] > largest:
+                  largest = row[[[column_index]]]
+          return largest
+
+
+      if __name__ == "__main__":
+          numbers = [
+              [3, 9],
+              [7, 2],
+              [5, 4],
+          ]
+          print(column_max(numbers, 0))
+    hints:
+      - The loop gets one row at a time. Which item of the row belongs to the column you're looking at?
+      - "The column's number is the same index in every row: `row[column_index]`."
+    tests:
+      - call: column_max([[3, 9], [7, 2], [5, 4]], 0)
+      - call: column_max([[3, 9], [7, 2], [5, 4]], 1)
+        hidden: true
+      - call: column_max([[-5, 1, 0], [-2, 8, 3]], 0)
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          matrix = [[1, 2, 3], [4, 5, 6]]
+          matrix[0][2] = 10
+          for row in matrix:
+              print(row[1] + row[2])
+          print(len(matrix), len(matrix[0]))
+          print(matrix[1])
+        hints:
+          - "`matrix[0][2] = 10` changes the last number of the first row, so the first row is now `[1, 2, 10]`."
+          - The loop prints one line per row, adding the items at index 1 and 2 of that row.
+          - "`len(matrix)` is the number of rows, and `len(matrix[0])` is the number of items in the first row."
+      - task: |
+          Write a function `column_totals(matrix)` that returns a list with the sum of each column. All the rows have the same length.
+
+          For example, `column_totals([[14, 6, 3], [20, 4, 7], [11, 9, 5]])` returns `[45, 19, 15]`.
+        seed: |
+          def column_totals(matrix: list) -> list:
+              pass
+
+
+          if __name__ == "__main__":
+              print(column_totals([[14, 6, 3], [20, 4, 7], [11, 9, 5]]))
+        solution: |
+          def column_totals(matrix: list) -> list:
+              totals = []
+              for j in range(len(matrix[0])):
+                  total = 0
+                  for row in matrix:
+                      total += row[j]
+                  totals.append(total)
+              return totals
+
+
+          if __name__ == "__main__":
+              print(column_totals([[14, 6, 3], [20, 4, 7], [11, 9, 5]]))
+        hints:
+          - There are as many columns as there are items in a row, so `range(len(matrix[0]))` gives the index of every column.
+          - For each column index, go through the rows and add up the item at that index, as `column_total` in the lesson does. Then `append` the sum to the result list.
+          - "Another way: start with a list of zeros, one per column, and add each row's numbers to it with `totals[j] += row[j]`."
+        tests:
+          - call: column_totals([[14, 6, 3], [20, 4, 7], [11, 9, 5]])
+          - call: column_totals([[1, 2], [3, 4], [5, 6], [7, 8]])
+            hidden: true
+          - call: column_totals([[5, -1, 0, 2]])
+            hidden: true
+
+  - id: more-lists-game-board
+    slug: game-board
+    title: A grid as a game board
+    text: |
+      Many games are played on a grid: chess, tic-tac-toe, minesweeper, sudoku, battleship. A matrix is a natural way to keep such a board in a program. Each item is one square, and its two indexes are the square's row and column.
+
+      Here is a small sea for a game of battleship, where `0` is water and `1` is part of a ship. The program prints it with symbols a player can read:
+
+      ```python run
+      sea = [
+          [0, 0, 0, 0, 0],
+          [0, 1, 1, 1, 0],
+          [0, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 1, 1],
+      ]
+
+      for row in sea:
+          for square in row:
+              if square == 1:
+                  print("#", end="")
+              else:
+                  print("~", end="")
+          print()
+      ```
+
+      ```output
+      ~~~~~
+      ~###~
+      ~~~~~
+      #~~~~
+      #~~##
+      ```
+
+      `end=""` keeps the squares of a row on the same line, and the `print()` after the inner loop ends the row.
+
+      ### Asking the board
+
+      Questions about the game become small functions. How many ship squares are there, and does a shot at a given row and column hit?
+
+      ```python run
+      def ship_squares(sea: list) -> int:
+          count = 0
+          for row in sea:
+              count += row.count(1)
+          return count
+
+
+      def is_hit(sea: list, row_index: int, column_index: int) -> bool:
+          return sea[row_index][column_index] == 1
+
+
+      sea = [
+          [0, 0, 0, 0, 0],
+          [0, 1, 1, 1, 0],
+          [0, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 1, 1],
+      ]
+      print("Ship squares:", ship_squares(sea))
+      print(is_hit(sea, 1, 2))
+      print(is_hit(sea, 2, 2))
+      ```
+
+      ```output
+      Ship squares: 7
+      True
+      False
+      ```
+
+      ### Strings on the board
+
+      For some games, strings say more than numbers. This tic-tac-toe board holds `"X"`, `"O"` and `"."` for an empty square. A row is a win when its three squares hold the same piece, and that piece isn't the empty `"."`:
+
+      ```python run
+      def row_winner(board: list, row_index: int) -> str:
+          row = board[row_index]
+          if row[0] != "." and row[0] == row[1] and row[1] == row[2]:
+              return row[0]
+          return ""
+
+
+      board = [
+          ["O", "X", "."],
+          ["X", "X", "X"],
+          ["O", ".", "O"],
+      ]
+      print(row_winner(board, 1))
+      print(row_winner(board, 2) == "")
+      ```
+
+      ```output
+      X
+      True
+      ```
+
+      The function returns the winning piece, or an empty string when the row isn't a win. Printing an empty string prints an empty line, so the example compares it with `""` instead.
+
+      **Your turn:** write a function `column_winner(board, column_index)` that does the same for a column: it returns the piece (`"X"` or `"O"`) when every square of the column holds that piece, and `""` otherwise. A column of empty squares `"."` is not a win.
+
+      For the board `[["X", "O", "."], ["X", "O", "X"], ["X", ".", "O"]]`, column 0 gives `"X"` and column 1 gives `""`. Your function should work for a board of any number of rows.
+    seed: |
+      def column_winner(board: list, column_index: int) -> str:
+          pass
+
+
+      if __name__ == "__main__":
+          board = [["X", "O", "."], ["X", "O", "X"], ["X", ".", "O"]]
+          print(column_winner(board, 0))
+          print(column_winner(board, 1) == "")
+    solution: |
+      def column_winner(board: list, column_index: int) -> str:
+          first = board[0][column_index]
+          if first == ".":
+              return ""
+          for row in board:
+              if row[column_index] != first:
+                  return ""
+          return first
+
+
+      if __name__ == "__main__":
+          board = [["X", "O", "."], ["X", "O", "X"], ["X", ".", "O"]]
+          print(column_winner(board, 0))
+          print(column_winner(board, 1) == "")
+    hints:
+      - "Take the piece in the first row of the column, `board[0][column_index]`. If it's `\".\"`, the column can't be a win."
+      - "Then go through the rows: as soon as one row has something else at `column_index`, return `\"\"`."
+      - If the loop finishes, every square matched the first one, so return that piece.
+    tests:
+      - call: column_winner([["X", "O", "."], ["X", "O", "X"], ["X", ".", "O"]], 0)
+      - call: column_winner([["X", "O", "."], ["X", "O", "X"], ["X", ".", "O"]], 1)
+      - call: column_winner([["X", "O", "."], ["X", "O", "X"], ["X", ".", "O"]], 2)
+        hidden: true
+      - call: column_winner([[".", "O"], [".", "O"], [".", "O"], [".", "O"]], 0)
+        hidden: true
+      - call: column_winner([[".", "O"], [".", "O"], [".", "O"], [".", "O"]], 1)
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          board = [
+              ["X", "O", "X"],
+              [".", "X", "O"],
+              ["O", ".", "X"],
+          ]
+          print(board[2][0])
+          print(board[1])
+          empty = 0
+          for row in board:
+              empty += row.count(".")
+          print(empty)
+          print(board[0][0] + board[1][1] + board[2][2])
+        hints:
+          - The first index is the row and the second the column, both from zero.
+          - "`row.count(\".\")` counts the empty squares of one row, and the loop adds up the counts of all rows."
+          - "The last line joins three strings with `+`: the squares from the top left corner to the bottom right one."
+      - task: |
+          Write a function `diagonal_winner(board)` for a 3 by 3 tic-tac-toe board. A diagonal runs from one corner through the middle square to the opposite corner, and there are two of them. If all three squares of a diagonal hold the same piece (`"X"` or `"O"`), the function returns that piece. Otherwise it returns `""`. Empty squares are `"."`.
+
+          For example, for `[["X", "O", "."], [".", "X", "O"], ["O", ".", "X"]]` it returns `"X"`.
+        seed: |
+          def diagonal_winner(board: list) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(diagonal_winner([["X", "O", "."], [".", "X", "O"], ["O", ".", "X"]]))
+        solution: |
+          def diagonal_winner(board: list) -> str:
+              middle = board[1][1]
+              if middle == ".":
+                  return ""
+              if board[0][0] == middle and board[2][2] == middle:
+                  return middle
+              if board[0][2] == middle and board[2][0] == middle:
+                  return middle
+              return ""
+
+
+          if __name__ == "__main__":
+              print(diagonal_winner([["X", "O", "."], [".", "X", "O"], ["O", ".", "X"]]))
+        hints:
+          - "One diagonal is `board[0][0]`, `board[1][1]`, `board[2][2]`. The other is `board[0][2]`, `board[1][1]`, `board[2][0]`."
+          - Both diagonals go through the middle square `board[1][1]`. If it's empty, there's no win.
+          - Otherwise check whether both corners of one diagonal hold the same piece as the middle, then the same for the other diagonal.
+        tests:
+          - call: diagonal_winner([["X", "O", "."], [".", "X", "O"], ["O", ".", "X"]])
+          - call: diagonal_winner([["X", "X", "O"], [".", "O", "X"], ["O", ".", "X"]])
+          - call: diagonal_winner([["X", "X", "X"], ["O", "O", "."], [".", ".", "."]])
+            hidden: true
+          - call: diagonal_winner([["O", ".", "."], [".", ".", "."], [".", ".", "O"]])
+            hidden: true
+          - call: diagonal_winner([["O", "X", "X"], ["X", "O", "O"], ["X", "O", "X"]])
+            hidden: true

@@ -1,0 +1,434 @@
+id: formatting
+summary: Making output look the way you want. The sep and end arguments of print, a fixed number of decimals in f-strings, and widths and alignment for tidy columns.
+steps:
+  - id: formatting-sep-and-end
+    slug: sep-and-end
+    title: "Joining values in print: sep and end"
+    text: |
+      You know three ways to put text and values together for `print`. With `+`, every piece must be a string, so a number needs `str` first. With commas, `print` puts a space between the values, and they can be of any type. And an f-string puts the values inside the text:
+
+      ```python run
+      name = "Ada"
+      age = 36
+      print("Hi " + name + ", you are " + str(age))
+      print("Hi", name, "you are", age)
+      print(f"Hi {name}, you are {age}")
+      ```
+
+      ```output
+      Hi Ada, you are 36
+      Hi Ada you are 36
+      Hi Ada, you are 36
+      ```
+
+      Forgetting the `str` in the first way is a classic:
+
+      ```python run crash
+      age = 36
+      print("Age: " + age)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print("Age: " + age)
+                ~~~~~~~~^~~~~
+      TypeError: can only concatenate str (not "int") to str
+      ```
+
+      ### The separator: sep
+
+      When you give `print` several values with commas, it puts a space between them. You can choose another separator with the **`sep`** argument, written after the values as `sep=` and a string:
+
+      ```python run
+      print(15, 3, 2026, sep=".")
+      print("a", "b", "c", sep=", ")
+      print("no", "spaces", "at", "all", sep="")
+      print("one", "line", "each", sep="\n")
+      ```
+
+      ```output
+      15.3.2026
+      a, b, c
+      nospacesatall
+      one
+      line
+      each
+      ```
+
+      `sep=""` joins the values with nothing between them, and `"\n"` is the line break character, so `sep="\n"` puts each value on a line of its own.
+
+      `sep` is a **keyword argument**: it's given with its name, `sep=`, instead of by its position. That's how `print` can tell it from the values to print.
+
+      ### The end of the line: end
+
+      Every `print` ends its line with a line break, so the next `print` starts on a new line. The keyword argument **`end`** sets what comes at the end instead:
+
+      ```python run
+      print("Loading", end="")
+      print("...", end="")
+      print("done")
+      for i in range(1, 6):
+          print(i, end=" ")
+      print()
+      print("Next line")
+      ```
+
+      ```output
+      Loading...done
+      1 2 3 4 5
+      Next line
+      ```
+
+      With `end=""` the next `print` goes on in the same line. In the loop, `end=" "` keeps all the numbers in one line, with a space after each, and the empty `print()` at the end finishes that line. Without it, `Next line` would be printed right after the 5.
+
+      You can give both `sep` and `end` in one call: `print(1, 2, sep="+", end="=3\n")` prints `1+2=3`.
+
+      **Your turn:** fill in the blanks with the names of the keyword arguments, so the program prints:
+
+      ```
+      15.3.2026
+      Loading...done
+      ```
+    fill: |
+      day = 15
+      month = 3
+      year = 2026
+      print(day, month, year, [[sep]]=".")
+      print("Loading...", [[end]]="")
+      print("done")
+    hints:
+      - "One argument sets what goes between the values, the other what goes at the end of the line."
+      - "`sep` is the separator between values, and `end` replaces the line break at the end."
+    tests:
+      - expect: |
+          15.3.2026
+          Loading...done
+    more:
+      - task: |
+          Write the function `print_list(items: list)`, which prints the items of a list on one line, with a comma and a space between them but not after the last one. For example, `print_list(["red", "green", "blue"])` prints:
+
+          ```
+          red, green, blue
+          ```
+
+          You can assume the list has at least one item.
+        seed: |
+          def print_list(items: list):
+              pass
+
+
+          if __name__ == "__main__":
+              print_list(["red", "green", "blue"])
+        solution: |
+          def print_list(items: list):
+              for i in range(len(items)):
+                  if i < len(items) - 1:
+                      print(items[i], end=", ")
+                  else:
+                      print(items[i])
+
+
+          if __name__ == "__main__":
+              print_list(["red", "green", "blue"])
+        hints:
+          - "Print each item with `end=\", \"`, so the next item goes on in the same line."
+          - "The last item is different: it needs a line break, not a comma. Go through the indexes with `range(len(items))` so you know which item is the last."
+          - "For an index smaller than `len(items) - 1` use `end=\", \"`; for the last one, a plain `print(items[i])`."
+        tests:
+          - call: print_list(["red", "green", "blue"])
+          - call: print_list(["solo"])
+            hidden: true
+          - call: print_list([1, 2, 3, 4])
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          print("a", "b", "c", sep="-")
+          print("x", end="")
+          print("y", end="!")
+          print()
+          print(1, 2, sep="")
+          print("one", "two", sep="\n")
+        hints:
+          - "`sep` goes between the values: `\"-\"` between a, b and c."
+          - "`end=\"\"` and `end=\"!\"` keep the next `print` on the same line. The empty `print()` ends that line."
+          - "`sep=\"\\n\"` puts each value on a line of its own."
+
+  - id: formatting-decimals
+    slug: decimals
+    title: Decimals in f-strings
+    text: |
+      A division can give a number with many decimals, and printing it shows them all:
+
+      ```python run
+      total = 10
+      people = 3
+      share = total / people
+      print(f"Each pays {share}")
+      ```
+
+      ```output
+      Each pays 3.3333333333333335
+      ```
+
+      An f-string can say how a value should be shown. After the value inside the curly braces, write a colon and a **format specifier**. `.2f` means "as a decimal number with 2 decimals":
+
+      ```python run
+      total = 10
+      people = 3
+      share = total / people
+      print(f"Each pays {share:.2f}")
+      print(f"Exactly: {share:.5f}")
+      print(f"Roughly: {share:.0f}")
+      ```
+
+      ```output
+      Each pays 3.33
+      Exactly: 3.33333
+      Roughly: 3
+      ```
+
+      The number before the `f` is the number of decimals, and the last decimal is rounded: 2/3 with `.2f` is `0.67`. The `f` stands for a **f**loat, a number with a decimal point. The value itself doesn't change: only the way it's shown.
+
+      The specifier adds decimals too, which is handy for prices. A whole number gets zeros after the point:
+
+      ```python run
+      price = 4
+      discount = 0.5
+      print(f"{price:.2f} {discount:.2f} {price - discount:.2f}")
+      ```
+
+      ```output
+      4.00 0.50 3.50
+      ```
+
+      The last value shows that a calculation can go inside the braces too, with the specifier after it.
+
+      ### An f-string is a string
+
+      An f-string doesn't have to go straight to `print`. It makes an ordinary string, which you can store in a variable, join with other strings or return from a function:
+
+      ```python run
+      def receipt_line(item: str, price: float) -> str:
+          return f"{item}: {price:.2f}"
+
+
+      line = receipt_line("Tea", 2.5)
+      print(line)
+      print(receipt_line("Cake", 3.75) + " (today's special)")
+      print(len(line))
+      ```
+
+      ```output
+      Tea: 2.50
+      Cake: 3.75 (today's special)
+      9
+      ```
+
+      `receipt_line` returns the formatted text, and the code that calls it decides what to do with it. `len(line)` shows that `line` is an ordinary string of 9 characters.
+
+      **Your turn:** fill in the blank with a format specifier, so the program prints the average with two decimals:
+
+      ```
+      Average: 7.67
+      ```
+    fill: |
+      scores = [8, 6, 9]
+      average = sum(scores) / len(scores)
+      print(f"Average: {average:[[.2f]]}")
+    hints:
+      - "A format specifier comes after the colon inside the braces."
+      - "Two decimals are `.2f`: a dot, the number of decimals and the letter `f`."
+    tests:
+      - expect: "Average: 7.67"
+    more:
+      - task: |
+          Write a program that asks for the amount of a bill and the number of people sharing it, and prints how much each person pays, with two decimals:
+
+          ```
+          Bill: 100
+          People: 3
+          Each pays 33.33
+          ```
+
+          The bill may have decimals, so read it with `float`.
+        seed: |
+          # Split the bill.
+        solution: |
+          # Split the bill.
+          bill = float(input("Bill: "))
+          people = int(input("People: "))
+          print(f"Each pays {bill / people:.2f}")
+        hints:
+          - "Read the bill with `float(input(...))` and the number of people with `int(input(...))`."
+          - "Each person pays `bill / people`."
+          - "Show it with two decimals: `f\"Each pays {bill / people:.2f}\"`."
+        tests:
+          - stdin: |
+              100
+              3
+          - stdin: |
+              45.5
+              2
+            hidden: true
+          - stdin: |
+              12
+              4
+            hidden: true
+      - task: |
+          Write the function `price_tag(name: str, price: float) -> str`, which returns a price tag with the price in two decimals. For example, `price_tag("Coffee", 3.5)` returns `'Coffee costs 3.50'`.
+        seed: |
+          def price_tag(name: str, price: float) -> str:
+              pass
+
+
+          if __name__ == "__main__":
+              print(price_tag("Coffee", 3.5))
+        solution: |
+          def price_tag(name: str, price: float) -> str:
+              return f"{name} costs {price:.2f}"
+
+
+          if __name__ == "__main__":
+              print(price_tag("Coffee", 3.5))
+        hints:
+          - "Build the text with an f-string that has `name` and `price` in it."
+          - "Write the price as `{price:.2f}` for two decimals, and return the string instead of printing it."
+        tests:
+          - call: price_tag("Coffee", 3.5)
+          - call: price_tag("Bagel", 2)
+            hidden: true
+          - call: price_tag("Sandwich", 6.499)
+            hidden: true
+
+  - id: formatting-widths
+    slug: widths
+    title: Widths and alignment
+    text: |
+      Values of different lengths make ragged output. A table is easier to read when each column has its own width. In a format specifier, a number on its own is a **width**: the value takes at least that many characters, and spaces fill the rest:
+
+      ```python run
+      fruit = ["fig", "banana", "kiwi"]
+      prices = [3, 12, 5]
+      for i in range(len(fruit)):
+          print(f"{fruit[i]:8}|{prices[i]:4}|")
+      ```
+
+      ```output
+      fig     |   3|
+      banana  |  12|
+      kiwi    |   5|
+      ```
+
+      The names take 8 characters and the prices 4. Strings are put at the left edge of their space, numbers at the right. That's the usual way: words line up at their start and numbers at their last digit.
+
+      ### Choosing the alignment
+
+      A character before the width chooses the alignment: `<` for the left, `>` for the right and `^` for the middle:
+
+      ```python run
+      word = "cat"
+      print(f"[{word:<7}]")
+      print(f"[{word:>7}]")
+      print(f"[{word:^7}]")
+      ```
+
+      ```output
+      [cat    ]
+      [    cat]
+      [  cat  ]
+      ```
+
+      A width is the least space a value takes, not the most. A longer value isn't cut: `{"elephant":4}` is the whole `elephant`, and the column after it shifts. Choose widths for the longest value you expect.
+
+      ### Width and decimals together
+
+      For numbers with decimals, the width comes before the dot. `{price:7.2f}` shows the price with two decimals, in a space of 7 characters. That's what lines up the decimal points of a receipt:
+
+      ```python run
+      items = ["Coffee", "Croissant", "Water"]
+      prices = [3.5, 2.95, 1.2]
+      for i in range(len(items)):
+          print(f"{items[i]:<12}{prices[i]:7.2f}")
+      print("-" * 19)
+      print(f"{'Total':<12}{sum(prices):7.2f}")
+      ```
+
+      ```output
+      Coffee         3.50
+      Croissant      2.95
+      Water          1.20
+      -------------------
+      Total          7.65
+      ```
+
+      The two widths add up to 19, the length of the dashed line. Inside an f-string in double quotes, a string in the braces is written in single quotes, like `'Total'`.
+
+      **Your turn:** fill in the blanks so the program prints the names in a column of 10 characters, aligned to the left, and the points aligned to the right in a column of 4:
+
+      ```
+      Ada         12
+      Linus        7
+      Grace      105
+      ```
+    fill: |
+      names = ["Ada", "Linus", "Grace"]
+      points = [12, 7, 105]
+      for i in range(len(names)):
+          print(f"{names[i]:[[<10‖10]]}{points[i]:[[>4‖4]]}")
+    hints:
+      - "A width is a number after the colon. `<` aligns to the left and `>` to the right."
+      - "The names take `<10` and the points `>4`. (Strings go to the left and numbers to the right anyway, so `10` and `4` work too.)"
+    tests:
+      - expect: |
+          Ada         12
+          Linus        7
+          Grace      105
+    more:
+      - task: |
+          Write the function `print_scores(names: list, scores: list)`, which prints a table of names and scores. Each name is in a column of 10 characters, aligned to the left, and each score is in a column of 6, aligned to the right, with one decimal. The lists are equally long, and the score at an index belongs to the name at the same index. For example, `print_scores(["Mia", "Noah"], [9.25, 10])` prints:
+
+          ```
+          Mia          9.2
+          Noah        10.0
+          ```
+        seed: |
+          def print_scores(names: list, scores: list):
+              pass
+
+
+          if __name__ == "__main__":
+              print_scores(["Mia", "Noah"], [9.25, 10])
+        solution: |
+          def print_scores(names: list, scores: list):
+              for i in range(len(names)):
+                  print(f"{names[i]:<10}{scores[i]:6.1f}")
+
+
+          if __name__ == "__main__":
+              print_scores(["Mia", "Noah"], [9.25, 10])
+        hints:
+          - "Go through the indexes with `range(len(names))`, so you can use `names[i]` and `scores[i]` together."
+          - "The name is `{names[i]:<10}`. The score needs a width and decimals: `{scores[i]:6.1f}`."
+          - "Don't put a space between the two columns: the widths already give the spacing."
+        tests:
+          - call: print_scores(["Mia", "Noah"], [9.25, 10])
+          - call: print_scores(["Olivia", "Liam", "Emma"], [8.5, 7.75, 9.95])
+            hidden: true
+          - call: print_scores(["Sam"], [100])
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints. The brackets show where each value starts and ends.
+        predict: |
+          word = "ok"
+          number = 42
+          print(f"[{word:4}]")
+          print(f"[{number:4}]")
+          print(f"[{word:>4}]")
+          print(f"[{number:<4}]")
+          print(f"[{number:1}]")
+        hints:
+          - "With a width alone, a string goes to the left of its space and a number to the right."
+          - "`>` and `<` change the alignment: the string goes right and the number left."
+          - "A width smaller than the value doesn't cut it: the whole number is shown."

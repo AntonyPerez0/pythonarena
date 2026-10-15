@@ -1,0 +1,1526 @@
+id: oop-techniques
+summary: Making your own objects work with Python's operators and loops. Methods that return objects, comparisons with < and ==, arithmetic with + and -, a technical text for an object with __repr__, and iterators that let a for loop go through your object.
+steps:
+  - id: oop-techniques-comparisons
+    slug: comparisons
+    title: Comparing objects with operators
+    text: |
+      A method can return an object, including an object of its own class. And since `self` is the object itself, a method can return `self` too. Here `heavier` compares two parcels and returns the heavier one, whichever it is:
+
+      ```python run
+      class Parcel:
+          def __init__(self, label, weight):
+              self.label = label
+              self.weight = weight
+
+          def __str__(self):
+              return f"{self.label} ({self.weight} kg)"
+
+          def heavier(self, other):
+              if self.weight > other.weight:
+                  return self
+              return other
+
+
+      books = Parcel("Books", 12)
+      pillow = Parcel("Pillow", 2)
+      print(books.heavier(pillow))
+      print(pillow.heavier(books))
+      ```
+
+      ```output
+      Books (12 kg)
+      Books (12 kg)
+      ```
+
+      That works, but it would be nicer to compare parcels the way you compare numbers, with `>` and `<`. As it is, Python doesn't know how:
+
+      ```python run crash
+      class Parcel:
+          def __init__(self, label, weight):
+              self.label = label
+              self.weight = weight
+
+
+      books = Parcel("Books", 12)
+      pillow = Parcel("Pillow", 2)
+      print(books > pillow)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 9, in <module>
+          print(books > pillow)
+                ^^^^^^^^^^^^^^
+      TypeError: '>' not supported between instances of 'Parcel' and 'Parcel'
+      ```
+
+      ### Operator overloading
+
+      A class can decide what an operator means for its objects. This is called **operator overloading**. Each operator has a method with a special name, with two underscores on both sides, like `__init__` and `__str__`. When Python meets `a > b` and `a` is an object of your class, it calls `a.__gt__(b)` ("gt" for greater than). The method returns `True` or `False`:
+
+      ```python run
+      class Parcel:
+          def __init__(self, label, weight):
+              self.label = label
+              self.weight = weight
+
+          def __str__(self):
+              return f"{self.label} ({self.weight} kg)"
+
+          def __gt__(self, other):
+              return self.weight > other.weight
+
+          def __lt__(self, other):
+              return self.weight < other.weight
+
+
+      books = Parcel("Books", 12)
+      pillow = Parcel("Pillow", 2)
+      lamp = Parcel("Lamp", 5)
+      print(books > pillow)
+      print(books < pillow)
+
+      parcels = [books, pillow, lamp]
+      for parcel in sorted(parcels):
+          print(parcel)
+      print("Heaviest:", max(parcels))
+      ```
+
+      ```output
+      True
+      False
+      Pillow (2 kg)
+      Lamp (5 kg)
+      Books (12 kg)
+      Heaviest: Books (12 kg)
+      ```
+
+      You decide what "greater" means. Here it's the weight; for another class it could be a price, a date, or the alphabetical order of names. And there's a bonus: `sorted`, `min` and `max` compare items with `<` and `>`, so they work with your objects too, as soon as the class has these methods.
+
+      These are the comparison operators and their methods:
+
+      | Operator | Meaning | Method |
+      |---|---|---|
+      | `<` | less than | `__lt__(self, other)` |
+      | `>` | greater than | `__gt__(self, other)` |
+      | `<=` | less than or equal to | `__le__(self, other)` |
+      | `>=` | greater than or equal to | `__ge__(self, other)` |
+      | `==` | equal to | `__eq__(self, other)` |
+      | `!=` | not equal to | `__ne__(self, other)` |
+
+      You only need to write the ones that make sense for your class. The next step looks at `==`, which works a little differently.
+
+      **Your turn:** the faster runner is the one with fewer seconds. Fill in the blank with the name of the method that makes `<` work for runners, so the program prints:
+
+      ```
+      True
+      False
+      ```
+    fill: |
+      class Runner:
+          def __init__(self, name, seconds):
+              self.name = name
+              self.seconds = seconds
+
+          def [[__lt__]](self, other):
+              return self.seconds < other.seconds
+
+
+      if __name__ == "__main__":
+          ada = Runner("Ada", 61)
+          ben = Runner("Ben", 58)
+          print(ben < ada)
+          print(ada < ben)
+    hints:
+      - "Look at the table: which method does Python call for `<`?"
+      - "\"Less than\" is `lt`, with two underscores on both sides: `__lt__`."
+    tests:
+      - expect: |
+          True
+          False
+    more:
+      - task: |
+          A room is bigger than another when its floor area, width times length, is bigger. Add the methods `__lt__` and `__gt__` to the class `Room`, so that rooms can be compared with `<` and `>`, and `max` finds the biggest room. For example,
+
+          ```python fragment
+          kitchen = Room("Kitchen", 3, 4)
+          hall = Room("Hall", 2, 5)
+          print(kitchen > hall)
+          print(kitchen < hall)
+          print(hall < kitchen)
+          print(max([hall, kitchen]).name)
+          ```
+
+          should print:
+
+          ```
+          True
+          False
+          True
+          Kitchen
+          ```
+        seed: |
+          class Room:
+              def __init__(self, name, width, length):
+                  self.name = name
+                  self.width = width
+                  self.length = length
+
+              def area(self):
+                  return self.width * self.length
+
+
+          if __name__ == "__main__":
+              kitchen = Room("Kitchen", 3, 4)
+              hall = Room("Hall", 2, 5)
+              print(kitchen > hall)
+        solution: |
+          class Room:
+              def __init__(self, name, width, length):
+                  self.name = name
+                  self.width = width
+                  self.length = length
+
+              def area(self):
+                  return self.width * self.length
+
+              def __lt__(self, other):
+                  return self.area() < other.area()
+
+              def __gt__(self, other):
+                  return self.area() > other.area()
+
+
+          if __name__ == "__main__":
+              kitchen = Room("Kitchen", 3, 4)
+              hall = Room("Hall", 2, 5)
+              print(kitchen > hall)
+        hints:
+          - "Both methods take `self` and `other`, another room, and return `True` or `False`."
+          - "Compare the areas: `return self.area() < other.area()` in `__lt__`, and the same with `>` in `__gt__`."
+        require:
+          - pattern: def\s+__lt__\s*\(
+            message: "Write the method `__lt__(self, other)` for `<`."
+          - pattern: def\s+__gt__\s*\(
+            message: "Write the method `__gt__(self, other)` for `>`."
+        tests:
+          - call: |
+              kitchen = Room("Kitchen", 3, 4)
+              hall = Room("Hall", 2, 5)
+              print(kitchen > hall)
+              print(kitchen < hall)
+              print(hall < kitchen)
+              print(max([hall, kitchen]).name)
+          - call: |
+              attic = Room("Attic", 6, 2)
+              studio = Room("Studio", 3, 5)
+              closet = Room("Closet", 1, 2)
+              print(attic > studio)
+              print(attic < studio)
+              print(closet < attic)
+              rooms = [attic, studio, closet]
+              print(max(rooms).name)
+              print(min(rooms).name)
+              for room in sorted(rooms):
+                  print(room.name)
+            hidden: true
+      - task: |
+          A color on a screen is made of red, green and blue light, each a whole number from 0 to 255. Add two methods to the class `Color`. Both return a **new** color and leave the original as it is:
+
+          - `mix(other)` returns a color whose red is the average of the two colors' reds, rounded down, and the same for green and blue.
+          - `brighter()` returns a color with 50 more of each, but never more than 255. (`min` works with two numbers too: `min(a, b)` is the smaller of them.)
+
+          For example,
+
+          ```python fragment
+          red = Color(255, 0, 0)
+          blue = Color(0, 0, 255)
+          print(red.mix(blue))
+          print(red.brighter())
+          print(red)
+          ```
+
+          should print:
+
+          ```
+          rgb(127, 0, 127)
+          rgb(255, 50, 50)
+          rgb(255, 0, 0)
+          ```
+        seed: |
+          class Color:
+              def __init__(self, red, green, blue):
+                  self.red = red
+                  self.green = green
+                  self.blue = blue
+
+              def __str__(self):
+                  return f"rgb({self.red}, {self.green}, {self.blue})"
+
+
+          if __name__ == "__main__":
+              red = Color(255, 0, 0)
+              blue = Color(0, 0, 255)
+              print(red.mix(blue))
+              print(red.brighter())
+        solution: |
+          class Color:
+              def __init__(self, red, green, blue):
+                  self.red = red
+                  self.green = green
+                  self.blue = blue
+
+              def __str__(self):
+                  return f"rgb({self.red}, {self.green}, {self.blue})"
+
+              def mix(self, other):
+                  red = (self.red + other.red) // 2
+                  green = (self.green + other.green) // 2
+                  blue = (self.blue + other.blue) // 2
+                  return Color(red, green, blue)
+
+              def brighter(self):
+                  return Color(min(self.red + 50, 255), min(self.green + 50, 255), min(self.blue + 50, 255))
+
+
+          if __name__ == "__main__":
+              red = Color(255, 0, 0)
+              blue = Color(0, 0, 255)
+              print(red.mix(blue))
+              print(red.brighter())
+        hints:
+          - "A method can create an object of its own class: `return Color(...)`, with the new red, green and blue in the parentheses."
+          - "The average rounded down is `(self.red + other.red) // 2`. Don't change `self.red`: a new color gets the new values."
+          - "In `brighter`, `min(self.red + 50, 255)` is the smaller of the two, so it's never more than 255."
+        require:
+          - pattern: return\s+Color\s*\(
+            min: 2
+            message: "Both methods should return a new color: `return Color(...)`."
+        tests:
+          - call: |
+              red = Color(255, 0, 0)
+              blue = Color(0, 0, 255)
+              print(red.mix(blue))
+              print(red.brighter())
+              print(red)
+          - call: |
+              sky = Color(100, 180, 240)
+              grass = Color(41, 120, 9)
+              print(sky.mix(grass))
+              print(grass.mix(sky))
+              print(sky.brighter())
+              print(sky.brighter().brighter())
+              print(sky)
+              print(grass)
+            hidden: true
+
+  - id: oop-techniques-equality
+    slug: equality
+    title: Equality with __eq__
+    text: |
+      For `==`, Python has an answer even when your class has no method for it. But it's probably not the answer you want:
+
+      ```python run
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+
+      a = Point(1, 2)
+      b = Point(1, 2)
+      c = a
+      print(a == b)
+      print(a == c)
+      ```
+
+      ```output
+      False
+      True
+      ```
+
+      Without a method of its own, `==` asks whether the two are the very **same object**, as `is` does. `a` and `c` refer to the same point, but `b` is a different object, even though it has the same coordinates. To compare the contents, write the method **`__eq__`**:
+
+      ```python run
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __eq__(self, other):
+              return self.x == other.x and self.y == other.y
+
+
+      a = Point(1, 2)
+      b = Point(1, 2)
+      print(a == b)
+      print(a != b)
+      print(Point(3, 4) in [a, b, Point(3, 4)])
+      ```
+
+      ```output
+      True
+      False
+      True
+      ```
+
+      Two things come for free. When a class has `__eq__` but no `__ne__`, Python works out `!=` as the opposite of `==`. And everything that compares items with `==` now works with points: `in` for lists, and the list methods `count`, `index` and `remove`.
+
+      ### Comparing with something else
+
+      `__eq__` above expects `other` to be a point. Compared with anything else, say the string `"1, 2"`, it would stop with an `AttributeError`, since a string has no `x`. A careful `__eq__` first checks the type with `isinstance`, and returns `False` for anything that isn't a point:
+
+      ```python fragment
+      def __eq__(self, other):
+          if not isinstance(other, Point):
+              return False
+          return self.x == other.x and self.y == other.y
+      ```
+
+      ### A full set of comparisons
+
+      `<=` and `>=` don't come from `<` and `==` automatically: each needs a method of its own. They can be written with the ones you have. Software versions such as 3.12 and 3.14 are a good example. The major version, the first number, matters most, and the minor version only decides when the major versions are equal:
+
+      ```python run
+      class Version:
+          def __init__(self, major, minor):
+              self.major = major
+              self.minor = minor
+
+          def __eq__(self, other):
+              return self.major == other.major and self.minor == other.minor
+
+          def __lt__(self, other):
+              if self.major != other.major:
+                  return self.major < other.major
+              return self.minor < other.minor
+
+          def __le__(self, other):
+              return self < other or self == other
+
+
+      old = Version(3, 12)
+      new = Version(3, 14)
+      print(old < new)
+      print(new <= Version(3, 14))
+      print(Version(2, 99) < old)
+      ```
+
+      ```output
+      True
+      True
+      True
+      ```
+
+      Note how `__le__` uses `self < other` and `self == other`: inside the class, the operators call the class's own methods too.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Coin:
+          def __init__(self, value):
+              self.value = value
+
+
+      class Bill:
+          def __init__(self, value):
+              self.value = value
+
+          def __eq__(self, other):
+              return self.value == other.value
+
+
+      print(Coin(5) == Coin(5))
+      print(Bill(5) == Bill(5))
+      print(Bill(5) != Bill(10))
+      a = Coin(1)
+      b = a
+      print(a == b)
+    hints:
+      - "`Coin` has no `__eq__`, so `==` asks whether the two are the very same object. `Bill` compares the values."
+      - "Two separate `Coin(5)` objects are not the same object. But `b = a` doesn't make a new coin: `a` and `b` refer to the same one."
+      - "With `__eq__` and no `__ne__`, `!=` is the opposite of `==`."
+    more:
+      - task: |
+          Add comparisons to the class `Time`, a time of day in hours and minutes. Write the methods for `==`, `<`, `<=`, `>` and `>=`. The protected helper `_minutes()` is already there: it gives the time as minutes after midnight, which makes every comparison easy. For example,
+
+          ```python fragment
+          lunch = Time(12, 30)
+          meeting = Time(9, 45)
+          also_lunch = Time(12, 30)
+          print(lunch == also_lunch)
+          print(lunch != meeting)
+          print(meeting < lunch)
+          print(lunch <= also_lunch)
+          print(meeting >= lunch)
+          print(lunch > meeting)
+          ```
+
+          should print:
+
+          ```
+          True
+          True
+          True
+          True
+          False
+          True
+          ```
+        seed: |
+          class Time:
+              def __init__(self, hours, minutes):
+                  self.hours = hours
+                  self.minutes = minutes
+
+              def _minutes(self):
+                  return self.hours * 60 + self.minutes
+
+
+          if __name__ == "__main__":
+              lunch = Time(12, 30)
+              meeting = Time(9, 45)
+              print(meeting < lunch)
+        solution: |
+          class Time:
+              def __init__(self, hours, minutes):
+                  self.hours = hours
+                  self.minutes = minutes
+
+              def _minutes(self):
+                  return self.hours * 60 + self.minutes
+
+              def __eq__(self, other):
+                  return self._minutes() == other._minutes()
+
+              def __lt__(self, other):
+                  return self._minutes() < other._minutes()
+
+              def __le__(self, other):
+                  return self._minutes() <= other._minutes()
+
+              def __gt__(self, other):
+                  return self._minutes() > other._minutes()
+
+              def __ge__(self, other):
+                  return self._minutes() >= other._minutes()
+
+
+          if __name__ == "__main__":
+              lunch = Time(12, 30)
+              meeting = Time(9, 45)
+              print(meeting < lunch)
+        hints:
+          - "The methods are `__eq__`, `__lt__`, `__le__`, `__gt__` and `__ge__`, each with the parameters `self` and `other`. `!=` comes for free from `__eq__`."
+          - "Each one compares the two times in minutes: `return self._minutes() < other._minutes()` for `__lt__`, and the other operators the same way."
+          - "`other` is a `Time` too, so it has `_minutes()` as well. Using a protected method of another object of the same class is fine."
+        require:
+          - pattern: def\s+__eq__\s*\(
+            message: "Write `__eq__` for `==`."
+          - pattern: def\s+__le__\s*\(
+            message: "Write `__le__` for `<=`."
+          - pattern: def\s+__ge__\s*\(
+            message: "Write `__ge__` for `>=`."
+        tests:
+          - call: |
+              lunch = Time(12, 30)
+              meeting = Time(9, 45)
+              also_lunch = Time(12, 30)
+              print(lunch == also_lunch)
+              print(lunch != meeting)
+              print(meeting < lunch)
+              print(lunch <= also_lunch)
+              print(meeting >= lunch)
+              print(lunch > meeting)
+          - call: |
+              early = Time(6, 59)
+              late = Time(7, 0)
+              print(early == late)
+              print(early < late)
+              print(early > late)
+              print(late >= early)
+              print(late <= early)
+              print(early >= Time(6, 59))
+              print(sorted([late, early])[0].hours)
+            hidden: true
+      - task: |
+          A card has a rank and a suit, and two cards are equal when both their rank and their suit are the same. Add the method `__eq__` to the class `Card`. A card compared with something that isn't a card is not equal to it: that should give `False`, not an error. With `__eq__` in place, lists of cards work with `in` and `count` too. For example,
+
+          ```python fragment
+          hand = [Card("K", "hearts"), Card("7", "clubs"), Card("K", "hearts")]
+          print(Card("K", "hearts") == Card("K", "hearts"))
+          print(Card("K", "hearts") == Card("K", "spades"))
+          print(Card("7", "clubs") in hand)
+          print(hand.count(Card("K", "hearts")))
+          print(Card("7", "clubs") == "7 of clubs")
+          ```
+
+          should print:
+
+          ```
+          True
+          False
+          True
+          2
+          False
+          ```
+        seed: |
+          class Card:
+              def __init__(self, rank, suit):
+                  self.rank = rank
+                  self.suit = suit
+
+              def __str__(self):
+                  return f"{self.rank} of {self.suit}"
+
+
+          if __name__ == "__main__":
+              hand = [Card("K", "hearts"), Card("7", "clubs")]
+              print(Card("7", "clubs") in hand)
+        solution: |
+          class Card:
+              def __init__(self, rank, suit):
+                  self.rank = rank
+                  self.suit = suit
+
+              def __str__(self):
+                  return f"{self.rank} of {self.suit}"
+
+              def __eq__(self, other):
+                  if not isinstance(other, Card):
+                      return False
+                  return self.rank == other.rank and self.suit == other.suit
+
+
+          if __name__ == "__main__":
+              hand = [Card("K", "hearts"), Card("7", "clubs")]
+              print(Card("7", "clubs") in hand)
+        hints:
+          - "`__eq__(self, other)` returns `True` when the rank and the suit are both the same: combine the two comparisons with `and`."
+          - "Check the type first: `if not isinstance(other, Card):` then `return False`. A string has no `rank`, so without the check it would stop with an error."
+        require:
+          - pattern: def\s+__eq__\s*\(
+            message: "Write the method `__eq__(self, other)`."
+          - pattern: \bisinstance\s*\(
+            message: "Check with `isinstance` that `other` is a card before you compare its rank and suit."
+        tests:
+          - call: |
+              hand = [Card("K", "hearts"), Card("7", "clubs"), Card("K", "hearts")]
+              print(Card("K", "hearts") == Card("K", "hearts"))
+              print(Card("K", "hearts") == Card("K", "spades"))
+              print(Card("7", "clubs") in hand)
+              print(hand.count(Card("K", "hearts")))
+              print(Card("7", "clubs") == "7 of clubs")
+          - call: |
+              deck = [Card("A", "spades"), Card("2", "spades"), Card("A", "diamonds")]
+              print(Card("A", "spades") != Card("A", "diamonds"))
+              print(Card("2", "diamonds") in deck)
+              deck.remove(Card("2", "spades"))
+              for card in deck:
+                  print(card)
+              print(Card("A", "spades") == 1)
+            hidden: true
+
+  - id: oop-techniques-arithmetic
+    slug: arithmetic
+    title: Arithmetic operators
+    text: |
+      The arithmetic operators can be overloaded too. `a + b` calls `a.__add__(b)`, and whatever that method returns is the result. These are the methods:
+
+      | Operator | Meaning | Method |
+      |---|---|---|
+      | `+` | addition | `__add__(self, other)` |
+      | `-` | subtraction | `__sub__(self, other)` |
+      | `*` | multiplication | `__mul__(self, other)` |
+      | `/` | division | `__truediv__(self, other)` |
+      | `//` | integer division | `__floordiv__(self, other)` |
+
+      Here's a class for durations, such as the length of a song. Adding two durations gives a new duration:
+
+      ```python run
+      class Duration:
+          def __init__(self, minutes, seconds):
+              self.minutes = minutes
+              self.seconds = seconds
+
+          def __str__(self):
+              return f"{self.minutes} min {self.seconds} s"
+
+          def total_seconds(self):
+              return self.minutes * 60 + self.seconds
+
+          def __add__(self, other):
+              total = self.total_seconds() + other.total_seconds()
+              return Duration(total // 60, total % 60)
+
+
+      intro = Duration(3, 40)
+      solo = Duration(4, 35)
+      both = intro + solo
+      print(both)
+      print(intro)
+      print(solo)
+      ```
+
+      ```output
+      8 min 15 s
+      3 min 40 s
+      4 min 35 s
+      ```
+
+      `__add__` returns a **new** object and leaves both of the originals as they were. That's what `+` does with numbers too: `2 + 3` doesn't change the 2. If `__add__` changed `self` instead, `both = intro + solo` would quietly change `intro` as well, and that's a surprise nobody wants.
+
+      ### The other operand can be something else
+
+      The two sides of an operator don't have to be of the same class. Multiplying a duration by a whole number makes sense: a song played three times. A difference that would be negative doesn't make sense, so `__sub__` raises a `ValueError`, as a class does when it's given a value it can't accept:
+
+      ```python run crash
+      class Duration:
+          def __init__(self, minutes, seconds):
+              self.minutes = minutes
+              self.seconds = seconds
+
+          def __str__(self):
+              return f"{self.minutes} min {self.seconds} s"
+
+          def total_seconds(self):
+              return self.minutes * 60 + self.seconds
+
+          def __sub__(self, other):
+              total = self.total_seconds() - other.total_seconds()
+              if total < 0:
+                  raise ValueError("a duration can't be negative")
+              return Duration(total // 60, total % 60)
+
+          def __mul__(self, times):
+              total = self.total_seconds() * times
+              return Duration(total // 60, total % 60)
+
+
+      intro = Duration(3, 40)
+      solo = Duration(4, 35)
+      print(intro * 3)
+      print(solo - intro)
+      print(intro - solo)
+      ```
+
+      ```output
+      11 min 0 s
+      0 min 55 s
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 27, in <module>
+          print(intro - solo)
+                ~~~~~~^~~~~~
+        File "main.py", line 15, in __sub__
+          raise ValueError("a duration can't be negative")
+      ValueError: a duration can't be negative
+      ```
+
+      In `intro * 3`, `self` is `intro` and `times` is 3.
+
+      ### += comes for free
+
+      `a += b` is short for `a = a + b`, so it works as soon as `__add__` does. It makes a new object and puts it in the variable. That's handy for a total:
+
+      ```python fragment
+      total = Duration(0, 0)
+      for song in album:
+          total += song
+      ```
+
+      As with comparisons, write only the operators that mean something for your class. Adding two durations makes sense; dividing a duration by another duration, maybe not.
+
+      **Your turn:** the class `Weight` can already add weights. Fill in the blank with the name of the method that makes `-` work, so the program prints:
+
+      ```
+      700 g
+      300 g
+      500 g
+      ```
+    fill: |
+      class Weight:
+          def __init__(self, grams):
+              self.grams = grams
+
+          def __str__(self):
+              return f"{self.grams} g"
+
+          def __add__(self, other):
+              return Weight(self.grams + other.grams)
+
+          def [[__sub__]](self, other):
+              return Weight(self.grams - other.grams)
+
+
+      if __name__ == "__main__":
+          flour = Weight(500)
+          sugar = Weight(200)
+          print(flour + sugar)
+          print(flour - sugar)
+          print(flour)
+    hints:
+      - "Look at the table: which method does Python call for `-`?"
+      - "Subtraction is `sub`, with two underscores on both sides: `__sub__`."
+    tests:
+      - expect: |
+          700 g
+          300 g
+          500 g
+    more:
+      - task: |
+          A vector is a step on a grid: `x` steps right and `y` steps up. Add three methods to the class `Vector`. Each returns a new vector and leaves the original ones as they are:
+
+          - `+` adds two vectors: the new `x` is the sum of the two `x` values, and the same for `y`.
+          - `-` subtracts the other vector the same way.
+          - `*` multiplies a vector by a whole number: both `x` and `y` are multiplied by it.
+
+          For example,
+
+          ```python fragment
+          a = Vector(2, 3)
+          b = Vector(1, -1)
+          print(a + b)
+          print(a - b)
+          print(a * 3)
+          print(a)
+          ```
+
+          should print:
+
+          ```
+          (3, 2)
+          (1, 4)
+          (6, 9)
+          (2, 3)
+          ```
+        seed: |
+          class Vector:
+              def __init__(self, x, y):
+                  self.x = x
+                  self.y = y
+
+              def __str__(self):
+                  return f"({self.x}, {self.y})"
+
+
+          if __name__ == "__main__":
+              a = Vector(2, 3)
+              b = Vector(1, -1)
+              print(a + b)
+        solution: |
+          class Vector:
+              def __init__(self, x, y):
+                  self.x = x
+                  self.y = y
+
+              def __str__(self):
+                  return f"({self.x}, {self.y})"
+
+              def __add__(self, other):
+                  return Vector(self.x + other.x, self.y + other.y)
+
+              def __sub__(self, other):
+                  return Vector(self.x - other.x, self.y - other.y)
+
+              def __mul__(self, number):
+                  return Vector(self.x * number, self.y * number)
+
+
+          if __name__ == "__main__":
+              a = Vector(2, 3)
+              b = Vector(1, -1)
+              print(a + b)
+        hints:
+          - "The methods are `__add__`, `__sub__` and `__mul__`. Each returns `Vector(...)` with the new `x` and `y`."
+          - "In `__add__`, the new vector is `Vector(self.x + other.x, self.y + other.y)`."
+          - "In `__mul__` the second parameter is a number, not a vector: `Vector(self.x * number, self.y * number)`."
+        require:
+          - pattern: def\s+__add__\s*\(
+            message: "Write `__add__` for `+`."
+          - pattern: def\s+__sub__\s*\(
+            message: "Write `__sub__` for `-`."
+          - pattern: def\s+__mul__\s*\(
+            message: "Write `__mul__` for `*`."
+        tests:
+          - call: |
+              a = Vector(2, 3)
+              b = Vector(1, -1)
+              print(a + b)
+              print(a - b)
+              print(a * 3)
+              print(a)
+          - call: |
+              start = Vector(0, 0)
+              step = Vector(-2, 5)
+              position = start + step * 4
+              print(position)
+              print(position - step)
+              print(step * 0)
+              print(start)
+              print(step)
+            hidden: true
+      - task: |
+          The class `Clock` is a time of day. Add two operators to it:
+
+          - `clock + minutes` returns a new clock that many minutes later. After 23:59 comes 0:00 again.
+          - `clock - other` returns a whole number: how many minutes it takes to get from the time `other` to this clock's time, going forward, past midnight if needed.
+
+          For example,
+
+          ```python fragment
+          start = Clock(22, 30)
+          end = start + 150
+          print(end)
+          print(start)
+          print(end - start)
+          print(Clock(8, 15) - Clock(7, 50))
+          ```
+
+          should print:
+
+          ```
+          1:00
+          22:30
+          150
+          25
+          ```
+        seed: |
+          class Clock:
+              def __init__(self, hours, minutes):
+                  self.hours = hours
+                  self.minutes = minutes
+
+              def __str__(self):
+                  minutes = str(self.minutes)
+                  if self.minutes < 10:
+                      minutes = "0" + minutes
+                  return f"{self.hours}:{minutes}"
+
+
+          if __name__ == "__main__":
+              start = Clock(22, 30)
+              end = start + 150
+              print(end)
+              print(end - start)
+        solution: |
+          class Clock:
+              def __init__(self, hours, minutes):
+                  self.hours = hours
+                  self.minutes = minutes
+
+              def __str__(self):
+                  minutes = str(self.minutes)
+                  if self.minutes < 10:
+                      minutes = "0" + minutes
+                  return f"{self.hours}:{minutes}"
+
+              def _total(self):
+                  return self.hours * 60 + self.minutes
+
+              def __add__(self, minutes):
+                  total = (self._total() + minutes) % (24 * 60)
+                  return Clock(total // 60, total % 60)
+
+              def __sub__(self, other):
+                  return (self._total() - other._total()) % (24 * 60)
+
+
+          if __name__ == "__main__":
+              start = Clock(22, 30)
+              end = start + 150
+              print(end)
+              print(end - start)
+        hints:
+          - "Work in minutes after midnight: a helper method that returns `self.hours * 60 + self.minutes` makes both operators easier."
+          - "A day has `24 * 60` minutes. In `__add__`, `% (24 * 60)` takes the total back to the start of the day after midnight; then `total // 60` is the hours and `total % 60` the minutes."
+          - "`__sub__` returns a number, not a clock. The difference of the two times in minutes can be negative when midnight is in between, and `% (24 * 60)` turns it into the right number of minutes forward, since `%` in Python never gives a negative result for a positive divisor."
+        require:
+          - pattern: def\s+__add__\s*\(
+            message: "Write `__add__` for `+`."
+          - pattern: def\s+__sub__\s*\(
+            message: "Write `__sub__` for `-`."
+        tests:
+          - call: |
+              start = Clock(22, 30)
+              end = start + 150
+              print(end)
+              print(start)
+              print(end - start)
+              print(Clock(8, 15) - Clock(7, 50))
+          - call: |
+              alarm = Clock(6, 45)
+              print(alarm + 20)
+              print(alarm + 24 * 60)
+              print(alarm + 1000)
+              print(Clock(0, 5) - Clock(23, 55))
+              print(alarm - alarm)
+              print(Clock(12, 0) - Clock(6, 45))
+            hidden: true
+
+  - id: oop-techniques-repr
+    slug: str-and-repr
+    title: __str__ and __repr__
+    text: |
+      A value can be shown as text in two ways. One is for people: readable text, with no extra marks. The other is for programmers: a **technical representation** that shows exactly what the value is. For a string, the difference is the quotes. The function `repr` gives the technical one:
+
+      ```python repl
+      >>> name = "Ada"
+      >>> print(name)
+      Ada
+      >>> print(repr(name))
+      'Ada'
+      >>> print(repr(7))
+      7
+      >>> print([name, "7", 7])
+      ['Ada', '7', 7]
+      ```
+
+      You have seen the technical text many times without knowing it: a list prints its items with `repr`. That's why the strings in a printed list have quotes, and why `'7'` and `7` look different there. The interactive interpreter shows values with `repr` too.
+
+      ### __repr__ for your own classes
+
+      `print`, `str` and f-strings use an object's `__str__`. The function `repr`, and a list being printed, use its **`__repr__`**. A good `__repr__` returns text that looks like the Python code that would create an object with the same contents:
+
+      ```python run
+      class Pet:
+          def __init__(self, name, age):
+              self.name = name
+              self.age = age
+
+          def __str__(self):
+              return f"{self.name}, {self.age} years old"
+
+          def __repr__(self):
+              return f"Pet({repr(self.name)}, {self.age})"
+
+
+      rex = Pet("Rex", 3)
+      print(rex)
+      print(f"My pet is {rex}")
+      print(repr(rex))
+      pets = [rex, Pet("Tom", 5)]
+      print(pets)
+      ```
+
+      ```output
+      Rex, 3 years old
+      My pet is Rex, 3 years old
+      Pet('Rex', 3)
+      [Pet('Rex', 3), Pet('Tom', 5)]
+      ```
+
+      Notice `repr(self.name)` inside `__repr__`. It puts quotes around the name, so the text reads like code: `Pet('Rex', 3)`. Without it, you'd get `Pet(Rex, 3)`, which isn't how you'd write the call.
+
+      Without a `__repr__`, a printed list of pets would show something like `<__main__.Pet object at 0x7f3a2c1d5e50>` for each one: the class and an address in the computer's memory, which helps nobody.
+
+      ### When there's only __repr__
+
+      If a class has `__repr__` but no `__str__`, `print` uses `__repr__`. For a small class whose technical text reads well, that one method is enough for both:
+
+      ```python run
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __repr__(self):
+              return f"Point({self.x}, {self.y})"
+
+
+      p = Point(2, 5)
+      print(p)
+      print([p, Point(0, 0)])
+      ```
+
+      ```output
+      Point(2, 5)
+      [Point(2, 5), Point(0, 0)]
+      ```
+
+      It doesn't work the other way round: a list never uses `__str__` for its items. So when your objects end up in lists, and you want to see them while you test your program, give the class a `__repr__`.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      class Tag:
+          def __init__(self, text):
+              self.text = text
+
+          def __str__(self):
+              return "#" + self.text
+
+          def __repr__(self):
+              return f"Tag({repr(self.text)})"
+
+
+      tag = Tag("python")
+      print(tag)
+      print(repr(tag))
+      print([tag])
+      print(f"Tagged {tag}")
+    hints:
+      - "`print` and f-strings use `__str__`; `repr` and a printed list use `__repr__`."
+      - "`repr(self.text)` gives the text with single quotes around it: `'python'`."
+    more:
+      - task: |
+          Give the class `Planet` two text forms. `__str__` returns a sentence for people, such as `Mars has 2 moons`. `__repr__` returns the code that would create the planet, such as `Planet('Mars', 2)`. For example,
+
+          ```python fragment
+          mars = Planet("Mars", 2)
+          earth = Planet("Earth", 1)
+          print(mars)
+          print(repr(mars))
+          print([mars, earth])
+          ```
+
+          should print:
+
+          ```
+          Mars has 2 moons
+          Planet('Mars', 2)
+          [Planet('Mars', 2), Planet('Earth', 1)]
+          ```
+        seed: |
+          class Planet:
+              def __init__(self, name, moons):
+                  self.name = name
+                  self.moons = moons
+
+
+          if __name__ == "__main__":
+              mars = Planet("Mars", 2)
+              print(mars)
+              print(repr(mars))
+        solution: |
+          class Planet:
+              def __init__(self, name, moons):
+                  self.name = name
+                  self.moons = moons
+
+              def __str__(self):
+                  return f"{self.name} has {self.moons} moons"
+
+              def __repr__(self):
+                  return f"Planet({repr(self.name)}, {self.moons})"
+
+
+          if __name__ == "__main__":
+              mars = Planet("Mars", 2)
+              print(mars)
+              print(repr(mars))
+        hints:
+          - "`__str__` returns the sentence: `f\"{self.name} has {self.moons} moons\"`."
+          - "In `__repr__`, use `repr(self.name)` for the name, so that it gets its quotes: `f\"Planet({repr(self.name)}, {self.moons})\"`."
+        require:
+          - pattern: def\s+__repr__\s*\(
+            message: "Write the method `__repr__`."
+          - pattern: def\s+__str__\s*\(
+            message: "Write the method `__str__`."
+        tests:
+          - call: |
+              mars = Planet("Mars", 2)
+              earth = Planet("Earth", 1)
+              print(mars)
+              print(repr(mars))
+              print([mars, earth])
+          - call: |
+              planets = [Planet("Jupiter", 95), Planet("Venus", 0)]
+              print(planets)
+              for planet in planets:
+                  print(planet)
+              print(f"Biggest: {planets[0]}")
+            hidden: true
+      - task: |
+          Write the class `Position`, a square on a game board, from scratch:
+
+          - The constructor takes `x` and `y`.
+          - `__repr__` returns text such as `Position(3, 1)`. There's no `__str__`: `__repr__` is enough.
+          - `__eq__` says two positions are equal when both `x` and `y` are the same.
+          - `moved(dx, dy)` returns a **new** position, `dx` squares further right and `dy` squares further up.
+
+          For example,
+
+          ```python fragment
+          start = Position(0, 0)
+          goal = Position(3, 1)
+          print(start.moved(2, 1))
+          print(start.moved(3, 1) == goal)
+          print([start, goal])
+          ```
+
+          should print:
+
+          ```
+          Position(2, 1)
+          True
+          [Position(0, 0), Position(3, 1)]
+          ```
+        seed: |
+          # Write the class Position here.
+
+
+          if __name__ == "__main__":
+              start = Position(0, 0)
+              print(start.moved(2, 1))
+        solution: |
+          class Position:
+              def __init__(self, x, y):
+                  self.x = x
+                  self.y = y
+
+              def __repr__(self):
+                  return f"Position({self.x}, {self.y})"
+
+              def __eq__(self, other):
+                  return self.x == other.x and self.y == other.y
+
+              def moved(self, dx, dy):
+                  return Position(self.x + dx, self.y + dy)
+
+
+          if __name__ == "__main__":
+              start = Position(0, 0)
+              print(start.moved(2, 1))
+        hints:
+          - "Start with the constructor and `__repr__`, and print a position to see that it works."
+          - "`moved` doesn't change `self`: it returns `Position(self.x + dx, self.y + dy)`."
+          - "`__eq__` compares both coordinates and combines the comparisons with `and`."
+        require:
+          - pattern: def\s+__repr__\s*\(
+            message: "Write the method `__repr__`."
+          - pattern: def\s+__eq__\s*\(
+            message: "Write the method `__eq__`."
+        tests:
+          - call: |
+              start = Position(0, 0)
+              goal = Position(3, 1)
+              print(start.moved(2, 1))
+              print(start.moved(3, 1) == goal)
+              print([start, goal])
+          - call: Position(5, 5).moved(-1, 2)
+          - call: |
+              here = Position(4, 7)
+              path = [here.moved(1, 0), here.moved(0, 1), here]
+              print(path)
+              print(here.moved(-4, -7) == Position(0, 0))
+              print(here == Position(7, 4))
+              print(Position(1, 2) in path)
+              print(here)
+            hidden: true
+
+  - id: oop-techniques-iterators
+    slug: iterators
+    title: Iterators
+    text: |
+      A `for` loop goes through a list, a string, a dictionary or a file. You can make your own classes work with `for` too. It's useful for a class whose job is to hold a collection of things, such as a playlist of songs or a team of players.
+
+      First, a look at what a `for` loop does. It asks the collection for an **iterator**, an object that hands out the items one at a time, and then keeps asking the iterator for the next item. The built-in functions `iter` and `next` do the same steps by hand:
+
+      ```python repl
+      >>> songs = iter(["Highway Song", "Slow River"])
+      >>> next(songs)
+      'Highway Song'
+      >>> next(songs)
+      'Slow River'
+      >>> next(songs)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      StopIteration
+      ```
+
+      When the items run out, the iterator raises the exception **`StopIteration`**. A `for` loop catches it by itself, quietly, and that's how the loop knows it's done.
+
+      A class of your own doesn't do any of this yet:
+
+      ```python run crash
+      class Playlist:
+          def __init__(self):
+              self._songs = ["Highway Song", "Slow River"]
+
+
+      for song in Playlist():
+          print(song)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 6, in <module>
+          for song in Playlist():
+                      ~~~~~~~~^^
+      TypeError: 'Playlist' object is not iterable
+      ```
+
+      ### __iter__ and __next__
+
+      To make a class **iterable**, give it two methods:
+
+      - **`__iter__`** runs when a loop starts. It sets up the counting from the start, and returns the iterator. The simplest way is to let the object be its own iterator and return `self`.
+      - **`__next__`** returns the next item, and raises `StopIteration` when there are none left.
+
+      ```python run
+      class Playlist:
+          def __init__(self):
+              self._songs = []
+
+          def add(self, song):
+              self._songs.append(song)
+
+          def __iter__(self):
+              self._index = 0
+              return self
+
+          def __next__(self):
+              if self._index >= len(self._songs):
+                  raise StopIteration
+              song = self._songs[self._index]
+              self._index += 1
+              return song
+
+
+      mix = Playlist()
+      mix.add("Highway Song")
+      mix.add("Slow River")
+      mix.add("River Bend")
+      for song in mix:
+          print(song)
+      print(list(mix))
+      print("Slow River" in mix)
+      ```
+
+      ```output
+      Highway Song
+      Slow River
+      River Bend
+      ['Highway Song', 'Slow River', 'River Bend']
+      True
+      ```
+
+      `_index` remembers how far the iteration has got. `__iter__` sets it back to 0, so every new loop starts from the first song. Everything else that goes through items one by one works now too: `list(mix)` makes a list of the songs, and `in` goes through them looking for a match.
+
+      The items `__next__` returns don't have to be stored in a list. An iterator can work them out as it goes, for example the next number in a series.
+
+      **Your turn:** fill in the blank so that the loop stops when the team runs out of players, and the program prints:
+
+      ```
+      Ada
+      Ben
+      Cy
+      ```
+    fill: |
+      class Team:
+          def __init__(self, players):
+              self._players = players
+
+          def __iter__(self):
+              self._index = 0
+              return self
+
+          def __next__(self):
+              if self._index >= len(self._players):
+                  raise [[StopIteration]]
+              player = self._players[self._index]
+              self._index += 1
+              return player
+
+
+      if __name__ == "__main__":
+          team = Team(["Ada", "Ben", "Cy"])
+          for player in team:
+              print(player)
+    hints:
+      - "`__next__` tells the `for` loop that there are no more items by raising one particular exception."
+      - "The exception is `StopIteration`."
+    tests:
+      - expect: |
+          Ada
+          Ben
+          Cy
+    more:
+      - task: |
+          An album holds tracks. Make the class `Album` iterable, so that a `for` loop over an album goes through its tracks in the order they were added. Write the methods `__iter__` and `__next__`. For example,
+
+          ```python fragment
+          album = Album("Night Drive")
+          album.add(Track("Neon", 214))
+          album.add(Track("Tunnel", 187))
+          album.add(Track("Sunrise", 241))
+          for track in album:
+              print(track)
+          ```
+
+          should print:
+
+          ```
+          Neon (214 s)
+          Tunnel (187 s)
+          Sunrise (241 s)
+          ```
+        seed: |
+          class Track:
+              def __init__(self, title, seconds):
+                  self.title = title
+                  self.seconds = seconds
+
+              def __str__(self):
+                  return f"{self.title} ({self.seconds} s)"
+
+
+          class Album:
+              def __init__(self, name):
+                  self.name = name
+                  self._tracks = []
+
+              def add(self, track):
+                  self._tracks.append(track)
+
+
+          if __name__ == "__main__":
+              album = Album("Night Drive")
+              album.add(Track("Neon", 214))
+              album.add(Track("Tunnel", 187))
+              for track in album:
+                  print(track)
+        solution: |
+          class Track:
+              def __init__(self, title, seconds):
+                  self.title = title
+                  self.seconds = seconds
+
+              def __str__(self):
+                  return f"{self.title} ({self.seconds} s)"
+
+
+          class Album:
+              def __init__(self, name):
+                  self.name = name
+                  self._tracks = []
+
+              def add(self, track):
+                  self._tracks.append(track)
+
+              def __iter__(self):
+                  self._index = 0
+                  return self
+
+              def __next__(self):
+                  if self._index >= len(self._tracks):
+                      raise StopIteration
+                  track = self._tracks[self._index]
+                  self._index += 1
+                  return track
+
+
+          if __name__ == "__main__":
+              album = Album("Night Drive")
+              album.add(Track("Neon", 214))
+              album.add(Track("Tunnel", 187))
+              for track in album:
+                  print(track)
+        hints:
+          - "`__iter__` sets a counter attribute, say `self._index`, to 0 and returns `self`."
+          - "`__next__` raises `StopIteration` when the counter has reached the number of tracks. Otherwise it takes the track at the counter's position, adds one to the counter and returns the track."
+        require:
+          - pattern: def\s+__iter__\s*\(
+            message: "Write the method `__iter__`."
+          - pattern: def\s+__next__\s*\(
+            message: "Write the method `__next__`."
+        tests:
+          - call: |
+              album = Album("Night Drive")
+              album.add(Track("Neon", 214))
+              album.add(Track("Tunnel", 187))
+              album.add(Track("Sunrise", 241))
+              for track in album:
+                  print(track)
+          - call: |
+              album = Album("Quiet")
+              for track in album:
+                  print(track)
+              album.add(Track("Rain", 300))
+              album.add(Track("Snow", 95))
+              total = 0
+              for track in album:
+                  total += track.seconds
+              print(total)
+              for track in album:
+                  print(track.title)
+            hidden: true
+      - task: |
+          An iterator doesn't need a list: it can work out its items as it goes. Write a class `Countdown`. Its constructor takes a whole number `start`, and a `for` loop over a countdown goes through the numbers from `start` down to 1. A countdown from 0 or less has no numbers at all. Looping over the same countdown again starts from the beginning. For example,
+
+          ```python fragment
+          for number in Countdown(3):
+              print(number)
+          launch = Countdown(5)
+          print(list(launch))
+          print(list(launch))
+          print(list(Countdown(0)))
+          ```
+
+          should print:
+
+          ```
+          3
+          2
+          1
+          [5, 4, 3, 2, 1]
+          [5, 4, 3, 2, 1]
+          []
+          ```
+        seed: |
+          # Write the class Countdown here.
+
+
+          if __name__ == "__main__":
+              for number in Countdown(3):
+                  print(number)
+        solution: |
+          class Countdown:
+              def __init__(self, start):
+                  self.start = start
+
+              def __iter__(self):
+                  self._current = self.start
+                  return self
+
+              def __next__(self):
+                  if self._current < 1:
+                      raise StopIteration
+                  number = self._current
+                  self._current -= 1
+                  return number
+
+
+          if __name__ == "__main__":
+              for number in Countdown(3):
+                  print(number)
+        hints:
+          - "Store `start` in the constructor. In `__iter__`, set a second attribute, the current number, to `start`, and return `self`."
+          - "`__next__` raises `StopIteration` when the current number is below 1. Otherwise it remembers the current number, makes the current number one smaller, and returns the number it remembered."
+          - "Because `__iter__` sets the current number back to `start`, the second `list(launch)` starts from the beginning again."
+        require:
+          - pattern: def\s+__iter__\s*\(
+            message: "Write the method `__iter__`."
+          - pattern: def\s+__next__\s*\(
+            message: "Write the method `__next__`."
+        forbid:
+          - pattern: \brange\s*\(
+            message: "Work out the numbers in `__next__` instead of making them with `range`."
+        tests:
+          - call: |
+              for number in Countdown(3):
+                  print(number)
+              launch = Countdown(5)
+              print(list(launch))
+              print(list(launch))
+              print(list(Countdown(0)))
+          - call: |
+              print(list(Countdown(8)))
+              print(list(Countdown(1)))
+              print(list(Countdown(-3)))
+              total = 0
+              for number in Countdown(10):
+                  total += number
+              print(total)
+            hidden: true

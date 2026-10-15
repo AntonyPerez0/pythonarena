@@ -1,0 +1,985 @@
+id: strings
+summary: Doing more with text. Joining and repeating strings with + and *, the length of a string with len, single characters by their index (counting from the end too), slices, and searching a string with in and find.
+steps:
+  - id: strings-operations
+    slug: operations
+    title: Joining and repeating strings
+    text: |
+      You've joined strings with `+` already. Python calls this **concatenation**: the strings are put one after the other, exactly as they are. Nothing is added between them, so any space has to be inside one of the strings:
+
+      ```python run
+      first = "sun"
+      second = "flower"
+      print(first + second)
+      print(first + " " + second)
+      ```
+
+      ```output
+      sunflower
+      sun flower
+      ```
+
+      ### Repeating a string with *
+
+      The `*` operator works on strings too, when the other side is a whole number: it repeats the string that many times.
+
+      ```python run
+      print("ha" * 3)
+      print("-" * 20)
+      print("=" * 5 + " Menu " + "=" * 5)
+      ```
+
+      ```output
+      hahaha
+      --------------------
+      ===== Menu =====
+      ```
+
+      As with numbers, `*` comes before `+`, so on the last line Python first repeats the two `=` strings and then joins the three pieces.
+
+      The number can be a variable, which makes `*` handy in loops. This loop draws a triangle, one `#` wider in every round:
+
+      ```python run
+      width = 1
+      while width <= 4:
+          print("#" * width)
+          width += 1
+      ```
+
+      ```output
+      #
+      ##
+      ###
+      ####
+      ```
+
+      ### Numbers from input
+
+      A string can only be repeated a whole number of times. `input` always gives a string, even when the user types digits, so forgetting `int` stops the program:
+
+      ```python run crash
+      width = input("Width: ")
+      print("*" * width)
+      ```
+
+      ```input
+      6
+      ```
+
+      ```output
+      Width: 6
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print("*" * width)
+                ~~~~^~~~~~~
+      TypeError: can't multiply sequence by non-int of type 'str'
+      ```
+
+      A **sequence** is Python's word for a value that holds things in order, as a string holds its characters. The message says that `*` got a string on its other side (`'str'`) where it needs an `int`. With `width = int(input("Width: "))` the program works.
+
+      **Your turn:** fill in the blank so the program prints a line of 12 `=` characters under the title, as long as the title itself.
+
+      ```
+      Python Arena
+      ============
+      ```
+    fill: |
+      print("Python Arena")
+      print("=" [[*]] 12)
+    hints:
+      - "A string and a whole number can be put together with one operator: it repeats the string."
+      - "Repeating is `*`, as in `\"-\" * 20`."
+    tests:
+      - expect: |
+          Python Arena
+          ============
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          print("ab" * 3)
+          print("-" * 4 + ">")
+          print(2 * "xy" + "z")
+          print("3" * 3)
+        hints:
+          - "`*` with a string and a whole number repeats the string. The number may also come first: `2 * \"xy\"` is the same as `\"xy\" * 2`."
+          - "`*` comes before `+`: the repeated string is made first, then the other string is joined to its end."
+          - "`\"3\"` is in quotes, so it's a string, not a number. It's repeated, not multiplied."
+      - task: |
+          Write a program that asks for a width and a height and draws a box. The top and the bottom line are a `+`, then as many `-` characters as the width, then another `+`. Between them come as many lines as the height, each one a `|`, as many spaces as the width, and another `|`.
+
+          ```
+          Width: 5
+          Height: 2
+          +-----+
+          |     |
+          |     |
+          +-----+
+          ```
+        seed: |
+          width = int(input("Width: "))
+          height = int(input("Height: "))
+        solution: |
+          width = int(input("Width: "))
+          height = int(input("Height: "))
+          print("+" + "-" * width + "+")
+          row = 0
+          while row < height:
+              print("|" + " " * width + "|")
+              row += 1
+          print("+" + "-" * width + "+")
+        hints:
+          - "Build the top line from three pieces: `\"+\"`, then `\"-\"` repeated `width` times, then `\"+\"`. The bottom line is the same."
+          - The lines in between all look the same, so print them in a loop that runs `height` times.
+          - "A middle line is `\"|\" + \" \" * width + \"|\"`."
+        tests:
+          - stdin: |
+              5
+              2
+          - stdin: |
+              1
+              1
+            hidden: true
+          - stdin: |
+              8
+              0
+            hidden: true
+          - stdin: |
+              3
+              4
+            hidden: true
+
+  - id: strings-length
+    slug: length
+    title: The length of a string
+    text: |
+      You met the function `len` (short for length) in part 2: it tells how many characters a string has. Every character counts: letters, digits, spaces and punctuation alike. This module puts it to work.
+
+      ```python run
+      print(len("hello"))
+      print(len("hello there!"))
+      print(len(""))
+      ```
+
+      ```output
+      5
+      12
+      0
+      ```
+
+      The empty string `""` has no characters, so its length is 0. Note that `len` counts characters, not words: `"hello there!"` is two words but 12 characters, the space and the `!` included.
+
+      `len` gives back a whole number, so you can use it wherever a number fits. In a condition, `len(name) < 3` is `True` for a name of fewer than three characters, and `len(first) > len(second)` compares two strings by their length. In a calculation, `10 - len(word)` tells how many characters a word lacks from 10. And it can be the number of times to repeat a string. This program underlines whatever the user types:
+
+      ```python run
+      title = input("Title: ")
+      print(title)
+      print("-" * len(title))
+      ```
+
+      ```input
+      Loops and strings
+      ```
+
+      ```output
+      Title: Loops and strings
+      Loops and strings
+      -----------------
+      ```
+
+      ### Lining up text
+
+      The length is also what you need to line text up. To make a line exactly 20 characters wide, put `20 - len(word)` spaces in front of the word:
+
+      ```python run
+      word = "apple"
+      print(" " * (20 - len(word)) + word)
+      word = "watermelon"
+      print(" " * (20 - len(word)) + word)
+      ```
+
+      ```output
+                     apple
+                watermelon
+      ```
+
+      The parentheses matter. Without them, `" " * 20 - len(word)` would first make a string of 20 spaces and then try to subtract a number from it, which is an error.
+
+      ### Numbers have no length
+
+      `len` counts the characters of a string. A number isn't a string, so it has no length:
+
+      ```python run crash
+      year = 2026
+      print(len(year))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(len(year))
+                ~~~^^^^^^
+      TypeError: object of type 'int' has no len()
+      ```
+
+      To count the digits of a number, make it a string first: `len(str(year))` is 4.
+
+      **Your turn:** fill in the blank so the program underlines the heading typed in with `=` characters, exactly as long as the heading.
+
+      ```
+      Heading: Chapter one
+      Chapter one
+      ===========
+      ```
+    fill: |
+      heading = input("Heading: ")
+      print(heading)
+      print("=" * [[len(heading)]])
+    hints:
+      - The line must have as many `=` characters as the heading has characters.
+      - "`len(...)` gives the number of characters of the string in its parentheses."
+    tests:
+      - stdin: Chapter one
+      - stdin: Hi
+        hidden: true
+      - stdin: A much longer heading
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a password with the prompt `Password: `. If it has fewer than 8 characters, the program says how many characters are missing, as below. Otherwise it prints `Length OK`.
+
+          ```
+          Password: secret
+          Too short, add 2 more
+          ```
+        seed: |
+          password = input("Password: ")
+        solution: |
+          password = input("Password: ")
+          if len(password) < 8:
+              missing = 8 - len(password)
+              print(f"Too short, add {missing} more")
+          else:
+              print("Length OK")
+        hints:
+          - "`len(password)` is the number of characters typed in. Compare it with 8 in an `if`."
+          - The number of missing characters is 8 minus the length.
+        tests:
+          - stdin: secret
+          - stdin: correct horse
+            hidden: true
+          - stdin: abcdefgh
+            hidden: true
+          - stdin: x
+            hidden: true
+      - task: |
+          Write a program that asks for a dish and its price and prints them on one line exactly 24 characters wide, with dots filling the space between the dish and the price. Read the price as text: it doesn't need to be a number here.
+
+          ```
+          Dish: Pasta
+          Price: 12
+          Pasta.................12
+          ```
+        seed: |
+          dish = input("Dish: ")
+          price = input("Price: ")
+        solution: |
+          dish = input("Dish: ")
+          price = input("Price: ")
+          dots = 24 - len(dish) - len(price)
+          print(dish + "." * dots + price)
+        hints:
+          - The dots fill what's left of the 24 characters after the dish and the price.
+          - "The number of dots is `24 - len(dish) - len(price)`. Keep it in a variable."
+          - "Join the three pieces with `+`: the dish, `\".\"` repeated that many times, and the price."
+        tests:
+          - stdin: |
+              Pasta
+              12
+          - stdin: |
+              Soup of the day
+              7
+            hidden: true
+          - stdin: |
+              Tea
+              3
+            hidden: true
+          - stdin: |
+              Fish and chips
+              15
+            hidden: true
+
+  - id: strings-indexing
+    slug: indexing
+    title: One character at a time
+    text: |
+      A string is a row of characters, and each character has a number that tells its place: its **index**. Indexes start from 0, not 1. The first character has the index 0, the second has 1, and so on:
+
+      ```text
+      p  y  t  h  o  n
+      0  1  2  3  4  5
+      ```
+
+      To get a single character, write its index in square brackets after the string:
+
+      ```python run
+      word = "python"
+      print(word[0])
+      print(word[1])
+      print(word[5])
+      ```
+
+      ```output
+      p
+      y
+      n
+      ```
+
+      The result is a string too, one character long, so you can join it, compare it and print it like any other string.
+
+      ### The last character
+
+      A string of 6 characters has the indexes 0 to 5: the last index is always one less than the length. So for a string of any length, the last character is at `len(text) - 1`:
+
+      ```python run
+      city = input("City: ")
+      print("First letter: " + city[0])
+      print("Last letter: " + city[len(city) - 1])
+      ```
+
+      ```input
+      Helsinki
+      ```
+
+      ```output
+      City: Helsinki
+      First letter: H
+      Last letter: i
+      ```
+
+      ### IndexError
+
+      Asking for an index that the string doesn't have stops the program. A very common slip is to use the length itself as the last index:
+
+      ```python run crash
+      word = "cat"
+      print(word[len(word)])
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print(word[len(word)])
+                ~~~~^^^^^^^^^^^
+      IndexError: string index out of range
+      ```
+
+      `"cat"` has the indexes 0, 1 and 2, and `len(word)` is 3. "Out of range" means the index is outside the indexes the string has.
+
+      ### Every character in turn
+
+      With a helper variable as the index, a loop can visit the characters one by one. It goes on while the index is below the length, so the last round has the index `len(word) - 1`:
+
+      ```python run
+      word = "loop"
+      index = 0
+      while index < len(word):
+          print(f"{index}: {word[index]}")
+          index += 1
+      ```
+
+      ```output
+      0: l
+      1: o
+      2: o
+      3: p
+      ```
+
+      **Your turn:** fill in the blanks so the program prints the initials of the name typed in, each followed by a dot.
+
+      ```
+      First name: Ada
+      Last name: Lovelace
+      A.L.
+      ```
+    fill: |
+      first = input("First name: ")
+      last = input("Last name: ")
+      print(first[[[0]]] + "." + last[[[0]]] + ".")
+    hints:
+      - An initial is the first character of a name.
+      - Indexes start from 0, so the first character of `first` is `first[0]`. Type the index into each blank.
+    tests:
+      - stdin: |
+          Ada
+          Lovelace
+      - stdin: |
+          Grace
+          Hopper
+        hidden: true
+      - stdin: |
+          Linus
+          Torvalds
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a word and prints its characters one per line, each with its place in the word, counted from 1.
+
+          ```
+          Word: cat
+          1. c
+          2. a
+          3. t
+          ```
+        seed: |
+          word = input("Word: ")
+        solution: |
+          word = input("Word: ")
+          index = 0
+          while index < len(word):
+              print(f"{index + 1}. {word[index]}")
+              index += 1
+        hints:
+          - "Loop with an index that starts at 0 and goes on while it's below `len(word)`."
+          - The character is `word[index]`. Its place counted from 1 is one more than its index, `index + 1`.
+        tests:
+          - stdin: cat
+          - stdin: a
+            hidden: true
+          - stdin: banana
+            hidden: true
+          - stdin: hi there
+            hidden: true
+      - task: |
+          This program should print every character of a word twice, one pair per line, but it stops with an `IndexError`. Fix it.
+
+          ```
+          Word: cat
+          cc
+          aa
+          tt
+          ```
+        seed: |
+          word = input("Word: ")
+          index = 0
+          while index <= len(word):
+              print(word[index] + word[index])
+              index += 1
+        solution: |
+          word = input("Word: ")
+          index = 0
+          while index < len(word):
+              print(word[index] + word[index])
+              index += 1
+        hints:
+          - "Check it and read the error: which index is it asking for when it stops? For `cat`, which indexes exist?"
+          - The last index is `len(word) - 1`, but the loop also runs with `index` equal to `len(word)`. Look at the comparison in the condition.
+        tests:
+          - stdin: cat
+          - stdin: x
+            hidden: true
+          - stdin: hello
+            hidden: true
+
+  - id: strings-negative-indexes
+    slug: negative-indexes
+    title: Counting from the end
+    text: |
+      `word[len(word) - 1]` gets the last character, but Python has a shorter way: **negative indexes**, which count from the end. The index -1 is the last character, -2 the one before it, and so on:
+
+      ```text
+       p   y   t   h   o   n
+      -6  -5  -4  -3  -2  -1
+      ```
+
+      ```python run
+      word = "python"
+      print(word[-1])
+      print(word[-2])
+      print(word[-6])
+      ```
+
+      ```output
+      n
+      o
+      p
+      ```
+
+      `word[-1]` is always the same character as `word[len(word) - 1]`, whatever the length of the word. Negative indexes run out too: `"python"` has nothing at the index -7, so `word[-7]` is an `IndexError`, just as `word[6]` is.
+
+      ### Empty input
+
+      When the user just presses Enter, `input` gives the empty string. It has no characters, so it has no first or last character, and every index is out of range:
+
+      ```python run crash
+      text = input("Text: ")
+      print("Last character: " + text[-1])
+      ```
+
+      ```input
+
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          print("Last character: " + text[-1])
+                                     ~~~~^^^^
+      IndexError: string index out of range
+      ```
+
+      When a program can get an empty string, check the length before you use an index:
+
+      ```python run
+      text = input("Text: ")
+      if len(text) > 0:
+          print("Last character: " + text[-1])
+      else:
+          print("The text is empty")
+      ```
+
+      ```input
+
+      ```
+
+      ```output
+      Text:
+      The text is empty
+      ```
+
+      ### Backwards through a string
+
+      A loop can go through a string from its end. Here the index starts at -1 and goes down by one in every round, until it has passed the first character, which is at `-len(word)`:
+
+      ```python run
+      word = "stressed"
+      backwards = ""
+      index = -1
+      while index >= -len(word):
+          backwards += word[index]
+          index -= 1
+      print(backwards)
+      ```
+
+      ```output
+      desserts
+      ```
+
+      `stressed` has 8 characters, so `-len(word)` is -8. The loop runs with the indexes -1, -2 and so on down to -8, adding one character in every round, and ends when `index` is -9. The same works with ordinary indexes: start from `len(word) - 1`, the last index, and go down while the index is at least 0.
+
+      **Your turn:** fill in the blanks so the program prints the first and the last character of the word typed in. Use a negative index for the last one.
+
+      ```
+      Word: banana
+      First: b
+      Last: a
+      ```
+    fill: |
+      word = input("Word: ")
+      print("First: " + word[[[0]]])
+      print("Last: " + word[[[-1]]])
+    hints:
+      - The first character has the index 0.
+      - Counting from the end, the last character has the index -1.
+    require:
+      - pattern: \[\s*-\s*1\s*\]
+        message: Use the negative index -1 for the last character.
+    tests:
+      - stdin: banana
+      - stdin: Python
+        hidden: true
+      - stdin: x
+        hidden: true
+    more:
+      - task: |
+          A palindrome is a word that reads the same backwards, like `level` or `racecar`. Write a program that asks for a word and says whether it's a palindrome.
+
+          ```
+          Word: level
+          level is a palindrome
+          ```
+
+          For a word that isn't, it prints, for example, `python is not a palindrome`.
+        seed: |
+          word = input("Word: ")
+        solution: |
+          word = input("Word: ")
+          backwards = ""
+          index = -1
+          while index >= -len(word):
+              backwards += word[index]
+              index -= 1
+          if backwards == word:
+              print(f"{word} is a palindrome")
+          else:
+              print(f"{word} is not a palindrome")
+        hints:
+          - First build the word backwards in a new string, as in the lesson's last example.
+          - "Then compare: if the backwards string is equal to the word (`==`), it's a palindrome."
+        tests:
+          - stdin: level
+          - stdin: python
+            hidden: true
+          - stdin: racecar
+            hidden: true
+          - stdin: ab
+            hidden: true
+          - stdin: noon
+            hidden: true
+      - task: |
+          Write a program that asks for a sentence and looks at its last character. If it's `?`, the program prints `A question`; if it's `!`, it prints `An exclamation`; otherwise it prints `A statement`. If the user types nothing at all, it prints `Nothing to read`.
+
+          ```
+          Sentence: Is it raining?
+          A question
+          ```
+        seed: |
+          sentence = input("Sentence: ")
+        solution: |
+          sentence = input("Sentence: ")
+          if len(sentence) == 0:
+              print("Nothing to read")
+          elif sentence[-1] == "?":
+              print("A question")
+          elif sentence[-1] == "!":
+              print("An exclamation")
+          else:
+              print("A statement")
+        hints:
+          - "The last character is `sentence[-1]`. Compare it with `\"?\"` and `\"!\"` in an `if` and `elif`s."
+          - An empty sentence has no last character, so check for it first, before any index is used.
+          - "The empty sentence has the length 0: `if len(sentence) == 0:`."
+        tests:
+          - stdin: Is it raining?
+          - stdin: Watch out!
+            hidden: true
+          - stdin: It is raining.
+            hidden: true
+          - stdin: "\n"
+            hidden: true
+          - stdin: "?"
+            hidden: true
+
+  - id: strings-slices
+    slug: slices
+    title: Slices
+    text: |
+      An index gives you one character. A **slice** gives you a piece of a string, a **substring**: `text[start:end]` takes the characters from the index `start` up to, but not including, the index `end`.
+
+      ```python run
+      text = "basketball"
+      print(text[0:6])
+      print(text[6:10])
+      print(text[2:5])
+      ```
+
+      ```output
+      basket
+      ball
+      ske
+      ```
+
+      It helps to picture the indexes as marks between the characters, with the mark 0 before the first character. A slice takes what lies between two marks:
+
+      ```text
+      | b | a | s | k | e | t | b | a | l | l |
+      0   1   2   3   4   5   6   7   8   9   10
+      ```
+
+      So `text[0:6]` is everything between the marks 0 and 6. Because the end is left out, the length of a slice is simply `end - start`: `text[2:5]` has 3 characters.
+
+      ### Leaving out the start or the end
+
+      Leave out the start, and the slice begins at the start of the string. Leave out the end, and it goes on to the end. Negative indexes work in slices too:
+
+      ```python run
+      date = "2026-10-15"
+      print(date[:4])
+      print(date[5:7])
+      print(date[-2:])
+      ```
+
+      ```output
+      2026
+      10
+      15
+      ```
+
+      `date[:4]` is the first four characters, and `date[-2:]` the last two.
+
+      ### Slices don't run out
+
+      Unlike an index, a slice that goes past the end of the string doesn't stop the program. It takes whatever characters there are, perhaps none at all:
+
+      ```python run
+      word = "cat"
+      print(word[1:100])
+      print("[" + word[5:9] + "]")
+      ```
+
+      ```output
+      at
+      []
+      ```
+
+      A loop can move a slice along a string. This one prints a code in pieces of three characters; the last piece is shorter, since the slice stops at the end of the string:
+
+      ```python run
+      code = "ABCDEFGH"
+      start = 0
+      while start < len(code):
+          print(code[start:start + 3])
+          start += 3
+      ```
+
+      ```output
+      ABC
+      DEF
+      GH
+      ```
+
+      **Your turn:** fill in the slices so the program prints the hours, the minutes and the seconds of the time.
+
+      ```
+      Hours: 14
+      Minutes: 35
+      Seconds: 20
+      ```
+    fill: |
+      time = "14:35:20"
+      print("Hours: " + time[[[0:2‖:2]]])
+      print("Minutes: " + time[[[3:5‖-5:-3]]])
+      print("Seconds: " + time[[[6:8‖6:‖-2:]]])
+    hints:
+      - "Write the indexes under the characters: `1` is at 0, `4` at 1, the first `:` at 2, and so on."
+      - "A slice `start:end` stops just before `end`. The hours are the characters at 0 and 1, so their slice is `0:2`."
+    tests:
+      - expect: |
+          Hours: 14
+          Minutes: 35
+          Seconds: 20
+    more:
+      - task: |
+          Write a program that asks for a card number and prints it with every character except the last four replaced by `*`. The number always has at least four characters.
+
+          ```
+          Card number: 1234567812345678
+          ************5678
+          ```
+        seed: |
+          number = input("Card number: ")
+        solution: |
+          number = input("Card number: ")
+          hidden = "*" * (len(number) - 4)
+          print(hidden + number[-4:])
+        hints:
+          - "The last four characters are a slice from the end: `number[-4:]`."
+          - "The stars replace all the other characters, so there are `len(number) - 4` of them. Repeat `\"*\"` that many times."
+        tests:
+          - stdin: "1234567812345678"
+          - stdin: "98765"
+            hidden: true
+          - stdin: "4321"
+            hidden: true
+          - stdin: "5555666677778888999"
+            hidden: true
+      - task: |
+          Write a program that asks for a word and prints it smaller and smaller: each line drops one character from both ends and is moved one space to the right, as long as there are characters left.
+
+          ```
+          Word: abcdefg
+          abcdefg
+           bcdef
+            cde
+             d
+          ```
+        seed: |
+          word = input("Word: ")
+        solution: |
+          word = input("Word: ")
+          cut = 0
+          while cut < len(word) - cut:
+              print(" " * cut + word[cut:len(word) - cut])
+              cut += 1
+        hints:
+          - "Use a helper variable `cut` for how many characters are dropped from each end. It starts at 0 and grows by 1 in every round."
+          - "The piece of the word is the slice from `cut` up to `len(word) - cut`. Put `cut` spaces in front of it."
+          - "The loop goes on while the slice still has characters, that is while `cut < len(word) - cut`."
+        tests:
+          - stdin: abcdefg
+          - stdin: abcdef
+            hidden: true
+          - stdin: x
+            hidden: true
+          - stdin: palindrome
+            hidden: true
+
+  - id: strings-searching
+    slug: searching
+    title: Searching in a string
+    text: |
+      Often a program needs to know whether a string contains some piece of text. The `in` operator tells: `part in text` is `True` when `part` appears somewhere in `text`, and `False` when it doesn't.
+
+      ```python run
+      text = "strawberry"
+      print("straw" in text)
+      print("berry" in text)
+      print("Berry" in text)
+      print("w" in text)
+      ```
+
+      ```output
+      True
+      True
+      False
+      True
+      ```
+
+      Capitals count: `"Berry"` with a capital B isn't in `"strawberry"`. And `not in` is the opposite: `"x" not in text` is `True`. Since both give `True` or `False`, they fit right into an `if` or a `while`:
+
+      ```python run
+      message = input("Message: ")
+      if "!" in message:
+          print("Sounds exciting")
+      if "?" not in message:
+          print("No questions asked")
+      ```
+
+      ```input
+      Pizza tonight!
+      ```
+
+      ```output
+      Message: Pizza tonight!
+      Sounds exciting
+      No questions asked
+      ```
+
+      ### Where is it? find
+
+      `in` says whether a piece is in a string, but not where. For that, a string has `find`: `text.find(part)` gives the index where `part` first starts, or -1 if it isn't there at all.
+
+      ```python run
+      text = "strawberry"
+      print(text.find("berry"))
+      print(text.find("r"))
+      print(text.find("kiwi"))
+      ```
+
+      ```output
+      5
+      2
+      -1
+      ```
+
+      There are three `r`s in `strawberry`; `find` gives the first one, at the index 2.
+
+      `find` is written in a new way: after the string, with a dot. A function that belongs to a value like this is called a **method**. `find` is a method of strings, and `text.find("r")` searches the string `text`, the one in front of the dot. Compare `len(text)`, a function, where the string goes inside the parentheses. Strings have many more methods, and you'll meet them soon.
+
+      ### An index and a slice together
+
+      The index from `find` goes well with a slice. This program splits a file name at its dot:
+
+      ```python run
+      file_name = input("File: ")
+      dot = file_name.find(".")
+      if dot >= 0:
+          print("Name: " + file_name[:dot])
+          print("Type: " + file_name[dot + 1:])
+      else:
+          print("No dot in the name")
+      ```
+
+      ```input
+      notes.txt
+      ```
+
+      ```output
+      File: notes.txt
+      Name: notes
+      Type: txt
+      ```
+
+      Check for -1 before you use the index. Without the check, a name with no dot would give -1, and `file_name[:-1]` would quietly cut off the last character instead of failing.
+
+      **Your turn:** fill in the blank so the program says whether the text typed in has an `@` in it.
+
+      ```
+      Email: ada@example.com
+      Looks like an email address
+      ```
+    fill: |
+      address = input("Email: ")
+      if "@" [[in]] address:
+          print("Looks like an email address")
+      else:
+          print("There's no @ in that")
+    hints:
+      - One word, an operator, checks whether a piece of text appears in a string.
+      - "`part in text` is `True` when `part` is somewhere in `text`."
+    tests:
+      - stdin: ada@example.com
+      - stdin: ada.example.com
+        hidden: true
+      - stdin: "@"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a message and prints `Spam!` if the message contains the word `free` or the word `winner`, and `Looks fine` otherwise. Look for the words in small letters only.
+
+          ```
+          Message: you are a winner
+          Spam!
+          ```
+        seed: |
+          message = input("Message: ")
+        solution: |
+          message = input("Message: ")
+          if "free" in message or "winner" in message:
+              print("Spam!")
+          else:
+              print("Looks fine")
+        hints:
+          - "`\"free\" in message` is `True` when the message contains `free`."
+          - "Join two such conditions with `or`. Each side needs its own `in`: `\"free\" in message or \"winner\" in message`."
+        tests:
+          - stdin: you are a winner
+          - stdin: free pizza for everyone
+            hidden: true
+          - stdin: see you at noon
+            hidden: true
+          - stdin: the winner gets a free trip
+            hidden: true
+      - task: |
+          Write a program that asks for an email address and prints its user name (the part before the `@`) and its domain (the part after the `@`). If there's no `@` at all, it prints `Not an email address`.
+
+          ```
+          Email: ada@example.com
+          User: ada
+          Domain: example.com
+          ```
+        seed: |
+          email = input("Email: ")
+        solution: |
+          email = input("Email: ")
+          at = email.find("@")
+          if at >= 0:
+              print("User: " + email[:at])
+              print("Domain: " + email[at + 1:])
+          else:
+              print("Not an email address")
+        hints:
+          - "`email.find(\"@\")` gives the index of the `@`, or -1 if there's none. Keep it in a variable."
+          - "The user name is the slice up to the `@`, `email[:at]`. The domain starts one character after it."
+          - Check for -1 before you slice.
+        tests:
+          - stdin: ada@example.com
+          - stdin: grace.hopper@navy.mil
+            hidden: true
+          - stdin: nobody
+            hidden: true
+          - stdin: x@y
+            hidden: true

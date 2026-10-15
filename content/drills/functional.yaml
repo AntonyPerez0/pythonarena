@@ -1,0 +1,216 @@
+topic: functional
+drills:
+  - type: predict
+    after: map
+    code: |
+      words = ["hi", "hey", "hello"]
+      print(list(map(len, words)))
+    why: "`map` calls `len` on every word and gives the lengths, which `list` collects."
+
+  - type: predict
+    after: map
+    code: |
+      doubled = map(lambda n: n * 2, [1, 2, 3])
+      print(list(doubled))
+      print(list(doubled))
+    why: "`map` returns an iterator, which is used up after one pass. The second `list` finds nothing left."
+
+  - type: fill
+    after: map
+    code: |
+      texts = ["4", "15", "8"]
+      numbers = list(map([[int]], texts))
+      print(sum(numbers))
+    why: "`map(int, texts)` turns each string into a whole number, so `sum` can add them up."
+
+  - type: runs
+    after: map
+    code: |
+      squares = map(lambda n: n * n, [1, 2, 3])
+      print(squares[0])
+    why: "A `map` object is an iterator, not a list: it has no indexes. `list(map(...))` would have them."
+
+  - type: choice
+    after: map
+    prompt: "What does `map(function, series)` return?"
+    choices:
+      - A list with the function's result for every item
+      - An iterator that calls the function on each item when the value is asked for
+      - The function's result for the first item only
+    answer: 2
+    why: "`map` is lazy, like a generator. Use `list(map(...))` when you need a list."
+
+  - type: predict
+    after: filter
+    code: |
+      scores = [72, 45, 90, 58, 66]
+      print(list(filter(lambda s: s >= 60, scores)))
+    why: "`filter` keeps the items for which the function returns `True`, in their original order."
+
+  - type: bug
+    after: filter
+    code: |
+      numbers = [3, 8, 11, 14]
+      evens = filter(lambda n: n % 2 == 1, numbers)  # BUG
+      print(list(evens))
+    fix: "evens = filter(lambda n: n % 2 == 0, numbers)"
+    why: "An even number leaves no remainder when divided by 2, so the condition is `n % 2 == 0`."
+
+  - type: predict
+    after: filter
+    code: |
+      short = filter(lambda w: len(w) < 4, ["fig", "plum", "kiwi", "yam"])
+      print(len(list(short)))
+      print(list(short))
+    why: "`list(short)` on the first line used up the iterator, so the second line gets an empty list. Store `list(filter(...))` once to use it twice."
+
+  - type: runs
+    after: filter
+    code: |
+      numbers = [4, -2, 7]
+      print(list(filter(numbers, lambda n: n > 0)))
+    why: "The function comes first and the series second: `filter(lambda n: n > 0, numbers)`. In the wrong order Python tries to go through the lambda and stops with a `TypeError`."
+
+  - type: predict
+    after: filter
+    code: |
+      numbers = [1, 2, 3, 4]
+      print(list(map(lambda n: n * n, filter(lambda n: n % 2 == 0, numbers))))
+    why: "Read from the inside out: `filter` keeps 2 and 4, then `map` squares them."
+
+  - type: predict
+    after: reduce
+    code: |
+      from functools import reduce
+
+      print(reduce(lambda text, letter: text + letter, ["c", "a", "t"], ""))
+    why: "The result starts as the empty string and each round adds one letter to it."
+
+  - type: predict
+    after: reduce
+    code: |
+      from functools import reduce
+
+      numbers = [2, 3, 4]
+      print(reduce(lambda result, n: result * n, numbers, 0))
+      print(reduce(lambda result, n: result * n, numbers, 1))
+    why: "Starting from 0, every product stays 0. A product needs the start value 1."
+
+  - type: fill
+    after: reduce
+    code: |
+      from [[functools]] import reduce
+
+      print(reduce(lambda a, b: a + b, [5, 6, 7]))
+    why: "`reduce` isn't built in. It lives in the `functools` module."
+
+  - type: runs
+    after: reduce
+    code: |
+      from functools import reduce
+
+      print(reduce(lambda a, b: a + b, []))
+    why: "Without a start value, `reduce` starts from the first item, and an empty list has none, so it stops with a `TypeError`. A start value, such as `0`, fixes it."
+
+  - type: bug
+    after: reduce
+    code: |
+      from functools import reduce
+
+
+      class Coin:
+          def __init__(self, value):
+              self.value = value
+
+
+      coins = [Coin(2), Coin(1), Coin(2)]
+      total = reduce(lambda result, coin: result + coin.value, coins)  # BUG
+      print(total)
+    fix: "total = reduce(lambda result, coin: result + coin.value, coins, 0)"
+    why: "Without a start value the first `Coin` object becomes the starting result, and Python can't add a number to it. Start from `0`."
+
+  - type: boss
+    after: filter
+    prompt: |
+      Write a function `loud_short_words(words)` that returns a list of the words that have at most 4 letters, in capital letters. Use `filter` and `map`. For example,
+
+      ```python fragment
+      print(loud_short_words(["map", "filter", "zip", "reduce", "list"]))
+      ```
+
+      should print:
+
+      ```
+      ['MAP', 'ZIP', 'LIST']
+      ```
+    seed: |
+      def loud_short_words(words):
+          pass
+
+
+      if __name__ == "__main__":
+          print(loud_short_words(["map", "filter", "zip", "reduce", "list"]))
+    solution: |
+      def loud_short_words(words):
+          short = filter(lambda word: len(word) <= 4, words)
+          return list(map(lambda word: word.upper(), short))
+
+
+      if __name__ == "__main__":
+          print(loud_short_words(["map", "filter", "zip", "reduce", "list"]))
+    hints:
+      - "First `filter` the words with `len(word) <= 4`, then `map` them to `word.upper()`."
+      - "The result of `map` is an iterator: return `list(...)` of it."
+    require:
+      - pattern: \bfilter\s*\(
+        message: Pick the short words with `filter`.
+      - pattern: \bmap\s*\(
+        message: Make them capital letters with `map`.
+    tests:
+      - call: print(loud_short_words(["map", "filter", "zip", "reduce", "list"]))
+      - call: loud_short_words(["functional", "is", "fun", "style"])
+        hidden: true
+
+  - type: boss
+    after: reduce
+    prompt: |
+      Write a function `longest_word(words)` that uses `reduce` to return the longest word of the list. When several words are equally long, it returns the first of them, and for an empty list it returns an empty string. For example,
+
+      ```python fragment
+      print(longest_word(["sky", "ocean", "river", "sun"]))
+      ```
+
+      should print:
+
+      ```
+      ocean
+      ```
+    seed: |
+      def longest_word(words):
+          pass
+
+
+      if __name__ == "__main__":
+          print(longest_word(["sky", "ocean", "river", "sun"]))
+    solution: |
+      from functools import reduce
+
+
+      def longest_word(words):
+          return reduce(lambda longest, word: word if len(word) > len(longest) else longest, words, "")
+
+
+      if __name__ == "__main__":
+          print(longest_word(["sky", "ocean", "river", "sun"]))
+    hints:
+      - "Start from the empty string `\"\"`, and in each round keep the longer of the result so far and the next word."
+      - "`word if len(word) > len(longest) else longest` keeps the earlier word when the two are equally long."
+    require:
+      - pattern: \breduce\s*\(
+        message: Find the word with `reduce`.
+    tests:
+      - call: print(longest_word(["sky", "ocean", "river", "sun"]))
+      - call: longest_word(["a", "bb", "cc", "d"])
+        hidden: true
+      - call: longest_word([])
+        hidden: true

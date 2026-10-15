@@ -1,0 +1,180 @@
+topic: data-processing
+drills:
+  - type: predict
+    after: csv-module
+    code: |
+      import csv
+
+      for row in csv.reader(["a;b;c"], delimiter=";"):
+          print(row)
+    why: "The reader splits the line at each delimiter and gives the values as a list of strings."
+
+  - type: predict
+    after: csv-module
+    code: |
+      import csv
+
+      for row in csv.reader(["a;b;c"]):
+          print(row)
+    why: "Without `delimiter`, the reader splits at commas. There are none here, so the whole line is one value."
+
+  - type: predict
+    after: csv-module
+    code: |
+      import csv
+
+      for row in csv.reader(['"x,y",z']):
+          print(row)
+    why: "A value in double quotes may contain the delimiter. The reader keeps `x,y` together and drops the quotes."
+
+  - type: bug
+    after: csv-module
+    prompt: The program should add the two numbers on the line. One line has a bug. Which one?
+    code: |
+      import csv
+
+      for row in csv.reader(["3;4"], delimiter=";"):
+          print(row[0] + row[1])  # BUG
+    fix: print(int(row[0]) + int(row[1]))
+    why: "The values are strings, so `+` joins them into `34`. Convert them with `int` first to add them."
+
+  - type: fill
+    after: csv-module
+    code: |
+      import csv
+
+      for row in csv.reader(["Ada|1815"], [[delimiter]]="|"):
+          print(row[1])
+    why: "The character between the values is given with `delimiter=`."
+
+  - type: predict
+    after: json-files
+    code: |
+      import json
+
+      numbers = json.loads("[1, 2, 3]")
+      print(sum(numbers))
+    why: "`json.loads` turns the text into a Python list of integers, so `sum` can add them."
+
+  - type: predict
+    after: json-files
+    code: |
+      import json
+
+      print(json.loads("[null, false]"))
+    why: "JSON's `null` becomes Python's `None`, and `false` becomes `False`."
+
+  - type: runs
+    after: json-files
+    code: |
+      import json
+
+      data = json.loads("{'name': 'Ada'}")
+      print(data)
+    why: "JSON strings must be in double quotes. With single quotes the text isn't JSON, and Python stops with a `JSONDecodeError`."
+
+  - type: fill
+    after: json-files
+    code: |
+      import json
+
+      point = json.[[loads]]('{"x": 5, "y": 2}')
+      print(point["x"] * point["y"])
+    why: "`json.loads` reads JSON from a string and gives a dictionary."
+
+  - type: predict
+    after: json-files
+    code: |
+      import json
+
+      data = json.loads('{"team": {"name": "Owls", "players": ["Ada", "Ben"]}}')
+      print(data["team"]["players"][-1])
+    why: "`data[\"team\"]` is a dictionary, its `players` is a list, and index -1 is the last item."
+
+  - type: choice
+    after: json-files
+    prompt: Which of these is valid JSON?
+    choices:
+      - "`{\"name\": \"Ada\", \"admin\": true}`"
+      - "`{'name': 'Ada', 'admin': true}`"
+      - "`{\"name\": \"Ada\", \"admin\": True}`"
+    answer: 1
+    why: "JSON needs double quotes around strings and writes true in small letters. Single quotes and Python's `True` aren't JSON."
+
+  - type: predict
+    after: finding-modules
+    code: |
+      import statistics
+
+      print(statistics.median([1, 9, 2]))
+      print(statistics.mean([1, 9, 2]))
+    why: "In order the values are 1, 2, 9, so the middle one is 2. The mean is 12 / 3, which is 4."
+
+  - type: predict
+    after: finding-modules
+    code: |
+      from difflib import get_close_matches
+
+      print(get_close_matches("pyton", ["python", "java", "ruby"]))
+    why: "`get_close_matches` returns a list of the strings that look like the word. Only `python` is close to `pyton`."
+
+  - type: runs
+    after: finding-modules
+    code: |
+      import statistics
+
+      print(statistics.median([]))
+    why: "An empty list has no middle value. Python stops with a `StatisticsError`."
+
+  - type: boss
+    after: csv-module
+    prompt: |
+      The file `results.csv` has a player's name and score on each line, separated by a semicolon. Write a function `best_player(filename)` that reads the file with the `csv` module and returns the name of the player with the highest score (the first of them, if several share it).
+
+      For a file with the lines `Ada;12`, `Ben;17` and `Cy;9`, it returns `"Ben"`.
+    seed: |
+      import csv
+
+
+      def best_player(filename):
+          pass
+
+
+      if __name__ == "__main__":
+          print(best_player("results.csv"))
+    solution: |
+      import csv
+
+
+      def best_player(filename):
+          best = ""
+          best_score = -1
+          with open(filename) as file:
+              for row in csv.reader(file, delimiter=";"):
+                  score = int(row[1])
+                  if score > best_score:
+                      best = row[0]
+                      best_score = score
+          return best
+
+
+      if __name__ == "__main__":
+          print(best_player("results.csv"))
+    hints:
+      - "Read the rows with `csv.reader(file, delimiter=\";\")`, and convert each score with `int`."
+      - Keep the best name and score so far in two variables, and replace them only when a score is strictly higher.
+    tests:
+      - call: best_player("results.csv")
+        files:
+          results.csv: |
+            Ada;12
+            Ben;17
+            Cy;9
+      - call: best_player("final.csv")
+        files:
+          final.csv: |
+            Noor;30
+            Otto;41
+            Pia;41
+            Quinn;8
+        hidden: true

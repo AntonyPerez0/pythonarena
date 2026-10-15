@@ -1,0 +1,1224 @@
+id: reading-files
+summary: Reading text files. Opening a file with open and with, reading it whole or line by line, cleaning up lines with strip, splitting lines of values with split, and combining the data of several files.
+steps:
+  - id: reading-files-open-and-read
+    slug: open-and-read
+    title: Opening and reading a file
+    text: |
+      So far, a program's data has come from the keyboard with `input`, or it was written in the code itself. Most real data lives in **files**: the contacts in a phone, the scores of a game, the measurements a weather station has saved. A program that reads its data from a file handles ten lines or a million lines just as easily.
+
+      This course works with **text files**: files that hold nothing but lines of text, like the ones you'd write in a plain text editor. (A word processor's document is not one: it also stores fonts, layout and more, in a format of its own.)
+
+      ### open and with
+
+      Here is a file called `motto.txt`, with two lines of text in it:
+
+      ```file motto.txt
+      Practice a little every day.
+      Small steps add up.
+      ```
+
+      This program opens the file, reads everything in it and prints it:
+
+      ```python run
+      with open("motto.txt") as file:
+          contents = file.read()
+          print(contents)
+      ```
+
+      ```output
+      Practice a little every day.
+      Small steps add up.
+      ```
+
+      - `open("motto.txt")` opens the file with that name.
+      - The **`with`** statement keeps the file open while its indented block runs, and closes it when the block ends. `as file` gives the open file a name. That variable is called a **file handle**: the program reaches the file through it. Any variable name works; `file` is simply clear.
+      - The method `read()` reads the whole file and returns it as one string.
+
+      Closing files matters: an open file uses up resources, and a file that is written but never closed can lose data. With `with`, Python closes the file for you, even when something goes wrong inside the block.
+
+      ### Where the file must be
+
+      `open("motto.txt")` looks for the file in the folder the program runs in. On your own computer, which folder that is depends on how you start Python, which is a common source of confusion. On this site it's simple: the files a task gives are in the same folder as your program, so the file name alone is enough.
+
+      When there is no file of that name, Python stops with a `FileNotFoundError` that names the file it looked for. Check the spelling then: `Motto.txt`, `motto.text` and `motto.txt` are three different names. A later module shows how a program can handle such errors itself.
+
+      ### What read gives you
+
+      The string that `read()` returns has the line breaks of the file in it, each written `\n` in Python. You can do with it anything you can do with a string. The file is closed after the `with` block, but the string stays in its variable:
+
+      ```file reminder.txt
+      Water the plants.
+      Call grandma on Sunday.
+      ```
+
+      ```python run
+      with open("reminder.txt") as file:
+          contents = file.read()
+
+      print(len(contents))
+      print("Sunday" in contents)
+      print("sunday" in contents)
+      ```
+
+      ```output
+      42
+      True
+      False
+      ```
+
+      The 42 characters include the two line breaks, one at the end of each line. And as always with strings, capital letters matter.
+
+      One more thing about the tasks on this site: a test can give your program a different file under the same name, so the program must really read the file. Printing text copied from the task won't pass.
+
+      **Your turn:** fill in the blanks so the program opens the file `welcome.txt`, reads all of it and prints it. With this file
+
+      ```text
+      Welcome to the reading room.
+      Please speak quietly.
+      ```
+
+      the program prints:
+
+      ```
+      Welcome to the reading room.
+      Please speak quietly.
+      ```
+    fill: |
+      with [[open]]("welcome.txt") as file:
+          text = file.[[read]]()
+      print(text)
+    hints:
+      - The first blank is the function that opens a file, and the second is the file handle's method that reads all of it. The lesson's first example has both.
+      - "Fill in `open` and `read`. The parentheses after `read` are already there: a method call always needs them."
+    tests:
+      - files:
+          welcome.txt: |
+            Welcome to the reading room.
+            Please speak quietly.
+      - files:
+          welcome.txt: |
+            Opening hours are from 9 to 17.
+            Closed on Sundays.
+            Have a nice day!
+        hidden: true
+    more:
+      - task: |
+          The file `journal.txt` is someone's journal. Write a program that asks for a word, reads the whole file and prints `Found it` if the word appears anywhere in the file, or `Not there` if it doesn't. Capital letters matter, as they do with `in`.
+
+          With this file
+
+          ```text
+          Monday: sunny and warm.
+          Tuesday: rain all day.
+          Wednesday: windy.
+          ```
+
+          a run looks like this:
+
+          ```
+          Search for: rain
+          Found it
+          ```
+        seed: |
+          word = input("Search for: ")
+        solution: |
+          word = input("Search for: ")
+          with open("journal.txt") as file:
+              contents = file.read()
+          if word in contents:
+              print("Found it")
+          else:
+              print("Not there")
+        hints:
+          - Open `journal.txt` with `with open(...) as file:` and read it all into a variable with `file.read()`.
+          - "The whole file is now one string, so `word in contents` tells whether the word is somewhere in it."
+          - "Then an `if` with an `else` prints one of the two messages."
+        tests:
+          - stdin: rain
+            files:
+              journal.txt: |
+                Monday: sunny and warm.
+                Tuesday: rain all day.
+                Wednesday: windy.
+          - stdin: snow
+            files:
+              journal.txt: |
+                Monday: sunny and warm.
+                Tuesday: rain all day.
+                Wednesday: windy.
+            hidden: true
+          - stdin: cat
+            files:
+              journal.txt: |
+                Fed the cat at seven.
+                Read a book about birds.
+            hidden: true
+      - task: |
+          This program should print `Shopping list:` and then the contents of the file `shopping.txt`, but it has two mistakes. Fix them. With this file
+
+          ```text
+          eggs
+          rice
+          tomatoes
+          ```
+
+          the program prints:
+
+          ```
+          Shopping list:
+          eggs
+          rice
+          tomatoes
+          ```
+        seed: |
+          with open("Shopping.txt") as file:
+              items = file.read
+          print("Shopping list:")
+          print(items)
+        solution: |
+          with open("shopping.txt") as file:
+              items = file.read()
+          print("Shopping list:")
+          print(items)
+        hints:
+          - Run it and read the error. A `FileNotFoundError` names the file Python looked for. Compare that name with the task's, letter by letter.
+          - "Once the file opens, look at what gets printed. `file.read` without parentheses is the method itself, not a call to it: add `()`."
+        tests:
+          - files:
+              shopping.txt: |
+                eggs
+                rice
+                tomatoes
+          - files:
+              shopping.txt: |
+                coffee
+                oat milk
+            hidden: true
+
+  - id: reading-files-line-by-line
+    slug: line-by-line
+    title: Going through a file line by line
+    text: |
+      `read()` gives you the whole file at once. More often a program handles a file **one line at a time**, and a file handle makes that easy: it works in a `for` loop much like a list of strings. Each round, the loop variable gets the next line of the file.
+
+      ```file planets.txt
+      Mercury
+      Venus
+      Earth
+      ```
+
+      ```python run
+      with open("planets.txt") as file:
+          for line in file:
+              print(line)
+      ```
+
+      ```output
+      Mercury
+
+      Venus
+
+      Earth
+      ```
+
+      Where do the empty lines come from? Each line of a file ends with a line break, the character `\n`, and the line Python reads includes it: the first line is `"Mercury\n"`. `print` then adds a line break of its own, so every line is followed by an empty one. (The very last line of a file may or may not end with `\n`, depending on how the file was saved.)
+
+      ### Removing the line break with strip
+
+      You have met the string method `strip` in the module on strings and lists. It returns a copy of a string without the **whitespace** at its start and end, and whitespace means line breaks and tabs as well as spaces. Spaces in the middle stay where they are. `strip` has two relatives: **`rstrip`** removes whitespace only from the right end of the string, and **`lstrip`** only from the left end.
+
+      ```python repl
+      >>> "Venus\n".strip()
+      'Venus'
+      >>> "   New York  \n".strip()
+      'New York'
+      >>> len("Venus\n")
+      6
+      >>> len("Venus\n".strip())
+      5
+      >>> "  indented line\n".rstrip()
+      '  indented line'
+      >>> "  indented line\n".lstrip()
+      'indented line\n'
+      ```
+
+      Like every string method, `strip` doesn't change the string it's called on (strings can't be changed). It returns a new string, so store the result: `line = line.strip()`.
+
+      ### Why the line break matters
+
+      An empty line in the printout is the harmless case. Comparisons are worse: `"Earth\n" == "Earth"` is `False`, so a program that looks for the line `Earth` without stripping the lines never finds it, and the length of every line is one too many. Make `strip` a habit whenever you read lines from a file.
+
+      Lines that hold numbers are converted with `int` or `float` as usual. This file has the steps someone walked on each of three days:
+
+      ```file steps.txt
+      4200
+      8100
+      6300
+      ```
+
+      ```python run
+      total = 0
+      days = 0
+      with open("steps.txt") as file:
+          for line in file:
+              steps = int(line.strip())
+              days += 1
+              total += steps
+              print(f"Day {days}: {steps} steps")
+      print("Average:", total / days)
+      ```
+
+      ```output
+      Day 1: 4200 steps
+      Day 2: 8100 steps
+      Day 3: 6300 steps
+      Average: 6200.0
+      ```
+
+      `int` would forgive the line break here (it ignores whitespace around a number), but stripping first keeps the habit the same for every line. A file can also end with an empty line; after `strip` it is the empty string `""`, which a program can skip with `if line == "": continue`.
+
+      **Your turn:** fill in the blanks so the program greets each guest in the file `guests.txt`, one per line. With this file
+
+      ```text
+      Ada
+      Grace
+      Linus
+      ```
+
+      the program prints:
+
+      ```
+      Welcome, Ada!
+      Welcome, Grace!
+      Welcome, Linus!
+      ```
+    fill: |
+      with open("guests.txt") as file:
+          for line in [[file]]:
+              name = line.[[strip‖rstrip]]()
+              print(f"Welcome, {name}!")
+    hints:
+      - The `for` loop goes through the file handle, the variable named after `as`.
+      - "Each line ends with `\\n`, which would end up before the `!`. The method that removes it is `strip`."
+    tests:
+      - files:
+          guests.txt: |
+            Ada
+            Grace
+            Linus
+      - files:
+          guests.txt: |
+            Margaret
+            Tim
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          word = "  tea \n"
+          print(len(word))
+          print(len(word.strip()))
+          print(len(word.rstrip()))
+          print(word.strip() == "tea")
+        hints:
+          - "`len` counts every character: the two spaces at the start, the three letters, the space after them and the line break."
+          - "`strip` removes the whitespace at both ends, leaving `tea`. `rstrip` removes it only at the right end, so the two spaces at the start stay."
+      - task: |
+          The file `rain.txt` has one number on each line: how many millimeters of rain fell on one day. Write a program that reads the file and prints the number of days, the number of dry days (days with 0 mm) and the total rainfall.
+
+          With this file
+
+          ```text
+          0
+          5
+          12
+          0
+          4
+          0
+          2
+          ```
+
+          the program prints:
+
+          ```
+          Days: 7
+          Dry days: 3
+          Total: 23 mm
+          ```
+        seed: |
+          days = 0
+          dry_days = 0
+          total = 0
+        solution: |
+          days = 0
+          dry_days = 0
+          total = 0
+          with open("rain.txt") as file:
+              for line in file:
+                  rain = int(line.strip())
+                  days += 1
+                  if rain == 0:
+                      dry_days += 1
+                  total += rain
+          print("Days:", days)
+          print("Dry days:", dry_days)
+          print("Total:", total, "mm")
+        hints:
+          - "Go through the file with `for line in file:` and turn each line into a number: `int(line.strip())`."
+          - Each round adds one to `days`, adds the number to `total`, and adds one to `dry_days` when the number is 0.
+          - Print the three results after the loop, outside the `with` block.
+        tests:
+          - files:
+              rain.txt: |
+                0
+                5
+                12
+                0
+                4
+                0
+                2
+          - files:
+              rain.txt: |
+                3
+                0
+                8
+            hidden: true
+          - files:
+              rain.txt: |
+                1
+                1
+                10
+                7
+            hidden: true
+
+  - id: reading-files-csv
+    slug: csv
+    title: Lines with several values
+    text: |
+      Often each line of a file holds several pieces of data about one thing: a name, an age and a city, say. A common format for this is **CSV**, short for comma-separated values. Each line is one **record**, and a separator character, usually a comma `,` or a semicolon `;`, separates its **fields**. Spreadsheet programs can save and open CSV files, which makes them a common way to move data from one program to another.
+
+      ### Splitting a string
+
+      To get the fields of a line, use the string method `split`, which you have met in the module on strings and lists. It cuts a string at each separator and returns the pieces as a list of strings. You give it the separator as a string:
+
+      ```python repl
+      >>> "Rex;dog;4".split(";")
+      ['Rex', 'dog', '4']
+      >>> "red,green,blue".split(",")
+      ['red', 'green', 'blue']
+      >>> parts = "Rex;dog;4".split(";")
+      >>> parts[0]
+      'Rex'
+      >>> int(parts[2]) + 1
+      5
+      >>> "cats  and   dogs".split()
+      ['cats', 'and', 'dogs']
+      ```
+
+      The separator itself isn't in any of the pieces. The pieces are always strings, even when they look like numbers: convert them with `int` or `float` before you calculate with them. (And remember that without an argument, `split()` splits at spaces, however many there are in a row.)
+
+      ### A CSV file, line by line
+
+      ```file pets.csv
+      Rex;dog;4
+      Misty;cat;11
+      Bubbles;fish;1
+      ```
+
+      ```python run
+      with open("pets.csv") as file:
+          for line in file:
+              parts = line.strip().split(";")
+              name = parts[0]
+              animal = parts[1]
+              age = int(parts[2])
+              if age >= 10:
+                  print(f"{name} the {animal} is a senior, {age} years old")
+              else:
+                  print(f"{name} the {animal} is {age} years old")
+      ```
+
+      ```output
+      Rex the dog is 4 years old
+      Misty the cat is a senior, 11 years old
+      Bubbles the fish is 1 years old
+      ```
+
+      `line.strip().split(";")` first removes the line break and then splits. Without the `strip`, the last field would keep the line break, `['Rex', 'dog', '4\n']`. `int` happens to accept that, but a text field at the end of the line, such as a city, would carry its `\n` into everything you do with it.
+
+      ### Headers and extra spaces
+
+      Many CSV files start with a **header** line that names the columns, and some have a space after each separator. In this file each line has a player, a team and the points from any number of rounds:
+
+      ```file rounds.csv
+      player; team; round 1; round 2; round 3
+      Maya; Owls; 12; 9; 15
+      Leo; Foxes; 8; 14; 10
+      ```
+
+      ```python run
+      with open("rounds.csv") as file:
+          for line in file:
+              parts = line.split(";")
+              if parts[0] == "player":
+                  continue
+              name = parts[0]
+              team = parts[1].strip()
+              points = []
+              for part in parts[2:]:
+                  points.append(int(part))
+              print(f"{name} ({team}): {points}, total {sum(points)}")
+      ```
+
+      ```output
+      Maya (Owls): [12, 9, 15], total 36
+      Leo (Foxes): [8, 14, 10], total 32
+      ```
+
+      - The header is recognized by its first field and skipped with `continue`.
+      - `parts[1]` is `" Owls"` with a space in front, so it gets its own `strip()`.
+      - The numbers need no stripping, because `int` ignores spaces and a line break around a number.
+      - The slice `parts[2:]` is every field from the third one on, so the same code works however many rounds a line has.
+
+      **Your turn:** each line of the file `orders.csv` has a customer, a number of items and the price of one item. Fill in the blanks so the program prints what each customer pays. With this file
+
+      ```text
+      Ada;3;2.50
+      Ben;1;4.20
+      Cleo;2;3.75
+      ```
+
+      the program prints:
+
+      ```
+      Ada pays 7.50
+      Ben pays 4.20
+      Cleo pays 7.50
+      ```
+    fill: |
+      with open("orders.csv") as file:
+          for line in file:
+              parts = line.strip().[[split]](";")
+              customer = parts[0]
+              total = int(parts[1]) * [[float]](parts[2])
+              print(f"{customer} pays {total:.2f}")
+    hints:
+      - The first blank is the string method that cuts a string into a list at each separator.
+      - "The price `2.50` has a decimal point, so it must become a decimal number before it's multiplied: `float(parts[2])`."
+    tests:
+      - files:
+          orders.csv: |
+            Ada;3;2.50
+            Ben;1;4.20
+            Cleo;2;3.75
+      - files:
+          orders.csv: |
+            Dana;10;0.99
+            Eli;4;12.00
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          line = "Oslo,Norway,709000\n"
+          parts = line.split(",")
+          print(len(parts))
+          print(parts[1])
+          print(int(parts[2]) // 1000)
+          print(parts[2] == "709000")
+        hints:
+          - The string has two commas, so `split(",")` cuts it into three pieces.
+          - "`int` ignores the line break around a number, so the third piece converts fine. `//` divides and drops the decimals."
+          - The line was never stripped, so the last piece still ends with `\n`, and the comparison with `"709000"` is false.
+      - task: |
+          The file `menu.csv` lists the dishes of a café and their prices, after a header line. Write a function `read_menu(filename)` that reads the file and returns a dictionary whose keys are the dishes and whose values are the prices as decimal numbers (`float`).
+
+          With this file
+
+          ```text
+          dish;price
+          soup;6.50
+          pasta;11.90
+          salad;8.00
+          ```
+
+          `print(read_menu("menu.csv"))` prints:
+
+          ```
+          {'soup': 6.5, 'pasta': 11.9, 'salad': 8.0}
+          ```
+        seed: |
+          def read_menu(filename):
+              pass
+
+
+          if __name__ == "__main__":
+              print(read_menu("menu.csv"))
+        solution: |
+          def read_menu(filename):
+              menu = {}
+              with open(filename) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      if parts[0] == "dish":
+                          continue
+                      menu[parts[0]] = float(parts[1])
+              return menu
+
+
+          if __name__ == "__main__":
+              print(read_menu("menu.csv"))
+        hints:
+          - Start with an empty dictionary, open the file named by the parameter, and split each stripped line at `;`.
+          - "Skip the header: when the first field is `dish`, `continue` to the next line."
+          - "Store each dish with `menu[parts[0]] = float(parts[1])`, and return the dictionary after the `with` block."
+        tests:
+          - call: print(read_menu("menu.csv"))
+            files:
+              menu.csv: |
+                dish;price
+                soup;6.50
+                pasta;11.90
+                salad;8.00
+          - call: read_menu("drinks.csv")
+            files:
+              drinks.csv: |
+                dish;price
+                tea;2.20
+                lemonade;3.50
+            hidden: true
+
+  - id: reading-files-read-once
+    slug: read-once
+    title: Read the file once, use the data many times
+    text: |
+      A file handle reads forward. A `for` loop over it moves through the file line by line, and when the loop ends, the handle is at the end of the file. A second loop over the same handle finds no lines left, so its body doesn't run at all. Python doesn't stop with an error: the program just gives a wrong answer, which makes this mistake easy to miss.
+
+      ```file laps.txt
+      95
+      88
+      102
+      91
+      ```
+
+      ```python run
+      with open("laps.txt") as file:
+          laps = 0
+          for line in file:
+              laps += 1
+          total = 0
+          for line in file:
+              total += int(line)
+      print("Laps:", laps)
+      print("Total time:", total)
+      ```
+
+      ```output
+      Laps: 4
+      Total time: 0
+      ```
+
+      There are two ways to fix it. You can open the file again for the second loop, with a second `with open(...)`. Usually it's better to read the file once and store its contents in a list or a dictionary. A list can be looped over as many times as you like, and the rest of the program never touches the file again. With the same file:
+
+      ```file laps.txt
+      95
+      88
+      102
+      91
+      ```
+
+      ```python run
+      laps = []
+      with open("laps.txt") as file:
+          for line in file:
+              laps.append(int(line))
+
+      print("Laps:", len(laps))
+      print("Total time:", sum(laps))
+      print("Fastest:", min(laps))
+      for lap in laps:
+          if lap > 100:
+              print("Slow lap:", lap)
+      ```
+
+      ```output
+      Laps: 4
+      Total time: 376
+      Fastest: 88
+      Slow lap: 102
+      ```
+
+      ### Reading into a dictionary
+
+      When each line is about something with a name, a dictionary is a good home for the data. This program reads each student's quiz scores into a dictionary: the keys are the names, and each value is a list of that student's scores. The reading happens in a function that returns the dictionary, so the rest of the program doesn't need to know what the file looks like:
+
+      ```file quizzes.csv
+      Ines;7;9;8
+      Tom;5;6;10
+      Yara;10;9;10
+      ```
+
+      ```python run
+      def read_scores(filename):
+          scores = {}
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  name = parts[0]
+                  scores[name] = []
+                  for score in parts[1:]:
+                      scores[name].append(int(score))
+          return scores
+
+
+      scores = read_scores("quizzes.csv")
+      print(scores["Tom"])
+      for name, results in scores.items():
+          print(f"{name}: total {sum(results)}, best {max(results)}")
+      ```
+
+      ```output
+      [5, 6, 10]
+      Ines: total 24, best 9
+      Tom: total 21, best 10
+      Yara: total 29, best 10
+      ```
+
+      The scores are converted to `int` once, while reading, so every later calculation can use them as numbers. Splitting the work this way, one function that reads and other code that uses the data, keeps each part short and easy to check.
+
+      **Your turn:** the program should print the number of days in the file `temperatures.txt` and their average temperature, but the average comes out wrong. Fix it, so that with this file
+
+      ```text
+      12
+      15
+      17
+      13
+      14
+      ```
+
+      it prints:
+
+      ```
+      Days: 5
+      Average: 14.2
+      ```
+    seed: |
+      with open("temperatures.txt") as file:
+          count = 0
+          for line in file:
+              count += 1
+          total = 0
+          for line in file:
+              total += int(line)
+      print("Days:", count)
+      print("Average:", total / count)
+    solution: |
+      temperatures = []
+      with open("temperatures.txt") as file:
+          for line in file:
+              temperatures.append(int(line))
+      print("Days:", len(temperatures))
+      print("Average:", sum(temperatures) / len(temperatures))
+    hints:
+      - The first loop reads the file to its end. What's left for the second loop?
+      - Read the file once into a list of numbers with `append`, and do both calculations with the list after the `with` block.
+      - "`len`, `sum` and the list are all you need: the average is `sum(temperatures) / len(temperatures)`."
+    tests:
+      - files:
+          temperatures.txt: |
+            12
+            15
+            17
+            13
+            14
+      - files:
+          temperatures.txt: |
+            -3
+            1
+            5
+            1
+        hidden: true
+    more:
+      - task: |
+          Each line of the file `ratings.csv` has the title of a movie and the ratings people gave it, from 1 to 5. Write a function `read_ratings(filename)` that returns a dictionary whose keys are the titles and whose values are lists of the ratings as integers.
+
+          With this file
+
+          ```text
+          Moon Rocks;4;5;3
+          The Long Road;2;3
+          Cats in Space;5;5;4;5
+          ```
+
+          `print(read_ratings("ratings.csv"))` prints:
+
+          ```
+          {'Moon Rocks': [4, 5, 3], 'The Long Road': [2, 3], 'Cats in Space': [5, 5, 4, 5]}
+          ```
+        seed: |
+          def read_ratings(filename):
+              pass
+
+
+          if __name__ == "__main__":
+              print(read_ratings("ratings.csv"))
+        solution: |
+          def read_ratings(filename):
+              ratings = {}
+              with open(filename) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      ratings[parts[0]] = []
+                      for rating in parts[1:]:
+                          ratings[parts[0]].append(int(rating))
+              return ratings
+
+
+          if __name__ == "__main__":
+              print(read_ratings("ratings.csv"))
+        hints:
+          - Strip and split each line. The title is `parts[0]`, and the ratings are the slice `parts[1:]`.
+          - Store an empty list under the title, then go through the ratings and `append` each one, converted with `int`.
+          - Return the dictionary after the file has been read.
+        tests:
+          - call: print(read_ratings("ratings.csv"))
+            files:
+              ratings.csv: |
+                Moon Rocks;4;5;3
+                The Long Road;2;3
+                Cats in Space;5;5;4;5
+          - call: read_ratings("books.csv")
+            files:
+              books.csv: |
+                Deep Water;1
+                Small Gods;5;4
+            hidden: true
+      - task: |
+          The starter code has a ready `read_ratings` function from the previous task. Write the function `best_rated(filename)`, which uses it and returns the title with the highest average rating. You can assume no two titles have the same average.
+
+          With this `ratings.csv`
+
+          ```text
+          Moon Rocks;4;5;3
+          The Long Road;2;3
+          Cats in Space;5;5;4;5
+          ```
+
+          `print(best_rated("ratings.csv"))` prints:
+
+          ```
+          Cats in Space
+          ```
+        seed: |
+          def read_ratings(filename):
+              ratings = {}
+              with open(filename) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      ratings[parts[0]] = []
+                      for rating in parts[1:]:
+                          ratings[parts[0]].append(int(rating))
+              return ratings
+
+
+          def best_rated(filename):
+              pass
+
+
+          if __name__ == "__main__":
+              print(best_rated("ratings.csv"))
+        solution: |
+          def read_ratings(filename):
+              ratings = {}
+              with open(filename) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      ratings[parts[0]] = []
+                      for rating in parts[1:]:
+                          ratings[parts[0]].append(int(rating))
+              return ratings
+
+
+          def best_rated(filename):
+              ratings = read_ratings(filename)
+              best_title = ""
+              best_average = 0
+              for title, scores in ratings.items():
+                  average = sum(scores) / len(scores)
+                  if average > best_average:
+                      best_title = title
+                      best_average = average
+              return best_title
+
+
+          if __name__ == "__main__":
+              print(best_rated("ratings.csv"))
+        hints:
+          - "Start with `ratings = read_ratings(filename)`: from then on you work with a dictionary, not the file."
+          - Go through `ratings.items()` and work out each title's average with `sum` and `len`.
+          - Keep the best title and its average in two variables, and replace them whenever you find a higher average.
+        tests:
+          - call: print(best_rated("ratings.csv"))
+            files:
+              ratings.csv: |
+                Moon Rocks;4;5;3
+                The Long Road;2;3
+                Cats in Space;5;5;4;5
+          - call: best_rated("books.csv")
+            files:
+              books.csv: |
+                Deep Water;3;4
+                Small Gods;5;4;5
+                Night Train;2
+            hidden: true
+          - call: best_rated("games.csv")
+            files:
+              games.csv: |
+                Tetris;5;5
+                Snake;4
+            hidden: true
+
+  - id: reading-files-combine
+    slug: combine
+    title: Combining data from several files
+    text: |
+      Data that belongs together is often spread over several files. A shop might keep its product names in one file and the amounts in stock in another, because different people update them. What connects the files is a shared **key**: a value, such as a product code, that appears in both and means the same thing in each.
+
+      The usual way to combine such files is to read each one into a dictionary with the key as the dictionary's key, and then look the keys up:
+
+      ```file products.csv
+      code;name
+      P1;desk lamp
+      P2;office chair
+      P3;bookshelf
+      ```
+
+      ```file stock.csv
+      code;amount
+      P2;14
+      P1;3
+      ```
+
+      ```python run
+      names = {}
+      with open("products.csv") as file:
+          for line in file:
+              parts = line.strip().split(";")
+              if parts[0] == "code":
+                  continue
+              names[parts[0]] = parts[1]
+
+      amounts = {}
+      with open("stock.csv") as file:
+          for line in file:
+              parts = line.strip().split(";")
+              if parts[0] == "code":
+                  continue
+              amounts[parts[0]] = int(parts[1])
+
+      for code, name in names.items():
+          if code in amounts:
+              print(f"{name}: {amounts[code]} in stock")
+          else:
+              print(f"{name}: none in stock")
+      ```
+
+      ```output
+      desk lamp: 3 in stock
+      office chair: 14 in stock
+      bookshelf: none in stock
+      ```
+
+      Notice two things. The lines of the two files are in a different order, and that doesn't matter, because the dictionary finds each code wherever it was in the file. And `P3` has no line in `stock.csv` at all: the `in` check handles that, where `amounts[code]` alone would stop the program with a `KeyError`.
+
+      ### One function, several files
+
+      When two files have the same shape, one function can read both. Programs also often ask the user which files to read, instead of having the names in the code:
+
+      ```file names.csv
+      101;Ana
+      102;Bo
+      103;Cy
+      ```
+
+      ```file emails.csv
+      103;cy@example.com
+      101;ana@example.com
+      ```
+
+      ```python run
+      def read_pairs(filename):
+          pairs = {}
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  pairs[parts[0]] = parts[1]
+          return pairs
+
+
+      names = read_pairs(input("Names file: "))
+      emails = read_pairs(input("Emails file: "))
+      for number, name in names.items():
+          if number in emails:
+              print(f"{name}: {emails[number]}")
+          else:
+              print(f"{name}: no email")
+      ```
+
+      ```input
+      names.csv
+      emails.csv
+      ```
+
+      ```output
+      Names file: names.csv
+      Emails file: emails.csv
+      Ana: ana@example.com
+      Bo: no email
+      Cy: cy@example.com
+      ```
+
+      The student numbers stay strings here: they are only compared with each other, never calculated with, so there's no need to convert them.
+
+      ### Many lines with the same key
+
+      Sometimes a file has many lines for the same key, such as one line for every sale of a product. Then the dictionary can collect a total for each key: the first time a key comes up, its total starts at 0, and every line adds to it.
+
+      ```python fragment
+      totals = {}
+      with open("sales.csv") as file:
+          for line in file:
+              parts = line.strip().split(";")
+              code = parts[0]
+              if code not in totals:
+                  totals[code] = 0
+              totals[code] += int(parts[1])
+      ```
+
+      **Your turn:** the file `prices.csv` has the price of each item in a shop, and `cart.csv` has the items in a customer's cart and how many of each. Fill in the blank so the program prints the total price of the cart. With these files
+
+      ```text
+      apple;0.40
+      bread;2.10
+      milk;1.15
+      ```
+
+      ```text
+      bread;1
+      apple;6
+      milk;2
+      ```
+
+      the program prints:
+
+      ```
+      Total: 6.80
+      ```
+    fill: |
+      prices = {}
+      with open("prices.csv") as file:
+          for line in file:
+              parts = line.strip().split(";")
+              prices[parts[0]] = float(parts[1])
+
+      total = 0
+      with open("cart.csv") as file:
+          for line in file:
+              parts = line.strip().split(";")
+              item = parts[0]
+              count = int(parts[1])
+              total += count * [[prices[item]]]
+      print(f"Total: {total:.2f}")
+    hints:
+      - The price of an item is in the dictionary `prices`, under the item's name.
+      - "Look it up with square brackets: `prices[item]`."
+    tests:
+      - files:
+          prices.csv: |
+            apple;0.40
+            bread;2.10
+            milk;1.15
+          cart.csv: |
+            bread;1
+            apple;6
+            milk;2
+      - files:
+          prices.csv: |
+            apple;0.40
+            bread;2.10
+            milk;1.15
+          cart.csv: |
+            milk;4
+        hidden: true
+    more:
+      - task: |
+          A climbing gym keeps its members in one file (`number;name`) and every visit in another (`number;date`, one line per visit). Write a program that asks for the names of the two files and prints each member's name and number of visits, in the order of the members file. Members who haven't visited get 0.
+
+          With these files, `members.csv` and `visits.csv`
+
+          ```text
+          1;Ana
+          2;Bo
+          3;Cy
+          ```
+
+          ```text
+          3;2026-03-02
+          1;2026-03-02
+          1;2026-03-05
+          1;2026-03-09
+          ```
+
+          a run looks like this:
+
+          ```
+          Members: members.csv
+          Visits: visits.csv
+          Ana 3
+          Bo 0
+          Cy 1
+          ```
+        seed: |
+          members_file = input("Members: ")
+          visits_file = input("Visits: ")
+        solution: |
+          members_file = input("Members: ")
+          visits_file = input("Visits: ")
+
+          names = {}
+          visits = {}
+          with open(members_file) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  names[parts[0]] = parts[1]
+                  visits[parts[0]] = 0
+
+          with open(visits_file) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  visits[parts[0]] += 1
+
+          for number, name in names.items():
+              print(name, visits[number])
+        hints:
+          - Read the members file into a dictionary from number to name. Open the file whose name the user typed, not a fixed name.
+          - A second dictionary can count the visits. Give every member a count of 0 while you read the members file.
+          - Then each line of the visits file adds one to its member's count. Finally go through the members and print each name with its count.
+        tests:
+          - stdin: |
+              members.csv
+              visits.csv
+            files:
+              members.csv: |
+                1;Ana
+                2;Bo
+                3;Cy
+              visits.csv: |
+                3;2026-03-02
+                1;2026-03-02
+                1;2026-03-05
+                1;2026-03-09
+          - stdin: |
+              club.csv
+              march.csv
+            files:
+              club.csv: |
+                7;Dee
+                8;Eero
+              march.csv: |
+                8;2026-03-01
+                8;2026-03-15
+                7;2026-03-20
+                8;2026-03-28
+            hidden: true
+      - task: |
+          A football league has two files, each with a header line. `players.csv` tells which team each player is in (`player;team`), and `goals.csv` has a line for each match in which a player scored (`player;goals`). Write a function `team_goals(players_file, goals_file)` that returns a dictionary from each team to its total goals. Every team of the players file is in it, in the order the teams first appear there, also a team whose players scored nothing.
+
+          With these files
+
+          ```text
+          player;team
+          Ana;Owls
+          Bo;Foxes
+          Cy;Owls
+          Dee;Bears
+          ```
+
+          ```text
+          player;goals
+          Ana;2
+          Cy;1
+          Ana;1
+          Bo;3
+          ```
+
+          `print(team_goals("players.csv", "goals.csv"))` prints:
+
+          ```
+          {'Owls': 4, 'Foxes': 3, 'Bears': 0}
+          ```
+        seed: |
+          def team_goals(players_file, goals_file):
+              pass
+
+
+          if __name__ == "__main__":
+              print(team_goals("players.csv", "goals.csv"))
+        solution: |
+          def team_goals(players_file, goals_file):
+              teams = {}
+              goals = {}
+              with open(players_file) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      if parts[0] == "player":
+                          continue
+                      teams[parts[0]] = parts[1]
+                      goals[parts[1]] = 0
+
+              with open(goals_file) as file:
+                  for line in file:
+                      parts = line.strip().split(";")
+                      if parts[0] == "player":
+                          continue
+                      team = teams[parts[0]]
+                      goals[team] += int(parts[1])
+              return goals
+
+
+          if __name__ == "__main__":
+              print(team_goals("players.csv", "goals.csv"))
+        hints:
+          - "You need two dictionaries: one from player to team (to find a scorer's team), and the result, from team to goals."
+          - While reading the players file, store each player's team and give the team 0 goals. Skip the header lines in both files.
+          - "For each line of the goals file, find the player's team with the first dictionary and add the goals to that team: `goals[team] += int(parts[1])`."
+        tests:
+          - call: print(team_goals("players.csv", "goals.csv"))
+            files:
+              players.csv: |
+                player;team
+                Ana;Owls
+                Bo;Foxes
+                Cy;Owls
+                Dee;Bears
+              goals.csv: |
+                player;goals
+                Ana;2
+                Cy;1
+                Ana;1
+                Bo;3
+          - call: team_goals("squad.csv", "spring.csv")
+            files:
+              squad.csv: |
+                player;team
+                Eli;Hawks
+                Fay;Hawks
+                Gus;Wolves
+              spring.csv: |
+                player;goals
+                Gus;1
+                Fay;2
+                Gus;2
+                Eli;1
+            hidden: true

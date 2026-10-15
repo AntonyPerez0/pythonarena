@@ -1,0 +1,743 @@
+id: more-loops
+summary: More control over loops. Ending a loop early with break, skipping the rest of a round with continue, loops inside loops, and the helper variables that keep nested loops in order.
+steps:
+  - id: more-loops-break
+    slug: break
+    title: Ending a loop with break
+    text: |
+      You've used `break` since your first loops: it ends the loop at once, and the program goes on with the first line after the loop. Now that a loop can have a condition, many loops can be written either way. These two programs both count the guests typed in, until the user types `done`:
+
+      ```python run
+      guests = 0
+      while True:
+          name = input("Guest: ")
+          if name == "done":
+              break
+          guests += 1
+      print(f"{guests} guests")
+      ```
+
+      ```input
+      Ada
+      Linus
+      done
+      ```
+
+      ```output
+      Guest: Ada
+      Guest: Linus
+      Guest: done
+      2 guests
+      ```
+
+      ```python fragment
+      guests = 0
+      name = ""
+      while name != "done":
+          name = input("Guest: ")
+          if name != "done":
+              guests += 1
+      print(f"{guests} guests")
+      ```
+
+      With the same input, they print the same. But the second one needs a start value for `name` that's there only to get the loop going, and it checks for `done` twice: once in the condition and once more in the body, so that the word `done` isn't counted as a guest. With `break`, the check is in one place, right after the input. That's why a loop that reads input until some stop word is usually written with `while True` and `break`.
+
+      ### A condition and a break together
+
+      A loop can have both: a condition for the usual way out, and a `break` for an early one. This bake sale goes on until 50 cookies are sold, unless the seller types 0 to close early:
+
+      ```python run
+      sold = 0
+      while sold < 50:
+          cookies = int(input("Cookies sold (0 to close): "))
+          if cookies == 0:
+              break
+          sold += cookies
+      print(f"{sold} cookies sold")
+      ```
+
+      ```input
+      12
+      20
+      0
+      ```
+
+      ```output
+      Cookies sold (0 to close): 12
+      Cookies sold (0 to close): 20
+      Cookies sold (0 to close): 0
+      32 cookies sold
+      ```
+
+      Here the seller closed early. With the input 30 and 25, the loop would end by its condition instead: after the second round `sold` is 55, `55 < 50` is false, and the program prints `55 cookies sold` without asking again.
+
+      Either way, the program goes on after the loop. If it needs to know which way the loop ended, it can check afterwards, for example with `if sold >= 50:`.
+
+      **Your turn:** fill in the blank so the loop ends when the user types `stop`.
+
+      ```
+      Word: hello
+      hello!
+      Word: stop
+      Stopped
+      ```
+    fill: |
+      while True:
+          word = input("Word: ")
+          if word == "stop":
+              [[break]]
+          print(word + "!")
+      print("Stopped")
+    hints:
+      - When the word is `stop`, the loop should end at once, before the word is printed.
+      - The command that ends a loop is one word, the same one you used in your first loops.
+    tests:
+      - stdin: |
+          hello
+          stop
+      - stdin: |
+          a
+          b
+          c
+          stop
+        hidden: true
+      - stdin: stop
+        hidden: true
+    more:
+      - task: |
+          Write a guessing game. The secret number is 7 (write it into the program). The player has at most 4 guesses, each asked with `Guess: `. When a guess is right, the program prints `Correct!` and asks no more. If all 4 guesses are wrong, it prints `Out of guesses`. Use a loop whose condition counts the guesses, and `break` for the right guess.
+
+          ```
+          Guess: 3
+          Guess: 9
+          Guess: 7
+          Correct!
+          ```
+        seed: |
+          secret = 7
+        solution: |
+          secret = 7
+          guesses = 0
+          while guesses < 4:
+              guess = int(input("Guess: "))
+              guesses += 1
+              if guess == secret:
+                  print("Correct!")
+                  break
+          if guess != secret:
+              print("Out of guesses")
+        hints:
+          - "Count the guesses in a helper variable that starts at 0. The loop goes on while it's below 4."
+          - "In the body, read a guess and add 1 to the count. If the guess equals `secret`, print `Correct!` and `break`."
+          - "After the loop, the last guess tells how the loop ended: if it isn't the secret, all 4 were wrong."
+        forbid:
+          - pattern: while\s+True
+            message: Count the guesses in the loop's condition, such as `while guesses < 4:`, instead of `while True`.
+        require:
+          - pattern: \bbreak\b
+            message: End the loop with `break` when the guess is right.
+        tests:
+          - stdin: |
+              3
+              9
+              7
+          - stdin: "7"
+            hidden: true
+          - stdin: |
+              1
+              2
+              3
+              4
+            hidden: true
+          - stdin: |
+              1
+              2
+              3
+              7
+            hidden: true
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          n = 0
+          while n < 10:
+              n += 3
+              if n == 6:
+                  break
+              print(n)
+          print("after", n)
+        hints:
+          - "Go round by round: `n` becomes 3 in the first round. Is it 6?"
+          - In the second round `n` becomes 6, and `break` ends the loop before the `print` in the loop.
+          - After the loop, `n` keeps the value it had when the loop ended.
+
+  - id: more-loops-continue
+    slug: continue
+    title: Skipping a round with continue
+    text: |
+      `break` leaves the whole loop. `continue` leaves only the current round: the rest of the body is skipped, and Python goes straight back to the top of the loop, checks the condition, and starts the next round if it's true.
+
+      This program adds up prices, but skips any price over 100, which it takes to be a typo:
+
+      ```python run
+      total = 0
+      while True:
+          price = int(input("Price (0 to stop): "))
+          if price == 0:
+              break
+          if price > 100:
+              print("Skipped, too big")
+              continue
+          total += price
+      print(f"Total: {total}")
+      ```
+
+      ```input
+      20
+      500
+      15
+      0
+      ```
+
+      ```output
+      Price (0 to stop): 20
+      Price (0 to stop): 500
+      Skipped, too big
+      Price (0 to stop): 15
+      Price (0 to stop): 0
+      Total: 35
+      ```
+
+      For the price 500, `continue` skips `total += price`, and the next round asks for a new price.
+
+      `continue` never does anything an `if` couldn't do: the same loop could put `total += price` in an `else`. But when a round can be skipped for several reasons, a check with `continue` for each one at the top of the body keeps the rest of the body simple, instead of nested deeper and deeper in `if`s.
+
+      ### continue and the update
+
+      In a loop that counts, `continue` holds a trap. This loop prints the numbers from 1 to 10, except the multiples of 3:
+
+      ```python run
+      number = 0
+      while number < 10:
+          number += 1
+          if number % 3 == 0:
+              continue
+          print(number)
+      ```
+
+      ```output
+      1
+      2
+      4
+      5
+      7
+      8
+      10
+      ```
+
+      The update `number += 1` comes first in the body, before the `continue`. Here is what happens with the update at the end, where it usually is:
+
+      ```python fragment
+      number = 1
+      while number <= 10:
+          if number % 3 == 0:
+              continue
+          print(number)
+          number += 1
+      ```
+
+      It prints 1 and 2. Then, with `number` at 3, `continue` jumps back to the top before the update. `number` stays 3, every round is skipped the same way, and the loop never ends. So with `continue` in a loop, make sure the update happens on every path through the body.
+
+      **Your turn:** fill in the blank so that empty lines are skipped and not counted as names.
+
+      ```
+      Name: Ada
+      Name:
+      Name: Linus
+      Name: end
+      2 names
+      ```
+    fill: |
+      count = 0
+      while True:
+          name = input("Name: ")
+          if name == "end":
+              break
+          if name == "":
+              [[continue]]
+          count += 1
+      print(f"{count} names")
+    hints:
+      - "For an empty line, the rest of this round (the counting) should be skipped, and the loop should go on with the next name."
+      - The command that skips to the next round of a loop is `continue`.
+    tests:
+      - stdin: |
+          Ada
+
+          Linus
+          end
+      - stdin: |
+
+
+          end
+        hidden: true
+      - stdin: |
+          Grace
+          Tim
+          Guido
+          end
+        hidden: true
+    more:
+      - task: |
+          Write a program that reads lines with the prompt `> ` until the user types `quit`. A line that starts with `#` is a comment: skip it. Print every other line back with `You said: ` in front of it. You can assume that no line is empty.
+
+          ```
+          > hello
+          You said: hello
+          > # just a note
+          > bye
+          You said: bye
+          > quit
+          ```
+        seed: |
+          # Write your program here.
+        solution: |
+          # Write your program here.
+          while True:
+              line = input("> ")
+              if line == "quit":
+                  break
+              if line[0] == "#":
+                  continue
+              print(f"You said: {line}")
+        hints:
+          - "Read the lines in a `while True` loop, and `break` when the line is `quit`."
+          - "The first character of the line is `line[0]`. If it's `\"#\"`, use `continue` to skip the rest of the round."
+          - The `print` comes last in the body, so it runs only for lines that weren't skipped.
+        require:
+          - pattern: \bcontinue\b
+            message: Skip the comment lines with `continue`.
+        tests:
+          - stdin: |
+              hello
+              # just a note
+              bye
+              quit
+          - stdin: |
+              #a
+              #b
+              quit
+            hidden: true
+          - stdin: |
+              one # two
+              quit
+            hidden: true
+          - stdin: quit
+            hidden: true
+      - task: |
+          This program should print the numbers from 1 to 10, except the multiples of 4, but it gets stuck. Fix it, and keep the `continue`.
+
+          ```
+          1
+          2
+          3
+          5
+          6
+          7
+          9
+          10
+          ```
+        seed: |
+          number = 1
+          while number <= 10:
+              if number % 4 == 0:
+                  continue
+              print(number)
+              number += 1
+        solution: |
+          number = 0
+          while number < 10:
+              number += 1
+              if number % 4 == 0:
+                  continue
+              print(number)
+        hints:
+          - What happens when `number` is 4? Follow the lines one by one, and look at what `continue` skips.
+          - "`continue` skips the update, so `number` stays 4 forever. The update has to happen before the `continue`."
+          - "Move `number += 1` to the start of the body. Then `number` must start at 0, and the condition becomes `number < 10`, so the last number is still 10."
+        require:
+          - pattern: \bcontinue\b
+            message: Keep the `continue` and fix the order of the lines instead.
+        tests:
+          - expect: |
+              1
+              2
+              3
+              5
+              6
+              7
+              9
+              10
+
+  - id: more-loops-nested
+    slug: nested
+    title: Loops inside loops
+    text: |
+      The body of a loop can hold any statements, another loop included. A loop inside a loop is called a **nested loop**. The inner loop runs all its rounds during each single round of the outer loop.
+
+      This program asks for sizes until the user types 0. For each size, an inner loop builds a row of that many blocks, one block per round:
+
+      ```python run
+      while True:
+          size = int(input("Size: "))
+          if size == 0:
+              break
+          row = ""
+          while size > 0:
+              row += "[]"
+              size -= 1
+          print(row)
+      ```
+
+      ```input
+      3
+      1
+      0
+      ```
+
+      ```output
+      Size: 3
+      [][][]
+      Size: 1
+      []
+      Size: 0
+      ```
+
+      (`"[]" * size` would build the same row. Here the inner loop shows how loops fit inside each other.)
+
+      Read it from the outside in. The outer loop asks for a size. The inner loop, indented one more level, builds the row. When the inner loop is done, the rest of the outer loop's body prints the row, and the outer loop starts its next round.
+
+      ### How many times?
+
+      Two counters show how often each line runs:
+
+      ```python run
+      outer = 1
+      while outer <= 3:
+          inner = 1
+          while inner <= 2:
+              print(f"outer {outer}, inner {inner}")
+              inner += 1
+          outer += 1
+      ```
+
+      ```output
+      outer 1, inner 1
+      outer 1, inner 2
+      outer 2, inner 1
+      outer 2, inner 2
+      outer 3, inner 1
+      outer 3, inner 2
+      ```
+
+      The inner loop runs completely, two rounds, in each of the three rounds of the outer loop: six lines in all. Note where `inner = 1` is: inside the outer loop, so the inner counter starts again from 1 every time. The next step looks at that closely.
+
+      ### break and continue in nested loops
+
+      `break` and `continue` work on the innermost loop they're in. In the first example, the `break` is in the outer loop, so it ends the whole thing. A `break` in an inner loop would end only the inner loop: the outer loop would carry on with the rest of its body and its next round. In the same way, `continue` in an inner loop skips to the next round of the inner loop.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      number = 1
+      while number <= 3:
+          other = 1
+          while other <= 3:
+              if other == number:
+                  break
+              print(number, other)
+              other += 1
+          number += 1
+    hints:
+      - The `break` is in the inner loop, so it ends only the inner loop. The outer loop goes on with its next number.
+      - "When `number` is 1, the inner loop breaks right away, since `other` is 1 too. Nothing is printed in that round."
+      - "When `number` is 2, `other` is 1 first (printed), then 2 (break)."
+    more:
+      - task: |
+          Write a program that asks for a size and prints a grid of coordinates: one line per row, and on each line the pair `(row,column)` for every column, with spaces between the pairs. Rows and columns count from 1.
+
+          ```
+          Size: 3
+          (1,1) (1,2) (1,3)
+          (2,1) (2,2) (2,3)
+          (3,1) (3,2) (3,3)
+          ```
+        seed: |
+          size = int(input("Size: "))
+        solution: |
+          size = int(input("Size: "))
+          row = 1
+          while row <= size:
+              line = ""
+              column = 1
+              while column <= size:
+                  line += f"({row},{column}) "
+                  column += 1
+              print(line)
+              row += 1
+        hints:
+          - "The outer loop goes through the rows, from 1 to the size. For each row, the inner loop goes through the columns."
+          - "Build each line in a string: start it empty in the outer loop, add `f\"({row},{column}) \"` in the inner loop, and print it after the inner loop."
+          - A space at the very end of a line doesn't matter to the checks.
+        tests:
+          - stdin: "3"
+          - stdin: "1"
+            hidden: true
+          - stdin: "4"
+            hidden: true
+      - task: |
+          Write a program that asks for words with the prompt `Word: ` until the user types `end`. For each word, it prints the word with every letter doubled.
+
+          ```
+          Word: cat
+          ccaatt
+          Word: no
+          nnoo
+          Word: end
+          ```
+        seed: |
+          # Write your program here.
+        solution: |
+          # Write your program here.
+          while True:
+              word = input("Word: ")
+              if word == "end":
+                  break
+              doubled = ""
+              index = 0
+              while index < len(word):
+                  doubled += word[index] + word[index]
+                  index += 1
+              print(doubled)
+        hints:
+          - "The outer loop reads the words and ends with `break` when the word is `end`."
+          - For each word, an inner loop goes through its characters with an index, from 0 while it's below `len(word)`.
+          - "In the inner loop, add the character twice to a string that starts empty for every word: `doubled += word[index] + word[index]`."
+        tests:
+          - stdin: |
+              cat
+              no
+              end
+          - stdin: end
+            hidden: true
+          - stdin: |
+              a
+              hello world
+              end
+            hidden: true
+
+  - id: more-loops-helper-variables
+    slug: helper-variables
+    title: Helper variables in nested loops
+    text: |
+      Nested loops often print a pattern, a little piece at a time. For that, `print` has an option you met in part 1: `print(..., end="")`. Normally `print` ends its line, so the next `print` starts a new one. With `end=""`, it ends with nothing instead, and the next `print` carries on where this one stopped. Any other text works as the ending too, such as a space. A `print()` with nothing in it then just ends the line:
+
+      ```python run
+      print("one", end="")
+      print("two", end=" ")
+      print("three")
+      print("four")
+      ```
+
+      ```output
+      onetwo three
+      four
+      ```
+
+      ### One helper variable per loop
+
+      In nested loops, each loop needs a helper variable of its own, and the inner one must start again in every round of the outer loop. This program prints a multiplication square:
+
+      ```python run
+      size = 4
+      row = 1
+      while row <= size:
+          column = 1
+          while column <= size:
+              print(row * column, end=" ")
+              column += 1
+          print()
+          row += 1
+      ```
+
+      ```output
+      1 2 3 4
+      2 4 6 8
+      3 6 9 12
+      4 8 12 16
+      ```
+
+      `row` counts the rows, and `column` counts the numbers on one row. `column = 1` is inside the outer loop, just before the inner loop, so every row starts again from column 1. After the inner loop, `print()` ends the row.
+
+      ### The start value in the wrong place
+
+      This is the most common mistake with nested loops: the inner helper variable gets its start value only once, before the outer loop.
+
+      ```python run
+      row = 1
+      column = 1
+      while row <= 3:
+          while column <= 3:
+              print(row * column, end=" ")
+              column += 1
+          print()
+          row += 1
+      ```
+
+      ```output
+      1 2 3
+      ```
+
+      The first row is fine. But after it, `column` is 4, and nothing sets it back to 1. In every later round of the outer loop, `column <= 3` is false from the start, so the inner loop doesn't run, and the other rows are empty.
+
+      ### Rows of different lengths
+
+      The inner loop's condition can use the outer loop's variable. Then each row can have a length of its own:
+
+      ```python run
+      height = 4
+      row = 1
+      while row <= height:
+          column = 1
+          while column <= row:
+              print(column, end=" ")
+              column += 1
+          print()
+          row += 1
+      ```
+
+      ```output
+      1
+      1 2
+      1 2 3
+      1 2 3 4
+      ```
+
+      Row 1 has one number, row 2 two numbers, and so on, because the inner loop runs while `column <= row`.
+
+      **Your turn:** this program should print a rectangle of `#` characters, but it prints only the first row. Fix it.
+
+      ```
+      Height: 3
+      Width: 5
+      #####
+      #####
+      #####
+      ```
+    seed: |
+      height = int(input("Height: "))
+      width = int(input("Width: "))
+      row = 0
+      column = 0
+      while row < height:
+          while column < width:
+              print("#", end="")
+              column += 1
+          print()
+          row += 1
+    solution: |
+      height = int(input("Height: "))
+      width = int(input("Width: "))
+      row = 0
+      while row < height:
+          column = 0
+          while column < width:
+              print("#", end="")
+              column += 1
+          print()
+          row += 1
+    hints:
+      - After the first row, what is the value of `column`? Does anything set it back to 0?
+      - "`column` has to start again from 0 for every row. Move `column = 0` into the outer loop, just before the inner loop."
+    tests:
+      - stdin: |
+          3
+          5
+      - stdin: |
+          1
+          1
+        hidden: true
+      - stdin: |
+          4
+          2
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a size and prints a hollow square: `#` characters on the edges and spaces inside.
+
+          ```
+          Size: 4
+          ####
+          #  #
+          #  #
+          ####
+          ```
+        seed: |
+          size = int(input("Size: "))
+        solution: |
+          size = int(input("Size: "))
+          row = 1
+          while row <= size:
+              column = 1
+              while column <= size:
+                  if row == 1 or row == size or column == 1 or column == size:
+                      print("#", end="")
+                  else:
+                      print(" ", end="")
+                  column += 1
+              print()
+              row += 1
+        hints:
+          - "Use two nested loops, `row` and `column`, both from 1 to the size, and print one character in each round of the inner loop with `end=\"\"`."
+          - "A place is on the edge when it's in the first or the last row, or in the first or the last column."
+          - "`if row == 1 or row == size or column == 1 or column == size:` prints `#`, and `else` prints a space. After the inner loop, `print()` ends the row."
+        tests:
+          - stdin: "4"
+          - stdin: "1"
+            hidden: true
+          - stdin: "2"
+            hidden: true
+          - stdin: "6"
+            hidden: true
+      - task: |
+          Write a program that asks for a number of rows and prints a triangle of numbers that keep counting up from one row to the next: row 1 has one number, row 2 has two, and so on.
+
+          ```
+          Rows: 4
+          1
+          2 3
+          4 5 6
+          7 8 9 10
+          ```
+        seed: |
+          rows = int(input("Rows: "))
+        solution: |
+          rows = int(input("Rows: "))
+          number = 1
+          row = 1
+          while row <= rows:
+              column = 1
+              while column <= row:
+                  print(number, end=" ")
+                  number += 1
+                  column += 1
+              print()
+              row += 1
+        hints:
+          - "Start from the triangle in the lesson: the inner loop runs while `column <= row`, so each row is one number longer."
+          - You need a third helper variable for the number to print. It must not start again for each row, so give it its start value 1 before the outer loop.
+          - In the inner loop, print the number with `end=" "` and add 1 to it.
+        tests:
+          - stdin: "4"
+          - stdin: "1"
+            hidden: true
+          - stdin: "6"
+            hidden: true

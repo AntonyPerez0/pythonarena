@@ -1,0 +1,194 @@
+topic: more-features
+drills:
+  - type: predict
+    after: conditional-expressions
+    code: |
+      x = 3
+      print("big" if x > 5 else "small")
+    why: "The condition `x > 5` is false, so the expression is the value after `else`."
+
+  - type: runs
+    after: conditional-expressions
+    code: |
+      score = 8
+      print("passed" if score >= 5)
+    why: "A conditional expression needs its `else` part, because an expression must always have a value. Python stops with a `SyntaxError`."
+
+  - type: predict
+    after: conditional-expressions
+    code: |
+      n = 0
+      print(f"{n} {'item' if n == 1 else 'items'}")
+    why: "0 isn't 1, so the word is `items`. A conditional expression fits inside an f-string."
+
+  - type: fill
+    after: conditional-expressions
+    code: |
+      number = 10
+      kind = "even" [[if]] number % 2 == 0 else "odd"
+      print(kind)
+    why: "The pattern is `value if condition else other_value`."
+
+  - type: predict
+    after: conditional-expressions
+    code: |
+      a = 4
+      b = 9
+      print(a if a > b else b)
+    why: "4 isn't greater than 9, so the expression is `b`, the larger of the two."
+
+  - type: predict
+    after: pass-and-loop-else
+    code: |
+      def later():
+          pass
+
+
+      print(later())
+    why: "`pass` does nothing, and a function that returns nothing returns `None`."
+
+  - type: runs
+    after: pass-and-loop-else
+    code: |
+      for i in range(3):
+          # nothing here yet
+      print("done")
+    why: "A comment isn't a statement, so the loop's block is empty. Python stops with an `IndentationError`; `pass` would fill the block."
+
+  - type: predict
+    after: pass-and-loop-else
+    code: |
+      for i in range(3):
+          if i == 5:
+              break
+      else:
+          print("done")
+    why: "`i` never reaches 5, so the loop ends without `break`, and its `else` block runs."
+
+  - type: predict
+    after: pass-and-loop-else
+    code: |
+      for i in range(5):
+          if i == 2:
+              print("stop at", i)
+              break
+      else:
+          print("finished")
+    why: "The loop ends with `break`, so its `else` block is skipped."
+
+  - type: predict
+    after: pass-and-loop-else
+    code: |
+      for number in [2, 4, 6]:
+          if number % 2 == 1:
+              print("odd one found")
+              break
+          else:
+              print("all even")
+    why: "This `else` is indented under the `if`, so it belongs to the `if` and runs for every even number. A loop's `else` is lined up with `for`."
+
+  - type: predict
+    after: default-parameters
+    code: |
+      def add(a, b=10):
+          return a + b
+
+
+      print(add(1))
+      print(add(1, 2))
+    why: "Without a second argument, `b` is 10. With one, the argument replaces the default."
+
+  - type: runs
+    after: default-parameters
+    code: |
+      def greet(greeting="Hi", name):
+          print(greeting, name)
+    why: "Parameters with a default must come after those without one. Python stops with a `SyntaxError`."
+
+  - type: predict
+    after: default-parameters
+    code: |
+      def add(item, items=[]):
+          items.append(item)
+          return items
+
+
+      add(1)
+      print(add(2))
+    why: "The default list is made once, when the `def` runs, and both calls append to that same list."
+
+  - type: predict
+    after: any-number-of-arguments
+    code: |
+      def count(*args):
+          return len(args)
+
+
+      print(count(1, "a", [2, 3]))
+    why: "Each argument is one item of the tuple `args`, and the list is one argument, so there are three."
+
+  - type: choice
+    after: any-number-of-arguments
+    prompt: What does this print?
+    code: |
+      def show(*args):
+          print(args)
+
+
+      show(1, 2)
+    choices:
+      - "`(1, 2)`"
+      - "`[1, 2]`"
+      - "`1 2`"
+    answer: 1
+    verify: output
+    why: "A starred parameter collects the arguments into a tuple, which prints with parentheses."
+
+  - type: bug
+    after: any-number-of-arguments
+    prompt: The program should print the sum of the values. One line has a bug. Which one?
+    code: |
+      def total(*numbers):
+          return sum(numbers)
+
+
+      values = [1, 2, 3]
+      print(total(values))  # BUG
+    fix: print(total(*values))
+    why: "A list is one argument, so `numbers` is a tuple holding one list, and `sum` can't add it. A star in the call spreads the list into separate arguments."
+
+  - type: boss
+    after: any-number-of-arguments
+    prompt: |
+      Write a function `describe(*numbers)` that returns a short description of its arguments: `"no numbers"` when there are none, and otherwise how many there are and the largest, such as `"3 numbers, largest 9"`. With exactly one number, write `number` instead of `numbers`: `"1 number, largest 4"`.
+    seed: |
+      def describe(*numbers):
+          pass
+
+
+      if __name__ == "__main__":
+          print(describe(4, 9, 2))
+          print(describe(4))
+          print(describe())
+    solution: |
+      def describe(*numbers):
+          if len(numbers) == 0:
+              return "no numbers"
+          word = "number" if len(numbers) == 1 else "numbers"
+          return f"{len(numbers)} {word}, largest {max(numbers)}"
+
+
+      if __name__ == "__main__":
+          print(describe(4, 9, 2))
+          print(describe(4))
+          print(describe())
+    hints:
+      - "`numbers` is a tuple, so `len(numbers)` and `max(numbers)` work on it. Handle the empty case first."
+      - "Pick the word with a conditional expression: `\"number\" if len(numbers) == 1 else \"numbers\"`."
+    tests:
+      - call: describe(4, 9, 2)
+      - call: describe(4)
+      - call: describe()
+        hidden: true
+      - call: describe(-5, -2)
+        hidden: true

@@ -1,0 +1,193 @@
+topic: input
+drills:
+  - type: predict
+    after: prompt
+    stdin: Ada
+    code: |
+      name = input("Name: ")
+      print(name)
+    why: "The typed line appears right after the prompt, then `print(name)` prints it again on a line of its own."
+
+  - type: predict
+    after: prompt
+    stdin: Ada
+    code: |
+      name = input("Name:")
+      print(name)
+    why: "The prompt has no space after the colon, so the typed answer sticks to it. Put the space inside the quotes: `\"Name: \"`."
+
+  - type: fill
+    after: prompt
+    stdin: tea
+    code: |
+      drink = [[input]]("Drink: ")
+      print(drink)
+    why: "`input` shows its prompt and reads the line the user types."
+
+  - type: predict
+    after: variables
+    stdin: soup
+    code: |
+      food = input("Food: ")
+      print("food")
+      print(food)
+    why: "`\"food\"` in quotes is just the word itself. Without quotes, `food` is the variable, and Python prints the value the user typed."
+
+  - type: runs
+    after: variables
+    stdin: Rex
+    code: |
+      pet = input("Pet: ")
+      print(Pet)
+    why: "Capitals matter in names: the variable is `pet`, so `Pet` is a name Python doesn't know, and it stops with a `NameError`."
+
+  - type: choice
+    after: variables
+    prompt: Which of these is a valid variable name in Python?
+    choices:
+      - "`first name`"
+      - "`1st_name`"
+      - "`first_name`"
+    answer: 3
+    why: "A name can't contain a space or start with a digit. Python style joins the words with an underscore: `first_name`."
+
+  - type: runs
+    after: variables
+    code: |
+      2nd_place = "Ben"
+      print(2nd_place)
+    why: "A variable name can't start with a digit, so Python can't read the program and stops with a `SyntaxError`."
+
+  - type: predict
+    after: joining
+    code: |
+      print("snow" + "man")
+      print("snow " + "man")
+    why: "`+` joins strings with nothing between them. The space in the second line is part of the first string."
+
+  - type: bug
+    after: joining
+    stdin: Ada
+    code: |
+      name = input("Name: ")
+      print("Hello, " + "name")  # BUG
+    fix: print("Hello, " + name)
+    why: "In quotes, `\"name\"` is just the word name. Without the quotes, it's the variable that holds what the user typed."
+
+  - type: runs
+    after: joining
+    stdin: Ada
+    code: |
+      name = input("Name: ")
+      print("Hi " name "!")
+    why: "Each part needs a `+` between it and the next one. Without them, Python can't read the line and stops with a `SyntaxError`."
+
+  - type: fill
+    after: joining
+    stdin: rain
+    code: |
+      word = input("Word: ")
+      print(word + [[" "]] + word)
+    why: "`+` adds no space by itself, so the space has to be a string of its own (or part of one): `\" \"`."
+
+  - type: predict
+    after: several-inputs
+    stdin: |
+      cat
+      dog
+    code: |
+      pet = input("First: ")
+      pet = input("Second: ")
+      print(pet)
+    why: "Both answers go into `pet`, and the second replaces the first, so only `dog` is left when the program prints."
+
+  - type: predict
+    after: several-inputs
+    code: |
+      print("one", "two")
+      print("one" + "two")
+      print("one", "two" + "!")
+    why: "Commas in `print` put a space between the values. `+` joins strings with nothing between them."
+
+  - type: choice
+    after: several-inputs
+    prompt: "`name` holds `Ada`. Which line prints `Hi Ada!` exactly?"
+    choices:
+      - "`print(\"Hi\", name, \"!\")`"
+      - "`print(\"Hi\", name + \"!\")`"
+      - "`print(\"Hi\" + name + \"!\")`"
+    answer: 2
+    why: "Commas add a space between values, and `+` adds none. The first line prints `Hi Ada !` and the third `HiAda!`."
+
+  - type: bug
+    after: several-inputs
+    stdin: |
+      Ada
+      Lovelace
+    code: |
+      first = input("First name: ")
+      last = input("Last name: ")
+      print(first + last)  # BUG
+    fix: print(first, last)
+    why: "`+` glues the names together as `AdaLovelace`. A comma, or a `\" \"` joined in between, puts a space between them."
+
+  - type: boss
+    after: several-inputs
+    prompt: |
+      Write a program that asks for a city and a year with the prompts shown, and prints an invitation. If the user types `Paris` and `2030`, the run looks like this:
+
+      ```
+      City: Paris
+      Year: 2030
+      See you in Paris in 2030!
+      ```
+    seed: |
+      # Ask for the city and the year, then print the invitation.
+    solution: |
+      # Ask for the city and the year, then print the invitation.
+      city = input("City: ")
+      year = input("Year: ")
+      print("See you in " + city + " in " + year + "!")
+    hints:
+      - Read the two answers into two variables, in the order the prompts are shown.
+      - "The exclamation mark comes right after the year, with no space, so join it with `+`."
+    tests:
+      - stdin: |
+          Paris
+          2030
+      - stdin: |
+          Nairobi
+          2027
+        hidden: true
+
+  - type: boss
+    after: several-inputs
+    prompt: |
+      Write a program that asks for an adjective and an animal with the prompts shown, and prints a band name and a chant. If the user types `purple` and `owls`, the run looks like this:
+
+      ```
+      Adjective: purple
+      Animal: owls
+      Band: The purple owls
+      purple owls, purple owls!
+      ```
+    seed: |
+      # Ask the two questions, then print the band name and the chant.
+    solution: |
+      # Ask the two questions, then print the band name and the chant.
+      adjective = input("Adjective: ")
+      animal = input("Animal: ")
+      band = adjective + " " + animal
+      print("Band: The " + band)
+      print(band + ", " + band + "!")
+    hints:
+      - "The two words appear together three times. Join them once and store the result: `band = adjective + \" \" + animal`."
+      - "The chant is the band, a comma and a space, the band again and `!`, all joined with `+`."
+    tests:
+      - stdin: |
+          purple
+          owls
+      - stdin: |
+          loud
+          frogs
+        hidden: true

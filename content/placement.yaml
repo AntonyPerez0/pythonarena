@@ -1,0 +1,532 @@
+# The placement quiz (/placement/): one question per module, in course order. The first question a
+# learner misses shows where to start. Each is a predict drill (see content/README.md, "Drills").
+questions:
+- module: printing
+  type: predict
+  code: |
+    print("2 + 3")
+    print(2 + 3)
+  why: With quotes, `2 + 3` is just text and is printed as it is. Without quotes, Python calculates it.
+- module: input
+  type: predict
+  code: |
+    print("one", "two")
+    print("one" + "two")
+    print("one", "two" + "!")
+  why: Commas in `print` put a space between the values. `+` joins strings with nothing between them.
+- module: variables
+  type: predict
+  code: |
+    a = 3
+    b = 4
+    print(f"{a} + {b} = {a + b}")
+  why: In an f-string, each pair of curly brackets is replaced by the value inside it, and `{a + b}` is calculated first.
+- module: arithmetic
+  type: predict
+  code: |
+    print(17 // 5)
+    print(17 % 5)
+  why: 5 fits into 17 three times (`//`), and 2 is left over (`%`).
+- module: conditionals
+  type: predict
+  code: |
+    n = 15
+    if n > 5:
+        print("A")
+    if n > 10:
+        print("B")
+    if n > 20:
+        print("C")
+  why: 'Each `if` is checked on its own, so every block whose condition is true runs: 15 is over 5 and over 10.'
+- module: terminology
+  type: predict
+  code: |
+    print(len(str(12345)))
+  why: 'The inner call runs first: `str(12345)` returns the string `"12345"`, and `len` counts its 5 characters.'
+- module: elif
+  type: predict
+  code: |
+    n = 15
+    if n > 10:
+        print("A")
+    elif n > 5:
+        print("B")
+    else:
+        print("C")
+  why: 15 is also greater than 5, but only the first branch whose condition is true runs. The rest of the statement is skipped.
+- module: logic
+  type: predict
+  code: |
+    x = 15
+    print(x < 5 or x > 10)
+    print(x < 5 and x > 10)
+  why: '`or` needs one true side: `x > 10` is true. `and` needs both, and `x < 5` is false. No number is below 5 and above 10 at once.'
+- module: simple-loops
+  type: predict
+  code: |
+    n = 1
+    while True:
+        print(n)
+        n += 1
+        if n > 3:
+            break
+  why: Each iteration prints `n` and then adds one. After 3 is printed, `n` becomes 4 and the loop ends.
+- type: predict
+  module: loop-conditions
+  code: |
+    n = 0
+    while n < 3:
+        n += 1
+        print(n)
+  why: 'The update comes before the `print`, so each round prints the new value: 1, 2 and 3. When `n` is 3, `3 < 3` is false.'
+- type: predict
+  module: strings
+  code: |
+    word = "keyboard"
+    print(word[0:3])
+    print(word[3:])
+  why: 'A slice includes its start but not its end: `0:3` is the indexes 0, 1 and 2. With no end, it goes to the end of the string.'
+- type: predict
+  module: more-loops
+  code: |
+    n = 0
+    while n < 6:
+        n += 1
+        if n % 2 == 0:
+            continue
+        print(n)
+  why: For even numbers, `continue` skips the `print` and jumps back to the top. Only 1, 3 and 5 are printed.
+- type: predict
+  module: functions
+  code: |
+    def show(text):
+        print("[" + text + "]")
+
+
+    show("a")
+    print("b")
+    show("c")
+  why: Each call gives `text` a new value, and the body prints it in brackets. The `print` in between runs in its turn.
+- type: predict
+  module: return-values
+  code: |
+    def add(a, b):
+        print(a + b)
+
+
+    result = add(2, 3)
+    print(result)
+  why: '`add` prints 5 itself and has no `return`, so it gives back `None`. That''s what `result` holds.'
+- type: predict
+  module: lists
+  code: |
+    letters = ["a", "b"]
+    letters.insert(1, "x")
+    letters.append("y")
+    print(letters)
+  why: '`insert(1, "x")` puts `"x"` at index 1, moving `"b"` one place right. `append` adds to the end.'
+- type: predict
+  module: for-loops
+  code: |
+    print(list(range(1, 10, 3)))
+  why: 'The range starts at 1 and goes up in steps of 3: 1, 4 and 7. The next one, 10, is the end, which is left out.'
+- type: predict
+  module: formatting
+  code: |
+    x = 2 / 3
+    print(f"{x:.2f}")
+  why: '`.2f` shows two decimals, and the last one is rounded: 0.666... becomes 0.67.'
+- type: predict
+  module: strings-and-lists
+  code: |
+    print("1,2,3".split(","))
+  why: '`split` cuts the string at each comma. The pieces are strings, so the list shows them in quotes.'
+- module: more-lists
+  type: predict
+  code: |
+    m = [[1, 2, 3], [4, 5, 6]]
+    total = 0
+    for row in m:
+        total += row[1]
+    print(total)
+  why: 'The loop takes the item at index 1 of each row, which is the middle column: 2 + 5.'
+- module: references
+  type: predict
+  code: |
+    a = [1]
+    b = a
+    b.append(2)
+    print(a)
+  why: '`b = a` copies the reference, not the list. Both names refer to one list, so the `append` shows through `a` too.'
+- module: dictionaries
+  type: predict
+  code: |
+    ages = {"Ada": 36, "Max": 41}
+    ages["Lin"] = 29
+    print(len(ages))
+    print(ages["Max"])
+  why: The dictionary has three pairs after `Lin` is added, and `ages["Max"]` is the value stored under the key `"Max"`.
+- module: tuples
+  type: predict
+  code: |
+    def low_high(numbers):
+        return min(numbers), max(numbers)
+
+
+    result = low_high([4, 9, 2])
+    print(result)
+    low, high = result
+    print(high - low)
+  why: The function returns two values as one tuple, `(2, 9)`. Unpacking puts them into `low` and `high`.
+- module: reading-files
+  type: predict
+  code: |
+    line = "Ada;36\n"
+    parts = line.strip().split(";")
+    print(parts)
+  why: '`strip()` removes the line break, then `split(";")` cuts the string at the semicolon into a list of two strings.'
+- module: writing-files
+  type: predict
+  code: |
+    with open("list.txt", "w") as file:
+        file.write("A\n")
+
+    with open("list.txt", "a") as file:
+        file.write("B\n")
+
+    with open("list.txt") as file:
+        print(file.read())
+  why: '`"w"` creates the file with `A`, and `"a"` adds `B` to its end without removing anything.'
+- module: errors
+  type: predict
+  code: |
+    try:
+        number = int("5x")
+        print("converted")
+    except ValueError:
+        print("failed")
+    print("after")
+  why: '`int("5x")` raises a `ValueError`, so the rest of the `try` block is skipped and the `except` block runs. Then the program carries on below.'
+- module: scope
+  type: predict
+  code: |
+    x = 1
+
+
+    def set_x():
+        x = 99
+
+
+    set_x()
+    print(x)
+  why: Without `global`, the assignment in `set_x` creates a local `x`. The global `x` stays 1.
+- type: predict
+  module: modules
+  code: |
+    import math
+
+    print(math.floor(3.99))
+    print(math.ceil(3.01))
+  why: '`floor` always rounds down and `ceil` always rounds up, however close the number is to the next whole number.'
+- type: predict
+  module: randomness
+  code: |
+    import random
+
+    random.seed(5)
+    a = random.randint(1, 1000)
+    random.seed(5)
+    b = random.randint(1, 1000)
+    print(a == b)
+  why: The same seed starts the same series of numbers, so both calls give the same number.
+- type: predict
+  module: dates
+  code: |
+    from datetime import datetime
+
+    difference = datetime(2026, 3, 1) - datetime(2026, 2, 1)
+    print(difference.days)
+  why: Subtracting datetimes gives a timedelta, and February 2026 has 28 days.
+- type: predict
+  module: data-processing
+  code: |
+    import json
+
+    print(json.loads("[null, false]"))
+  why: JSON's `null` becomes Python's `None`, and `false` becomes `False`.
+- type: predict
+  module: own-modules
+  code: |
+    import calc
+
+    print(calc.square(3))
+    # ==== calc.py ====
+    def square(x):
+        return x * x
+
+
+    if __name__ == "__main__":
+        print("testing", square(2))
+  why: '`calc.py` was imported, so its `__name__` is `calc` and the main block doesn''t run. Only the main program''s print shows.'
+- type: predict
+  module: more-features
+  code: |
+    x = 3
+    print("big" if x > 5 else "small")
+  why: The condition `x > 5` is false, so the expression is the value after `else`.
+- module: objects
+  type: predict
+  code: |
+    from datetime import date
+
+    d = date(2026, 4, 9)
+    print(d.month + d.day)
+    print(d)
+  why: '`month` and `day` are attributes holding whole numbers, 4 and 9. Printing a `date` shows it as year-month-day.'
+- module: classes
+  type: predict
+  code: |
+    class Score:
+        def __init__(self, name, points):
+            self.name = name
+            self.points = points * 2
+
+
+    s = Score("Ann", 4)
+    print(s.name, s.points)
+  why: The constructor stores twice the argument in the attribute, so `s.points` is 8.
+- module: methods
+  type: predict
+  code: |
+    class Counter:
+        def __init__(self):
+            self.value = 0
+
+        def increase(self):
+            self.value += 1
+
+
+    a = Counter()
+    b = Counter()
+    a.increase()
+    b.increase()
+    a.increase()
+    print(a.value, b.value)
+  why: A method changes only the object it is called on, so each counter counts its own calls.
+- module: class-examples
+  type: predict
+  code: |
+    class Coin:
+        def __init__(self, value):
+            self.value = value
+
+        def __str__(self):
+            return f"{self.value} cents"
+
+
+    c = Coin(20)
+    print(f"I found {c}")
+    print(len(str(c)))
+  why: f-strings and `str` both use `__str__`. The string `20 cents` has 8 characters.
+- module: object-references
+  type: predict
+  code: |
+    class Lamp:
+        def __init__(self):
+            self.on = False
+
+
+    desk = Lamp()
+    reading = desk
+    reading.on = True
+    print(desk.on)
+  why: '`reading = desk` doesn''t create a second lamp; it gives the same lamp a second name. Switching it on through one name switches it on for both.'
+- module: objects-as-attributes
+  type: predict
+  code: |
+    class Customer:
+        def __init__(self, name):
+            self.name = name
+
+
+    class Order:
+        def __init__(self, number, customer):
+            self.number = number
+            self.customer = customer
+
+
+    order = Order(17, Customer("Ida"))
+    print(order.customer.name)
+  why: '`order.customer` is the `Customer` object, and `.name` is that customer''s name.'
+- module: encapsulation
+  type: predict
+  code: |
+    class Volume:
+        def __init__(self):
+            self.__level = 5
+
+        @property
+        def level(self):
+            return self.__level
+
+        @level.setter
+        def level(self, level):
+            if 0 <= level <= 10:
+                self.__level = level
+
+
+    radio = Volume()
+    radio.level = 8
+    radio.level = 11
+    print(radio.level)
+  why: The setter accepts 8. It ignores 11, which is out of range, so the level stays 8.
+- module: class-attributes
+  type: predict
+  code: |
+    class Shop:
+        discount = 10
+
+        def __init__(self, name):
+            self.name = name
+
+
+    a = Shop("North")
+    b = Shop("South")
+    Shop.discount = 25
+    print(a.discount, b.discount)
+  why: There's only one `discount`, in the class. Reading `a.discount` finds it there, so after the change both shops see 25.
+- module: inheritance
+  type: predict
+  code: |
+    class Report:
+        def title(self):
+            return "REPORT"
+
+        def show(self):
+            print("== " + self.title() + " ==")
+
+
+    class Invoice(Report):
+        def title(self):
+            return "INVOICE"
+
+
+    Invoice().show()
+  why: '`show` is in `Report`, but `self` is an invoice, so `self.title()` runs the overriding version in `Invoice`.'
+- module: access-modifiers
+  type: predict
+  code: |
+    class Base:
+        def __init__(self):
+            self.__x = 1
+
+        def base_x(self):
+            return self.__x
+
+
+    class Child(Base):
+        def __init__(self):
+            super().__init__()
+            self.__x = 2
+
+
+    print(Child().base_x())
+  why: In `Child`, `self.__x` is `self._Child__x`, a different attribute from `Base`'s `_Base__x`. `base_x` is written in `Base`, so it reads `Base`'s own, which is still 1.
+- module: oop-techniques
+  type: predict
+  code: |
+    class Word:
+        def __init__(self, text):
+            self.text = text
+
+        def __lt__(self, other):
+            return len(self.text) < len(other.text)
+
+
+    words = [Word("banana"), Word("fig"), Word("kiwi")]
+    for word in sorted(words):
+        print(word.text)
+  why: '`sorted` puts the items in order with `<`, and this `__lt__` compares lengths. So the words come out from the shortest to the longest, not in alphabetical order.'
+- module: larger-application
+  type: predict
+  code: |
+    class Tally:
+        def __init__(self):
+            self.count = 0
+
+
+    tallies = {}
+    for word in ["yes", "no", "yes"]:
+        if word not in tallies:
+            tallies[word] = Tally()
+        tallies[word].count += 1
+    print(tallies["yes"].count)
+    print(len(tallies))
+  why: Each word gets one `Tally` object the first time it comes up. `yes` comes twice, so its count is 2, and the dictionary has two keys.
+- module: comprehensions
+  type: predict
+  code: |
+    print([n for n in range(10) if n % 3 == 0])
+  why: 'Only the numbers that divide evenly by 3 pass the filter: 0, 3, 6 and 9.'
+- module: more-comprehensions
+  type: predict
+  code: |
+    print({w: len(w) for w in ["hi", "hey"]})
+  why: Each word becomes a key, with its length as the value.
+- module: recursion
+  type: predict
+  code: |
+    def f(n):
+        if n == 1:
+            return 1
+        return n + f(n - 1)
+
+
+    print(f(4))
+  why: '`f(4)` is 4 + 3 + 2 + 1, which is 10.'
+- module: recursion-examples
+  type: predict
+  code: |
+    class Node:
+        def __init__(self, value, left=None, right=None):
+            self.value, self.left, self.right = value, left, right
+
+
+    def count(node):
+        if node is None:
+            return 0
+        return 1 + count(node.left) + count(node.right)
+
+
+    print(count(Node(1, Node(2), Node(3, Node(4)))))
+  why: 'Every node adds 1 and every missing child adds 0, so the result is the number of nodes: 1, 2, 3 and 4.'
+- type: predict
+  module: functions-as-arguments
+  code: |
+    words = ["pear", "fig", "banana"]
+    print(sorted(words, key=len, reverse=True))
+  why: '`key=len` sorts the words by their length, and `reverse=True` puts the longest first.'
+- type: predict
+  module: generators
+  code: |
+    def countdown(n):
+        while n > 0:
+            yield n
+            n -= 1
+
+
+    print(list(countdown(3)))
+  why: 'Each `yield` hands out one value and pauses the function. `list` asks for values until the function ends: 3, 2 and 1.'
+- type: predict
+  module: functional
+  code: |
+    numbers = [1, 2, 3, 4]
+    print(list(map(lambda n: n * n, filter(lambda n: n % 2 == 0, numbers))))
+  why: 'Read from the inside out: `filter` keeps 2 and 4, then `map` squares them.'
+- type: predict
+  module: regex
+  code: |
+    import re
+
+    print(re.findall(r"\d+", "7 days, 24 hours"))
+  why: '`\d+` matches a whole run of digits, and `re.findall` returns every match as a string.'

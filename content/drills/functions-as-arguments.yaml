@@ -1,0 +1,244 @@
+topic: functions-as-arguments
+drills:
+  - type: predict
+    after: key-functions
+    code: |
+      words = ["pear", "fig", "banana"]
+      print(sorted(words, key=len, reverse=True))
+    why: "`key=len` sorts the words by their length, and `reverse=True` puts the longest first."
+
+  - type: predict
+    after: key-functions
+    code: |
+      pairs = [("b", 1), ("a", 2), ("a", 1)]
+      print(sorted(pairs))
+    why: "Without a key, tuples are compared item by item: first by the letter, and by the number when the letters are equal."
+
+  - type: runs
+    after: key-functions
+    code: |
+      words = ["pear", "fig", "banana"]
+      print(sorted(words, key=len()))
+    why: "`len()` calls `len` right away, with nothing to measure. The key must be the function itself: `key=len`."
+
+  - type: bug
+    after: key-functions
+    code: |
+      def last_digit(number):
+          return number % 10
+
+
+      numbers = [25, 31, 49]
+      numbers.sort(key=last_digit())  # BUG
+      print(numbers)
+    fix: numbers.sort(key=last_digit)
+    why: "With parentheses Python calls `last_digit` with no argument and stops. `sort` needs the function itself, which it calls once for each number."
+
+  - type: fill
+    after: key-functions
+    code: |
+      scores = [7, 19, 3, 12]
+      print(sorted(scores, [[reverse]]=True))
+    why: "`reverse=True` sorts from the largest to the smallest."
+
+  - type: choice
+    after: key-functions
+    prompt: "What does `sorted(items, key=f)` do with the function `f`?"
+    choices:
+      - It calls `f` once for each item and sorts the items by the values `f` returns
+      - It calls `f` once with the whole list and returns what `f` returns
+      - It sorts the items, then calls `f` on the sorted list
+    answer: 1
+    why: "The key function gets one item at a time. Its return values decide the order, but the items themselves are what end up in the new list."
+
+  - type: predict
+    after: lambda
+    code: |
+      animals = ["ox", "zebra", "cat"]
+      print(max(animals, key=lambda word: word[-1]))
+    why: "The key compares the last letters x, a and t. The largest is x, and `max` returns the whole word, `ox`."
+
+  - type: predict
+    after: lambda
+    code: |
+      fruits = ["banana", "Cherry", "apple"]
+      print(sorted(fruits))
+      print(sorted(fruits, key=lambda fruit: fruit.lower()))
+    why: "In the natural order every capital letter comes before every small letter, so `Cherry` is first. Sorting by the lowercase form ignores the capitals."
+
+  - type: runs
+    after: lambda
+    code: |
+      prices = [("tea", 3.5), ("cake", 4.2)]
+      print(sorted(prices, key=lambda item: return item[1]))
+    why: "A lambda holds one expression and returns its value by itself. The word `return` doesn't belong in it, so Python can't read the line."
+
+  - type: fill
+    after: lambda
+    code: |
+      prices = [("tea", 3.5), ("cake", 4.2), ("bun", 2.8)]
+      print(min(prices, key=[[lambda]] item: item[1]))
+    why: "A function without a name starts with `lambda`, then its parameter, a colon and the value to compare."
+
+  - type: runs
+    after: own-objects
+    code: |
+      class Dog:
+          def __init__(self, name, age):
+              self.name = name
+              self.age = age
+
+
+      dogs = [Dog("Rex", 4), Dog("Fifi", 2)]
+      print(sorted(dogs)[0].name)
+    why: "Python doesn't know how to compare two `Dog` objects with `<`, so `sorted` stops with a `TypeError`. A key such as `key=lambda dog: dog.age` would fix it."
+
+  - type: predict
+    after: own-objects
+    code: |
+      class Team:
+          def __init__(self, name, wins):
+              self.name = name
+              self.wins = wins
+
+
+      teams = [Team("Owls", 3), Team("Bears", 5), Team("Ants", 3)]
+      for team in sorted(teams, key=lambda team: (-team.wins, team.name)):
+          print(team.name)
+    why: "The key is a tuple: most wins first (thanks to the minus sign), and for equal wins the names in alphabetical order."
+
+  - type: bug
+    after: own-objects
+    code: |
+      class Person:
+          def __init__(self, name, age):
+              self.name = name
+              self.age = age
+
+
+      people = [Person("Ida", 34), Person("Jo", 19), Person("Kai", 52)]
+      youngest = max(people, key=lambda person: person.age)  # BUG
+      print(youngest.name)
+    fix: "youngest = min(people, key=lambda person: person.age)"
+    why: "The youngest person has the smallest age, so the function is `min`. `max` finds the oldest."
+
+  - type: predict
+    after: own-functions
+    code: |
+      def apply(operation, value):
+          return operation(value)
+
+
+      print(apply(lambda x: x * 2, 5))
+      print(apply(len, "hello"))
+    why: "`apply` calls whatever function it's given: first the lambda, which doubles 5, then `len`, which counts 5 letters."
+
+  - type: runs
+    after: own-functions
+    code: |
+      def apply(operation, value):
+          return operation(value)
+
+
+      def double(x):
+          return 2 * x
+
+
+      print(apply(double(3), 5))
+    why: "`double(3)` runs first and gives 6, so `operation` is the number 6. Calling it gives `TypeError: 'int' object is not callable`."
+
+  - type: boss
+    after: own-objects
+    prompt: |
+      The class `Book` holds a book's title and number of pages. Write a function `thickest(books)` that returns the **title** of the book with the most pages. For example,
+
+      ```python fragment
+      print(thickest([Book("Dune", 412), Book("Emma", 474), Book("Momo", 304)]))
+      ```
+
+      should print:
+
+      ```
+      Emma
+      ```
+    seed: |
+      class Book:
+          def __init__(self, title, pages):
+              self.title = title
+              self.pages = pages
+
+
+      def thickest(books):
+          pass
+
+
+      if __name__ == "__main__":
+          print(thickest([Book("Dune", 412), Book("Emma", 474), Book("Momo", 304)]))
+    solution: |
+      class Book:
+          def __init__(self, title, pages):
+              self.title = title
+              self.pages = pages
+
+
+      def thickest(books):
+          return max(books, key=lambda book: book.pages).title
+
+
+      if __name__ == "__main__":
+          print(thickest([Book("Dune", 412), Book("Emma", 474), Book("Momo", 304)]))
+    hints:
+      - "`max` with a key returns the book whose key value is the largest."
+      - "The key returns the pages, `lambda book: book.pages`, and the function returns that book's `.title`."
+    tests:
+      - call: print(thickest([Book("Dune", 412), Book("Emma", 474), Book("Momo", 304)]))
+      - call: thickest([Book("Heidi", 288), Book("Ulysses", 730)])
+        hidden: true
+
+  - type: boss
+    after: own-functions
+    prompt: |
+      Write a function `count_if(items, condition)` that returns how many items of the list make the function `condition` return `True`. For example,
+
+      ```python fragment
+      print(count_if([4, 9, 15, 2], lambda n: n > 5))
+      print(count_if(["hi", "hello", "hey"], lambda word: word.startswith("he")))
+      ```
+
+      should print:
+
+      ```
+      2
+      2
+      ```
+    seed: |
+      def count_if(items, condition):
+          pass
+
+
+      if __name__ == "__main__":
+          print(count_if([4, 9, 15, 2], lambda n: n > 5))
+          print(count_if(["hi", "hello", "hey"], lambda word: word.startswith("he")))
+    solution: |
+      def count_if(items, condition):
+          count = 0
+          for item in items:
+              if condition(item):
+                  count += 1
+          return count
+
+
+      if __name__ == "__main__":
+          print(count_if([4, 9, 15, 2], lambda n: n > 5))
+          print(count_if(["hi", "hello", "hey"], lambda word: word.startswith("he")))
+    hints:
+      - Keep a counter, go through the items, and call `condition(item)` for each one.
+      - Add one to the counter when the call returns `True`, and return the counter after the loop.
+    tests:
+      - call: |
+          print(count_if([4, 9, 15, 2], lambda n: n > 5))
+          print(count_if(["hi", "hello", "hey"], lambda word: word.startswith("he")))
+      - call: 'count_if([1, 2, 3, 4, 5, 6], lambda n: n % 3 == 0)'
+        hidden: true
+      - call: 'count_if([], lambda n: True)'
+        hidden: true

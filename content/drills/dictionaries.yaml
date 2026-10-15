@@ -1,0 +1,181 @@
+topic: dictionaries
+drills:
+  - type: predict
+    after: basics
+    code: |
+      ages = {"Ada": 36, "Max": 41}
+      ages["Lin"] = 29
+      print(len(ages))
+      print(ages["Max"])
+    why: "The dictionary has three pairs after `Lin` is added, and `ages[\"Max\"]` is the value stored under the key `\"Max\"`."
+
+  - type: runs
+    after: basics
+    code: |
+      ages = {"Ada": 36, "Max": 41}
+      print(ages["Lin"])
+    why: "`\"Lin\"` isn't a key of the dictionary, so Python stops with a `KeyError`. Check with `in` first."
+
+  - type: predict
+    after: basics
+    code: |
+      prices = {"tea": 2.0, "cake": 3.5}
+      print("cake" in prices)
+      print(3.5 in prices)
+    why: "`in` checks the keys of a dictionary, not its values. `3.5` is a value, so it isn't found."
+
+  - type: fill
+    after: basics
+    code: |
+      colors = {"sky": "blue", "grass": "green"}
+      print(colors[[["grass"‖'grass']]])
+    why: "The value is found with its key in square brackets: `colors[\"grass\"]`."
+
+  - type: predict
+    after: keys-and-values
+    code: |
+      stock = {"apples": 5}
+      stock["apples"] = 2
+      stock["apples"] += 4
+      print(stock)
+    why: "A key is in a dictionary only once. Assigning replaces its value with 2, and `+= 4` makes it 6."
+
+  - type: predict
+    after: keys-and-values
+    code: |
+      sizes = {"S": 1, "M": 2, "S": 3}
+      print(sizes)
+    why: "A key can only be in a dictionary once. When the same key comes twice, the later value replaces the earlier one."
+
+  - type: runs
+    after: keys-and-values
+    code: |
+      seen = {}
+      seen[[1, 2]] = "pair"
+    why: "A list can change, so it can't be a key: Python stops with `TypeError: cannot use 'list' as a dict key (unhashable type: 'list')`."
+
+  - type: predict
+    after: keys-and-values
+    code: |
+      groups = {"a": [1], "b": []}
+      groups["b"].append(5)
+      groups["a"].append(2)
+      print(groups)
+    why: "Each value is a list, and `append` changes that list inside the dictionary."
+
+  - type: predict
+    after: looping
+    code: |
+      stock = {"pens": 3, "ink": 0}
+      for item in stock:
+          print(item)
+    why: "A `for` loop over a dictionary goes through its keys, not its values."
+
+  - type: predict
+    after: looping
+    code: |
+      points = {"Max": 3, "Ada": 5}
+      for name, score in points.items():
+          print(name, score * 2)
+    why: "`items()` gives each key with its value, in the order the keys were added."
+
+  - type: predict
+    after: looping
+    code: |
+      phone = {"Max": 1, "Ada": 2, "Lin": 3}
+      print(sorted(phone))
+    why: "`sorted` on a dictionary returns a sorted list of its keys."
+
+  - type: bug
+    after: counting
+    code: |
+      words = ["hi", "yo", "hi"]
+      counts = {}
+      for word in words:
+          if word in counts:  # BUG
+              counts[word] = 0
+          counts[word] += 1
+      print(counts)
+    fix: "if word not in counts:"
+    why: "A new word must get the count 0 the first time it comes up, when it isn't a key yet. With `in`, the `+=` runs on a missing key and stops with a `KeyError`."
+
+  - type: predict
+    after: counting
+    code: |
+      letters = {}
+      for letter in "noon":
+          if letter not in letters:
+              letters[letter] = 0
+          letters[letter] += 1
+      print(letters)
+    why: "Each new letter starts at 0 and then gets one added on every round where it comes up: two n's and two o's."
+
+  - type: predict
+    after: removing
+    code: |
+      lockers = {"Ada": 12, "Max": 7}
+      number = lockers.pop("Ada")
+      print(number)
+      print(lockers)
+    why: "`pop` removes the key and returns its value."
+
+  - type: runs
+    after: removing
+    code: |
+      ages = {"Ada": 36, "Max": 0}
+      for name in ages:
+          if ages[name] == 0:
+              del ages[name]
+    why: "Removing a key while a `for` loop goes through the same dictionary stops with `RuntimeError: dictionary changed size during iteration`. Loop over `list(ages)` instead."
+
+  - type: choice
+    after: removing
+    prompt: "`lockers` has no key `\"Bo\"`. What does `lockers.pop(\"Bo\", None)` do?"
+    choices:
+      - "It stops the program with a `KeyError`"
+      - "It returns `None` and changes nothing"
+      - "It adds the key `\"Bo\"` with the value `None`"
+    answer: 2
+    why: "With a second argument, `pop` returns that argument when the key is missing, instead of stopping."
+
+  - type: predict
+    after: records
+    code: |
+      person = {"name": "Ada", "age": 36}
+      person["age"] += 1
+      print(f"{person['name']} is {person['age']}")
+    why: "A dictionary record names each value. `person[\"age\"] += 1` updates the value stored under `\"age\"`."
+
+  - type: boss
+    after: counting
+    prompt: |
+      Write a function `first_letters(words)` that returns a dictionary in which each key is a first letter and its value is the number of words in the list that start with it. For example, `first_letters(["ant", "bee", "ape"])` returns `{'a': 2, 'b': 1}`.
+    seed: |
+      def first_letters(words: list) -> dict:
+          pass
+
+
+      if __name__ == "__main__":
+          print(first_letters(["ant", "bee", "ape"]))
+    solution: |
+      def first_letters(words: list) -> dict:
+          counts = {}
+          for word in words:
+              first = word[0]
+              if first not in counts:
+                  counts[first] = 0
+              counts[first] += 1
+          return counts
+
+
+      if __name__ == "__main__":
+          print(first_letters(["ant", "bee", "ape"]))
+    hints:
+      - "The key for a word is its first letter, `word[0]`."
+      - "Use the counting pattern: if the letter isn't a key yet, give it 0, then add one."
+    tests:
+      - call: first_letters(["ant", "bee", "ape"])
+      - call: first_letters(["cat", "cow", "crow", "dog"])
+        hidden: true
+      - call: first_letters([])
+        hidden: true

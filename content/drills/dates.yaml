@@ -1,0 +1,182 @@
+topic: dates
+drills:
+  - type: predict
+    after: datetime-objects
+    code: |
+      from datetime import datetime
+
+      print(datetime(2026, 5, 1))
+    why: "Without a time of day the moment is midnight, and a printed datetime always shows the time with seconds."
+
+  - type: predict
+    after: datetime-objects
+    code: |
+      from datetime import datetime
+
+      alarm = datetime(2026, 5, 1, 7, 30)
+      print(alarm.hour, alarm.minute)
+    why: "The arguments are year, month, day, hour and minute, so the hour is 7 and the minute 30."
+
+  - type: runs
+    after: datetime-objects
+    code: |
+      from datetime import datetime
+
+      day = datetime(2026, 4, 31)
+      print(day)
+    why: "April has only 30 days, and a datetime can only hold a date that exists. Python stops with a `ValueError`."
+
+  - type: runs
+    after: datetime-objects
+    code: |
+      from datetime import datetime
+
+      day = datetime(2026, 4, 30)
+      print(day.year())
+    why: "`year` is a stored value (an attribute), not a method. `day.year` is the integer 2026, and calling an integer with `()` is a `TypeError`."
+
+  - type: fill
+    after: datetime-objects
+    code: |
+      from datetime import datetime
+
+      day = datetime(2026, 7, 4)
+      print(day.[[month]])
+    why: "The arguments are year, month, day, so July is the month, 7. `day.day` would print 4."
+
+  - type: predict
+    after: differences
+    code: |
+      from datetime import datetime
+
+      difference = datetime(2026, 3, 1) - datetime(2026, 2, 1)
+      print(difference.days)
+    why: "Subtracting datetimes gives a timedelta, and February 2026 has 28 days."
+
+  - type: predict
+    after: differences
+    code: |
+      from datetime import datetime
+
+      print(datetime(2028, 3, 1) - datetime(2028, 2, 1))
+    why: "2028 is a leap year, so February has 29 days. A printed timedelta shows the days and then the rest as hours:minutes:seconds."
+
+  - type: predict
+    after: differences
+    code: |
+      from datetime import datetime
+
+      print(datetime(2026, 1, 1) < datetime(2025, 12, 31))
+    why: "An earlier moment is smaller, and New Year's Day 2026 comes after the last day of 2025."
+
+  - type: runs
+    after: differences
+    code: |
+      from datetime import datetime
+
+      shift = datetime(2026, 3, 1, 17, 0) - datetime(2026, 3, 1, 9, 0)
+      print(shift.hours)
+    why: "A timedelta has `days` and `seconds`, but no `hours`. Python stops with an `AttributeError`; `shift.seconds // 3600` gives the hours."
+
+  - type: bug
+    after: differences
+    prompt: The program should print the date a week after June 1. One line has a bug. Which one?
+    code: |
+      from datetime import datetime, timedelta
+
+      start = datetime(2026, 6, 1)
+      print(start + 7)  # BUG
+    fix: print(start + timedelta(days=7))
+    why: "A datetime can't be added to a plain number, because Python can't know the unit. Add a timedelta that says it: `timedelta(days=7)`."
+
+  - type: choice
+    after: differences
+    prompt: What does this print?
+    code: |
+      from datetime import datetime, timedelta
+
+      print(datetime(2026, 1, 31) + timedelta(days=1))
+    choices:
+      - "`2026-02-01 00:00:00`"
+      - "`2026-01-32 00:00:00`"
+      - "`2026-01-31 00:00:01`"
+    answer: 1
+    verify: output
+    why: "Adding a timedelta follows the calendar, so the day after January 31 is February 1."
+
+  - type: predict
+    after: formatting
+    code: |
+      from datetime import datetime
+
+      day = datetime(2026, 7, 4)
+      print(day.strftime("%d.%m.%Y"))
+    why: "`%d` and `%m` give the day and the month with two digits each, and the dots are copied as they are."
+
+  - type: bug
+    after: formatting
+    prompt: The program should print the date as year-month-day. One line has a bug. Which one?
+    code: |
+      from datetime import datetime
+
+      day = datetime(2026, 7, 4, 10, 0)
+      print(day.strftime("%Y-%M-%d"))  # BUG
+    fix: print(day.strftime("%Y-%m-%d"))
+    why: "A capital `%M` is the minutes. The month is a small `%m`."
+
+  - type: runs
+    after: formatting
+    code: |
+      from datetime import datetime
+
+      day = datetime.strptime("2026-07-04", "%d.%m.%Y")
+      print(day)
+    why: "The text doesn't match the format (it has hyphens and starts with the year), so `strptime` stops with a `ValueError`."
+
+  - type: predict
+    after: formatting
+    code: |
+      from datetime import datetime
+
+      day = datetime.strptime("5.1.2026", "%d.%m.%Y")
+      print(day.month, day.strftime("%B"))
+    why: "When reading, a single-digit day or month is fine, so `5.1.2026` is 5 January. `%B` gives the month's name."
+
+  - type: boss
+    after: formatting
+    prompt: |
+      Write a function `minutes_between(start, end)` that gets two datetimes, the later one second, and returns the number of whole minutes between them. A timedelta has `days` and `seconds`, so count both.
+
+      `minutes_between(datetime(2026, 3, 1, 22, 0), datetime(2026, 3, 2, 6, 30))` returns `510`.
+    seed: |
+      from datetime import datetime
+
+
+      def minutes_between(start, end):
+          pass
+
+
+      if __name__ == "__main__":
+          print(minutes_between(datetime(2026, 3, 1, 22, 0), datetime(2026, 3, 2, 6, 30)))
+    solution: |
+      from datetime import datetime
+
+
+      def minutes_between(start, end):
+          difference = end - start
+          return difference.days * 24 * 60 + difference.seconds // 60
+
+
+      if __name__ == "__main__":
+          print(minutes_between(datetime(2026, 3, 1, 22, 0), datetime(2026, 3, 2, 6, 30)))
+    hints:
+      - Subtract the start from the end to get a timedelta.
+      - "A day has 24 * 60 minutes, and the seconds become minutes with `// 60`. Add the two."
+    tests:
+      - call: minutes_between(datetime(2026, 3, 1, 22, 0), datetime(2026, 3, 2, 6, 30))
+      - call: minutes_between(datetime(2026, 3, 1, 9, 15), datetime(2026, 3, 1, 9, 45))
+        hidden: true
+      - call: minutes_between(datetime(2026, 3, 1), datetime(2026, 3, 4, 1, 1))
+        hidden: true
+      - call: minutes_between(datetime(2026, 12, 31, 23, 59), datetime(2027, 1, 1))
+        hidden: true

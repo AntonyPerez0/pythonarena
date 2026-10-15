@@ -1,0 +1,186 @@
+topic: own-modules
+drills:
+  - type: predict
+    after: several-files
+    code: |
+      from config import limit
+
+      print(limit * 2)
+      # ==== config.py ====
+      limit = 5
+    why: "A module's variables are imported like its functions. `from config import limit` brings in the value 5."
+
+  - type: runs
+    after: several-files
+    code: |
+      from config import limit
+
+      print(config.limit)
+      # ==== config.py ====
+      limit = 5
+    why: "`from config import limit` brings in `limit`, but not the name `config`. Python stops with a `NameError`."
+
+  - type: runs
+    after: several-files
+    code: |
+      import tools.py
+
+      print(tools.double(4))
+      # ==== tools.py ====
+      def double(x):
+          return x * 2
+    why: "The import names the module, `tools`, without `.py`. With it, Python looks for a module `py` inside `tools` and stops with a `ModuleNotFoundError`."
+
+  - type: fill
+    after: several-files
+    code: |
+      [[import]] geometry
+
+      print(geometry.square_area(3))
+      # ==== geometry.py ====
+      def square_area(side):
+          return side * side
+    why: "Your own file `geometry.py` is imported just like a module of the standard library: `import geometry`."
+
+  - type: predict
+    after: several-files
+    code: |
+      import greet
+
+      print("main")
+      # ==== greet.py ====
+      print("greet loaded")
+    why: "Importing a module runs its file from top to bottom, so its print runs first, during the `import`."
+
+  - type: predict
+    after: type-hints
+    code: |
+      def half(number: int) -> int:
+          return number / 2
+
+
+      print(half(5))
+    why: "Python doesn't check type hints. The hint says `int`, but `/` gives a float, and the function returns 2.5 anyway."
+
+  - type: runs
+    after: type-hints
+    code: |
+      def shout(text: str) -> str:
+          return text.upper()
+
+
+      print(shout(42))
+    why: "The hint doesn't stop the call, but the code inside fails: an integer has no method `upper`, so Python stops with an `AttributeError`."
+
+  - type: choice
+    after: type-hints
+    prompt: "What does `-> str` tell in `def label(count: int) -> str:`?"
+    choices:
+      - The function returns a string
+      - The function turns its result into a string
+      - The parameter `count` must be a string
+    answer: 1
+    why: "The hint after the arrow describes the return value. It's information for readers and tools; Python doesn't convert or check anything."
+
+  - type: predict
+    after: type-hints
+    code: |
+      def repeat(item: str, times: int) -> list[str]:
+          return [item] * times
+
+
+      print(repeat("go", 3))
+    why: "`list[str]` says the function returns a list of strings, and it does: `[item] * 3` repeats the one-item list three times."
+
+  - type: predict
+    after: main-block
+    code: |
+      print(__name__)
+    why: "In the file Python started, `__name__` is `__main__`."
+
+  - type: predict
+    after: main-block
+    code: |
+      import tools
+
+      print("main.py")
+      # ==== tools.py ====
+      print("tools.py sees", __name__)
+    why: "In an imported module, `__name__` is the module's name, so `tools.py` prints `tools` while it's imported."
+
+  - type: predict
+    after: main-block
+    code: |
+      import calc
+
+      print(calc.square(3))
+      # ==== calc.py ====
+      def square(x):
+          return x * x
+
+
+      if __name__ == "__main__":
+          print("testing", square(2))
+    why: "`calc.py` was imported, so its `__name__` is `calc` and the main block doesn't run. Only the main program's print shows."
+
+  - type: bug
+    after: main-block
+    prompt: The test print should run when this file is the program that was started. One line has a bug. Which one?
+    code: |
+      def double(x):
+          return x * 2
+
+
+      if __name__ == "main":  # BUG
+          print(double(4))
+    fix: 'if __name__ == "__main__":'
+    why: "In the program Python started, `__name__` is `__main__`, with two underscores on each side. Compared with `main`, the condition is never true."
+
+  - type: boss
+    after: main-block
+    prompt: |
+      `main.py` is ready. Write `vowels.py`: a function `count_vowels(text: str) -> int` that returns how many of the text's characters are vowels (a, e, i, o, u, in small or capital letters), and a main block that tests it. For example:
+
+      ```
+      Text: Python Arena
+      Vowels: 4
+      ```
+    seed:
+      main.py: |
+        import vowels
+
+        text = input("Text: ")
+        print("Vowels:", vowels.count_vowels(text))
+      vowels.py: |
+        def count_vowels(text: str) -> int:
+            pass
+    solution:
+      main.py: |
+        import vowels
+
+        text = input("Text: ")
+        print("Vowels:", vowels.count_vowels(text))
+      vowels.py: |
+        def count_vowels(text: str) -> int:
+            count = 0
+            for character in text.lower():
+                if character in "aeiou":
+                    count += 1
+            return count
+
+
+        if __name__ == "__main__":
+            print(count_vowels("Hello"))
+    hints:
+      - Loop over the characters of `text.lower()`, so capital vowels count too, and count those that are `in "aeiou"`.
+      - "Add the tests under `if __name__ == \"__main__\":`, so they don't print when `main.py` imports the module."
+    require:
+      - pattern: if\s+__name__\s*==\s*["']__main__["']\s*[:]
+        raw: true
+        message: Test the function in a main block, `if __name__ == "__main__":`.
+    tests:
+      - stdin: Python Arena
+      - stdin: AEIOU and sometimes Y
+        hidden: true
+      - stdin: rhythm
+        hidden: true

@@ -1,0 +1,200 @@
+topic: elif
+drills:
+  - type: predict
+    after: else
+    code: |
+      x = 4
+      if x % 2 == 0:
+          print("even")
+      else:
+          print("odd")
+      print("checked")
+    why: "4 divided by 2 leaves no remainder, so the `if` block runs and the `else` block is skipped. The last line is outside the statement and always runs."
+
+  - type: runs
+    after: else
+    code: |
+      x = 3
+      if x > 5:
+          print("big")
+      else x <= 5:
+          print("small")
+    why: "`else` never has a condition: it covers every case the `if` didn't. Python expects a colon right after `else` and stops with a `SyntaxError`."
+
+  - type: runs
+    after: else
+    code: |
+      x = 3
+      if x > 5:
+          print("big")
+      print("checking")
+      else:
+          print("small")
+    why: "An `else` must come right after the block of its `if`. Here a line of the main block comes between them, so the `else` has no `if` and Python stops with a `SyntaxError`."
+
+  - type: fill
+    after: else
+    code: |
+      password = "letmein"
+      if password == "opensesame":
+          print("Welcome")
+      [[else]]:
+          print("Wrong password")
+    why: "`else:` runs its block when the condition of the `if` is false."
+
+  - type: predict
+    after: elif
+    code: |
+      n = 15
+      if n > 10:
+          print("A")
+      elif n > 5:
+          print("B")
+      else:
+          print("C")
+    why: "15 is also greater than 5, but only the first branch whose condition is true runs. The rest of the statement is skipped."
+
+  - type: runs
+    after: elif
+    code: |
+      n = 7
+      if n > 10:
+          print("big")
+      else if n > 5:
+          print("medium")
+    why: "Python writes \"else if\" as one word, `elif`. After `else` it expects a colon, so it stops with a `SyntaxError`."
+
+  - type: predict
+    after: elif
+    code: |
+      day = "Wednesday"
+      if day == "Saturday":
+          print("Sleep in")
+      elif day == "Sunday":
+          print("Family lunch")
+      print("Have a good day")
+    why: "Neither condition is true and there's no `else`, so no branch runs. Only the line after the statement is printed."
+
+  - type: choice
+    after: elif
+    prompt: "A conditional statement has an `if`, two `elif` branches and an `else`. How many of its four blocks run?"
+    choices:
+      - Exactly one
+      - At least one, maybe more
+      - Every block whose condition is true
+    answer: 1
+    why: "Python runs the first branch whose condition is true and skips the rest. If none is true, the `else` runs. So it's always exactly one."
+
+  - type: predict
+    after: order-of-conditions
+    code: |
+      temp = 35
+      if temp > 20:
+          print("Warm")
+      elif temp > 30:
+          print("Hot")
+    why: "35 is greater than 20, so the first branch runs and the `elif` is never checked. The stricter condition, `temp > 30`, should come first."
+
+  - type: predict
+    after: order-of-conditions
+    code: |
+      n = 0
+      if n > 0:
+          print("positive")
+      elif n == 0:
+          print("zero")
+      elif n >= 0:
+          print("zero or more")
+    why: "`n >= 0` is true as well, but Python stops at the first branch whose condition is true, `n == 0`, and skips the rest."
+
+  - type: bug
+    after: order-of-conditions
+    prompt: The driver should get only one fine, the bigger one. Which line has the bug?
+    code: |
+      speed = 85
+      if speed > 80:
+          print("Fine: 200 euros")
+      if speed > 60:  # BUG
+          print("Fine: 100 euros")
+    fix: "elif speed > 60:"
+    why: "Two separate `if` statements can both run. With `elif`, the second branch is part of the same statement and runs only when the first condition was false."
+
+  - type: choice
+    after: order-of-conditions
+    prompt: "A chain checks `if x > 100:`, then `elif x > 10:`, then `elif x > 0:`. Which whole numbers reach the third branch?"
+    choices:
+      - 1 to 10
+      - 1 to 100
+      - Every number above 0
+    answer: 1
+    why: "The third branch runs only when both earlier conditions were false: `x` is at most 10, and it must also be above 0."
+
+  - type: predict
+    after: comparing-strings
+    code: |
+      print("apple" < "banana")
+      print("apple" < "Banana")
+    why: "In alphabetical order `apple` comes first, but every capital letter comes before every small letter, so `\"Banana\"` comes before `\"apple\"`."
+
+  - type: predict
+    after: comparing-strings
+    code: |
+      print("10" < "9")
+      print(10 < 9)
+    why: "Strings are compared character by character, and `1` comes before `9`. The numbers compare by size."
+
+  - type: predict
+    after: comparing-strings
+    code: |
+      print("car" < "cart")
+      print("cat" < "car")
+    why: "`car` runs out first, so it comes before `cart`. In `cat` and `car` the third letter decides, and `t` comes after `r`."
+
+  - type: runs
+    after: comparing-strings
+    code: |
+      age = input("Age: ")
+      if age < 18:
+          print("Too young")
+    stdin: "15"
+    why: "`input` returns a string, and Python can't compare a string with a number using `<`. It stops with a `TypeError`. Convert the input with `int` first."
+
+  - type: boss
+    after: comparing-strings
+    prompt: |
+      Write a program that asks for the number of a month (1 to 12) and prints its season: December to February is `Winter`, March to May `Spring`, June to August `Summer` and September to November `Autumn`. Use one `if` statement with `elif` branches.
+
+      ```
+      Month: 4
+      Spring
+      ```
+    seed: |
+      month = int(input("Month: "))
+    solution: |
+      month = int(input("Month: "))
+      if month <= 2:
+          print("Winter")
+      elif month <= 5:
+          print("Spring")
+      elif month <= 8:
+          print("Summer")
+      elif month <= 11:
+          print("Autumn")
+      else:
+          print("Winter")
+    hints:
+      - "Go through the months from the smallest number up: `if month <= 2:` is January and February."
+      - Each `elif` only sees the months the earlier conditions didn't catch. December is the only one left at the end.
+    require:
+      - pattern: \belif\b
+        message: Use `elif` branches in one conditional statement.
+    tests:
+      - stdin: "4"
+      - stdin: "1"
+        hidden: true
+      - stdin: "8"
+        hidden: true
+      - stdin: "9"
+        hidden: true
+      - stdin: "12"
+        hidden: true

@@ -1,0 +1,253 @@
+topic: errors
+drills:
+  - type: runs
+    after: validation
+    code: |
+      number = int("12.5")
+      print(number)
+    why: "`int` only converts strings that are whole numbers, so `\"12.5\"` stops the program with a `ValueError`. `float(\"12.5\")` would work."
+
+  - type: choice
+    after: validation
+    prompt: "Which typed input makes `int(input(\"Number: \"))` stop with a `ValueError`?"
+    choices:
+      - "`-7`"
+      - "`007`"
+      - "`4.0`"
+    answer: 3
+    why: "`int` accepts a minus sign and leading zeros (`007` becomes 7), but not a decimal point, even when the decimals are zero."
+
+  - type: predict
+    after: validation
+    code: |
+      month = 13
+      if month >= 1 and month <= 12:
+          print("valid")
+      else:
+          print("no such month")
+    why: "13 is more than 12, so the second half of the `and` is false and the whole condition is false."
+
+  - type: predict
+    after: try-except
+    code: |
+      try:
+          number = int("5x")
+          print("converted")
+      except ValueError:
+          print("failed")
+      print("after")
+    why: "`int(\"5x\")` raises a `ValueError`, so the rest of the `try` block is skipped and the `except` block runs. Then the program carries on below."
+
+  - type: predict
+    after: try-except
+    code: |
+      text = "abc"
+      try:
+          size = int(text)
+      except ValueError:
+          size = 10
+      print(size * 2)
+    why: "The conversion fails, so the `except` block gives `size` the fallback value 10."
+
+  - type: fill
+    after: try-except
+    code: |
+      try:
+          print(int("seven"))
+      [[except]] ValueError:
+          print("not a number")
+    why: "The block that handles an exception starts with `except` and the kind of exception."
+
+  - type: runs
+    after: try-except
+    code: |
+      try:
+          print(10 / 0)
+      except ValueError:
+          print("bad value")
+    why: "Dividing by zero raises a `ZeroDivisionError`, and the `except` only handles `ValueError`, so the program still stops."
+
+  - type: bug
+    after: try-except
+    code: |
+      total = 0
+      for text in ["3", "x", "4"]:
+          try:
+              total += int(text)
+          except TypeError:  # BUG
+              pass
+      print(total)
+    fix: "except ValueError:"
+    why: "`int(\"x\")` raises a `ValueError`, not a `TypeError`, so the `except` doesn't catch it and the program stops."
+
+  - type: predict
+    after: kinds-of-errors
+    code: |
+      items = ["a", "b"]
+      try:
+          print(items[int("2")])
+      except ValueError:
+          print("value")
+      except IndexError:
+          print("index")
+    why: "`int(\"2\")` works, but the list has only indexes 0 and 1, so `items[2]` raises an `IndexError`. Only the matching `except` runs."
+
+  - type: choice
+    after: kinds-of-errors
+    prompt: "Which exception does `{\"x\": 1}[\"y\"]` raise?"
+    choices:
+      - "`KeyError`"
+      - "`IndexError`"
+      - "`ValueError`"
+    answer: 1
+    why: "A dictionary has no indexes, it has keys, and asking for a key it doesn't have raises a `KeyError`."
+
+  - type: choice
+    after: kinds-of-errors
+    prompt: "Which exception does `\"5\" + 5` raise?"
+    choices:
+      - "`ValueError`"
+      - "`TypeError`"
+      - "`SyntaxError`"
+    answer: 2
+    why: "A string and a number can't be added: the values are of the wrong types for `+`, which is a `TypeError`."
+
+  - type: runs
+    after: kinds-of-errors
+    code: |
+      year = 2026
+      print(len(year))
+    why: "A number has no length, so `len(2026)` raises a `TypeError`."
+
+  - type: predict
+    after: passing-errors
+    code: |
+      def parse(text):
+          print("parsing", text)
+          return int(text)
+
+
+      try:
+          parse("1")
+          parse("two")
+          parse("3")
+      except ValueError:
+          print("error")
+    why: "The `ValueError` from `int(\"two\")` leaves `parse` and reaches the `try` around the calls. The rest of the `try` block is skipped, so `parse(\"3\")` never runs."
+
+  - type: predict
+    after: passing-errors
+    code: |
+      def safe_int(text):
+          try:
+              return int(text)
+          except ValueError:
+              return 0
+
+
+      print(safe_int("7") + safe_int("seven"))
+    why: "This function handles the error itself and returns 0 instead, so the caller never sees an exception: 7 + 0 is 7."
+
+  - type: predict
+    after: raise
+    code: |
+      def check(n):
+          if n < 0:
+              raise ValueError("negative")
+          return n
+
+
+      try:
+          print(check(4))
+          print(check(-1))
+      except ValueError as error:
+          print("Error:", error)
+    why: "`check(4)` returns 4. `check(-1)` raises a `ValueError`, and `as error` names it, so printing `error` prints its message."
+
+  - type: fill
+    after: raise
+    code: |
+      def greet(name):
+          if name == "":
+              [[raise]] ValueError("empty name")
+          return "Hi " + name
+
+
+      print(greet("Ada"))
+    why: "`raise` followed by an exception stops the function and sends the exception to the caller."
+
+  - type: runs
+    after: raise
+    code: |
+      def area(side):
+          if side <= 0:
+              raise ValueError("side must be positive")
+          return side * side
+
+
+      print(area(0))
+    why: "The function raises a `ValueError` for 0, and nothing catches it, so the program stops with the function's own message."
+
+  - type: boss
+    after: raise
+    prompt: |
+      Write a function `read_ages(filename)` that returns the ages in a file, one per line, as a list of integers. A line that isn't a whole number is skipped, and if the file doesn't exist, the function returns an empty list.
+
+      With this `ages.txt`
+
+      ```text
+      34
+      unknown
+      7
+      ```
+
+      `print(read_ages("ages.txt"))` prints:
+
+      ```
+      [34, 7]
+      ```
+    seed: |
+      def read_ages(filename):
+          pass
+
+
+      if __name__ == "__main__":
+          print(read_ages("ages.txt"))
+    solution: |
+      def read_ages(filename):
+          ages = []
+          try:
+              with open(filename) as file:
+                  for line in file:
+                      try:
+                          ages.append(int(line))
+                      except ValueError:
+                          pass
+          except FileNotFoundError:
+              return []
+          return ages
+
+
+      if __name__ == "__main__":
+          print(read_ages("ages.txt"))
+    hints:
+      - "Around the conversion of each line, a small `try` with `except ValueError: pass` skips the bad lines."
+      - "Around the whole `with` block, another `try` with `except FileNotFoundError:` returns an empty list."
+    tests:
+      - call: print(read_ages("ages.txt"))
+        files:
+          ages.txt: |
+            34
+            unknown
+            7
+      - call: read_ages("people.txt")
+        files:
+          people.txt: |
+            12
+            -
+            80
+            4.5
+            41
+        hidden: true
+      - call: read_ages("nothing.txt")
+        hidden: true

@@ -1,0 +1,260 @@
+topic: objects
+drills:
+  - type: predict
+    after: everything-is-an-object
+    code: |
+      a = {"name": "Ann", "score": 3}
+      b = {"name": "Ann", "score": 3}
+      a["score"] = 10
+      print(b["score"])
+      print(a == b)
+    why: "The two dictionaries are separate objects, so changing `a` leaves `b` as it was, and after the change they no longer hold the same values."
+
+  - type: predict
+    after: everything-is-an-object
+    code: |
+      word = "hi"
+      other = word
+      word = word + "!"
+      print(other)
+      print(word)
+    why: "Strings are immutable. `word + \"!\"` makes a new string and `word` then refers to it, while `other` still refers to the old one."
+
+  - type: predict
+    after: everything-is-an-object
+    code: |
+      print(type(3.5))
+      print(type("3.5"))
+    why: "Every value is an object of some class. A number with a decimal point is a `float`, and anything in quotes is a `str`."
+
+  - type: choice
+    after: everything-is-an-object
+    prompt: Which values in Python are objects?
+    choices:
+      - Only lists and dictionaries
+      - Only objects made from classes you write yourself
+      - Every value, numbers and strings included
+    answer: 3
+    why: "In Python every value is an object, and every object has a class: `int`, `str`, `list` and so on."
+
+  - type: bug
+    after: methods
+    code: |
+      name = "ada"
+      name.upper()  # BUG
+      print(name)
+    fix: name = name.upper()
+    why: "A string method never changes the string: `upper()` returns a new string, which has to be stored."
+
+  - type: predict
+    after: methods
+    code: |
+      text = "banana"
+      print(text.find("n"))
+      print(text.find("x"))
+      print(text.count("an"))
+    why: "`find` gives the index of the first match, or -1 when there is none. `count` counts how many times the text appears."
+
+  - type: runs
+    after: methods
+    code: |
+      numbers = [3, 1, 2].sort()
+      print(numbers[0])
+    why: "`sort` sorts the list in place and returns `None`, so `numbers` is `None`, and `None[0]` is a `TypeError`."
+
+  - type: predict
+    after: methods
+    code: |
+      stack = [1, 2, 3]
+      top = stack.pop()
+      print(top)
+      print(stack)
+    why: "`pop()` removes the last item from the list and returns it, so the list changes and the item is stored in `top`."
+
+  - type: fill
+    after: methods
+    code: |
+      answer = "  Yes "
+      print(answer.[[strip]]().lower())
+    why: "`strip()` removes the spaces around the text and returns a new string; `lower()` is then called on that string."
+
+  - type: predict
+    after: classes-and-objects
+    code: |
+      from fractions import Fraction
+
+      print(Fraction(2, 6))
+      print(Fraction(1, 2) + Fraction(1, 4))
+    why: "The `Fraction` constructor reduces a fraction to its simplest form, and 1/2 + 1/4 is 3/4."
+
+  - type: fill
+    after: classes-and-objects
+    code: |
+      from fractions import Fraction
+
+      share = Fraction(6, 4)
+      print(share.[[numerator]])
+    why: "`Fraction(6, 4)` is reduced to 3/2, and its attribute `numerator` holds the top part, 3."
+
+  - type: predict
+    after: classes-and-objects
+    code: |
+      from datetime import date
+
+      d = date(2026, 4, 9)
+      print(d.month + d.day)
+      print(d)
+    why: "`month` and `day` are attributes holding whole numbers, 4 and 9. Printing a `date` shows it as year-month-day."
+
+  - type: choice
+    after: classes-and-objects
+    prompt: What is a class?
+    choices:
+      - A blueprint that says what data and methods its objects have
+      - One object with its own data
+      - A function that prints objects
+    answer: 1
+    why: "A class describes a kind of object. Each object made from it, an instance, has its own values for the attributes."
+
+  - type: runs
+    after: methods-and-attributes
+    code: |
+      from datetime import date
+
+      d = date(2026, 1, 5)
+      print(d.month())
+    why: "`month` is an attribute holding the number 1, not a method. Parentheses after it try to call a number: `TypeError: 'int' object is not callable`."
+
+  - type: bug
+    after: methods-and-attributes
+    code: |
+      from datetime import date
+
+      d = date(2026, 3, 1)
+      if d.weekday >= 5:  # BUG
+          print("weekend")
+    fix: "if d.weekday() >= 5:"
+    why: "Without parentheses, `d.weekday` is the method itself, not a number, and comparing it with 5 is a `TypeError`. The parentheses call it."
+
+  - type: choice
+    after: methods-and-attributes
+    prompt: "`d` is a `date` object. Which of these calls a method?"
+    choices:
+      - "`d.year`"
+      - "`d.weekday()`"
+      - "`d.month`"
+    answer: 2
+    why: "Parentheses call a method. `year` and `month` are attributes, values stored in the object, so they have none."
+
+  - type: boss
+    after: classes-and-objects
+    prompt: |
+      Write a function `add_all(parts)` that takes a list of `Fraction` objects and returns their sum as a `Fraction`. For an empty list it returns `Fraction(0)`.
+
+      This code:
+
+      ```python fragment
+      print(add_all([Fraction(1, 2), Fraction(1, 3)]))
+      ```
+
+      prints
+
+      ```
+      5/6
+      ```
+    seed: |
+      from fractions import Fraction
+
+
+      def add_all(parts):
+          pass
+
+
+      if __name__ == "__main__":
+          print(add_all([Fraction(1, 2), Fraction(1, 3)]))
+    solution: |
+      from fractions import Fraction
+
+
+      def add_all(parts):
+          total = Fraction(0)
+          for part in parts:
+              total += part
+          return total
+
+
+      if __name__ == "__main__":
+          print(add_all([Fraction(1, 2), Fraction(1, 3)]))
+    hints:
+      - "Start the total as a fraction too: `total = Fraction(0)`."
+      - "Add each fraction of the list to it with `+=`, then return the total."
+    tests:
+      - call: print(add_all([Fraction(1, 2), Fraction(1, 3)]))
+      - call: print(add_all([Fraction(1, 4), Fraction(1, 4), Fraction(1, 4), Fraction(1, 4)]))
+        hidden: true
+      - call: print(add_all([Fraction(2, 3), Fraction(1, 6), Fraction(5, 12)]))
+        hidden: true
+      - call: print(add_all([]))
+        hidden: true
+
+  - type: boss
+    after: methods-and-attributes
+    prompt: |
+      Write a function `dates_on(days, weekday)` that takes a list of `date` objects and a number from 0 (Monday) to 6 (Sunday), and returns a new list with the dates that fall on that day of the week, in their original order.
+
+      This code:
+
+      ```python fragment
+      days = [date(2026, 10, 17), date(2026, 10, 19), date(2026, 10, 24)]
+      for day in dates_on(days, 5):
+          print(day)
+      ```
+
+      prints
+
+      ```
+      2026-10-17
+      2026-10-24
+      ```
+    seed: |
+      from datetime import date
+
+
+      def dates_on(days, weekday):
+          pass
+
+
+      if __name__ == "__main__":
+          days = [date(2026, 10, 17), date(2026, 10, 19), date(2026, 10, 24)]
+          for day in dates_on(days, 5):
+              print(day)
+    solution: |
+      from datetime import date
+
+
+      def dates_on(days, weekday):
+          found = []
+          for day in days:
+              if day.weekday() == weekday:
+                  found.append(day)
+          return found
+
+
+      if __name__ == "__main__":
+          days = [date(2026, 10, 17), date(2026, 10, 19), date(2026, 10, 24)]
+          for day in dates_on(days, 5):
+              print(day)
+    hints:
+      - Start with an empty list and add the matching dates to it in a loop.
+      - "A date matches when `day.weekday() == weekday`. Return the new list at the end."
+    tests:
+      - call: |
+          days = [date(2026, 10, 17), date(2026, 10, 19), date(2026, 10, 24)]
+          for day in dates_on(days, 5):
+              print(day)
+      - call: |
+          days = [date(2026, 3, 2), date(2026, 3, 3), date(2026, 3, 9), date(2026, 3, 16)]
+          for day in dates_on(days, 0):
+              print(day)
+          print(len(dates_on(days, 6)))
+        hidden: true

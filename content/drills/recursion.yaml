@@ -1,0 +1,289 @@
+topic: recursion
+drills:
+  - type: predict
+    after: calling-itself
+    code: |
+      def countdown(n):
+          if n > 0:
+              print(n)
+              countdown(n - 1)
+
+
+      countdown(3)
+    why: "Each call prints its `n` and calls the function with `n - 1`. At 0 the condition is false and the calls stop."
+
+  - type: runs
+    after: calling-itself
+    code: |
+      def forever(n):
+          forever(n - 1)
+
+
+      forever(5)
+    why: "The function always calls itself and has no base case, so the calls never stop. Python gives up with a `RecursionError`."
+
+  - type: predict
+    after: calling-itself
+    code: |
+      def count(n):
+          if n > 0:
+              count(n - 1)
+              print(n)
+
+
+      count(3)
+    why: "Each call prints only after the call it made has finished. The deepest call, `count(1)`, prints first."
+
+  - type: choice
+    after: calling-itself
+    prompt: What does every recursive function need so that the calls stop?
+    choices:
+      - A base case, in which the function doesn't call itself
+      - A `while` loop around the recursive call
+      - A `print` before the recursive call
+    answer: 1
+    why: "Without a base case, every call makes another call, until Python stops the program with a `RecursionError`."
+
+  - type: bug
+    after: calling-itself
+    code: |
+      def countdown(n):
+          if n == 0:
+              print("Go!")
+          else:
+              print(n)
+              countdown(n)  # BUG
+
+
+      countdown(2)
+    fix: countdown(n - 1)
+    why: "The recursive call must get a smaller problem. With the same `n`, the countdown never gets to 0."
+
+  - type: runs
+    after: calling-itself
+    code: |
+      def countdown(n):
+          if n == 0:
+              return
+          countdown(n - 1)
+
+
+      countdown(-1)
+    why: "From -1 the numbers go -2, -3 and on, and never hit 0. The base case `n <= 0` would stop them."
+
+  - type: predict
+    after: return-values
+    code: |
+      def factorial(n):
+          if n <= 1:
+              return 1
+          return n * factorial(n - 1)
+
+
+      print(factorial(4))
+    why: "4 * 3 * 2 * 1 is 24."
+
+  - type: predict
+    after: return-values
+    code: |
+      def f(n):
+          if n == 1:
+              return 1
+          return n + f(n - 1)
+
+
+      print(f(4))
+    why: "`f(4)` is 4 + 3 + 2 + 1, which is 10."
+
+  - type: runs
+    after: return-values
+    code: |
+      def double_count(n):
+          if n == 0:
+              return 0
+          2 + double_count(n - 1)
+
+
+      print(double_count(3))
+    why: "The recursive case has no `return`, so it returns `None`, and the call above it tries to calculate `2 + None`."
+
+  - type: fill
+    after: return-values
+    code: |
+      def factorial(n):
+          if n <= 1:
+              return 1
+          return n * [[factorial(n - 1)]]
+
+
+      print(factorial(5))
+    why: "The factorial of n is n times the factorial of n - 1."
+
+  - type: predict
+    after: smaller-pieces
+    code: |
+      def fibonacci(n):
+          if n <= 2:
+              return 1
+          return fibonacci(n - 1) + fibonacci(n - 2)
+
+
+      print(fibonacci(6))
+    why: "The sequence goes 1, 1, 2, 3, 5, 8, so the sixth number is 8."
+
+  - type: predict
+    after: smaller-pieces
+    code: |
+      def reverse(text):
+          if text == "":
+              return ""
+          return reverse(text[1:]) + text[0]
+
+
+      print(reverse("abc"))
+    why: "`reverse(\"abc\")` is `reverse(\"bc\") + \"a\"`, which is `\"cb\" + \"a\"`."
+
+  - type: bug
+    after: smaller-pieces
+    code: |
+      def list_sum(numbers):
+          if len(numbers) == 0:
+              return 0
+          return numbers[0] + list_sum(numbers)  # BUG
+
+
+      print(list_sum([1, 2, 3]))
+    fix: return numbers[0] + list_sum(numbers[1:])
+    why: "The recursive call must get a shorter list, `numbers[1:]`. With the whole list, it never reaches the empty list."
+
+  - type: choice
+    after: binary-search
+    prompt: A sorted list has 1000 items. At most about how many items does binary search look at?
+    choices:
+      - "10"
+      - "500"
+      - "1000"
+    answer: 1
+    why: "Each look halves the search area, and 1000 can be halved about 10 times before one item is left."
+
+  - type: predict
+    after: binary-search
+    code: |
+      def find(items, target, low, high):
+          if low > high:
+              return -1
+          middle = (low + high) // 2
+          print(items[middle])
+          if items[middle] == target:
+              return middle
+          if items[middle] < target:
+              return find(items, target, middle + 1, high)
+          return find(items, target, low, middle - 1)
+
+
+      print(find([1, 3, 5, 7, 9, 11, 13], 11, 0, 6))
+    why: "The middle of 0..6 is index 3, the item 7. 11 is greater, so the search goes on in 4..6, whose middle is index 5, the item 11."
+
+  - type: choice
+    after: binary-search
+    prompt: When does binary search give the right answer?
+    choices:
+      - When the list is sorted
+      - When the list has an even number of items
+      - When the list has no repeated items
+    answer: 1
+    why: "Binary search drops half of the list after each look, which is only safe when the order tells where the target can be."
+
+  - type: boss
+    after: smaller-pieces
+    prompt: |
+      Write a recursive function `count_even(numbers)` that returns how many even numbers there are in a list. Don't use a loop: the count is the count for the rest of the list, plus one if the first number is even.
+
+      For example, `count_even([4, 7, 10, 3, 8])` returns:
+
+      ```
+      3
+      ```
+    seed: |
+      def count_even(numbers):
+          pass
+
+
+      if __name__ == "__main__":
+          print(count_even([4, 7, 10, 3, 8]))
+    solution: |
+      def count_even(numbers):
+          if len(numbers) == 0:
+              return 0
+          if numbers[0] % 2 == 0:
+              return 1 + count_even(numbers[1:])
+          return count_even(numbers[1:])
+
+
+      if __name__ == "__main__":
+          print(count_even([4, 7, 10, 3, 8]))
+    hints:
+      - "The base case is the empty list, which has 0 even numbers."
+      - "Otherwise, check `numbers[0]` and add 1 or nothing to `count_even(numbers[1:])`."
+    require:
+      - pattern: def count_even\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bcount_even\s*\(
+        message: Make `count_even` call itself inside its own body.
+    forbid:
+      - pattern: \b(?:while|for)\b
+        message: Use recursion instead of a loop.
+    tests:
+      - call: count_even([4, 7, 10, 3, 8])
+      - call: count_even([1, 3, 5])
+        hidden: true
+      - call: count_even([])
+        hidden: true
+      - call: count_even([2, 2, -4])
+        hidden: true
+
+  - type: boss
+    after: smaller-pieces
+    prompt: |
+      Write a recursive function `is_sorted(numbers)` that returns `True` if the numbers in the list are in increasing order (equal neighbors are fine), and `False` otherwise. A list of 0 or 1 numbers is sorted. Don't use a loop.
+
+      For example, `is_sorted([1, 3, 3, 8])` returns:
+
+      ```
+      True
+      ```
+    seed: |
+      def is_sorted(numbers):
+          pass
+
+
+      if __name__ == "__main__":
+          print(is_sorted([1, 3, 3, 8]))
+    solution: |
+      def is_sorted(numbers):
+          if len(numbers) <= 1:
+              return True
+          if numbers[0] > numbers[1]:
+              return False
+          return is_sorted(numbers[1:])
+
+
+      if __name__ == "__main__":
+          print(is_sorted([1, 3, 3, 8]))
+    hints:
+      - "A list of 0 or 1 numbers is sorted: that's the base case."
+      - "If the first number is greater than the second, the list isn't sorted. Otherwise the answer is whether the rest, `numbers[1:]`, is sorted."
+    require:
+      - pattern: def is_sorted\b[^\n]*\n(?:[ \t]*\n|[ \t]+[^\n]*\n)*?[ \t]+[^\n]*\bis_sorted\s*\(
+        message: Make `is_sorted` call itself inside its own body.
+    forbid:
+      - pattern: \b(?:while|for)\b
+        message: Use recursion instead of a loop.
+      - pattern: \bsorted\s*\(|\.sort\s*\(
+        message: Compare the numbers yourself, without `sorted` or `sort`.
+    tests:
+      - call: is_sorted([1, 3, 3, 8])
+      - call: is_sorted([1, 5, 2])
+        hidden: true
+      - call: is_sorted([])
+        hidden: true
+      - call: is_sorted([9, 1])
+        hidden: true

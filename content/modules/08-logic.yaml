@@ -1,0 +1,894 @@
+id: logic
+summary: "Conditions made of several parts: and, or and not, which of them Python evaluates first, the short way to check a range with a chained comparison, and conditional statements nested inside each other."
+steps:
+  - id: logic-and
+    slug: and
+    title: "Both at once: and"
+    text: |
+      Sometimes one condition isn't enough. A roller coaster might let you ride only if you are at least 10 years old and also at least 140 cm tall. The **logical operator** `and` combines two conditions into one, which is true only when both of them are true:
+
+      ```python run
+      age = int(input("Age: "))
+      height = int(input("Height in cm: "))
+      if age >= 10 and height >= 140:
+          print("Enjoy the ride!")
+      else:
+          print("Sorry, you can't ride yet.")
+      ```
+
+      ```input
+      12
+      135
+      ```
+
+      ```output
+      Age: 12
+      Height in cm: 135
+      Sorry, you can't ride yet.
+      ```
+
+      The rider is old enough but not tall enough, so the whole condition is false. The interpreter shows all four combinations:
+
+      ```python repl
+      >>> True and True
+      True
+      >>> True and False
+      False
+      >>> False and True
+      False
+      >>> False and False
+      False
+      ```
+
+      Only `True and True` gives `True`. You can also join more than two conditions: `a and b and c` is true only when all three are.
+
+      ### Between two limits
+
+      The most common use of `and` is to check that a number is in a range. Here `hour >= 9 and hour < 17` is true for the hours 9 to 16:
+
+      ```python run
+      hour = int(input("Hour (0 to 23): "))
+      if hour >= 9 and hour < 17:
+          print("The shop is open.")
+      else:
+          print("The shop is closed.")
+      ```
+
+      ```input
+      18
+      ```
+
+      ```output
+      Hour (0 to 23): 18
+      The shop is closed.
+      ```
+
+      ### Each side is a whole condition
+
+      In English you could say "if the hour is at least 9 and less than 17", and leave out the second "the hour". Python can't fill in the missing part:
+
+      ```python run crash
+      hour = 10
+      if hour >= 9 and < 17:
+          print("The shop is open.")
+      ```
+
+      ```crash
+        File "main.py", line 2
+          if hour >= 9 and < 17:
+                           ^
+      SyntaxError: invalid syntax
+      ```
+
+      After `and`, Python expects a whole new condition, but it finds `<`. Write the variable again: `hour >= 9 and hour < 17`.
+
+      **Your turn:** fill in the blank so the program says the water is perfect for swimming when it's from 24 to 30 degrees, limits included:
+
+      ```
+      Water temperature: 26
+      Perfect for swimming!
+      ```
+    fill: |
+      temperature = int(input("Water temperature: "))
+      if temperature >= 24 [[and]] temperature <= 30:
+          print("Perfect for swimming!")
+      else:
+          print("Maybe another day.")
+    hints:
+      - Both conditions must be true at the same time.
+      - "The operator that needs both sides to be true is `and`."
+    tests:
+      - stdin: "26"
+      - stdin: "20"
+        hidden: true
+      - stdin: "24"
+        hidden: true
+      - stdin: "30"
+        hidden: true
+      - stdin: "31"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for a username and a password. It welcomes the user only when the username is `robin` and the password is `hood123`. In every other case it prints `Wrong username or password.`
+
+          ```
+          Username: robin
+          Password: hood123
+          Welcome, robin!
+          ```
+        seed: |
+          username = input("Username: ")
+          password = input("Password: ")
+        solution: |
+          username = input("Username: ")
+          password = input("Password: ")
+          if username == "robin" and password == "hood123":
+              print(f"Welcome, {username}!")
+          else:
+              print("Wrong username or password.")
+        hints:
+          - Both the username and the password must match, so join the two comparisons with `and`.
+          - "`username == \"robin\" and password == \"hood123\"`. Everything else goes to the `else`."
+        require:
+          - pattern: \band\b
+            message: Check both at once with `and`.
+        tests:
+          - stdin: |
+              robin
+              hood123
+          - stdin: |
+              robin
+              hood321
+            hidden: true
+          - stdin: |
+              marian
+              hood123
+            hidden: true
+          - stdin: |
+              Robin
+              hood123
+            hidden: true
+      - task: |
+          Write a program that asks for three whole numbers and prints the largest of them.
+
+          ```
+          First: 4
+          Second: 9
+          Third: 2
+          The largest is 9
+          ```
+        seed: |
+          first = int(input("First: "))
+          second = int(input("Second: "))
+          third = int(input("Third: "))
+        solution: |
+          first = int(input("First: "))
+          second = int(input("Second: "))
+          third = int(input("Third: "))
+          if first >= second and first >= third:
+              largest = first
+          elif second >= third:
+              largest = second
+          else:
+              largest = third
+          print(f"The largest is {largest}")
+        hints:
+          - The first number is the largest when it is at least as big as the second and at least as big as the third.
+          - "If it isn't, the largest is the second or the third: an `elif second >= third:` decides between them."
+          - Use `>=` rather than `>`, so equal numbers work too. Store the answer in a variable and print it once at the end.
+        tests:
+          - stdin: |
+              4
+              9
+              2
+          - stdin: |
+              1
+              2
+              3
+            hidden: true
+          - stdin: |
+              7
+              3
+              7
+            hidden: true
+          - stdin: |
+              5
+              5
+              1
+            hidden: true
+          - stdin: |
+              -2
+              -8
+              -5
+            hidden: true
+
+  - id: logic-or
+    slug: or
+    title: "At least one: or"
+    text: |
+      The operator `or` combines two conditions into one that is true when at least one of them is true:
+
+      ```python run
+      day = input("Day: ")
+      if day == "Saturday" or day == "Sunday":
+          print("No school today!")
+      else:
+          print("Time for school.")
+      ```
+
+      ```input
+      Sunday
+      ```
+
+      ```output
+      Day: Sunday
+      No school today!
+      ```
+
+      Here are all four combinations:
+
+      ```python repl
+      >>> True or True
+      True
+      >>> True or False
+      True
+      >>> False or True
+      True
+      >>> False or False
+      False
+      ```
+
+      Only `False or False` gives `False`. Notice that `or` is also true when both sides are true: it doesn't mean "one or the other, but not both".
+
+      ### Outside a range
+
+      With `or`, you can check that a number is outside a range, below the lower limit or above the upper one:
+
+      ```python run
+      number = int(input("Pick a number from 1 to 10: "))
+      if number < 1 or number > 10:
+          print("That's not between 1 and 10!")
+      else:
+          print(f"You picked {number}.")
+      ```
+
+      ```input
+      12
+      ```
+
+      ```output
+      Pick a number from 1 to 10: 12
+      That's not between 1 and 10!
+      ```
+
+      A number can't be below 1 and above 10 at the same time, so `number < 1 and number > 10` would never be true. When you check for a value outside a range, the operator is `or`.
+
+      ### A mistake that hides
+
+      Each side of `or` must be a whole condition, just as with `and`. This time, though, leaving out part of it doesn't cause an error, which makes the mistake hard to spot:
+
+      ```python run
+      day = "Monday"
+      if day == "Saturday" or "Sunday":
+          print("Weekend!")
+      ```
+
+      ```output
+      Weekend!
+      ```
+
+      Python reads the condition as `(day == "Saturday") or ("Sunday")`. The right side isn't a comparison at all, just a string, and in a condition Python treats any string that isn't empty as true. So the whole condition is always true, whatever the day. The fix is to compare the variable again: `day == "Saturday" or day == "Sunday"`.
+
+      **Your turn:** fill in the blank so the program says `Winter month` for December, January and February (months 12, 1 and 2):
+
+      ```
+      Month (1 to 12): 1
+      Winter month
+      ```
+    fill: |
+      month = int(input("Month (1 to 12): "))
+      if month == 12 [[or]] month == 1 or month == 2:
+          print("Winter month")
+      else:
+          print("Not a winter month")
+    hints:
+      - The condition should be true when any one of the three comparisons is true.
+      - "The operator for \"at least one\" is `or`."
+    tests:
+      - stdin: "1"
+      - stdin: "12"
+        hidden: true
+      - stdin: "6"
+        hidden: true
+      - stdin: "2"
+        hidden: true
+    more:
+      - task: |
+          A die shows the numbers 1 to 6. Write a program that asks for the number a player rolled. If the number is less than 1 or greater than 6, it prints `A die has no such number.` Otherwise it prints `You rolled` and the number.
+
+          ```
+          Your roll: 7
+          A die has no such number.
+          ```
+        seed: |
+          roll = int(input("Your roll: "))
+        solution: |
+          roll = int(input("Your roll: "))
+          if roll < 1 or roll > 6:
+              print("A die has no such number.")
+          else:
+              print(f"You rolled {roll}")
+        hints:
+          - The number is wrong when it's below 1 or above 6, so the two comparisons are joined with `or`.
+          - "`if roll < 1 or roll > 6:` catches the wrong numbers, and the `else` prints the roll with an f-string."
+        require:
+          - pattern: \bor\b
+            message: Check the two limits with `or`.
+        tests:
+          - stdin: "7"
+          - stdin: "3"
+            hidden: true
+          - stdin: "0"
+            hidden: true
+          - stdin: "6"
+            hidden: true
+          - stdin: "1"
+            hidden: true
+      - task: |
+          This program should continue when the user types `yes` or `y`, and stop for anything else. But it always continues. Fix the condition.
+
+          ```
+          Do you want to continue? no
+          Stopping.
+          ```
+        seed: |
+          answer = input("Do you want to continue? ")
+          if answer == "yes" or "y":
+              print("Continuing...")
+          else:
+              print("Stopping.")
+        solution: |
+          answer = input("Do you want to continue? ")
+          if answer == "yes" or answer == "y":
+              print("Continuing...")
+          else:
+              print("Stopping.")
+        hints:
+          - "The right side of `or` is just the string `\"y\"`, and a string that isn't empty counts as true."
+          - "Make the right side a whole comparison: `answer == \"y\"`."
+        tests:
+          - stdin: "no"
+          - stdin: "yes"
+            hidden: true
+          - stdin: "y"
+            hidden: true
+          - stdin: "n"
+            hidden: true
+
+  - id: logic-not
+    slug: not
+    title: "Turning a condition around: not"
+    text: |
+      The operator `not` turns a condition around: `not` of something true is false, and `not` of something false is true.
+
+      ```python repl
+      >>> not True
+      False
+      >>> not False
+      True
+      >>> not 3 > 5
+      True
+      ```
+
+      Python works out the comparison before `not`, so `not 3 > 5` means `not (3 > 5)`. Often `not` is handy in front of a combined condition in parentheses. A number is outside the range 1 to 10 exactly when it is not inside it:
+
+      ```python run
+      number = 15
+      if not (number >= 1 and number <= 10):
+          print("Out of range")
+      ```
+
+      ```output
+      Out of range
+      ```
+
+      The parentheses matter here: without them, the `not` would turn around only the first comparison.
+
+      ### Truth values in variables
+
+      You saw in part 1 that the value of a comparison, `True` or `False`, can be stored in a variable like any other value. With `not`, such a variable reads almost like English:
+
+      ```python run
+      answer = input("Is the door locked? (yes/no) ")
+      locked = answer == "yes"
+      if not locked:
+          print("Remember to lock the door!")
+      print("Good night.")
+      ```
+
+      ```input
+      no
+      ```
+
+      ```output
+      Is the door locked? (yes/no) no
+      Remember to lock the door!
+      Good night.
+      ```
+
+      The line `locked = answer == "yes"` first evaluates the comparison, then stores its value in `locked`. Here that value is `False`, so `not locked` is `True`.
+
+      ### Which goes first
+
+      When a condition mixes the operators, Python evaluates the comparisons first, then `not`, then `and`, and `or` last. So `a or b and c` means `a or (b and c)`, which can surprise you. Children under 12 and seniors 65 or older should get a discount, but not on Sundays:
+
+      ```python run
+      age = 8
+      day = "Sunday"
+      if age < 12 or age >= 65 and day != "Sunday":
+          print("Discount price")
+      else:
+          print("Full price")
+      ```
+
+      ```output
+      Discount price
+      ```
+
+      Because `and` goes before `or`, Python reads the condition as `age < 12 or (age >= 65 and day != "Sunday")`, and a child gets the discount every day. Parentheses say what is meant: `(age < 12 or age >= 65) and day != "Sunday"`. When a condition mixes `and` and `or`, add parentheses even where they aren't needed. They make the condition easier to read.
+
+      **Your turn:** drum practice is allowed from 8 to 21 o'clock. Fill in the blank so the program asks for quiet at every other hour:
+
+      ```
+      Hour: 23
+      Quiet hours, no drums please.
+      ```
+    fill: |
+      hour = int(input("Hour: "))
+      if [[not]] (hour >= 8 and hour <= 21):
+          print("Quiet hours, no drums please.")
+      else:
+          print("Go ahead and practice!")
+    hints:
+      - The condition in parentheses is true during practice hours, but the first message is for the other hours.
+      - "Turn the whole condition around with `not`."
+    tests:
+      - stdin: "23"
+      - stdin: "8"
+        hidden: true
+      - stdin: "21"
+        hidden: true
+      - stdin: "7"
+        hidden: true
+      - stdin: "15"
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          a = True
+          b = False
+          print(not a)
+          print(a and not b)
+          print(not a or b)
+          print(not (a or b))
+        hints:
+          - "`not` goes before `and` and `or`, so in `a and not b` the `not` belongs to `b` only."
+          - "`not a or b` means `(not a) or b`: both sides are `False`."
+          - "In the last line the parentheses come first: `a or b` is `True`, and `not` turns it around."
+      - task: |
+          Children under 12 and seniors 65 or older get a discount, but never on Sundays. The program below gives a child the discount on Sundays too. Fix the condition.
+
+          ```
+          Age: 8
+          Day: Sunday
+          Full price: 10 euros
+          ```
+        seed: |
+          age = int(input("Age: "))
+          day = input("Day: ")
+          if age < 12 or age >= 65 and day != "Sunday":
+              print("Discount price: 5 euros")
+          else:
+              print("Full price: 10 euros")
+        solution: |
+          age = int(input("Age: "))
+          day = input("Day: ")
+          if (age < 12 or age >= 65) and day != "Sunday":
+              print("Discount price: 5 euros")
+          else:
+              print("Full price: 10 euros")
+        hints:
+          - "`and` goes before `or`, so Python groups the condition as `age < 12 or (age >= 65 and day != \"Sunday\")`."
+          - The two age checks belong together. Put parentheses around them, so the day check applies to both.
+        tests:
+          - stdin: |
+              8
+              Sunday
+          - stdin: |
+              8
+              Monday
+            hidden: true
+          - stdin: |
+              70
+              Sunday
+            hidden: true
+          - stdin: |
+              65
+              Friday
+            hidden: true
+          - stdin: |
+              30
+              Tuesday
+            hidden: true
+
+  - id: logic-chained
+    slug: chained-comparisons
+    title: Ranges and longer conditions
+    text: |
+      Checking that a value is between two limits is so common that Python has a shorter way to write it. Instead of `grade >= 4 and grade <= 10`, you can write `4 <= grade <= 10`, as in mathematics:
+
+      ```python run
+      grade = int(input("Grade (4 to 10): "))
+      if 4 <= grade <= 10:
+          print("Grade saved.")
+      else:
+          print("That's not a valid grade.")
+      ```
+
+      ```input
+      11
+      ```
+
+      ```output
+      Grade (4 to 10): 11
+      That's not a valid grade.
+      ```
+
+      This is called a **chained comparison**. Python reads `4 <= grade <= 10` as `4 <= grade and grade <= 10`, so the value in the middle is compared with both limits. Any comparison operators can be chained:
+
+      ```python repl
+      >>> x = 7
+      >>> 0 < x < 10
+      True
+      >>> 1 <= x <= 5
+      False
+      >>> a = 3
+      >>> b = 3
+      >>> a == b == 3
+      True
+      ```
+
+      Most other programming languages don't have chained comparisons, so you will see the longer version with `and` in a lot of Python code too. Both mean the same.
+
+      ### Longer conditions
+
+      A condition can combine as many parts as it needs, and conditions with `and` and `or` work in an `elif` like anywhere else. This program checks whether a number divides evenly by 3, by 5 or by both:
+
+      ```python run
+      number = int(input("Number: "))
+      if number % 3 == 0 and number % 5 == 0:
+          print("Divisible by 3 and by 5")
+      elif number % 3 == 0:
+          print("Divisible by 3")
+      elif number % 5 == 0:
+          print("Divisible by 5")
+      else:
+          print("Divisible by neither")
+      ```
+
+      ```input
+      30
+      ```
+
+      ```output
+      Number: 30
+      Divisible by 3 and by 5
+      ```
+
+      Notice the order. The combined condition comes first, because it is the strictest one. If `number % 3 == 0` were checked first, 30 would stop there, and the message about both numbers would never be printed. The order of conditions matters just as much with `and` and `or` as without them.
+
+      **Your turn:** fill in the blank with a chained comparison, so the program accepts the days of a month, 1 to 31:
+
+      ```
+      Day of the month: 31
+      OK
+      ```
+    fill: |
+      day = int(input("Day of the month: "))
+      if [[1 <= day <= 31]]:
+          print("OK")
+      else:
+          print("No month has that day.")
+    hints:
+      - "A chained comparison puts the variable between the two limits: `low <= variable <= high`."
+      - "Here the limits are 1 and 31: `1 <= day <= 31`."
+    require:
+      - pattern: \d\s*<=?\s*day\s*<=?\s*\d
+        message: "Write the range as a chained comparison, with `day` between the two limits."
+    tests:
+      - stdin: "31"
+      - stdin: "32"
+        hidden: true
+      - stdin: "0"
+        hidden: true
+      - stdin: "1"
+        hidden: true
+    more:
+      - task: |
+          Write a program that asks for the hours and the minutes of a time on a 24-hour clock and tells whether the time is valid. The hours must be from 0 to 23 and the minutes from 0 to 59. Use two chained comparisons.
+
+          ```
+          Hours: 23
+          Minutes: 59
+          That's a valid time.
+          ```
+
+          Otherwise the program prints `That's not a valid time.`
+        seed: |
+          hours = int(input("Hours: "))
+          minutes = int(input("Minutes: "))
+        solution: |
+          hours = int(input("Hours: "))
+          minutes = int(input("Minutes: "))
+          if 0 <= hours <= 23 and 0 <= minutes <= 59:
+              print("That's a valid time.")
+          else:
+              print("That's not a valid time.")
+        hints:
+          - "Each part has its own range: `0 <= hours <= 23` and `0 <= minutes <= 59`."
+          - Both parts must be valid at the same time, so join the two chained comparisons with `and`.
+        require:
+          - pattern: \d\s*<=?\s*hours\s*<=?\s*\d
+            message: "Check the hours with a chained comparison, such as `0 <= hours <= 23`."
+          - pattern: \d\s*<=?\s*minutes\s*<=?\s*\d
+            message: "Check the minutes with a chained comparison, such as `0 <= minutes <= 59`."
+        tests:
+          - stdin: |
+              23
+              59
+          - stdin: |
+              24
+              0
+            hidden: true
+          - stdin: |
+              7
+              65
+            hidden: true
+          - stdin: |
+              0
+              0
+            hidden: true
+          - stdin: |
+              -1
+              30
+            hidden: true
+      - task: |
+          Write a program that asks for the lengths of the three sides of a triangle and tells what kind of triangle it is: `Equilateral` when all three sides are equal, `Isosceles` when exactly two are equal, and `Scalene` when all are different.
+
+          ```
+          Side 1: 5
+          Side 2: 3
+          Side 3: 5
+          Isosceles
+          ```
+        seed: |
+          a = int(input("Side 1: "))
+          b = int(input("Side 2: "))
+          c = int(input("Side 3: "))
+        solution: |
+          a = int(input("Side 1: "))
+          b = int(input("Side 2: "))
+          c = int(input("Side 3: "))
+          if a == b == c:
+              print("Equilateral")
+          elif a == b or b == c or a == c:
+              print("Isosceles")
+          else:
+              print("Scalene")
+        hints:
+          - "All three are equal when `a == b == c`, a chained comparison. Check that first, since it's the strictest case."
+          - "Two sides are equal when `a == b`, `b == c` or `a == c`: join the three with `or`."
+          - Whatever is left has three different sides.
+        tests:
+          - stdin: |
+              5
+              3
+              5
+          - stdin: |
+              4
+              4
+              4
+            hidden: true
+          - stdin: |
+              3
+              4
+              5
+            hidden: true
+          - stdin: |
+              2
+              2
+              3
+            hidden: true
+          - stdin: |
+              7
+              2
+              2
+            hidden: true
+
+  - id: logic-nested
+    slug: nested-conditionals
+    title: Conditions inside conditions
+    text: |
+      The block of an `if` can contain any statements, another `if` among them. A conditional statement inside another one is a **nested conditional**. Here the outer `if` checks that the price makes sense at all, and the inner one whether there's enough money:
+
+      ```python run
+      balance = 50
+      price = int(input("Price: "))
+      if price > 0:
+          if price <= balance:
+              print("Purchase approved.")
+          else:
+              print("Not enough money.")
+      else:
+          print("That's not a valid price.")
+      ```
+
+      ```input
+      80
+      ```
+
+      ```output
+      Price: 80
+      Not enough money.
+      ```
+
+      The inner statement is checked only when the outer condition is true. With a price of -5, Python goes straight to the outer `else`.
+
+      ### The indentation decides
+
+      In nested statements the indentation shows which `else` belongs to which `if`: an `else` belongs to the `if` above it at the same indentation. Move the inner `else` four spaces to the left, and the program means something else:
+
+      ```python run
+      balance = 50
+      price = int(input("Price: "))
+      if price > 0:
+          if price <= balance:
+              print("Purchase approved.")
+      else:
+          print("Not enough money.")
+      ```
+
+      ```input
+      80
+      ```
+
+      ```output
+      Price: 80
+      ```
+
+      Now the `else` belongs to the outer `if`. A price of 80 prints nothing at all, and a price of -5 would say `Not enough money.` Python has no way to know which one you meant, so get the indentation right.
+
+      ### Nested or combined?
+
+      The same decision can often be written with `and` instead of nesting:
+
+      ```python run
+      balance = 50
+      price = 30
+      if price > 0 and price <= balance:
+          print("Purchase approved.")
+      elif price > 0:
+          print("Not enough money.")
+      else:
+          print("That's not a valid price.")
+      ```
+
+      ```output
+      Purchase approved.
+      ```
+
+      Neither way is always better. Nesting is often clearer when a second question only makes sense after the first one, for example when the program asks for more input in only one branch. A combined condition keeps short checks flat and easy to scan.
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      x = 7
+      if x > 5:
+          if x % 2 == 0:
+              print("big and even")
+          else:
+              print("big and odd")
+      else:
+          print("small")
+      print("done")
+    hints:
+      - The outer condition `x > 5` is true, so Python goes into its block and checks the inner `if`.
+      - "7 is odd, so the inner `else` runs. The outer `else` is skipped, and the last line is in the main block."
+    more:
+      - task: |
+          The program should say `Take an umbrella.` when it's warm (15 degrees or more) and raining, and `Enjoy the sunshine!` when it's warm and not raining. When it's colder, it should say `Stay inside and read a book.`, rain or not. One `else` is in the wrong place, and one branch is missing. Fix the program.
+
+          ```
+          Temperature: 20
+          Is it raining? (yes/no) no
+          Enjoy the sunshine!
+          ```
+        seed: |
+          temperature = int(input("Temperature: "))
+          raining = input("Is it raining? (yes/no) ")
+          if temperature >= 15:
+              if raining == "yes":
+                  print("Take an umbrella.")
+          else:
+              print("Enjoy the sunshine!")
+        solution: |
+          temperature = int(input("Temperature: "))
+          raining = input("Is it raining? (yes/no) ")
+          if temperature >= 15:
+              if raining == "yes":
+                  print("Take an umbrella.")
+              else:
+                  print("Enjoy the sunshine!")
+          else:
+              print("Stay inside and read a book.")
+        hints:
+          - "`Enjoy the sunshine!` is for warm days without rain, so its `else` belongs to the inner `if raining == \"yes\":`. Indent it to the same level as that `if`."
+          - The cold days need an `else` of their own at the left edge, the same indentation as `if temperature >= 15:`.
+        tests:
+          - stdin: |
+              20
+              no
+          - stdin: |
+              20
+              yes
+            hidden: true
+          - stdin: |
+              5
+              no
+            hidden: true
+          - stdin: |
+              5
+              yes
+            hidden: true
+          - stdin: |
+              15
+              no
+            hidden: true
+      - task: |
+          Write a program for a theme park ride. It asks for the rider's height in centimeters. Riders under 120 cm get the message `Sorry, you must be at least 120 cm tall.` Taller riders are asked whether they want the fast lane: `yes` gives `Fast lane ticket: 30 euros`, anything else `Regular ticket: 20 euros`. Only riders who are tall enough are asked the second question.
+
+          ```
+          Height in cm: 150
+          Fast lane? (yes/no) yes
+          Fast lane ticket: 30 euros
+          ```
+        seed: |
+          height = int(input("Height in cm: "))
+        solution: |
+          height = int(input("Height in cm: "))
+          if height >= 120:
+              fast = input("Fast lane? (yes/no) ")
+              if fast == "yes":
+                  print("Fast lane ticket: 30 euros")
+              else:
+                  print("Regular ticket: 20 euros")
+          else:
+              print("Sorry, you must be at least 120 cm tall.")
+        hints:
+          - "Start with `if height >= 120:` and an `else` for the riders who are too short."
+          - The question about the fast lane is asked inside the first block, so the `input` line is indented there.
+          - "After that `input`, a nested `if` and `else` in the same block choose the ticket."
+        tests:
+          - stdin: |
+              150
+              yes
+          - stdin: |
+              150
+              no
+            hidden: true
+          - stdin: "110"
+            hidden: true
+          - stdin: |
+              120
+              yes
+            hidden: true

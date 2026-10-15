@@ -1,0 +1,390 @@
+topic: inheritance
+drills:
+  - type: predict
+    after: base-class
+    code: |
+      class Pet:
+          def __init__(self, name):
+              self.name = name
+
+          def hello(self):
+              return "Hi, " + self.name
+
+
+      class Dog(Pet):
+          def fetch(self):
+              return self.name + " fetches"
+
+
+      rex = Dog("Rex")
+      print(rex.hello())
+      print(rex.fetch())
+    why: "`Dog` inherits the constructor and `hello` from `Pet`, and adds `fetch`. A dog has both methods."
+
+  - type: fill
+    after: base-class
+    code: |
+      class Shape:
+          def __init__(self, color):
+              self.color = color
+
+
+      class Circle([[Shape]]):
+          def describe(self):
+              return "a " + self.color + " circle"
+
+
+      print(Circle("red").describe())
+    why: "The base class goes in the parentheses: `class Circle(Shape):`. Then a circle gets `Shape`'s constructor, and `self.color` is set."
+
+  - type: runs
+    after: base-class
+    code: |
+      class Pet:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Cat(Pet):
+          def purr(self):
+              return "purr"
+
+
+      tom = Pet("Tom")
+      print(tom.purr())
+    why: "`tom` is a plain `Pet`, and only `Cat` has `purr`. Inheritance goes one way: a base class doesn't get its derived classes' methods, so Python stops with an `AttributeError`."
+
+  - type: choice
+    after: base-class
+    prompt: A bus is a special kind of vehicle. Which line starts the class `Bus` so that it inherits `Vehicle`?
+    choices:
+      - "`class Bus(Vehicle):`"
+      - "`class Vehicle(Bus):`"
+      - "`class Bus.Vehicle:`"
+      - "`class Bus: Vehicle`"
+    answer: 1
+    why: "The new class's name comes first, and the base class it inherits goes in the parentheses after it."
+
+  - type: predict
+    after: base-class
+    code: |
+      class Box:
+          def __init__(self):
+              self.items = []
+
+          def add(self, item):
+              self.items.append(item)
+
+
+      class GiftBox(Box):
+          def count(self):
+              return len(self.items)
+
+
+      gift = GiftBox()
+      gift.add("socks")
+      gift.add("tea")
+      print(gift.count())
+    why: "`GiftBox` uses `Box`'s constructor and `add`, so the gift box has its own `items` list with two things in it."
+
+  - type: predict
+    after: overriding
+    code: |
+      class Bird:
+          def move(self):
+              return "flies"
+
+
+      class Penguin(Bird):
+          def move(self):
+              return "swims"
+
+
+      print(Bird().move())
+      print(Penguin().move())
+    why: "`Penguin` overrides `move`, so a penguin uses its own version. A plain bird still uses the original."
+
+  - type: predict
+    after: overriding
+    code: |
+      class Report:
+          def title(self):
+              return "REPORT"
+
+          def show(self):
+              print("== " + self.title() + " ==")
+
+
+      class Invoice(Report):
+          def title(self):
+              return "INVOICE"
+
+
+      Invoice().show()
+    why: "`show` is in `Report`, but `self` is an invoice, so `self.title()` runs the overriding version in `Invoice`."
+
+  - type: bug
+    after: overriding
+    code: |
+      class Clock:
+          def sound(self):
+              return "tick"
+
+
+      class Alarm(Clock):
+          def sounds(self):  # BUG
+              return "RING"
+
+
+      print(Alarm().sound())
+    fix: "def sound(self):"
+    why: "An overriding method needs exactly the same name. `sounds` is a new method that nobody calls, so `sound` from `Clock` still runs and prints `tick`."
+
+  - type: choice
+    after: overriding
+    prompt: "`Knight` inherits `Character` and has its own `take_damage`. What happens when you call `take_damage` on a knight?"
+    choices:
+      - "`Knight`'s version runs"
+      - "`Character`'s version runs"
+      - Both run, the base class's first
+      - Python stops with an error, since the name is taken
+    answer: 1
+    why: "Python looks for a method in the object's own class first. `Knight` has `take_damage`, so that version runs: it overrides the one in `Character`."
+
+  - type: runs
+    after: super
+    code: |
+      class Person:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Pilot(Person):
+          def __init__(self, name, hours):
+              self.hours = hours
+
+
+      ace = Pilot("Ace", 900)
+      print(ace.name, ace.hours)
+    why: "`Pilot`'s constructor overrides `Person`'s, and it never calls `super().__init__(name)`. So the pilot has no `name`, and Python stops with an `AttributeError`."
+
+  - type: fill
+    after: super
+    code: |
+      class Person:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Pilot(Person):
+          def __init__(self, name, hours):
+              [[super()]].__init__(name)
+              self.hours = hours
+
+
+      ace = Pilot("Ace", 900)
+      print(ace.name, ace.hours)
+    why: "`super().__init__(name)` runs `Person`'s constructor for the pilot, which sets the name. The pilot's own constructor then sets `hours`."
+
+  - type: bug
+    after: super
+    code: |
+      class Item:
+          def __init__(self, name):
+              self.name = name
+
+
+      class Gadget(Item):
+          def __init__(self, name, volts):
+              super().__init__(self, name)  # BUG
+              self.volts = volts
+
+
+      print(Gadget("Lamp", 12).name)
+    fix: super().__init__(name)
+    why: "Python passes `self` to the method by itself, as with any method call. Passing it again gives the constructor one argument too many, and Python stops with a `TypeError`."
+
+  - type: predict
+    after: super
+    code: |
+      class Drink:
+          def __init__(self, name):
+              self.name = name
+
+          def __str__(self):
+              return self.name
+
+
+      class Coffee(Drink):
+          def __str__(self):
+              return super().__str__() + " with milk"
+
+
+      print(Drink("Tea"))
+      print(Coffee("Latte"))
+    why: "`Coffee`'s `__str__` starts from what `Drink`'s `__str__` returns, the name, and adds to it. A plain drink prints only its name."
+
+  - type: predict
+    after: super
+    code: |
+      class Counter:
+          def __init__(self):
+              self.count = 0
+
+          def add(self, n):
+              self.count += n
+
+
+      class DoubleCounter(Counter):
+          def add(self, n):
+              super().add(n * 2)
+
+
+      c = DoubleCounter()
+      c.add(3)
+      c.add(1)
+      print(c.count)
+    why: "The overriding `add` doubles the number and lets `Counter`'s `add` do the adding: 6 and then 2, so 8."
+
+  - type: predict
+    after: isinstance
+    code: |
+      class Animal:
+          pass
+
+
+      class Dog(Animal):
+          pass
+
+
+      class Puppy(Dog):
+          pass
+
+
+      bo = Puppy()
+      print(isinstance(bo, Animal))
+      print(isinstance(Dog(), Puppy))
+    why: "A puppy is a dog, and a dog is an animal, so `bo` is an animal too. A plain dog isn't a puppy: `isinstance` only goes up the hierarchy, not down."
+
+  - type: choice
+    after: isinstance
+    prompt: "`ElectricCar` inherits `Car`. What does this print?"
+    code: |
+      class Car:
+          pass
+
+
+      class ElectricCar(Car):
+          pass
+
+
+      volt = ElectricCar()
+      print(type(volt) == Car, isinstance(volt, Car))
+    choices:
+      - "`True True`"
+      - "`False True`"
+      - "`True False`"
+      - "`False False`"
+    answer: 2
+    verify: output
+    why: "`type` gives only the object's own class, `ElectricCar`, so the comparison is `False`. `isinstance` follows the hierarchy: an electric car is a car."
+
+  - type: predict
+    after: isinstance
+    code: |
+      class Shape:
+          pass
+
+
+      class Square(Shape):
+          pass
+
+
+      class Circle(Shape):
+          pass
+
+
+      shapes = [Square(), Circle(), Square(), Shape()]
+      count = 0
+      for shape in shapes:
+          if isinstance(shape, Square):
+              count += 1
+      print(count)
+    why: "Only the two squares are `Square` objects. The circle and the plain shape are shapes, but not squares."
+
+  - type: boss
+    after: isinstance
+    prompt: |
+      Write a class `Gadget` that inherits `Product`. Its constructor takes a name, a price and a warranty in years, and lets `Product`'s constructor set the name and the price. A gadget prints as a product does, followed by ` (X years warranty)`. Use `super()` for both. For example,
+
+      ```python fragment
+      phone = Gadget("Phone", 300, 2)
+      print(phone)
+      print(phone.warranty)
+      ```
+
+      should print:
+
+      ```
+      Phone: 300 euros (2 years warranty)
+      2
+      ```
+    seed: |
+      class Product:
+          def __init__(self, name, price):
+              self.name = name
+              self.price = price
+
+          def __str__(self):
+              return f"{self.name}: {self.price} euros"
+
+
+      # Write the class Gadget here.
+
+
+      if __name__ == "__main__":
+          phone = Gadget("Phone", 300, 2)
+          print(phone)
+    solution: |
+      class Product:
+          def __init__(self, name, price):
+              self.name = name
+              self.price = price
+
+          def __str__(self):
+              return f"{self.name}: {self.price} euros"
+
+
+      class Gadget(Product):
+          def __init__(self, name, price, warranty):
+              super().__init__(name, price)
+              self.warranty = warranty
+
+          def __str__(self):
+              return super().__str__() + f" ({self.warranty} years warranty)"
+
+
+      if __name__ == "__main__":
+          phone = Gadget("Phone", 300, 2)
+          print(phone)
+    hints:
+      - "Start with `class Gadget(Product):` and a constructor that calls `super().__init__(name, price)` before it sets `self.warranty`."
+      - "`__str__` returns `super().__str__()` plus the warranty part."
+    require:
+      - pattern: class\s+Gadget\s*\(\s*Product\s*\)
+        message: "`Gadget` should inherit `Product`."
+      - pattern: super\(\)\.__init__\(
+        message: "Use `Product`'s constructor with `super().__init__(...)`."
+      - pattern: super\(\)\.__str__\(
+        message: "Build the text on `Product`'s version with `super().__str__()`."
+    tests:
+      - call: |
+          phone = Gadget("Phone", 300, 2)
+          print(phone)
+          print(phone.warranty)
+      - call: |
+          kettle = Gadget("Kettle", 25, 5)
+          print(kettle)
+          print(kettle.name)
+          print(Product("Mug", 8))
+        hidden: true

@@ -1,0 +1,216 @@
+topic: reading-files
+drills:
+  - type: choice
+    after: open-and-read
+    prompt: "What does `file.read()` return?"
+    choices:
+      - The whole file as one string
+      - A list of the file's lines
+      - Only the first line of the file
+    answer: 1
+    why: "`read()` reads everything that's left in the file and returns it as a single string, line breaks included."
+
+  - type: choice
+    after: open-and-read
+    prompt: "When is a file opened with `with open(\"notes.txt\") as file:` closed?"
+    choices:
+      - When the program ends
+      - When the indented block under `with` ends
+      - Only when you call a method that closes it
+    answer: 2
+    why: "Closing the file at the end of its block is exactly what `with` is for, and it happens even when an error stops the block."
+
+  - type: runs
+    after: open-and-read
+    code: |
+      with open("missing_notes.txt") as file:
+          print(file.read())
+    why: "There's no file of that name in the program's folder, so `open` stops the program with a `FileNotFoundError`."
+
+  - type: predict
+    after: open-and-read
+    code: |
+      contents = "red\ngreen\n"
+      print(len(contents))
+      print("een" in contents)
+    why: "Each `\\n` is one character, so the string has 3 + 1 + 5 + 1 = 10 characters. `in` finds `een` inside `green`."
+
+  - type: predict
+    after: line-by-line
+    code: |
+      line = "apple\n"
+      print(len(line))
+      print(len(line.strip()))
+    why: "A line read from a file ends with its line break, which counts as one character. `strip()` removes it."
+
+  - type: predict
+    after: line-by-line
+    code: |
+      line = "Earth\n"
+      if line == "Earth":
+          print("same")
+      else:
+          print("different")
+    why: "`\"Earth\\n\"` and `\"Earth\"` are different strings: one has a line break at the end. Strip lines before comparing them."
+
+  - type: predict
+    after: line-by-line
+    code: |
+      text = "  hi  "
+      print("[" + text.rstrip() + "]")
+      print("[" + text.lstrip() + "]")
+    why: "`rstrip` removes whitespace only from the right end and `lstrip` only from the left end, so the other end keeps its spaces."
+
+  - type: bug
+    after: line-by-line
+    prompt: The list holds lines the way a file gives them. One line of the program has a bug. Which one?
+    code: |
+      lines = ["Ada\n", "Ben\n"]
+      for line in lines:
+          name = line  # BUG
+          print("Hi " + name + "!")
+    fix: name = line.strip()
+    why: "Each line ends with `\\n`, so without `strip()` the `!` would end up alone on the next line."
+
+  - type: predict
+    after: csv
+    code: |
+      line = "Ada;36\n"
+      parts = line.strip().split(";")
+      print(parts)
+    why: "`strip()` removes the line break, then `split(\";\")` cuts the string at the semicolon into a list of two strings."
+
+  - type: fill
+    after: csv
+    code: |
+      parts = "Rex;dog;4".[[split]](";")
+      print(parts[1])
+    why: "`split(\";\")` returns `['Rex', 'dog', '4']`, and index 1 is `dog`."
+
+  - type: predict
+    after: csv
+    code: |
+      parts = "7,3,9".split(",")
+      print(parts[0] + parts[1])
+      print(int(parts[0]) + int(parts[1]))
+    why: "The pieces from `split` are strings, so `+` joins them into `73`. Converted with `int`, they add up to 10."
+
+  - type: runs
+    after: csv
+    code: |
+      parts = "Ada;36".split(";")
+      print(parts[2])
+    why: "The string splits into only two pieces, at indexes 0 and 1, so `parts[2]` stops the program with an `IndexError`."
+
+  - type: bug
+    after: csv
+    code: |
+      line = "Ben;7;9\n"
+      parts = line.split(",")  # BUG
+      print(int(parts[1]) + int(parts[2]))
+    fix: parts = line.split(";")
+    why: "The fields are separated by semicolons. Splitting at a comma leaves the whole line in one piece, and `parts[1]` doesn't exist."
+
+  - type: predict
+    after: csv
+    code: |
+      words = "one  two   three".split()
+      print(len(words))
+      print(words[2])
+    why: "Without an argument, `split()` splits at spaces, however many there are in a row, so there are no empty pieces."
+
+  - type: choice
+    after: read-once
+    prompt: A program has two `for` loops, one after the other, over the same file handle. What happens in the second loop?
+    choices:
+      - It reads the file again from the start
+      - Python stops with an error
+      - Its body doesn't run, because the first loop already read the file to its end
+    answer: 3
+    why: "A file handle reads forward. After the first loop it's at the end of the file, so the second loop finds no lines. Read the lines into a list once instead."
+
+  - type: predict
+    after: read-once
+    code: |
+      lines = ["Ana;3;4", "Bo;5"]
+      scores = {}
+      for line in lines:
+          parts = line.split(";")
+          scores[parts[0]] = len(parts) - 1
+      print(scores)
+    why: "`Ana;3;4` splits into three pieces and `Bo;5` into two. The name is the key, and the count of the other pieces is the value."
+
+  - type: choice
+    after: combine
+    prompt: Two files both have a product code at the start of each line. What's the usual way to combine their data?
+    choices:
+      - Read each file into a dictionary keyed by the code, then look the codes up
+      - Read both files at the same time, line by line, and hope the lines are in the same order
+      - Copy one file to the end of the other
+    answer: 1
+    why: "With dictionaries keyed by the code, the order of the lines in the files doesn't matter, and a code missing from one file can be noticed with `in`."
+
+  - type: boss
+    after: combine
+    prompt: |
+      The file has a header line and then one line per day: a date and the number of visitors (`date;visitors`). Write a function `busiest_day(filename)` that returns the date with the most visitors. You can assume there's only one such day.
+
+      With this `visitors.csv`
+
+      ```text
+      date;visitors
+      2026-05-01;120
+      2026-05-02;340
+      2026-05-03;95
+      ```
+
+      `print(busiest_day("visitors.csv"))` prints:
+
+      ```
+      2026-05-02
+      ```
+    seed: |
+      def busiest_day(filename):
+          pass
+
+
+      if __name__ == "__main__":
+          print(busiest_day("visitors.csv"))
+    solution: |
+      def busiest_day(filename):
+          best_date = ""
+          best_count = -1
+          with open(filename) as file:
+              for line in file:
+                  parts = line.strip().split(";")
+                  if parts[0] == "date":
+                      continue
+                  count = int(parts[1])
+                  if count > best_count:
+                      best_date = parts[0]
+                      best_count = count
+          return best_date
+
+
+      if __name__ == "__main__":
+          print(busiest_day("visitors.csv"))
+    hints:
+      - Strip and split each line at `;`, and skip the header line, whose first field is `date`.
+      - Keep the best date so far and its number of visitors in two variables, and replace them when a line has more visitors.
+    tests:
+      - call: print(busiest_day("visitors.csv"))
+        files:
+          visitors.csv: |
+            date;visitors
+            2026-05-01;120
+            2026-05-02;340
+            2026-05-03;95
+      - call: busiest_day("june.csv")
+        files:
+          june.csv: |
+            date;visitors
+            2026-06-01;80
+            2026-06-02;75
+            2026-06-03;12
+            2026-06-04;91
+        hidden: true

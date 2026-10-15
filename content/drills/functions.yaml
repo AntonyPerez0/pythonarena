@@ -1,0 +1,220 @@
+topic: functions
+drills:
+  - type: predict
+    after: define
+    code: |
+      def hello():
+          print("hello")
+
+
+      print("bye")
+    why: "The definition only tells Python what `hello` means. The function is never called, so its body never runs."
+
+  - type: predict
+    after: define
+    code: |
+      def tick():
+          print("tick")
+
+
+      tick()
+      tick()
+      print("tock")
+    why: "Each call runs the body once: two calls print `tick` twice, and then the last line runs."
+
+  - type: runs
+    after: define
+    code: |
+      def greet:
+          print("Hi")
+    why: "A function's header needs parentheses after the name, even when they're empty: `def greet():`."
+
+  - type: runs
+    after: define
+    code: |
+      def greet():
+      print("Hi")
+
+
+      greet()
+    why: "The body of a function must be indented. Without the indentation, the function has no body, and Python can't read the program."
+
+  - type: choice
+    after: define
+    prompt: What does a `def` line with its body do when Python runs it?
+    choices:
+      - It defines the function, which runs later when it's called
+      - It runs the body right away
+      - It prints the name of the function
+    answer: 1
+    why: "`def` only defines the function. Its body runs each time the function is called."
+
+  - type: runs
+    after: calling
+    code: |
+      shout()
+
+
+      def shout():
+          print("HEY")
+    why: "Python runs the lines from the top, so the call comes before the definition and the name `shout` doesn't exist yet."
+
+  - type: predict
+    after: calling
+    code: |
+      def beep():
+          print("beep")
+
+
+      beep
+      print("done")
+    why: "Without parentheses, `beep` only names the function and doesn't call it. Only `done` is printed."
+
+  - type: fill
+    after: calling
+    code: |
+      def hi():
+          print("Hi!")
+
+
+      hi[[()]]
+    why: "A call needs the parentheses after the name: `hi()`."
+
+  - type: predict
+    after: calling
+    code: |
+      def inner():
+          print("2")
+
+
+      def outer():
+          print("1")
+          inner()
+          print("3")
+
+
+      outer()
+    why: "`outer` prints 1, then calls `inner`, which prints 2. Then Python goes back into `outer` and prints 3."
+
+  - type: predict
+    after: parameters
+    code: |
+      def show(text):
+          print("[" + text + "]")
+
+
+      show("a")
+      print("b")
+      show("c")
+    why: "Each call gives `text` a new value, and the body prints it in brackets. The `print` in between runs in its turn."
+
+  - type: predict
+    after: parameters
+    code: |
+      def double(value):
+          print(value * 2)
+
+
+      double(4)
+      double("ab")
+    why: "The function does what `* 2` does with the argument it gets: a number is doubled, a string is repeated."
+
+  - type: runs
+    after: parameters
+    code: |
+      def greet(name):
+          print("Hi", name)
+
+
+      greet()
+    why: "`greet` has a parameter, so every call needs an argument for it. Python stops with a `TypeError` that names the missing `name`."
+
+  - type: runs
+    after: several-parameters
+    code: |
+      def greet(name):
+          print("Hi", name)
+
+
+      greet("Ada", "Linus")
+    why: "`greet` has one parameter, but the call gives two arguments. The numbers must match."
+
+  - type: predict
+    after: several-parameters
+    code: |
+      def minus(a, b):
+          print(a - b)
+
+
+      a = 2
+      b = 10
+      minus(b, a)
+    why: "Arguments go to parameters by position: the first, `b` (10), goes to `a`, and the second, 2, to `b`. So the function prints 10 - 2."
+
+  - type: bug
+    after: several-parameters
+    code: |
+      def show(name, score):
+          print(f"{name}: {name}")  # BUG
+
+
+      show("Ada", 9)
+    fix: 'print(f"{name}: {score}")'
+    why: "The f-string uses `name` twice and never uses the parameter `score`."
+
+  - type: bug
+    after: global-variables
+    code: |
+      word = "cat"
+
+
+      def shout(text):
+          print(word + "!")  # BUG
+
+
+      shout("dog")
+    fix: print(text + "!")
+    why: "The function reads the global `word` instead of its own parameter `text`, so it shouts `cat!` whatever the argument is."
+
+  - type: predict
+    after: global-variables
+    code: |
+      size = 3
+
+
+      def show(size):
+          print(size)
+
+
+      show(10)
+      print(size)
+    why: "Inside the function, `size` is the parameter, which got 10. Outside it, `size` is still the global variable, 3."
+
+  - type: boss
+    after: several-parameters
+    prompt: |
+      Write a function `staircase(steps, character)` that prints a staircase of the character: the first line has one, the next two, and so on, up to `steps`. A call `staircase(3, "#")` prints:
+
+      ```
+      #
+      ##
+      ###
+      ```
+    seed: |
+      def staircase(steps, character):
+          pass
+    solution: |
+      def staircase(steps, character):
+          width = 1
+          while width <= steps:
+              print(character * width)
+              width += 1
+    hints:
+      - Loop with a helper variable for the width of the line, from 1 up to `steps`.
+      - "In each round, print the character repeated `width` times."
+    tests:
+      - call: staircase(3, "#")
+      - call: staircase(1, "*")
+        hidden: true
+      - call: staircase(5, "o")
+        hidden: true
