@@ -35,6 +35,7 @@ export const ALLOWED_HOSTS = [
   // Tools the Pro Track uses.
   'docs.pytest.org',
   'pyga.me',
+  'sqlitebrowser.org',
   'docs.astral.sh',
   'code.visualstudio.com',
   'github.com',

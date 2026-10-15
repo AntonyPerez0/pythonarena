@@ -313,7 +313,7 @@ pro.projects.forEach((p, k) => {
 <p class="muted small">Unzip it on your computer and open its README.md. The zip isn't saved for offline use, so downloading it needs a connection. New to virtual environments and pytest? The <a href="${link("/pro")}">Pro Track page</a> shows how to set up your computer.</p></div>
 <section><h2>What it practices</h2><ul class="pro-practices">${p.practices.map(practice).join("")}</ul></section>
 ${PRO_SECTIONS.filter(([key]) => p.sections[key])
-  .map(([key, heading]) => `<section><h2>${esc(heading)}</h2><div class="md">${p.sections[key]}</div></section>`)
+  .map(([key, heading]) => `<section aria-labelledby="pro-${key}-h"><h2 id="pro-${key}-h">${esc(heading)}</h2><div class="md">${p.sections[key]}</div></section>`)
   .join("\n")}
 <section class="card pro-checklist"><h2 id="checklist" class="h3">Your checklist</h2><ul class="pro-items">${p.checklist.map((c) => `<li><span>${c.html}</span></li>`).join("")}</ul></section>
 <nav class="step-nav pro-nav" aria-label="Pro Track"><a href="${link("/pro")}">All Pro Track projects</a>${next ? `<a href="${link(proPath(next))}">Next: ${esc(next.title)}</a>` : ""}</nav></div>`,
