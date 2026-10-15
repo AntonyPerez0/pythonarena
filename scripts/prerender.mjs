@@ -124,6 +124,11 @@ const extraCount = content.plan.filter((m) => m.course === "extra").length;
 const moocCount = content.plan.length - extraCount;
 const page = (route, p) => pages.push({ route, index: true, type: "website", jsonld: null, ...p });
 
+// The MOOC parts whose modules are all online, from part 1 on (as the home page says).
+const moocParts = [...new Set(content.plan.filter((m) => m.part != null).map((m) => m.part))].sort((a, b) => a - b);
+const firstOpenPart = moocParts.findIndex((n) => content.plan.some((m) => m.part === n && !m.live));
+const partsLive = firstOpenPart < 0 ? moocParts.length : firstOpenPart;
+
 page("/", {
   title: `${NAME}: learn Python in your browser`,
   description: `Free, non-commercial Python lessons with real Python (CPython 3.14) running in your browser. Follows the University of Helsinki's Python Programming MOOC, with its own lessons and exercises.`,
@@ -135,7 +140,7 @@ page("/", {
   },
   body: `<h1>Learn Python by writing real Python</h1>
 <p>Every exercise is run by real Python (CPython 3.14, compiled to WebAssembly), inside your browser, on your own device. The lessons follow the University of Helsinki's Python Programming MOOC, from your first print to classes, recursion and regular expressions, with their own explanations and exercises.</p>
-<p>${allLive ? `All ${content.plan.length} modules are online: ${moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming)${extraCount ? ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own` : ""}, with ${stepCount} steps and ${challengeCount} challenges.` : `Python Arena is new: ${content.modules.length} of ${content.plan.length} modules are online so far (${stepCount} steps, ${challengeCount} challenges). The rest of the course is added in batches.`}</p>
+<p>${allLive ? `All ${content.plan.length} modules are online: ${moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming)${extraCount ? ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own` : ""}, with ${stepCount} steps and ${challengeCount} challenges.` : `${partsLive ? `Parts 1 to ${partsLive} of the MOOC are online: ` : ""}${content.modules.length} of the ${content.plan.length} planned modules, with ${stepCount} steps and ${challengeCount} challenges. The remaining modules come in later updates.`}</p>
 <ul>${content.modules.map((m) => `<li><a href="${link(modulePath(m))}">Module ${m.number}: ${esc(m.title)}</a>${extraTag(m)}</li>`).join("")}<li><a href="${link("/learn")}">All modules</a></li></ul>
 <p>Practice: <a href="${link("/deathmatch")}">Deathmatch drills</a>, <a href="${link("/daily")}">the daily challenge</a> and <a href="${link("/placement")}">a placement quiz</a>.</p>
 <p><a href="${link("/projects")}">Projects</a>: larger programs built over several milestones.</p>

@@ -13,6 +13,7 @@ import path from "node:path";
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
 const WORKER = path.join(ROOT, "scripts", "content", "pyworker.py");
 const HARNESS = path.join(ROOT, "src", "engine", "arena.py");
+const PYGAME_SHIM = path.join(ROOT, "src", "engine", "arena_pygame.py");
 
 /** The Python version Pyodide runs, such as 3.14.2. */
 export function engineVersion() {
@@ -127,6 +128,6 @@ let harnessHash = null;
 
 /** A key for caching a run: the spec, the interpreter's version, the hash seed and the harness's text. */
 export function runKey(spec, version, seed) {
-  harnessHash ??= createHash("sha256").update(fs.readFileSync(HARNESS)).update(fs.readFileSync(WORKER)).digest("hex");
+  harnessHash ??= createHash("sha256").update(fs.readFileSync(HARNESS)).update(fs.readFileSync(PYGAME_SHIM)).update(fs.readFileSync(WORKER)).digest("hex");
   return createHash("sha256").update(JSON.stringify([version, seed, harnessHash, spec])).digest("hex");
 }

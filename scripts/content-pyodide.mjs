@@ -18,7 +18,10 @@ if (!fs.existsSync(CHECKS)) {
   console.error("content-pyodide: run npm run content first (it writes fidelity/out/content-checks.json)");
   process.exit(1);
 }
-const { python, checks } = JSON.parse(fs.readFileSync(CHECKS, "utf8"));
+const { python, checks: all } = JSON.parse(fs.readFileSync(CHECKS, "utf8"));
+// Programs that use pygame already ran in Pyodide in the build (scripts/content/pyodide.mjs): nothing to compare.
+const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
+const checks = all.filter((c) => c.spec.window == null && !Object.values(c.spec.files ?? {}).some((t) => typeof t === "string" && PYGAME.test(t)));
 const shard = /^(\d+)\/(\d+)$/.exec(process.env.CONTENT_SHARD ?? "");
 const mine = shard ? checks.filter((_, i) => i % Number(shard[2]) === Number(shard[1]) - 1) : checks;
 

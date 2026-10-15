@@ -26,6 +26,10 @@ export default function Home() {
   const allLive = modules.length === plan.length;
   const extraCount = plan.filter((m) => m.course === "extra").length;
   const moocCount = plan.length - extraCount;
+  // The MOOC parts whose modules are all online, from part 1 on (the course is written in order).
+  const parts = [...new Set(plan.filter((m) => m.part != null).map((m) => m.part!))].sort((a, b) => a - b);
+  const lastPart = parts.findIndex((n) => plan.some((m) => m.part === n && !m.live));
+  const partsLive = lastPart < 0 ? parts.length : lastPart;
   // Fetch the lesson the Continue button opens, so it shows at once.
   const nextKey = done && next ? [next.module.id, next.step.slug] : null;
   useEffect(() => (nextKey ? prefetchStep(nextKey[0], nextKey[1], loadStepPage) : undefined), [nextKey?.[0], nextKey?.[1]]);
@@ -111,9 +115,10 @@ export default function Home() {
               </>
             ) : (
               <>
-                <h2 className="h3">Being built</h2>
+                <h2 className="h3">What's online</h2>
                 <p>
-                  Python Arena is new. {modules.length} of {plan.length} modules are online so far ({totalSteps} steps, {totalChallenges} challenges, and {drillCount} practice drills); the rest of the course is added in batches. <Link to="/learn/">The course page</Link> lists every planned module.
+                  {partsLive > 0 ? `Parts 1 to ${partsLive} of the MOOC are online: ` : ""}
+                  {modules.length} of the {plan.length} planned modules, with {totalSteps} steps, {totalChallenges} challenges and {drillCount} practice drills. The remaining modules come in later updates. <Link to="/learn/">The course page</Link> lists every planned module.
                 </p>
               </>
             )}

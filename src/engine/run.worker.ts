@@ -4,17 +4,19 @@
 // case runs past the time limit (an endless loop) and carries on in a new one, which starts from the
 // cache in a second or two.
 import harness from "./arena.py?raw";
+import pygameShim from "./arena_pygame.py?raw";
 import { CACHE_PREFIX, downloadSize, type Manifest } from "./manifest";
-import type { RunInput, RunResult } from "./types";
+import type { RunInput, RunResult, WindowResult } from "./types";
 
 declare const self: DedicatedWorkerGlobalScope;
 
 type PyProxy = { toJs(o?: object): unknown; destroy(): void };
 type Pyodide = {
   toPy(v: unknown): PyProxy;
-  pyimport(name: string): { run: (spec: PyProxy, sink: (stream: string, text: string) => void, workdir: string) => PyProxy };
+  pyimport(name: string): { run: (spec: PyProxy, sink: (stream: string, text: string | PyProxy) => void, workdir: string) => PyProxy; uses_pygame: (files: PyProxy) => boolean };
   FS: { mkdirTree(p: string): void; writeFile(p: string, data: string): void };
   runPython(code: string): unknown;
+  loadPackage(url: string, options?: object): Promise<unknown>;
 };
 
 const CONTENT_TYPES: Record<string, string> = { wasm: "application/wasm", mjs: "text/javascript", json: "application/json", zip: "application/zip" };
@@ -22,7 +24,11 @@ const typeOf = (name: string) => CONTENT_TYPES[name.split(".").pop() ?? ""] ?? "
 
 let py: Pyodide | null = null;
 let runner: ReturnType<Pyodide["pyimport"]>["run"] | null = null;
+let usesPygame: ReturnType<Pyodide["pyimport"]>["uses_pygame"] | null = null;
 let runs = 0;
+let engine: { base: string; manifest: Manifest; cache: Cache } | null = null;
+/** The packages loaded into Python so far (pygame-ce), each loaded once per worker. */
+const loaded = new Map<string, Promise<void>>();
 
 const post = (m: unknown, transfer: Transferable[] = []) => self.postMessage(m, transfer);
 
@@ -88,6 +94,7 @@ async function importCached(cache: Cache, url: string) {
 
 async function start(base: string, m: Manifest) {
   const cache = await caches.open(CACHE_PREFIX + m.version);
+  engine = { base, manifest: m, cache };
   await download(base, m, cache);
   // Pyodide fetches its files (the interpreter, the standard library) itself: serve them from the cache.
   const realFetch = self.fetch.bind(self);
@@ -114,11 +121,62 @@ async function start(base: string, m: Manifest) {
   })) as Pyodide;
   py.FS.mkdirTree("/arena");
   py.FS.writeFile("/arena/arena.py", harness);
+  py.FS.writeFile("/arena/arena_pygame.py", pygameShim);
   py.runPython("import sys\nsys.path.insert(0, '/arena')\nimport arena");
-  runner = py.pyimport("arena").run;
+  const arena = py.pyimport("arena");
+  runner = arena.run;
+  usesPygame = arena.uses_pygame;
 }
 
-type Converted = { exit: number; truncated: boolean; files: Map<string, string | Uint8Array> | Record<string, string | Uint8Array>; callStart: number | null; callError: boolean; loadInput: boolean; callValue: "none" | "value" | null };
+/**
+ * Loads a package (pygame-ce) into Python, downloading its wheel into the cache the first time
+ * (the page shows the progress). Pyodide fetches the wheel itself, from the cache.
+ */
+function loadPackage(name: string): Promise<void> {
+  const known = loaded.get(name);
+  if (known) return known;
+  const job = (async () => {
+    const { base, manifest: m, cache } = engine!;
+    const pkg = m.packages?.[name];
+    if (!pkg) throw new Error(`${name} isn't part of this version of the engine`);
+    const url = base + pkg.file;
+    if (!(await cache.match(url))) {
+      const total = downloadSize(m, pkg.file);
+      let got = 0;
+      post({ type: "package", name, loaded: 0, total });
+      const gz = m.gzip[pkg.file] != null && typeof DecompressionStream === "function";
+      const res = await fetch(url + (gz ? ".gz" : ""), { cache: "no-cache" });
+      if (!res.ok) throw new Error(`couldn't download ${name} (HTTP ${res.status})`);
+      let body = await readAll(res, (n) => {
+        got += n;
+        post({ type: "package", name, loaded: got, total });
+      });
+      if (gz && body[0] === 0x1f && body[1] === 0x8b) body = new Uint8Array(await new Response(new Blob([body as BlobPart]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+      if (body.length !== m.files[pkg.file]) throw new Error(`${name} arrived incomplete (${body.length} of ${m.files[pkg.file]} bytes)`);
+      await cache.put(url, new Response(body as BlobPart, { headers: { "Content-Type": "application/zip", "Content-Length": String(body.length) } }));
+      post({ type: "package", name, loaded: total, total, done: true });
+    }
+    await py!.loadPackage(url, { messageCallback: () => {}, errorCallback: () => {} });
+  })();
+  loaded.set(name, job);
+  job.catch(() => loaded.delete(name));
+  return job;
+}
+
+/** Loads the packages a program imports (pygame for `import pygame`) before it runs. */
+async function packagesFor(files: Record<string, string>, cases: RunInput[]) {
+  const proxy = py!.toPy(files);
+  let pygame = false;
+  try {
+    pygame = !!usesPygame!(proxy) || cases.some((c) => c.window);
+  } finally {
+    proxy.destroy();
+  }
+  if (pygame && engine?.manifest.packages?.["pygame-ce"]) await loadPackage("pygame-ce");
+}
+
+type Converted = { exit: number; truncated: boolean; files: Map<string, string | Uint8Array> | Record<string, string | Uint8Array>; callStart: number | null; callError: boolean; loadInput: boolean; callValue: "none" | "value" | null; window: WindowResult | null };
+type FrameOut = { index: number; log: string; png: Uint8Array | null; title: string; ms: number; again?: boolean };
 
 /** Runs one case and reports its output as it comes (so a stopped run still shows what it printed). */
 function runCase(index: number, files: Record<string, string>, main: string, c: RunInput): RunResult {
@@ -130,7 +188,18 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
     pending = [];
     last = performance.now();
   };
-  const sink = (stream: string, text: string) => {
+  let lastPicture: Uint8Array | null = null;
+  const sink = (stream: string, text: string | PyProxy) => {
+    if (stream === "frame") {
+      // A frame of a pygame window: what the program printed until now goes first, then the frame. A frame
+      // marked "again" is the last one once more, with the picture it didn't get when it was shown.
+      const f = (text as PyProxy).toJs({ dict_converter: Object.fromEntries }) as FrameOut;
+      if (f.png) lastPicture = f.png;
+      flush();
+      if (!f.again) post({ type: "frame", index, frame: { index: f.index, log: f.log, png: f.png, title: f.title, ms: f.ms } });
+      return;
+    }
+    if (typeof text !== "string") return;
     parts[stream as "stdout" | "stderr"] += text;
     parts.output += text;
     pending.push({ stream, text });
@@ -138,7 +207,7 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
     if (performance.now() - last > 40) flush();
   };
   // Keys left out rather than null: toPy turns null into a JsNull, not None.
-  const spec = py!.toPy({ files, main, stdin: c.stdin ?? "", given: c.files ?? {}, args: c.args ?? [], ...(c.call != null ? { call: c.call } : {}) });
+  const spec = py!.toPy({ files, main, stdin: c.stdin ?? "", given: c.files ?? {}, args: c.args ?? [], ...(c.call != null ? { call: c.call } : {}), ...(c.window ? { window: c.window } : {}) });
   const started = performance.now();
   let r: Converted;
   try {
@@ -151,7 +220,8 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
   flush();
   const ms = performance.now() - started;
   const left = r.files instanceof Map ? Object.fromEntries(r.files) : r.files;
-  return { ...parts, exitCode: r.exit, timedOut: false, truncated: r.truncated, ms, files: left, callStart: r.callStart ?? null, callError: !!r.callError, loadInput: !!r.loadInput, callValue: r.callValue ?? null };
+  const win = r.window ? { ...(r.window instanceof Map ? Object.fromEntries(r.window) : r.window), png: lastPicture } : null;
+  return { ...parts, exitCode: r.exit, timedOut: false, truncated: r.truncated, ms, files: left, callStart: r.callStart ?? null, callError: !!r.callError, loadInput: !!r.loadInput, callValue: r.callValue ?? null, window: win as WindowResult | null };
 }
 
 let ready: Promise<void> | null = null;
@@ -173,6 +243,12 @@ self.onmessage = async (e: MessageEvent) => {
       return;
     }
     const cases = m.cases as RunInput[];
+    try {
+      await packagesFor(m.files, cases);
+    } catch (err) {
+      post({ type: "fatal", message: err instanceof Error ? err.message : String(err) });
+      return;
+    }
     for (let i = m.first as number; i < cases.length; i++) {
       post({ type: "start", index: i });
       try {

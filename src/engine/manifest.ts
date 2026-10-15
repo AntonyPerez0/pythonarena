@@ -10,8 +10,10 @@ export type Manifest = {
   files: Record<string, number>;
   /** The size of each file's .gz copy, for the files that have one. */
   gzip: Record<string, number>;
-  /** Every file, in download order. */
+  /** Every file Python needs to start, in download order. */
   order: string[];
+  /** Packages a program can import (pygame-ce), downloaded the first time one does: the wheel's file and the imports that need it. */
+  packages?: Record<string, { file: string; version: string; imports: string[] }>;
 };
 
 export const CACHE_PREFIX = "python-arena-engine-";

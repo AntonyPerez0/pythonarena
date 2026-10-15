@@ -15,6 +15,8 @@ program prints lives here, so the expected outputs made at build time are what t
 - A crash prints Python's own traceback, with only the frames in the learner's files (lines in
   Python's own modules differ between Pyodide and CPython, so they are left out).
 - Output is capped; the run stops when the program prints more than the cap.
+- A program that uses pygame gets a window without a screen (src/engine/arena_pygame.py): its
+  frames go to the sink as they're shown, and the result says how the window ended.
 """
 
 import ast
@@ -30,6 +32,12 @@ import types
 
 OUTPUT_LIMIT = 64 * 1024
 TEST_FILE = "<test>"
+_PYGAME = re.compile(r"^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)", re.M)
+
+
+def uses_pygame(files):
+    """Whether any of the program's files imports pygame (the run worker loads pygame for it first)."""
+    return any(isinstance(text, str) and _PYGAME.search(text) for text in files.values())
 
 
 class OutputLimit(BaseException):
@@ -220,19 +228,25 @@ def run(spec, sink, workdir):
     """Run one program.
 
     spec: {"files": {name: text}, "main": "main.py", "stdin": str, "given": {name: str | bytes},
-           "args": [str], "call": str | None, "repl": [str] | None}
+           "args": [str], "call": str | None, "repl": [str] | None, "window": {...} | None}
     With "repl", the statements run as in the interactive interpreter instead of the program (the
-    content build checks the >>> examples of lessons this way).
-    sink(stream, text): receives everything printed, "stdout" or "stderr", in order.
+    content build checks the >>> examples of lessons this way). "window" is the pygame window's
+    frames and events (see arena_pygame.Window); a program that imports pygame gets a window anyway.
+    sink(stream, text): receives everything printed, "stdout" or "stderr", in order; and each frame
+    of a pygame window as ("frame", {"index", "log", "png", "title"}).
     workdir: an empty folder that doesn't exist yet; it is removed afterwards.
 
     Returns {"exit": int, "truncated": bool, "files": {...}, "callStart": int | None,
-             "callError": bool, "loadInput": bool, "callValue": "none" | "value" | None}: the exit code,
+             "callError": bool, "loadInput": bool, "callValue": "none" | "value" | None,
+             "window": {...} | None}: the exit code,
     whether the output cap stopped it, the files left in the folder, where the call's output starts in
     stdout (call tests: what loading the program printed comes before it), whether a call test couldn't
     call the learner's code at all (the error is in the test's own line, such as a missing function),
     whether loading the program for a call test tried to read input, and what the call's last
-    expression gave: None ("none"), another value ("value"), or no last expression at all (None).
+    expression gave: None ("none"), another value ("value"), or no last expression at all (None);
+    and for a pygame program, its window: how many frames it showed, its size and title, how it
+    ended ("program": the program ended, "closed": it ended when its window was closed, "stopped":
+    it kept drawing after that) and the last frame's text.
     """
     files = spec.get("files") or {}
     main = spec.get("main") or "main.py"
@@ -295,7 +309,14 @@ def run(spec, sink, workdir):
         frame = frame.f_back
     sys.setrecursionlimit(1000 + depth)
 
-    result = {"exit": 0, "truncated": False, "files": {}, "callStart": None, "callError": False, "loadInput": False, "callValue": None, "repl": None}
+    result = {"exit": 0, "truncated": False, "files": {}, "callStart": None, "callError": False, "loadInput": False, "callValue": None, "repl": None, "window": None}
+    window = None
+    closed = ()
+    if spec.get("window") is not None or (spec.get("repl") is None and uses_pygame(files)):
+        import arena_pygame
+
+        window = arena_pygame.start(spec.get("window") or {}, lambda frame: sink("frame", frame))
+        closed = (arena_pygame.WindowClosed,)
     try:
         os.chdir(root)
         sys.path.insert(0, root)
@@ -344,6 +365,9 @@ def run(spec, sink, workdir):
         except OutputLimit:
             result["truncated"] = True
             result["exit"] = 1
+        except closed:
+            # The program kept drawing after its window was closed: it ends there, as if closed by hand.
+            pass
         except BaseException as e:  # noqa: BLE001 - every crash is reported like Python reports it
             result["exit"] = 1
             if call is not None and result["callStart"] is not None and _innermost_file(e.__traceback__) == TEST_FILE:
@@ -351,6 +375,13 @@ def run(spec, sink, workdir):
             result["loadInput"] = state["loadInput"]
             _report(e, own, root, errors, result)
     finally:
+        if window is not None:
+            import arena_pygame
+
+            try:
+                result["window"] = window.finish()
+            finally:
+                arena_pygame.stop()
         sys.stdin = saved["stdin"]
         sys.stdout = saved["stdout"]
         sys.stderr = saved["stderr"]

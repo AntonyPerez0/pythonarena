@@ -1,8 +1,9 @@
 // Checks a learner's program: run every test with Python in the browser (Pyodide), and compare with
 // the expected output (which came from the reference CPython at build time, through the same harness).
-import { runPython, DEFAULT_TIME_LIMIT_MS, type RunResult, type SourceFile } from "../engine/client";
+import { runPython, DEFAULT_TIME_LIMIT_MS, type RunResult, type SourceFile, type WindowResult } from "../engine/client";
 import { describeError, explainError, parseError, type PyError } from "../engine/friendly";
-import type { Exercise, TestCase } from "../content/types";
+import type { ExpectedWindow, Exercise, TestCase } from "../content/types";
+import { assetFiles } from "./assets";
 import { checkRules, normalizeOutput } from "./assemble.js";
 import { MAIN_FILE, splitFiles } from "./files.js";
 import { changedFiles, compareWrites, writesNote } from "./writes.js";
@@ -40,6 +41,8 @@ export type TestResult = {
   stderr?: string;
   /** What loading the program printed before a call test's code ran (it isn't graded). */
   loadOutput?: string;
+  /** A pygame test: the window the model solution ended with, and the learner's (null: it showed none). */
+  window?: { expected: ExpectedWindow; got: WindowResult | null; pass: boolean };
   /**
    * When the run stopped with an error: the sentence as it is in `note`, a key that is the same for
    * tests that stopped the same way, and a short line that stands for it under a later test (see notesShown).
@@ -151,13 +154,43 @@ function returnedNone(t: TestCase, got: string): string {
 /** The files a challenge's tests give the program, as the engine takes them. */
 const filesOf = (t: TestCase) => (t.files ? { ...t.files } : undefined);
 
+/** How long a challenge's runs may take: a pygame test draws its frames, each taking a few milliseconds. */
+export function timeLimitFor(ex: Exercise): number {
+  const frames = Math.max(0, ...ex.tests.map((t) => t.window?.frames ?? 0));
+  return Math.max(DEFAULT_TIME_LIMIT_MS, frames ? 4_000 + frames * 12 : 0);
+}
+
+/** Whether a run's window is the expected one: the same number of frames, and the same drawing in the last. */
+export function sameWindow(want: ExpectedWindow, got: WindowResult | null | undefined): boolean {
+  return !!got && got.frames === want.frames && normalizeOutput(got.log) === normalizeOutput(want.log);
+}
+
+/** Why a window isn't the expected one, in words. */
+export function windowNote(want: ExpectedWindow, got: WindowResult | null | undefined): string {
+  if (!got || !got.frames)
+    return "Your program shows no window: it should open one with pygame.display.set_mode and show each frame with pygame.display.flip() (or pygame.display.update()).";
+  if (got.frames < want.frames)
+    return `Your window showed ${got.frames} ${got.frames === 1 ? "frame" : "frames"} and then the program ended, but it should keep showing frames until the window is closed (${want.frames} in this test). Keep drawing in a loop that ends when the window is closed (pygame.QUIT).`;
+  if (got.frames > want.frames) return `Your window showed ${got.frames} frames, but it should show ${want.frames}.`;
+  return "The window's last frame isn't what it should be: compare your window with the expected one, and their drawing as text, below.";
+}
+
 export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
   const own = splitFiles(code) as SourceFile[];
   const ruleProblems = checkRules(code, ex.require, ex.forbid) as string[];
   const base = { diagnostics: [] as FriendlyDiagnostic[], errorOutput: "", ruleProblems, callProblems: [] as string[], multiFile: own.length > 1, runMs: 0 };
-  const inputs = ex.tests.map((t) => ({ stdin: t.stdin, ...(t.args ? { args: t.args } : {}), ...(t.call != null ? { call: t.call } : {}), ...(t.files ? { files: filesOf(t) } : {}) }));
+  let images: Record<string, Uint8Array> = {};
+  try {
+    images = await assetFiles(ex.assets);
+  } catch (e) {
+    return { ...base, status: "internal-error", tests: [], internalError: e instanceof Error ? e.message : String(e) };
+  }
+  const inputs = ex.tests.map((t) => {
+    const files = { ...images, ...filesOf(t) };
+    return { stdin: t.stdin, ...(t.args ? { args: t.args } : {}), ...(t.call != null ? { call: t.call } : {}), ...(Object.keys(files).length ? { files } : {}), ...(t.window ? { window: { ...t.window, png: "last" as const } } : {}) };
+  });
   const started = performance.now();
-  const runs = await runPython(own, inputs);
+  const runs = await runPython(own, inputs, { timeLimitMs: timeLimitFor(ex) });
   base.runMs = performance.now() - started;
   if (runs.every((r) => r.internalError)) return { ...base, status: "internal-error", tests: [], internalError: runs[0]?.internalError };
   // A syntax error stops every run the same way: shown once, like a compiler's error.
@@ -173,8 +206,9 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
     const writes: WrittenFileCheck[] | undefined = t.writes && r && !r.internalError && !r.timedOut ? compareWrites(t.writes, r.files) : undefined;
     // A function that should return its result but printed it (or returned nothing) fails even when the text matches.
     const noValue = !!t.returns && !!r && r.exitCode === 0 && !r.timedOut && r.callValue === "none";
-    const pass = !!r && !r.internalError && !r.timedOut && r.exitCode === 0 && got === t.expect && !noValue && (!t.writes || !!writes?.every((f) => f.pass));
-    const note = pass ? undefined : (describeRun(r, own) ?? (noValue ? returnedNone(t, got) : undefined) ?? (writes && writesNote(writes, t.hidden)));
+    const window = t.expectWindow && r && !r.internalError && !r.timedOut ? { expected: t.expectWindow, got: r.window ?? null, pass: sameWindow(t.expectWindow, r.window) } : undefined;
+    const pass = !!r && !r.internalError && !r.timedOut && r.exitCode === 0 && got === t.expect && !noValue && (!t.writes || !!writes?.every((f) => f.pass)) && (!t.expectWindow || !!window?.pass);
+    const note = pass ? undefined : (describeRun(r, own, timeLimitFor(ex)) ?? (noValue ? returnedNone(t, got) : undefined) ?? (writes && writesNote(writes, t.hidden)) ?? (window && !window.pass ? windowNote(window.expected, window.got) : undefined));
     const crash = !pass && r && !r.internalError && !r.timedOut ? crashOf(r, own) : undefined;
     const loadOutput = t.call != null && r?.callStart ? normalizeOutput(r.stdout.slice(0, r.callStart)) : undefined;
     return {
@@ -192,6 +226,7 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
       ...(crash && note?.includes(crash.text) ? { crash } : {}),
       stderr: !pass && r?.stderr ? r.stderr : undefined,
       ...(loadOutput ? { loadOutput } : {}),
+      ...(window ? { window } : {}),
     };
   });
   const allPass = tests.every((t) => t.pass) && ruleProblems.length === 0;

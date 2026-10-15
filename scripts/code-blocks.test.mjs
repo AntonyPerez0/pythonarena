@@ -8,9 +8,11 @@ import { blockKindProblem, readOnlyBlockHtml, xmlHighlightHtml } from "../src/co
 const textOf = (html) => html.replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 
 test("the kinds of code block a lesson may have, and the ones it may not", () => {
-  for (const ok of ["", "python run", "python run crash", "python repl", "python fragment", "pycon", "output", "input", "crash", "text", "xml", "xml pom.xml", "shell", "file data.txt"]) assert.equal(blockKindProblem(ok), null, ok);
-  for (const bad of ["bash", "sh", "java", "XML", "console", "javascript", "sql", "shell pom.xml", "text x", "javac", "asset landscape.png"]) assert.match(blockKindProblem(bad) ?? "", /isn't one lessons use/, bad);
+  for (const ok of ["", "python run", "python run crash", "python repl", "python fragment", "pycon", "output", "input", "crash", "text", "xml", "xml pom.xml", "shell", "file data.txt", "python window", "window", "asset robot.png", "asset box-done.png"]) assert.equal(blockKindProblem(ok), null, ok);
+  for (const bad of ["bash", "sh", "java", "XML", "console", "javascript", "sql", "shell pom.xml", "text x", "javac", "windows"]) assert.match(blockKindProblem(bad) ?? "", /isn't one lessons use/, bad);
   assert.match(blockKindProblem("xml notes.txt"), /an xml block may name its file, such as ```xml config\.xml/);
+  for (const bad of ["asset", "asset Robot.PNG", "asset robot.gif"]) assert.match(blockKindProblem(bad) ?? "", /an asset block names an image of content\/assets/, bad);
+  assert.match(blockKindProblem("window-shot") ?? "", /written by the build/);
 });
 
 test("an xml block is highlighted, keeps its text exactly, and shows its file's name", () => {

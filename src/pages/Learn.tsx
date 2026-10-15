@@ -38,7 +38,7 @@ export default function Learn() {
     <div className="learn">
       <div className="page-head">
         <h1>The course</h1>
-        <p className="muted">Python Arena follows the order and topics of the University of Helsinki's Python Programming MOOC, parts 1 to 14, with its own lessons and exercises.{allLive ? "" : " The site is being built in batches: modules that aren't written yet are listed so you can see what's coming."}</p>
+        <p className="muted">Python Arena follows the order and topics of the University of Helsinki's Python Programming MOOC, parts 1 to 14, with its own lessons and exercises.{allLive ? "" : " Modules that aren't written yet are listed too, so you can see what's coming."}</p>
         {next && (
           <p className="actions">
             <Link className="btn btn-primary" to={stepPath(next.module, next.step)}>

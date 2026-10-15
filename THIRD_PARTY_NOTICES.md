@@ -15,6 +15,20 @@ Python Arena's own code is MIT licensed (see [LICENSE](LICENSE) for its scope). 
 
 Pyodide's source code, at the same version, is at https://github.com/pyodide/pyodide (the release tag named after the version in `package.json`), and CPython's at https://github.com/python/cpython (the tag of the Python version Pyodide names in `pyodide-lock.json`). The MPL 2.0 covers Pyodide's own files, which Python Arena serves unchanged.
 
+## pygame (downloaded by the browser only for a program that uses it)
+
+`engine-packages/pygame_ce-2.5.7-cp314-cp314-pyemscripten_2026_0_wasm32.whl` is Pyodide's build of [pygame-ce](https://github.com/pygame-community/pygame-ce) 2.5.7, unchanged: the file Pyodide publishes for this version (its SHA-256 is the one in `pyodide-lock.json`, which `scripts/copy-engine.mjs` checks). The site serves it at `engine/`, and a browser downloads it the first time a program imports pygame. Its license text, `pygame-ce-LGPL-2.1.txt`, is in `engine-licenses/` and published at `engine/licenses/`.
+
+| Component | Where it is | License |
+|---|---|---|
+| pygame-ce 2.5.7 | the wheel | GNU Lesser General Public License 2.1 or later |
+| [SDL 2](https://www.libsdl.org), SDL_ttf, SDL_image | the wheel and `pyodide.asm.wasm` | zlib license |
+| [FreeType](https://freetype.org) (draws text) | the wheel | The FreeType Project License: portions of this software are copyright © The FreeType Project (www.freetype.org). All rights reserved. |
+| libpng, zlib, libjpeg (reads images) | the wheel | libpng license, zlib license; this software is based in part on the work of the Independent JPEG Group |
+| `freesansbold.ttf`, pygame's default font ([GNU FreeFont](https://www.gnu.org/software/freefont/)) | the wheel | GNU General Public License 3 with the font exception |
+
+pygame-ce's source code, at the same version, is at https://github.com/pygame-community/pygame-ce (the tag `2.5.7`), and Pyodide's recipe that builds it at https://github.com/pyodide/pyodide (the release tag named after the version in `package.json`). Python Arena runs pygame without a screen (its own module, `src/engine/arena_pygame.py`, replaces pygame's window, keyboard, mouse, clock and sound while a program runs); it doesn't change pygame's files, and you can use another build of pygame-ce in their place.
+
 ## Libraries and fonts in the site's pages
 
 The site's pages are built with these npm packages (and their small dependencies). The build writes every package's license text to `licenses/npm-packages.txt`, which is published with the site.
@@ -23,7 +37,7 @@ The site's pages are built with these npm packages (and their small dependencies
 |---|---|
 | [React](https://react.dev) and React DOM 18 | MIT |
 | [React Router](https://reactrouter.com) 6 | MIT |
-| [CodeMirror](https://codemirror.net) 6 (the code editor, with its Java mode and the One Dark theme) and [Lezer](https://lezer.codemirror.net) | MIT |
+| [CodeMirror](https://codemirror.net) 6 (the code editor, with its Python mode and the One Dark theme) and [Lezer](https://lezer.codemirror.net) | MIT |
 | [@uiw/react-codemirror](https://github.com/uiwjs/react-codemirror) | MIT |
 | [marked](https://marked.js.org) (lesson Markdown) | MIT |
 | [Lucide](https://lucide.dev) icons (`lucide-react`) | ISC |

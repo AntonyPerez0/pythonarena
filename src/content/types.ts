@@ -1,5 +1,6 @@
 // The shape of src/generated/course.json, src/generated/modules/<id>.json and the lesson files in
 // public/lessons (made by scripts/build-content.mjs).
+import type { WindowEvent } from "../engine/types";
 
 /**
  * One test: the program's input (stdin), or `call`, the test's own Python code, which runs after
@@ -19,7 +20,14 @@ export type TestCase = {
   hidden?: boolean;
   /** A call test whose call's last line gives a value in the model solution: the learner's must give one too (not None), so printing the result instead of returning it fails. */
   returns?: boolean;
+  /** A pygame program's test: how many frames its window may show and what happens in it (keys, the mouse). */
+  window?: { frames: number; events: WindowEvent[] };
+  /** What the model solution's window ended as: the frames it showed, its last frame's text and picture (a path from the site's root). */
+  expectWindow?: ExpectedWindow;
 };
+
+/** A window the build drew: the frames it showed, its size and title, its last frame's text, and that frame's picture (a path from the site's root). */
+export type ExpectedWindow = { frames: number; log: string; size: [number, number] | null; title: string; image: string };
 export type Rule = { pattern: string; flags?: string; message: string; min?: number; max?: number; raw?: boolean };
 
 /**
@@ -36,6 +44,8 @@ export type Exercise = {
   forbid: Rule[];
   /** Predict challenges: each line the program prints. */
   lines?: string[];
+  /** Images (content/assets, published at images/) in the program's folder, for every test and every free run. */
+  assets?: string[];
 };
 
 /** One of a step's further challenges, with its own task. */

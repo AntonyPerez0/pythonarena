@@ -34,6 +34,7 @@ import { compareWrites, dataPathProblem } from "../src/grader/writes.js";
 import { blockKindProblem } from "../src/components/code-blocks.ts";
 import { checkTopics } from "./content/topics.mjs";
 import { pythonPool, referencePython, runKey } from "./content/python.mjs";
+import { pyodidePool, pyodideVersion } from "./content/pyodide.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const CACHE_FILE = path.join(ROOT, "node_modules", ".cache", "python-arena-content.json");
@@ -44,6 +45,15 @@ const CHECKS_JSON = path.join(ROOT, "fidelity", "out", "content-checks.json");
 const PROJECTS_DIR = path.join(ROOT, "content", "projects");
 const PROJECT_LESSONS = "projects";
 const CHALLENGES_PER_STEP = 3;
+// Images programs can load (pygame lessons): content/assets/<name>.png, published at public/images/.
+const ASSETS = path.join(ROOT, "content", "assets");
+const IMAGES = path.join(ROOT, "public", "images");
+// The pictures of pygame windows the build drew (a lesson example's last frame, a test's expected
+// window): public/lessons/windows/<hash>.png.
+const WINDOWS = "windows";
+const windowImages = new Map();
+const MAX_WINDOW_FRAMES = 1800;
+const WINDOW_EVENT_TYPES = ["keydown", "keyup", "mousedown", "mouseup", "mousemove", "quit"];
 
 let python;
 try {
@@ -90,6 +100,10 @@ if (useCache && fs.existsSync(CACHE_FILE)) {
 }
 const usedCache = {};
 const pool = pythonPool({ exe: python.exe });
+// Programs that use pygame run in Pyodide (on Node), the browser's own interpreter, started when the first one comes.
+let windowPool = null;
+const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
+const usesPygame = (spec) => spec.window != null || Object.values(spec.files ?? {}).some((t) => typeof t === "string" && PYGAME.test(t));
 const errors = [];
 const warnings = [];
 const checks = []; // for the Pyodide replay
@@ -103,10 +117,11 @@ const t0 = Date.now();
  * same files.
  */
 async function run(spec, { twice = false } = {}) {
+  const pygame = usesPygame(spec);
   const once = async (seed) => {
-    const key = runKey(spec, pythonVersion, seed);
+    const key = runKey(spec, pygame ? `pyodide-${pyodideVersion()}` : pythonVersion, seed);
     if (cache[key]) return (usedCache[key] = cache[key]);
-    const r = await pool.run(spec, seed);
+    const r = pygame ? await (windowPool ??= pyodidePool()).run(spec, seed) : await pool.run(spec, seed);
     // A run that timed out isn't cached: it may have been a busy machine.
     if (!r.timedOut) usedCache[key] = r;
     return r;
@@ -118,10 +133,69 @@ async function run(spec, { twice = false } = {}) {
   return { ...a, stable };
 }
 
-/** The spec for a program (one string, with file markers for several files) and one test's inputs. */
-function specOf(code, t = {}) {
+/**
+ * The spec for a program (one string, with file markers for several files) and one test's inputs:
+ * its input, files, arguments, call and window, with the challenge's images (assets) in its folder.
+ */
+function specOf(code, t = {}, assets = []) {
   const files = Object.fromEntries(splitFiles(code).map((f) => [f.path, f.text]));
-  return { files, main: MAIN_FILE, stdin: t.stdin ?? "", given: t.files ?? {}, args: t.args ?? [], call: t.call ?? null };
+  const given = { ...Object.fromEntries(assets.map((a) => [a, assetData(a)])), ...(t.files ?? {}) };
+  return { files, main: MAIN_FILE, stdin: t.stdin ?? "", given, args: t.args ?? [], call: t.call ?? null, ...(t.window ? { window: { ...t.window, png: "last" } } : {}) };
+}
+
+// ---------------------------------------------------------------- images and windows
+/** The images in content/assets, by name. */
+const assetNames = () => (fs.existsSync(ASSETS) ? fs.readdirSync(ASSETS).filter((f) => /^[a-z0-9][a-z0-9-]*\.png$/.test(f)).sort() : []);
+const assetCache = new Map();
+/** An image as a given file (bytes, as base64). */
+function assetData(name) {
+  if (!assetCache.has(name)) assetCache.set(name, { base64: fs.readFileSync(path.join(ASSETS, name)).toString("base64") });
+  return assetCache.get(name);
+}
+/** Checks a list of image names (a challenge's `assets`, or the step's); returns the good ones. */
+function checkAssets(where, list) {
+  if (list == null) return [];
+  if (!Array.isArray(list) || list.some((a) => typeof a !== "string")) {
+    errors.push(`${where}: assets must be a list of image names from content/assets, such as [robot.png]`);
+    return [];
+  }
+  const known = new Set(assetNames());
+  for (const a of list) if (!known.has(a)) errors.push(`${where}: there's no image ${a} in content/assets (there are ${[...known].join(", ") || "none"})`);
+  return list.filter((a) => known.has(a));
+}
+/** A picture of a window the build drew (base64 PNG), published under public/lessons/windows/; returns its path from the site's root. */
+function windowImage(b64) {
+  const buf = Buffer.from(b64, "base64");
+  const name = `${crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16)}.png`;
+  windowImages.set(name, buf);
+  return `lessons/${WINDOWS}/${name}`;
+}
+/** A pygame window's run as the content gives it ({frames, events}), checked; null when it's wrong. */
+function windowSpecOf(where, raw) {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    errors.push(`${where}: window must be a set of keys: frames (how many frames it shows) and events (what happens in it)`);
+    return null;
+  }
+  for (const k of Object.keys(raw)) if (!["frames", "events"].includes(k)) errors.push(`${where}: window has an unknown key ${k} (it has frames and events)`);
+  const frames = raw.frames ?? 60;
+  if (!Number.isInteger(frames) || frames < 1 || frames > MAX_WINDOW_FRAMES) errors.push(`${where}: window frames must be a whole number from 1 to ${MAX_WINDOW_FRAMES}`);
+  const events = [];
+  for (const [i, e] of (raw.events ?? []).entries()) {
+    const at = `${where}, window event ${i + 1}`;
+    if (!e || typeof e !== "object") {
+      errors.push(`${at}: an event is a set of keys, such as {at: 10, type: keydown, key: K_RIGHT}`);
+      continue;
+    }
+    for (const k of Object.keys(e)) if (!["at", "type", "key", "pos", "button", "unicode"].includes(k)) errors.push(`${at}: unknown key ${k}`);
+    if (!Number.isInteger(e.at) || e.at < 0) errors.push(`${at}: at is how many frames the window has shown when it happens (0 or more)`);
+    if (!WINDOW_EVENT_TYPES.includes(e.type)) errors.push(`${at}: type must be one of ${WINDOW_EVENT_TYPES.join(", ")}`);
+    if (/^key/.test(e.type) && !/^K_[A-Za-z0-9_]+$/.test(e.key ?? "")) errors.push(`${at}: a key event needs key, pygame's name for the key, such as K_RIGHT, K_a or K_SPACE`);
+    if (/^mouse/.test(e.type) && !(Array.isArray(e.pos) && e.pos.length === 2 && e.pos.every(Number.isInteger))) errors.push(`${at}: a mouse event needs pos, the point in the window, such as [120, 80]`);
+    if (e.button != null && !(Number.isInteger(e.button) && e.button >= 1 && e.button <= 5)) errors.push(`${at}: button is 1 (left), 2 (middle) or 3 (right)`);
+    events.push({ at: e.at, type: e.type, ...(e.key ? { key: e.key } : {}), ...(e.pos ? { pos: e.pos } : {}), ...(e.button ? { button: e.button } : {}), ...(e.unicode != null ? { unicode: String(e.unicode) } : {}) });
+  }
+  if (events.some((e, i) => i && e.at < events[i - 1].at)) errors.push(`${where}: window events must be in order of their at`);
+  return { frames, events };
 }
 
 /** What a call test's call printed: stdout after what loading the program printed. */
@@ -152,13 +226,13 @@ const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 const KEYS = {
   module: ["id", "summary", "steps"],
-  step: ["id", "slug", "title", "text", "fill", "seed", "solution", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "more"],
-  challenge: ["task", "fill", "seed", "solution", "predict", "hints", "tests", "require", "forbid", "seedMayPass"],
+  step: ["id", "slug", "title", "text", "fill", "seed", "solution", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "assets", "more"],
+  challenge: ["task", "fill", "seed", "solution", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "assets"],
   rule: ["pattern", "flags", "message", "min", "max", "raw"],
-  test: ["name", "stdin", "args", "call", "files", "writes", "expect", "hidden"],
+  test: ["name", "stdin", "args", "call", "files", "writes", "expect", "hidden", "window"],
   drillFile: ["topic", "drills"],
   project: ["id", "title", "after", "summary", "intro", "seed", "milestones"],
-  milestone: ["id", "title", "task", "files", "hints", "tests", "require", "forbid", "solution", "replaces"],
+  milestone: ["id", "title", "task", "files", "hints", "tests", "require", "forbid", "solution", "replaces", "assets"],
   drill: ["id", "type", "prompt", "code", "stdin", "answer", "expect", "fix", "choices", "runs", "verify", "why", "after", "seed", "solution", "hints", "tests", "require", "forbid", "module"],
 };
 function checkKeys(where, obj, kind) {
@@ -248,16 +322,32 @@ function checkHints(where, hints) {
 async function checkExamples(where, text) {
   if (!text) return text;
   const blocks = [...text.matchAll(/^```([^\n]*)\n([\s\S]*?)^```[ \t]*$/gm)];
+  // Changes to the text, made at the end (from the last one back): a window example's block of
+  // events becomes the picture of its window.
+  const edits = [];
+  // The images shown so far (```asset blocks): the examples after them can load them.
+  const shown = [];
   for (let i = 0; i < blocks.length; i++) {
     const info = blocks[i][1].trim();
     const kindProblem = blockKindProblem(info);
     if (kindProblem) errors.push(`${where}, example ${i + 1}: ${kindProblem}`);
+    const asset = /^asset\s+(\S+)$/.exec(info);
+    if (asset) {
+      if (blocks[i][2].trim()) errors.push(`${where}, example ${i + 1}: an asset block shows the image it names; leave its body empty`);
+      shown.push(...checkAssets(`${where}, example ${i + 1}`, [asset[1]]));
+      continue;
+    }
+    if (info === "window" && !/^python\s+window\b/.test(blocks[i - 1]?.[1].trim() ?? "")) errors.push(`${where}, example ${i + 1}: a window block (the frames and events of a window) comes right after a python window example`);
     if (!/^python\b/.test(info)) continue;
     const [, kind, extra, ...rest] = info.split(/\s+/);
     const code = blocks[i][2];
     const w = `${where}, example ${i + 1}`;
-    if (!["run", "repl", "fragment"].includes(kind) || (extra && !((kind === "run" && extra === "crash") || (kind === "fragment" && extra === "partial"))) || rest.length) {
-      errors.push(`${w}: a python block must be "python run", "python run crash", "python repl", "python fragment" or "python fragment partial"`);
+    if (!["run", "repl", "fragment", "window"].includes(kind) || (extra && !((kind === "run" && extra === "crash") || (kind === "fragment" && extra === "partial"))) || rest.length) {
+      errors.push(`${w}: a python block must be "python run", "python run crash", "python repl", "python window", "python fragment" or "python fragment partial"`);
+      continue;
+    }
+    if (kind === "window") {
+      await checkWindowExample(w, blocks, i, shown, edits);
       continue;
     }
     for (const m of tabProblems(code)) errors.push(`${w}: ${m}`);
@@ -300,7 +390,63 @@ async function checkExamples(where, text) {
     }
     checks.push({ where: w, spec, stdout: r.stdout, stderr: r.stderr, exit: r.exit });
   }
-  return text.replace(/^```python[ \t]+(run|fragment)([ \t]+(crash|partial))?[ \t]*$/gm, "```python").replace(/^```python[ \t]+repl[ \t]*$/gm, "```pycon");
+  let out = text;
+  for (const e of edits.sort((x, y) => y.start - x.start)) out = out.slice(0, e.start) + e.text + out.slice(e.end);
+  return out.replace(/^```python[ \t]+(run|fragment|window)([ \t]+(crash|partial))?[ \t]*$/gm, "```python").replace(/^```python[ \t]+repl[ \t]*$/gm, "```pycon");
+}
+
+/**
+ * A ```python window example: a pygame program, run in Pyodide (as the page runs it) with the
+ * frames and events of the ```window block after it (YAML: {frames: 90, events: [...]}; 60 frames
+ * and nothing happening without one). Its last frame's picture is published, and the window block
+ * becomes a ```window-shot block that the page draws as the window (with a Play button that runs the
+ * example in the browser) and the pre-rendered page as its picture. An output block may follow.
+ */
+async function checkWindowExample(w, blocks, i, shown, edits) {
+  const code = blocks[i][2];
+  for (const m of tabProblems(code)) errors.push(`${w}: ${m}`);
+  let next = i + 1;
+  let raw = {};
+  const own = blocks[next]?.[1].trim() === "window";
+  if (own) {
+    try {
+      raw = YAML.parse(blocks[next][2]) ?? {};
+    } catch (e) {
+      errors.push(`${w}: its window block isn't YAML: ${e.message}`);
+    }
+    next++;
+  }
+  const win = windowSpecOf(w, raw);
+  if (!win) return;
+  const files = exampleFiles(w, blocks, i);
+  const spec = specOf(code, { ...(files ? { files } : {}), window: win }, shown);
+  if (!Object.values(spec.files).some((t) => /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m.test(t))) errors.push(`${w}: a python window example is a pygame program (it imports pygame)`);
+  const r = await run(spec, { twice: true });
+  if (!r.stable) errors.push(`${w}: draws or prints something different on each run`);
+  if (r.timedOut || r.exit !== 0) return void errors.push(`${w}: ${r.timedOut ? "times out" : `stops with an error:\n${r.stderr}`}`);
+  if (r.stderr) errors.push(`${w}: printed an error:\n${r.stderr}`);
+  const last = r.frames?.at(-1);
+  if (!r.window || !r.window.frames || !last?.png) return void errors.push(`${w}: shows no window (it never calls pygame.display.flip() or pygame.display.update() after pygame.display.set_mode)`);
+  const out = blocks[next];
+  if (out && out[1].trim() === "output") {
+    if (normalizeOutput(out[2]) !== normalizeOutput(r.stdout)) errors.push(`${w}: the output block says\n${out[2]}\nbut it prints\n${r.stdout}`);
+  } else if (normalizeOutput(r.stdout)) warnings.push(`${w}: prints something but has no output block`);
+  const shot = {
+    image: windowImage(last.png),
+    size: r.window.size,
+    title: r.window.title,
+    frames: r.window.frames,
+    log: r.window.log,
+    ended: r.window.ended,
+    code,
+    window: win,
+    ...(shown.length ? { assets: [...new Set(shown)] } : {}),
+    ...(files ? { files } : {}),
+  };
+  const block = "```window-shot\n" + JSON.stringify(shot) + "\n```";
+  // In place of the window block, or right after the code when there is none.
+  if (own) edits.push({ start: blocks[i + 1].index, end: blocks[i + 1].index + blocks[i + 1][0].length, text: block });
+  else edits.push({ start: blocks[i].index + blocks[i][0].length, end: blocks[i].index + blocks[i][0].length, text: "\n\n" + block });
 }
 
 /**
@@ -365,7 +511,8 @@ async function buildPredict(where, raw, hints) {
 
 /** Whether a run passes a built test (as the browser's grader decides it). */
 function passes(t, r) {
-  return !r.timedOut && r.exit === 0 && !r.callError && graded(r, t) === t.expect && (!t.returns || r.callValue === "value") && (!t.writes || compareWrites(t.writes, r.files).every((f) => f.pass));
+  const window = !t.expectWindow || (r.window && r.window.frames === t.expectWindow.frames && normalizeOutput(r.window.log) === normalizeOutput(t.expectWindow.log));
+  return !r.timedOut && r.exit === 0 && !r.callError && graded(r, t) === t.expect && (!t.returns || r.callValue === "value") && (!t.writes || compareWrites(t.writes, r.files).every((f) => f.pass)) && window;
 }
 
 /**
@@ -374,8 +521,10 @@ function passes(t, r) {
  * predict challenge. `startName` names the code the learner starts from in messages: "the starter
  * code" in a lesson, the previous milestone's model solution in a project.
  */
-async function buildExercise(where, raw, { startName = null } = {}) {
+async function buildExercise(where, raw, { startName = null, assets: inherited = [] } = {}) {
   const hints = raw.hints ?? [];
+  // Images in the program's folder for every test (and for "Run with my input").
+  const assets = raw.assets != null ? checkAssets(where, raw.assets) : inherited;
   checkHints(where, hints);
   if (raw.predict != null) return buildPredict(where, raw, hints);
   const kind = raw.fill != null ? "fill" : "code";
@@ -430,9 +579,14 @@ async function buildExercise(where, raw, { startName = null } = {}) {
       if (!names.length || names.some((f) => typeof f !== "string" || dataPathProblem(f))) errors.push(`${n}: writes must be a list of file names (like [summary.txt]), or a map of file names to the text they must hold`);
       else out.writesAsked = { names, want: isMap ? Object.fromEntries(names.map((f) => [f, String(t.writes[f] ?? "")])) : null };
     }
+    if (t.window != null) {
+      const win = windowSpecOf(n, t.window);
+      if (win) out.window = win;
+      if (t.call != null) errors.push(`${n}: a test with a window runs the program, so it can't have call`);
+    }
     return out;
   });
-  const runs = await Promise.all(built.map((b) => run(specOf(solution, b), { twice: true })));
+  const runs = await Promise.all(built.map((b) => run(specOf(solution, b, assets), { twice: true })));
   const tests = testsRaw.map((t, i) => {
     const r = runs[i];
     const b = built[i];
@@ -456,25 +610,32 @@ async function buildExercise(where, raw, { startName = null } = {}) {
         else writes[f] = got;
       }
     }
-    if (!actual && !writes) errors.push(`${n}: the solution prints nothing`);
+    let expectWindow = null;
+    if (b.window && !r.timedOut) {
+      const last = r.frames?.at(-1);
+      if (!r.window || !r.window.frames || !last?.png) errors.push(`${n}: the solution shows no window (a test with window is for a pygame program that draws frames)`);
+      else expectWindow = { frames: r.window.frames, log: r.window.log, size: r.window.size, title: r.window.title, image: windowImage(last.png) };
+    }
+    if (!actual && !writes && !b.window) errors.push(`${n}: the solution prints nothing`);
     const call = b.call;
     const name = t.name ?? (call && !call.trim().includes("\n") ? call.trim() : testsRaw.length > 1 ? `Test ${i + 1}` : writes ? (actual ? "Output and files" : "Files") : "Output");
-    return { name, stdin: b.stdin, ...(b.args ? { args: b.args } : {}), ...(call ? { call } : {}), ...(b.files ? { files: b.files } : {}), ...(writes ? { writes } : {}), expect: actual, hidden: !!t.hidden, ...(call && r.callValue === "value" ? { returns: true } : {}) };
+    const shownName = b.window && !t.name && testsRaw.length === 1 ? "Window" : null;
+    return { name: shownName ?? name, stdin: b.stdin, ...(b.args ? { args: b.args } : {}), ...(call ? { call } : {}), ...(b.files ? { files: b.files } : {}), ...(writes ? { writes } : {}), ...(b.window ? { window: b.window, ...(expectWindow ? { expectWindow } : {}) } : {}), expect: actual, hidden: !!t.hidden, ...(call && r.callValue === "value" ? { returns: true } : {}) };
   });
-  tests.forEach((t, i) => checks.push({ where: `${where} test ${i + 1}`, spec: specOf(solution, t), stdout: runs[i].stdout, stderr: runs[i].stderr, exit: runs[i].exit, ...(t.writes ? { files: runs[i].files } : {}) }));
+  tests.forEach((t, i) => checks.push({ where: `${where} test ${i + 1}`, spec: specOf(solution, t, assets), stdout: runs[i].stdout, stderr: runs[i].stderr, exit: runs[i].exit, ...(t.writes ? { files: runs[i].files } : {}) }));
 
   // Starter code must not already pass, or the challenge would be free.
   if (kind === "code" && seed && !raw.seedMayPass) {
-    const sr = await Promise.all(tests.map((t) => run(specOf(seed, t))));
+    const sr = await Promise.all(tests.map((t) => run(specOf(seed, t, assets))));
     if (tests.every((t, i) => passes(t, sr[i])) && checkRules(seed, require, forbid).length === 0) errors.push(`${where}: ${startName ?? "the starter code"} already passes`);
   }
   // A fill-in with all its blanks empty must not pass either.
   if (kind === "fill") {
     const empty = parseTemplate(raw.fill).parts.join("");
-    const er = await Promise.all(tests.map((t) => run(specOf(empty, t))));
+    const er = await Promise.all(tests.map((t) => run(specOf(empty, t, assets))));
     if (tests.every((t, i) => passes(t, er[i])) && checkRules(empty, require, forbid).length === 0) errors.push(`${where}: the program passes with every blank left empty`);
   }
-  return { kind, seed, solution, hints, tests, require, forbid };
+  return { kind, seed, solution, hints, tests, require, forbid, ...(assets.length ? { assets } : {}) };
 }
 
 /**
@@ -541,7 +702,8 @@ async function buildStep(file, m, s, i, slugs, ids) {
       const w = `${where} challenge ${k + 2}`;
       checkKeys(w, c, "challenge");
       if (typeof c?.task !== "string" || !c.task) errors.push(`${w}: needs a task (as text)`);
-      const cx = await buildExercise(w, c);
+      // A challenge without assets of its own has the step's images.
+      const cx = await buildExercise(w, c, { assets: Array.isArray(s.assets) ? s.assets.filter((a) => assetNames().includes(a)) : [] });
       checkTaskOutput(w, c.task, cx);
       return cx && { task: await checkExamples(w, String(c.task ?? "").trim() + "\n"), ...cx };
     }),
@@ -904,6 +1066,7 @@ try {
   topics = moduleFileArg || drillFileArg || projectFileArg ? [] : buildTopics(modules, drills);
 } finally {
   pool.close();
+  windowPool?.close();
 }
 
 if (!dry) {
@@ -956,6 +1119,16 @@ for (const m of modules) {
     fs.writeFileSync(file, lessonJson.get(s.id));
   }
 }
+fs.mkdirSync(path.join(LESSONS, WINDOWS), { recursive: true });
+for (const [name, buf] of windowImages) {
+  const file = path.join(LESSONS, WINDOWS, name);
+  lessonFiles.add(file);
+  fs.writeFileSync(file, buf);
+}
+// The images programs load, at public/images/ (the page gives them to programs, and lessons show them).
+fs.rmSync(IMAGES, { recursive: true, force: true });
+fs.mkdirSync(IMAGES, { recursive: true });
+for (const a of assetNames()) fs.copyFileSync(path.join(ASSETS, a), path.join(IMAGES, a));
 fs.mkdirSync(path.join(LESSONS, PROJECT_LESSONS), { recursive: true });
 for (const x of projects) {
   const file = path.join(LESSONS, PROJECT_LESSONS, `${x.id}-${projectHash(x)}.json`);

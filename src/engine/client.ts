@@ -4,9 +4,9 @@
 // (from the files saved in Cache Storage, so it's quick) and carries on with the next case.
 import { CACHE_PREFIX, downloadSize, fetchManifest, type Manifest } from "./manifest";
 import { engineSupported } from "./support";
-import type { EngineStatus, RunInput, RunResult, SourceFile } from "./types";
+import type { EngineStatus, RunInput, RunResult, SourceFile, WindowFrame } from "./types";
 
-export type { EngineStatus, RunInput, RunResult, SourceFile } from "./types";
+export type { EngineStatus, RunInput, RunResult, SourceFile, WindowEvent, WindowFrame, WindowResult, WindowSpec } from "./types";
 export { engineSupported } from "./support";
 
 /** Default per-test time limit. Python in WebAssembly is slower than on a desktop, so it's generous. */
@@ -190,7 +190,13 @@ function replaceWorker() {
  * Runs cases from `first` on in the current worker. Resolves with the index of the next case still
  * to run: after a timeout the worker is killed and the caller continues in a new one.
  */
-function runBatch(files: SourceFile[], main: string, cases: RunInput[], first: number, timeLimitMs: number, results: RunResult[]): Promise<number> {
+/** What a caller hears while cases run: a package downloading for the program (pygame), and each frame a pygame window shows. */
+export type RunListeners = {
+  onPackage?: (p: { name: string; loaded: number; total: number; done?: boolean }) => void;
+  onFrame?: (caseIndex: number, frame: WindowFrame) => void;
+};
+
+function runBatch(files: SourceFile[], main: string, cases: RunInput[], first: number, timeLimitMs: number, results: RunResult[], listeners: RunListeners): Promise<number> {
   return new Promise((resolve) => {
     const slot = current!;
     const worker = slot.worker;
@@ -227,6 +233,15 @@ function runBatch(files: SourceFile[], main: string, cases: RunInput[], first: n
           results[index] = { ...partial, exitCode: null, timedOut: true, truncated: false, ms: performance.now() - started, files: {}, callStart: null, callError: false, loadInput: false, callValue: null, workerStartMs: index === first ? workerStartMs : undefined };
           finish(index + 1, true);
         });
+      } else if (m.type === "package") {
+        listeners.onPackage?.(m);
+        // A download isn't the program running: the startup limit starts again with each piece.
+        arm(STARTUP_LIMIT_MS, () => {
+          results[first] = failed(`${m.name} took too long to download`);
+          finish(cases.length, true);
+        });
+      } else if (m.type === "frame") {
+        if (m.index === index) listeners.onFrame?.(index, m.frame);
       } else if (m.type === "output") {
         if (m.index === index)
           for (const c of m.chunks as { stream: "stdout" | "stderr"; text: string }[]) {
@@ -273,7 +288,7 @@ let queue: Promise<unknown> = Promise.resolve();
  * Run a program once per input (in order), killing any case that runs past timeLimitMs. `main` is
  * the file Python starts (main.py); the other files are modules it can import.
  */
-export function runPython(files: SourceFile[], inputs: RunInput[], opts: { main?: string; timeLimitMs?: number } = {}): Promise<RunResult[]> {
+export function runPython(files: SourceFile[], inputs: RunInput[], opts: { main?: string; timeLimitMs?: number } & RunListeners = {}): Promise<RunResult[]> {
   const job = queue.then(async () => {
     try {
       await engineReady();
@@ -289,7 +304,7 @@ export function runPython(files: SourceFile[], inputs: RunInput[], opts: { main?
         results[next] = failed("the Python engine isn't running");
         break;
       }
-      next = await runBatch(files, opts.main ?? "main.py", cases, next, opts.timeLimitMs ?? DEFAULT_TIME_LIMIT_MS, results);
+      next = await runBatch(files, opts.main ?? "main.py", cases, next, opts.timeLimitMs ?? DEFAULT_TIME_LIMIT_MS, results, opts);
     }
     for (let i = 0; i < cases.length; i++) results[i] ??= failed("this case was not run");
     return results;

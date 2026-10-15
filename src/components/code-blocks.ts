@@ -6,7 +6,12 @@
 
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-/** The kinds of code block lesson text may have besides python ones (each with nothing after it). The build turns ```python repl into pycon. */
+/**
+ * The kinds of code block lesson text may have besides python ones (each with nothing after it). The build turns ```python repl
+ * into pycon. Besides these: ```file NAME (a file the example reads), ```asset NAME.png (an image of content/assets, shown, and
+ * in the folder of the examples after it), and ```window after a ```python window example (its frames and events), which the
+ * build turns into ```window-shot (the window's picture and text).
+ */
 export const BLOCK_KINDS = ["input", "output", "crash", "text", "xml", "shell", "pycon"];
 
 /**
@@ -16,10 +21,13 @@ export const BLOCK_KINDS = ["input", "output", "crash", "text", "xml", "shell", 
  */
 export function blockKindProblem(info: string): string | null {
   const kind = info.trim();
-  if (!kind || /^python\b/.test(kind) || BLOCK_KINDS.includes(kind) || /^file\b/.test(kind)) return null;
+  if (!kind || /^python\b/.test(kind) || BLOCK_KINDS.includes(kind) || /^file\b/.test(kind) || kind === "window") return null;
+  if (kind === "window-shot") return "a window-shot block is written by the build (from a python window example), not by hand";
+  const asset = /^asset(?:\s+(\S+))?$/.exec(kind);
+  if (asset) return asset[1] && /^[a-z0-9][a-z0-9-]*\.png$/.test(asset[1]) ? null : "an asset block names an image of content/assets, such as ```asset robot.png";
   const xml = /^xml\s+(\S+)$/.exec(kind);
   if (xml) return /^[\w.-]+\.xml$/.test(xml[1]) ? null : `an xml block may name its file, such as \`\`\`xml config.xml (a name that ends in .xml), not "${xml[1]}"`;
-  return `a code block's kind "${kind}" isn't one lessons use: a python block (python run, python run crash, python repl, python fragment), input, output, crash, file, text (shown as it is), xml or shell (commands to type on your own computer); a block with no kind is plain text`;
+  return `a code block's kind "${kind}" isn't one lessons use: a python block (python run, python run crash, python repl, python window, python fragment), input, output, crash, file, asset, window, text (shown as it is), xml or shell (commands to type on your own computer); a block with no kind is plain text`;
 }
 
 /** XML with the site's code colors: tag names as keywords, attribute names as names, values as strings, comments, and the <?xml ...?> line. */
