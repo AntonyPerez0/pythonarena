@@ -121,6 +121,19 @@ function Arena({ drills }: { drills: Drill[] }) {
     nextRep(0, m);
   };
 
+  // /deathmatch/?mode=interview (the interview prep page's button) starts an interview prep run at once.
+  // The address loses ?mode, so going back to the lobby, or reloading, shows the lobby.
+  const [params, setParams] = useSearchParams();
+  const asked = useRef(params.get("mode"));
+  useEffect(() => {
+    if (asked.current !== "interview") return;
+    asked.current = null;
+    setParams({}, { replace: true });
+    start("interview");
+    // Only once, when the page opens with that address.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // The run is saved after every answer, so leaving needs nothing more.
   const leave = () => setPhase("lobby");
 
@@ -361,6 +374,9 @@ function Lobby({ drills, pool, quickCount, interviewCount, unlocked, selected, d
         <p className="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, pick one. Every {BOSS_EVERY}th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p>
         <p className="muted small">
           Stuck on a keyword or a method? <Link to="/topics/">Topics A to Z</Link> says what it is in one line and links to the step that teaches it.
+        </p>
+        <p className="muted small">
+          Getting ready for a coding interview? Interview prep mode is open to everyone, and the <Link to="/interview/">Interview prep</Link> page has the modules on data structures and algorithms, which technique fits which problem, and what Python's operations cost.
         </p>
       </div>
       <div className="lobby-grid">

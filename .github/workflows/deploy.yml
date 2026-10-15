@@ -4,7 +4,8 @@ name: Build, verify and deploy to GitHub Pages
 #
 #   build            npm ci, the unit tests (first: they need no build output), then npm run build:
 #                    every lesson, drill and project program run on the reference CPython (the content
-#                    build), tsc, the site build and the pre-rendered pages. Uploads what the checks
+#                    build, with its cache of runs from the last workflow run), tsc, the site build and
+#                    the pre-rendered pages. Uploads what the checks
 #                    need as the artifact site-build (dist, src/generated, public/lessons and
 #                    fidelity/out with the content check list) and, on main, dist as the Pages
 #                    artifact. Then the link check (scripts/check-links.mjs): every internal link in
@@ -66,6 +67,19 @@ jobs:
 
       - name: Install dependencies (also copies Pyodide into public/engine)
         run: npm ci
+
+      # The content build's cache of program runs, kept from one workflow run to the next (it lives in
+      # node_modules, which npm ci empties). A run is cached under its program, inputs, interpreter and
+      # harness, so a cached result is what running it again would give. The checks of the slow
+      # solutions' big tests take 20 seconds each, alone (content/README.md, "Speed tests: big and
+      # slow"): with the cache, a build pays only for the ones that changed. Each run saves under a new
+      # key, so the next one starts from the newest cache.
+      - name: Restore the content build's cache of runs
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/python-arena-content.json
+          key: content-runs-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: content-runs-
 
       - name: Unit tests
         run: npm run test:unit

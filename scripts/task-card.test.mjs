@@ -1,8 +1,8 @@
 // Tests of the task card's note about the tests it doesn't show (src/content/otherTests.ts): "2 more
-// hidden tests use other ...". Run: npm run test:unit
+// hidden tests use other ...", and what it says of the big ones among them. Run: npm run test:unit
 import test from "node:test";
 import assert from "node:assert/strict";
-import { otherTestsUse } from "../src/content/otherTests.ts";
+import { bigTestsNote, otherTestsUse } from "../src/content/otherTests.ts";
 
 test("without arguments, the plain words: input, files, calls", () => {
   assert.equal(otherTestsUse({ stdin: "1\n" }, [{ stdin: "2\n", hidden: true }]), "input");
@@ -22,4 +22,12 @@ test("tests with other arguments: only what the other tests change", () => {
   assert.equal(otherTestsUse({ args: ["a"], files: { "a.txt": "1\n" } }, [{ files: { "a.txt": "1\n" } }, { files: { "a.txt": "2\n" } }]), "files or command-line arguments");
   // Arguments alone: a plain program's args.
   assert.equal(otherTestsUse({ args: ["3"] }, [{ args: ["5"], hidden: true }]), "command-line arguments");
+});
+
+test("the big tests among the others: none, all of them, or some", () => {
+  assert.equal(bigTestsNote([{ call: "f(2)", hidden: true }]), "");
+  assert.equal(bigTestsNote([{ call: "f(2)", hidden: true, big: true }]), " It is a big test: a way that is too slow runs out of time on it.");
+  assert.equal(bigTestsNote([{ big: true }, { big: true }]), " They are big tests: a way that is too slow runs out of time on them.");
+  assert.equal(bigTestsNote([{ call: "f(2)" }, { big: true }]), " One of them is a big test: a way that is too slow runs out of time.");
+  assert.equal(bigTestsNote([{ call: "f(2)" }, { big: true }, { big: true }]), " 2 of them are big tests: a way that is too slow runs out of time.");
 });

@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { Check, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { COURSE_NAMES, moduleById, modulePath, modules, plan, planByCourse, projects } from "../content";
+import { SiteMarkdown } from "../components/Markdown";
 import { useStore } from "../state/store";
 import { moduleProgress, nextStep } from "../state/derived";
 import { prefetchStep, stepPath } from "../content";
@@ -22,7 +23,6 @@ const partDone = (s: State, part: PlannedModule[]) =>
 const COURSE_NOTES: Record<string, string> = {
   I: "Parts 1 to 7 of the MOOC: printing and input, variables, conditions, loops, strings, functions, lists, dictionaries, files, errors and modules.",
   II: "Parts 8 to 14 of the MOOC: classes and objects, encapsulation, inheritance, operator overloading, comprehensions, recursion, functional programming, regular expressions and games with pygame.",
-  extra: "Topics the MOOC doesn't cover. Optional, for after the course.",
 };
 
 export default function Learn() {
@@ -30,6 +30,12 @@ export default function Learn() {
   const s = useStore((x) => x);
   const next = nextStep(s);
   const courses = planByCourse();
+  // An address with #group-<id> (a group's section, as the end of the MOOC links to it) opens at that section.
+  const { hash } = useLocation();
+  useEffect(() => {
+    const id = decodeURIComponent(hash.slice(1));
+    if (id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView());
+  }, [hash]);
   const allLive = modules.length === plan.length;
   const started = Object.keys(s.steps).length > 0;
   // Fetch the lesson the Continue button opens, so it shows at once.
@@ -80,11 +86,11 @@ export default function Learn() {
         </p>
       </section>
       {courses.map((c) => (
-        <section key={c.course} className="phase" aria-labelledby={`course-${c.course}`}>
-          <h2 id={`course-${c.course}`} className="course-title">
-            {COURSE_NAMES[c.course]}
+        <section key={c.key} id={c.group ? `group-${c.group.id}` : undefined} className="phase" aria-labelledby={`course-${c.key}`}>
+          <h2 id={`course-${c.key}`} className="course-title">
+            {c.group?.title ?? COURSE_NAMES[c.course]}
           </h2>
-          <p className="muted small">{COURSE_NOTES[c.course]}</p>
+          {c.group ? <SiteMarkdown text={c.group.about} className="muted small group-about" /> : <p className="muted small">{COURSE_NOTES[c.course]}</p>}
           {c.parts.map((p) => (
             <div key={String(p.part)} className="part">
               {p.part != null && <h3 className="phase-title">Part {p.part}</h3>}
@@ -140,7 +146,7 @@ export default function Learn() {
                 <p className="record-link">
                   <Check className="icon" aria-hidden="true" />
                   <span>
-                    {p.part != null ? `Part ${p.part} finished.` : "Every extra module finished."} <Link to="/record/">See your record</Link>
+                    {p.part != null ? `Part ${p.part} finished.` : `${c.group?.title ?? COURSE_NAMES[c.course]}: every module finished.`} <Link to="/record/">See your record</Link>
                   </span>
                 </p>
               )}

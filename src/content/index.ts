@@ -1,7 +1,7 @@
 // The course index (every page needs it) and each step's lesson, loaded when needed.
 import { useEffect, useState } from "react";
 import raw from "../generated/course.json";
-import type { Challenge, CourseIndex, ModuleSummary, PlannedModule, Project, ProjectSummary, Step, StepSummary } from "./types";
+import type { Challenge, CourseIndex, ModuleGroup, ModuleSummary, PlannedModule, Project, ProjectSummary, Step, StepSummary } from "./types";
 
 export const course = raw as unknown as CourseIndex;
 export const modules = course.modules;
@@ -130,12 +130,29 @@ export const COURSE_NAMES: Record<PlannedModule["course"], string> = {
   extra: "Extra modules",
 };
 
-/** The plan grouped by course and then by MOOC part. */
-export function planByCourse(): { course: PlannedModule["course"]; parts: { part: number | null; modules: PlannedModule[] }[] }[] {
+/** The groups of extra modules (content/course.yaml), in the order their modules come. */
+export const groups: ModuleGroup[] = course.groups ?? [];
+export const groupById = new Map(groups.map((g) => [g.id, g]));
+/** The planned modules of a group. */
+export const groupModules = (id: string) => plan.filter((m) => m.group === id);
+/** The address of a group's section on the course page. */
+export const groupPath = (g: { id: string }) => `/learn/#group-${g.id}`;
+
+/** What a module belongs to, by name: its MOOC course, or for an extra module its group. */
+export function courseName(m: { course: PlannedModule["course"]; group?: string | null }): string {
+  return (m.group != null && groupById.get(m.group)?.title) || COURSE_NAMES[m.course];
+}
+
+/**
+ * The plan in the course page's sections: the MOOC's two courses, each by part, then a section for
+ * each group of extra modules. `key` is the course, or the group's id.
+ */
+export function planByCourse(): { key: string; course: PlannedModule["course"]; group: ModuleGroup | null; parts: { part: number | null; modules: PlannedModule[] }[] }[] {
   const out: ReturnType<typeof planByCourse> = [];
   for (const m of plan) {
-    let c = out.find((x) => x.course === m.course);
-    if (!c) out.push((c = { course: m.course, parts: [] }));
+    const key = m.group ?? m.course;
+    let c = out.find((x) => x.key === key);
+    if (!c) out.push((c = { key, course: m.course, group: (m.group != null && groupById.get(m.group)) || null, parts: [] }));
     let p = c.parts.find((x) => x.part === m.part);
     if (!p) c.parts.push((p = { part: m.part, modules: [] }));
     p.modules.push(m);

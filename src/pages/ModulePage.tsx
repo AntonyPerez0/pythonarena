@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ArrowRight, Check, ChevronRight } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { COURSE_NAMES, moduleById, modules, plan, prefetchModule, stepPath } from "../content";
+import { course, courseName, groupModules, groupPath, groups, moduleById, modules, plan, prefetchModule, stepPath } from "../content";
 import { useStore } from "../state/store";
 import { challengeDone, moduleProgress } from "../state/derived";
 import MoocCredit from "../components/MoocCredit";
@@ -9,11 +9,54 @@ import ExtraTag from "../components/ExtraTag";
 import NotFound from "./NotFound";
 import { useTitle } from "../lib/title";
 import { finishedPart, isoDay, moduleFinished, recordDate } from "../lib/record";
+import { groupNextParts } from "../lib/group-end";
 
-/** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the Pro Track. */
+/** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the groups of extra modules and the Pro Track. */
 const COURSE_END = plan.filter((m) => m.course === "II").pop()?.id;
-/** Whether the plan has extra modules after the MOOC's (Python Arena's own). */
-const EXTRAS = plan.some((m) => m.course === "extra");
+
+/**
+ * What the MOOC's last module says comes next: the groups of extra modules, each linked to its section of
+ * the course page ("Data structures and algorithms, 7 extra modules of Python Arena's own"), and the Pro
+ * Track. While none of the extra modules is written, they come in later updates.
+ */
+function CourseEndNext() {
+  const pro = (
+    <>
+      try the Pro Track: projects for your own computer with Python and pytest. <Link to="/pro/">See the Pro Track</Link>
+    </>
+  );
+  if (!groups.length)
+    return (
+      <>
+        Next, you can <Link to="/projects/">build the projects</Link>, or {pro}
+      </>
+    );
+  const extras = groups.flatMap((g) => groupModules(g.id));
+  const live = extras.filter((x) => x.live).length;
+  const what = (
+    <>
+      {groups.map((g, i) => (
+        <span key={g.id}>
+          {i > 0 && (i === groups.length - 1 ? " and " : ", ")}
+          <Link to={groupPath(g)}>{g.title}</Link>
+        </span>
+      ))}
+      , {extras.length} extra {extras.length === 1 ? "module" : "modules"} of Python Arena's own
+    </>
+  );
+  if (!live)
+    return (
+      <>
+        Next come {what}, in later updates. Until then, you can {pro}
+      </>
+    );
+  return (
+    <>
+      Next, you can go on with {what}
+      {live < extras.length ? ` (${live} online so far)` : ""}, or {pro}
+    </>
+  );
+}
 
 export default function ModulePage() {
   const { moduleId = "" } = useParams();
@@ -31,7 +74,7 @@ export default function ModulePage() {
   return (
     <div className="module-page narrow">
       <nav className="crumbs" aria-label="Breadcrumb">
-        <Link to="/learn/">Learn</Link> <ChevronRight className="icon" aria-hidden="true" /> <span>{COURSE_NAMES[m.course]}{m.part != null ? `, part ${m.part}` : ""}</span>
+        <Link to="/learn/">Learn</Link> <ChevronRight className="icon" aria-hidden="true" /> <span>{courseName(m)}{m.part != null ? `, part ${m.part}` : ""}</span>
       </nav>
       <div className="page-head">
         <div className="eyebrow">
@@ -88,7 +131,26 @@ export default function ModulePage() {
             After the course
           </h2>
           <p>
-            This is the last module of the MOOC. Next, you can {EXTRAS ? "go on with the extra modules" : <Link to="/projects/">build the projects</Link>}, or try the Pro Track: projects for your own computer with Python and pytest. <Link to="/pro/">See the Pro Track</Link>
+            This is the last module of the MOOC. <CourseEndNext />
+          </p>
+        </section>
+      )}
+      {m.group != null && groupModules(m.group).at(-1)?.id === m.id && (
+        <section className="card course-end" aria-labelledby="group-end-h">
+          <h2 id="group-end-h" className="h3">
+            After {courseName(m)}
+          </h2>
+          <p>
+            This is the last module of {courseName(m)}.{" "}
+            {groupNextParts(m.group, course.interviewGroup).map((p, i) =>
+              typeof p === "string" ? (
+                p
+              ) : (
+                <Link key={i} to={p.to}>
+                  {p.text}
+                </Link>
+              ),
+            )}
           </p>
         </section>
       )}

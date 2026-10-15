@@ -343,6 +343,8 @@ button.pill:hover { border-color: var(--line-strong); color: var(--text); }
 .step-count { color: var(--muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; display: flex; gap: 0.6rem; align-items: center; }
 .extra-tag { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.4; color: var(--accent-fg); border: 1px solid currentColor; border-radius: 999px; padding: 0 0.45rem; margin-left: 0.45rem; vertical-align: 0.12em; white-space: nowrap; }
 .eyebrow .extra-tag, .crumbs .extra-tag { margin-left: 0; vertical-align: baseline; }
+/* A big test in the results: sized so that a way that is too slow runs out of time. */
+.big-tag { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.4; color: var(--info-fg); border: 1px solid currentColor; border-radius: 999px; padding: 0 0.45rem; margin-left: 0.45rem; vertical-align: 0.12em; white-space: nowrap; }
 .done-chip { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--good); text-transform: none; letter-spacing: 0; }
 .step-dots { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1.25rem; }
 .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--tint); border: 1px solid var(--line); position: relative; }
@@ -727,6 +729,8 @@ select, input[type="text"], input[type="url"], input[type="password"], input[typ
 
 /* features (bento) */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+/* The practice section's four cards side by side on a wide screen (two by two below 1100 px, as the rules there say). */
+.features-4 { grid-template-columns: repeat(4, 1fr); }
 .feature { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.6rem; color: var(--text); box-shadow: var(--shadow); transition: border-color 0.2s, transform 0.2s var(--ease), box-shadow 0.2s; }
 .feature:hover { text-decoration: none; border-color: var(--line-strong); transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .feature-wide { grid-column: span 2; background: radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 60%), var(--panel); }
@@ -1350,3 +1354,45 @@ mark.fx-differs { background: color-mix(in srgb, var(--bad) 20%, transparent); c
 .md figure.asset-img { margin: 0.7rem 0; }
 .asset-img img { display: block; width: calc(var(--w, 40) * 2px); max-width: 100%; height: auto; image-rendering: pixelated; padding: 0.5rem; border: 1px solid var(--line); border-radius: 10px; background-color: var(--code-bg); background-image: linear-gradient(45deg, var(--tint) 25%, transparent 25%, transparent 75%, var(--tint) 75%), linear-gradient(45deg, var(--tint) 25%, transparent 25%, transparent 75%, var(--tint) 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
 .asset-img figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.3rem; }
+
+/* ---------- the interview prep page (/interview/) */
+.interview-page > section { margin-top: 2.2rem; }
+.interview-page > section > h2 { margin: 0 0 0.4rem; }
+.iv-intro p:first-child { margin-top: 0.4rem; }
+.iv-lead p { margin: 0.35rem 0 0.75rem; }
+.iv-modules { margin: 0.75rem 0; }
+.iv-sets { padding-left: 1.3rem; margin: 0.5rem 0 1rem; }
+.iv-sets li { margin: 0.3rem 0; }
+.iv-set-title { font-weight: 600; }
+/* The tables wrap their text to the column; a table too wide for a phone scrolls inside its frame. */
+.iv-table { margin: 0.75rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow-sm); }
+.iv-table table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.iv-table th, .iv-table td { text-align: left; vertical-align: top; padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--line); }
+.iv-table tbody tr:last-child td { border-bottom: 0; }
+.iv-table th { background: var(--panel2); color: var(--text2); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.iv-table th:first-child { border-top-left-radius: var(--radius); }
+.iv-table th:last-child { border-top-right-radius: var(--radius); }
+.iv-cost { font-weight: 600; }
+/* Code in a cell breaks only where it must (not inside a name), as in lesson tables. */
+.iv-table td code { overflow-wrap: break-word; }
+.iv-costs th:first-child { width: 34%; }
+.iv-costs th:nth-child(2) { width: 18%; }
+/* Phones: each row is a block of its own, each cell under its column's name (the table keeps its roles). */
+@media (max-width: 640px) {
+  .iv-table table, .iv-table tbody, .iv-table tr, .iv-table td { display: block; width: auto; }
+  .iv-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .iv-table tr { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line); }
+  .iv-table tbody tr:last-child { border-bottom: 0; }
+  .iv-table td { border: 0; padding: 0.15rem 0; }
+  .iv-table td::before { content: attr(data-label); content: attr(data-label) / ""; display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 0.3rem; }
+  .iv-table td:first-child::before { margin-top: 0; }
+}
+.iv-checklist { padding-left: 1.3rem; }
+.iv-checklist li { margin: 0.45rem 0; }
+.iv-tools { list-style: none; padding: 0; margin: 0.75rem 0; display: grid; gap: 0.6rem; }
+.iv-tools li { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.8rem 1rem; box-shadow: var(--shadow-sm); }
+.iv-tools h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+.iv-tools p { margin: 0; color: var(--text2); }
+.iv-sites { padding-left: 1.3rem; }
+.iv-sites li { margin: 0.45rem 0; }
+.group-about p { margin: 0.35rem 0 0.75rem; }

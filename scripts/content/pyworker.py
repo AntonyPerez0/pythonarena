@@ -3,7 +3,9 @@
 scripts/content/python.mjs starts a few of these (one per CPU) and sends one JSON request per line:
 {"id": n, "spec": {...}} (arena.run's spec; a given file that isn't text is {"base64": "..."}).
 Each answer is one JSON line: {"id": n, "stdout", "stderr", "output", "exit", "truncated", "files",
-"callStart", "callError", "loadInput"}; files that aren't text come back as {"base64": "..."}.
+"callStart", "callError", "loadInput", "ms"}; files that aren't text come back as {"base64": "..."}.
+`ms` is how long the run took, as the page's time limit counts it: the harness's whole run of the
+program, from loading it to the end of the test's call.
 Requests run one after another in this one interpreter, as the page's run worker runs them, so the
 harness's clean-up between runs is exercised too. When a program runs past the time limit, the
 parent kills this process and starts another.
@@ -14,6 +16,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 
 # The parent picks the hash seed with PYTHONHASHSEED. Under -E or -I CPython ignores it and picks a
 # random one, and the build's check that a program prints the same with both seeds would mean little.
@@ -44,7 +47,9 @@ for line in sys.stdin:
         parts["output"].append(text)
 
     count += 1
+    started = time.perf_counter()
     result = arena.run(spec, sink, os.path.join(base, f"run{count}"))
+    ms = (time.perf_counter() - started) * 1000
     files = {name: data if isinstance(data, str) else {"base64": base64.b64encode(data).decode("ascii")} for name, data in result["files"].items()}
     answer = {
         "id": request["id"],
@@ -59,6 +64,7 @@ for line in sys.stdin:
         "loadInput": result["loadInput"],
         "callValue": result["callValue"],
         "repl": result["repl"],
+        "ms": round(ms, 1),
     }
     channel.write(json.dumps(answer) + "\n")
     channel.flush()

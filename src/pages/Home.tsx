@@ -1,7 +1,7 @@
-import { ArrowRight, BookOpen, CalendarCheck, Check, Compass, Cpu, Crosshair, Lightbulb, ListChecks, Smartphone, WifiOff } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarCheck, Check, Compass, Cpu, Crosshair, GraduationCap, Lightbulb, ListChecks, Smartphone, WifiOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
-import { course, modules, plan, prefetchStep, projects, stepPath, totalChallenges, totalSteps, modulePath } from "../content";
+import { course, groups, modules, plan, prefetchStep, projects, stepPath, totalChallenges, totalSteps, modulePath } from "../content";
 import { localDay, useStore } from "../state/store";
 import { nextStep, stepsDone } from "../state/derived";
 import { useTitle } from "../lib/title";
@@ -25,7 +25,11 @@ export default function Home() {
   const dailyDone = localDay() in s.daily;
   const allLive = modules.length === plan.length;
   const extraCount = plan.filter((m) => m.course === "extra").length;
+  const extraLive = plan.filter((m) => m.course === "extra" && m.live).length;
   const moocCount = plan.length - extraCount;
+  // Every module that follows the MOOC is online, while some extra modules of Python Arena's own aren't yet.
+  const moocLive = !allLive && plan.every((m) => m.course === "extra" || m.live);
+  const groupNames = groups.map((g) => g.title).join(" and ");
   // The MOOC parts whose modules are all online, from part 1 on (the course is written in order).
   const parts = [...new Set(plan.filter((m) => m.part != null).map((m) => m.part!))].sort((a, b) => a - b);
   const lastPart = parts.findIndex((n) => plan.some((m) => m.part === n && !m.live));
@@ -102,12 +106,18 @@ export default function Home() {
       <section className="section-tight">
         <div className="container">
           <div className="card card-callout status-card">
-            {allLive ? (
+            {allLive || moocLive ? (
               <>
                 <h2 className="h3">The whole course is online</h2>
-                <p>
-                  All {plan.length} modules are online: {moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming){extraCount > 0 && ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own`}, with {totalSteps} steps, {totalChallenges} challenges and {drillCount} practice drills. <Link to="/learn/">The course page</Link> lists them all.
-                </p>
+                {allLive ? (
+                  <p>
+                    All {plan.length} modules are online: {moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming){extraCount > 0 && ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own (${groupNames})`}, with {totalSteps} steps, {totalChallenges} challenges and {drillCount} practice drills. <Link to="/learn/">The course page</Link> lists them all.
+                  </p>
+                ) : (
+                  <p>
+                    All {moocCount} modules following the MOOC are online (Introduction to Programming and the Advanced Course in Programming){extraLive > 0 && `, and ${extraLive} of the ${extraCount} extra modules of Python Arena's own (${groupNames})`}, with {totalSteps} steps, {totalChallenges} challenges and {drillCount} practice drills. {extraLive > 0 ? "The other extra modules come" : `The ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own (${groupNames}) come`} in later updates. <Link to="/learn/">The course page</Link> lists them all.
+                  </p>
+                )}
                 <p>
                   {projects.length ? `${projects.length === 1 ? "A project lets" : `${projects.length} projects let`} you build a larger program over several milestones.` : "Projects, larger programs built over several milestones, are on their way."} <Link to="/projects/">See the projects</Link>
                 </p>
@@ -166,7 +176,7 @@ export default function Home() {
             <h2>Practice</h2>
             <p className="section-lead">Quick drills unlock as you finish the lessons, and the ones you miss come back more often until you know them.</p>
           </div>
-          <div className="features">
+          <div className="features features-4">
             <Link className="feature" to="/deathmatch/">
               <span className="feature-icon" aria-hidden="true">
                 <Crosshair className="icon" />
@@ -186,7 +196,14 @@ export default function Home() {
                 <Compass className="icon" />
               </span>
               <h3>Placement quiz</h3>
-              <p>Already know some Python? One question per module shows where to start, and which modules you can skip.</p>
+              <p>Already know some Python? One question for each module that follows the MOOC shows where to start, and which modules you can skip.</p>
+            </Link>
+            <Link className="feature" to="/interview/">
+              <span className="feature-icon" aria-hidden="true">
+                <GraduationCap className="icon" />
+              </span>
+              <h3>Interview prep</h3>
+              <p>{course.interviewDrills} interview questions to drill, the modules on data structures and algorithms, which technique fits which problem, and what Python's operations cost.</p>
             </Link>
           </div>
         </div>

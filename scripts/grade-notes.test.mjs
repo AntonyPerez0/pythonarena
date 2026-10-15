@@ -54,7 +54,7 @@ const engine = {
     build.onLoad({ filter: /.*/, namespace: "stand-in" }, () => ({
       contents: `
         export const DEFAULT_TIME_LIMIT_MS = 5000;
-        export function runPython(files, inputs) { return globalThis.__gradeNotesRun(files, inputs); }
+        export function runPython(files, inputs, opts) { return globalThis.__gradeNotesRun(files, inputs, opts); }
       `,
       loader: "js",
     }));
@@ -65,7 +65,7 @@ const load = async (entry, plugins = []) => {
   const out = await build({ entryPoints: [new URL(entry, import.meta.url).pathname], bundle: true, format: "esm", platform: "node", write: false, logLevel: "silent", plugins, define: { "import.meta.env.BASE_URL": '"/"' } });
   return import(`data:text/javascript;base64,${Buffer.from(out.outputFiles[0].text).toString("base64")}`);
 };
-const { crashOf, describeRun, grade, selfCallingFunction } = await load("../src/grader/grade.ts", [engine]);
+const { NOT_RUN_NOTE, crashOf, describeRun, grade, selfCallingFunction, tooSlowNote } = await load("../src/grader/grade.ts", [engine]);
 const { notesShown } = await load("../src/grader/notes.ts");
 
 const has = (text, ...parts) => {
@@ -353,4 +353,88 @@ test("describeRun and crashOf on runs that ended normally, timed out or failed t
   assert.equal(crashOf(run({ timedOut: true, exitCode: null }), sources), undefined);
   has(describeRun(run({ internalError: "boom" }), sources), "Python couldn't run the program (boom)");
   has(describeRun(undefined, sources), "didn't run");
+});
+
+// ------------------------------------------------------------------ big tests
+
+const HAS_DUPLICATE_SLOW = "def has_duplicate(values):\n    for i in range(len(values)):\n        for j in range(i + 1, len(values)):\n            if values[i] == values[j]:\n                return True\n    return False\n";
+
+it("a big test that runs out of time gets the note that the program is too slow for a big input; the big tests after it don't run", async () => {
+  const real = globalThis.__gradeNotesRun;
+  const calls = [];
+  // The big tests' runs are made up (a real one would take the whole 10 seconds): they run out of time.
+  globalThis.__gradeNotesRun = async (files, inputs, opts) => {
+    calls.push({ calls: inputs.map((c) => c.call), limit: opts?.timeLimitMs });
+    if (inputs.some((c) => /200_000/.test(c.call))) return inputs.map(() => ({ stdout: "", stderr: "", output: "", exitCode: null, timedOut: true, truncated: false, ms: opts.timeLimitMs, files: {}, callStart: null, callError: false, loadInput: false, callValue: null }));
+    return real(files, inputs);
+  };
+  try {
+    const ex = exercise([
+      { call: "has_duplicate([3, 1, 3])", expect: "True\n", returns: true },
+      { call: "has_duplicate([i * 7 for i in range(200_000)])", expect: "False\n", returns: true, hidden: true, big: true },
+      { call: "has_duplicate(list(range(200_000)) + [5])", expect: "True\n", returns: true, hidden: true, big: true },
+      { call: "has_duplicate([4, 2, 9])", expect: "False\n", returns: true, hidden: true },
+    ]);
+    const r = await grade(ex, HAS_DUPLICATE_SLOW);
+    assert.equal(r.status, "fail");
+    // The tests that aren't big first, together; then the big ones one at a time, stopping at the first timeout.
+    assert.deepEqual(
+      calls.map((c) => c.calls),
+      [["has_duplicate([3, 1, 3])", "has_duplicate([4, 2, 9])"], ["has_duplicate([i * 7 for i in range(200_000)])"]],
+    );
+    assert.ok(calls.every((c) => c.limit === 10_000), "a challenge with a big test has the longer limit");
+    const [small, big, after, last] = r.tests;
+    assert.ok(small.pass && last.pass, "the small tests pass");
+    assert.equal(big.big, true);
+    assert.equal(big.note, tooSlowNote(10_000));
+    has(big.note, "Too slow for a big input", "more than 10 seconds", "a loop inside a loop over 200,000 values runs about 40 billion times", "a set, a dict, sorting or two pointers");
+    lacks(big.note, "never ends");
+    assert.equal(after.pass, false);
+    assert.equal(after.note, NOT_RUN_NOTE);
+    assert.equal(small.big, undefined);
+  } finally {
+    globalThis.__gradeNotesRun = real;
+  }
+});
+
+it("a program that runs out of time on a small test doesn't wait for the big tests too: they don't run", async () => {
+  const real = globalThis.__gradeNotesRun;
+  const calls = [];
+  // Every run is made up here: the small tests run out of time, as a loop that never ends would.
+  globalThis.__gradeNotesRun = async (files, inputs, opts) => {
+    calls.push(inputs.map((c) => c.call));
+    return inputs.map(() => ({ stdout: "", stderr: "", output: "", exitCode: null, timedOut: true, truncated: false, ms: opts.timeLimitMs, files: {}, callStart: null, callError: false, loadInput: false, callValue: null }));
+  };
+  try {
+    const ex = exercise([
+      { call: "has_duplicate([3, 1, 3])", expect: "True\n", returns: true },
+      { call: "has_duplicate([i * 7 for i in range(200_000)])", expect: "False\n", returns: true, hidden: true, big: true },
+    ]);
+    const r = await grade(ex, "def has_duplicate(values):\n    while True:\n        pass\n");
+    assert.deepEqual(calls, [["has_duplicate([3, 1, 3])"]], "only the small test ran");
+    const [small, big] = r.tests;
+    has(small.note, "more than 10 seconds");
+    lacks(small.note, "Too slow for a big input");
+    assert.equal(big.note, NOT_RUN_NOTE);
+  } finally {
+    globalThis.__gradeNotesRun = real;
+  }
+});
+
+it("a big test passes with a fast way, and the same program's test that isn't big is checked as usual", async () => {
+  const ex = exercise([
+    { call: "has_duplicate([3, 1, 3])", expect: "True\n", returns: true },
+    { call: "has_duplicate([i * 7 for i in range(200_000)])", expect: "False\n", returns: true, hidden: true, big: true },
+  ]);
+  const r = await grade(ex, "def has_duplicate(values):\n    return len(set(values)) != len(values)\n");
+  assert.equal(r.status, "pass");
+  assert.equal(r.tests[1].big, true);
+});
+
+test("describeRun: a big test's timeout is about speed, any other timeout about a loop that never ends", () => {
+  const sources = [{ path: "main.py", text: "def f(values):\n    return values\n" }];
+  const timedOut = { stdout: "", stderr: "", output: "", exitCode: null, timedOut: true, truncated: false, ms: 1, files: {}, callStart: null, callError: false, loadInput: false, callValue: null };
+  has(describeRun(timedOut, sources, 10_000, true), "Too slow for a big input", "more than 10 seconds");
+  has(describeRun(timedOut, sources, 5_000), "Look for a loop that never ends");
+  assert.equal(describeRun(undefined, sources, 10_000, true), NOT_RUN_NOTE);
 });

@@ -18,6 +18,12 @@ export type TestCase = {
   writes?: Record<string, string>;
   expect: string;
   hidden?: boolean;
+  /**
+   * A big test: sized so that a correct but slow solution runs out of time. A challenge with one gets the
+   * longer time limit (src/grader/limits.ts), and when a big test runs out of time the note says the
+   * program is too slow for a big input.
+   */
+  big?: boolean;
   /** A call test whose call's last line gives a value in the model solution: the learner's must give one too (not None), so printing the result instead of returning it fails. */
   returns?: boolean;
   /** A pygame program's test: how many frames its window may show and what happens in it (keys, the mouse). */
@@ -46,6 +52,11 @@ export type Exercise = {
   lines?: string[];
   /** Images (content/assets, published at images/) in the program's folder, for every test and every free run. */
   assets?: string[];
+  /**
+   * A challenge with a big test: a correct but slow solution (a whole program), which the build checks
+   * runs out of time on a big test. Only in src/generated/ (for the tests), never in the files the page loads.
+   */
+  slow?: string;
 };
 
 /** One of a step's further challenges, with its own task. */
@@ -59,12 +70,20 @@ export type MoocSection = { section: string; title: string; path: string; portio
 
 export type Course = "I" | "II" | "extra";
 
+/**
+ * A group of extra modules (content/course.yaml's groups): Python Arena's own modules on one subject,
+ * shown together on the course page. `about` is Markdown, and its links to the site's pages start with /.
+ */
+export type ModuleGroup = { id: string; title: string; about: string };
+
 export type Module = {
   id: string;
   /** Place in the course, from 1. */
   number: number;
   title: string;
   course: Course;
+  /** The group of an extra module (null for the MOOC's modules). */
+  group: string | null;
   part: number | null;
   mooc: MoocSection[];
   summary: string;
@@ -77,6 +96,8 @@ export type PlannedModule = {
   number: number;
   title: string;
   course: Course;
+  /** The group of an extra module (null for the MOOC's modules). */
+  group: string | null;
   part: number | null;
   mooc: MoocSection[];
   steps: number;
@@ -115,14 +136,23 @@ export type CourseIndex = {
   python: string;
   moocUrl: string;
   plan: PlannedModule[];
+  /** The groups of extra modules, in the order their modules come. */
+  groups: ModuleGroup[];
   modules: ModuleSummary[];
   interviewDrills: number;
+  /** The interview drill sets (content/drills/interview-*.yaml): each file's title and how many questions it has. */
+  interviewSets: InterviewSet[];
+  /** The group of extra modules that the interview prep page lists (content/interview.yaml). */
+  interviewGroup: string | null;
   placementQuestions: number;
   /** The images (content/assets) a pygame program can load, published at images/. */
   images: string[];
   /** The projects, in course order. */
   projects: ProjectSummary[];
 };
+
+/** An interview drill set: a file of interview questions (its name without .yaml), its title and how many questions it has. */
+export type InterviewSet = { id: string; title: string; drills: number };
 
 export type DrillType = "predict" | "fill" | "bug" | "runs" | "choice" | "boss";
 
@@ -161,3 +191,22 @@ export type Drill = {
 export type PlacementQuestion = Drill & { module: string };
 
 export type DrillSet = { drills: Drill[]; placement: PlacementQuestion[] };
+
+/** A step that a part of the interview prep page links to, with what the link needs. */
+export type StepLink = { id: string; module: string; moduleTitle: string; number: number; slug: string; title: string };
+
+/**
+ * The interview prep page (/interview/): content/interview.yaml as the content build checked it
+ * (src/generated/interview.json). Text is Markdown, and its links to the site's pages start with /.
+ * The modules come from the course plan (the group `group`), and the drill sets from the course index.
+ */
+export type InterviewPage = {
+  intro: string;
+  modules: { lead: string; group: string };
+  drills: { lead: string };
+  patterns: { lead: string; rows: { signal: string; technique: string; step: StepLink }[] };
+  costs: { lead: string; rows: { operation: string; cost: string; note: string }[]; after: string };
+  checklist: { lead: string; items: string[] };
+  tools: { lead: string; modules: { name: string; url: string; about: string }[] };
+  practice: { lead: string; sites: { name: string; url: string; about: string }[] };
+};

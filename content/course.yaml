@@ -4,6 +4,14 @@
 # "steps" is the planned count of steps.
 # MOOC section titles: Python Programming MOOC 2026 by the University of Helsinki, CC BY-NC-SA 4.0.
 moocUrl: https://programming-26.mooc.fi
+# Groups of extra modules (course: extra), Python Arena's own after the MOOC: each extra module names
+# its group, and the course page shows a section per group with its about text (Markdown; a link to
+# one of the site's pages starts with /).
+groups:
+  - id: dsa
+    title: "Data structures and algorithms"
+    about: |
+      Python Arena's own modules, not part of the MOOC: the data structures and algorithms that coding interviews ask about, built in Python. Their tests are big enough that a slow solution runs out of time, so a way that works must also be fast. Optional, for after the course. The [Interview prep](/interview/) page puts them together with interview questions to practice.
 modules:
   - id: printing
     title: "Printing and comments"
@@ -553,28 +561,35 @@ modules:
   - id: dsa-complexity
     title: "Complexity and searching"
     course: extra
+    group: dsa
     steps: 6
   - id: dsa-sorting
     title: "Sorting algorithms"
     course: extra
+    group: dsa
     steps: 6
   - id: dsa-hash
     title: "Hash tables"
     course: extra
+    group: dsa
     steps: 5
   - id: dsa-trees
     title: "Trees and heaps"
     course: extra
+    group: dsa
     steps: 6
   - id: dsa-graphs
     title: "Graphs"
     course: extra
+    group: dsa
     steps: 6
   - id: dsa-backtracking
     title: "Recursion and backtracking"
     course: extra
+    group: dsa
     steps: 6
   - id: dsa-dp
     title: "Dynamic programming"
     course: extra
+    group: dsa
     steps: 6

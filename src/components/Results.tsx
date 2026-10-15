@@ -258,6 +258,11 @@ export default function Results({ result }: { result: GradeResult }) {
               <div className="t-body">
                 <div className="t-name">
                   {t.hidden ? "Hidden test" : t.name}
+                  {t.big && (
+                    <span className="big-tag" title="A big test: a way that is too slow runs out of time on it">
+                      <span className="visually-hidden">, </span>big
+                    </span>
+                  )}
                   {!t.pass && t.hidden && <span className="muted"> (hidden so the answer can't be typed in directly)</span>}
                 </div>
                 {!t.pass && !t.hidden && (

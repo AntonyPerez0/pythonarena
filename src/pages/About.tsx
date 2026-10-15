@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { course } from "../content";
+import { course, groups } from "../content";
 import { MOOC_LICENSE_URL, MOOC_NAME, MOOC_URL, REPO_URL } from "../lib/site";
 import { useTitle } from "../lib/title";
 
@@ -23,6 +23,7 @@ export default function About() {
       <h2>The course it follows</h2>
       <p>
         The modules of Introduction to Programming and the Advanced Course in Programming follow the order and topics of the <A href={MOOC_URL}>{MOOC_NAME}</A>, a free online course by the University of Helsinki. Its material was written by Erkki Kaila, Antti Laaksonen and Matti Luukkainen (a few exercises by Arto Hellas) of the Agile Education Research group, and it is licensed under <A href={MOOC_LICENSE_URL}>Creative Commons BY-NC-SA 4.0</A>. Every lesson page names the MOOC sections it follows and links to them.
+        {groups.length > 0 && ` The extra modules after the course (${groups.map((g) => g.title).join(" and ")}) are Python Arena's own: they follow no MOOC section, and their lessons are shared under the same license.`}
       </p>
       <p>
         Python Arena's explanations and exercises are written for this site; no exercise templates, tests or images are copied from the MOOC. Because the lessons follow the MOOC's structure, the lesson content is shared under the same license, CC BY-NC-SA 4.0. Python Arena is an independent project: it is not affiliated with, sponsored or endorsed by the University of Helsinki or MOOC.fi, and completing modules here doesn't earn MOOC credits or ECTS.

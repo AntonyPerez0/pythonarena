@@ -1,5 +1,6 @@
-// The placement quiz: one question per module, in course order. The first question missed shows
-// where to start; the modules before it can be skipped, which also unlocks their drills.
+// The placement quiz: one question per module that follows the MOOC, in course order (the extra
+// modules are optional and come after the course). The first question missed shows where to start;
+// the modules before it can be skipped, which also unlocks their drills.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, X } from "lucide-react";
@@ -177,7 +178,7 @@ function Intro({ count, loading, children }: { count?: number; loading?: boolean
     <div className="narrow">
       <div className="page-head">
         <h1>Placement quiz</h1>
-        <p>Already know some Python? {loading ? "Answer a few quick questions" : `Answer ${count} quick questions`}, one for each module{modules.length === plan.length ? "" : " written so far"}. The first one you miss shows where to start, and you can skip the modules before it.</p>
+        <p>Already know some Python? {loading ? "Answer a few quick questions" : `Answer ${count} quick questions`}, one for each module that follows the MOOC{plan.every((m) => m.course === "extra" || m.live) ? "" : " written so far"}. The first one you miss shows where to start, and you can skip the modules before it.</p>
         <p className="muted small">Take your time and don't guess: a wrong answer only means starting a little earlier, while a lucky guess could skip something you need. You can take it again at any time.</p>
       </div>
       {loading ? <p className="muted">Loading the questions…</p> : children}

@@ -1,5 +1,5 @@
 import { Target } from "lucide-react";
-import { otherTestsUse } from "../content/otherTests";
+import { bigTestsNote, otherTestsUse } from "../content/otherTests";
 import type { Exercise } from "../content/types";
 import Markdown from "./Markdown";
 import InputText from "./InputText";
@@ -136,6 +136,7 @@ export default function TaskCard({ ex, task, index, total, label = "Challenge" }
               {hiddenCount === moreTests
                 ? `${moreTests} more hidden ${moreTests === 1 ? "test uses" : "tests use"} other ${what}, so the answer can't be typed in directly.`
                 : `${moreTests} more ${moreTests === 1 ? "test uses" : "tests use"} other ${what}${hiddenCount ? ", some of them hidden so the answer can't be typed in directly" : ""}.`}
+              {bigTestsNote(others)}
             </p>
           )}
         </div>

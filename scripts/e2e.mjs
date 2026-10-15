@@ -6,7 +6,10 @@
 // holding the download, offline use, moving progress between browsers (transfer links, QR codes,
 // progress files), projects (whatever content/projects has), the personal record page and its print
 // styles (a PDF printed), the Pro Track (whatever pro-track/ has: its pages, the zips, the checklist),
-// the topics reference (its search and links), the links to the other Arena sites, pygame lessons
+// the topics reference (its search and links), the interview prep page (its sections, its links, the
+// links to it and the Deathmatch run it starts), the groups of extra modules on the course page, big
+// tests (once a lesson has one: its slow solution gets the note that it is too slow for a big input),
+// the links to the other Arena sites, pygame lessons
 // (once the course has them), and axe (WCAG 2.2 AA) on every page type in both themes and at phone
 // widths, with the phone pass at the end: every page type at 320, 360, 390 and 412 px in both themes
 // (axe, no sideways scrolling, tap targets of 24 px, a visible focus).
@@ -29,6 +32,7 @@ import { serve } from './serve.mjs';
 import { checkRules, parseTemplate } from '../src/grader/assemble.js';
 import { joinFiles, splitFiles } from '../src/grader/files.js';
 import { describeEvents } from '../src/components/window-blocks.ts';
+import { groupNextParts } from '../src/lib/group-end.ts';
 import { readZip, zipProject } from './pro-track/project.mjs';
 import { readProTrack } from './pro-track/site.mjs';
 
@@ -163,6 +167,13 @@ const TOPICS = JSON.parse(readFileSync(new URL('../src/generated/topics.json', i
 /** Whether every planned module is written (modules are added in batches: the tests don't assume either). */
 const ALL_LIVE = COURSE_INDEX.plan.every((m) => m.live);
 const LIVE_COUNT = COURSE_INDEX.modules.length;
+/** The modules that follow the MOOC (not the extra modules of Python Arena's own): how many, and whether all are written. */
+const MOOC_PLAN = COURSE_INDEX.plan.filter((m) => m.course !== 'extra');
+const MOOC_LIVE = MOOC_PLAN.every((m) => m.live);
+const EXTRAS = COURSE_INDEX.plan.filter((m) => m.course === 'extra');
+const GROUPS = COURSE_INDEX.groups ?? [];
+/** The interview prep page's text, as the build checked it. */
+const INTERVIEW = JSON.parse(readFileSync(new URL('../src/generated/interview.json', import.meta.url), 'utf8'));
 const FIRST_MODULE = moduleOf(COURSE_INDEX.modules[0].id);
 const FIRST_STEPS = FIRST_MODULE.steps;
 const MOOC = 'https://programming-26.mooc.fi';
@@ -222,6 +233,7 @@ const PRERENDERED = {
   'projects/': 'Projects',
   'pro/': 'Pro Track',
   'topics/': 'Topics A to Z',
+  'interview/': 'Interview prep',
 };
 await test('every page is pre-rendered with its own title, description, canonical link and text', async () => {
   for (const [path, h1] of Object.entries(PRERENDERED)) {
@@ -263,12 +275,17 @@ await test('home page: the app starts, credits in the footer, no errors; the hom
   expect(!/\bJava\b/.test(await page.locator('#main').innerText()), 'the home page says Java somewhere');
   const status = await page.locator('.status-card').innerText();
   const plan = COURSE_INDEX.plan;
+  const groupNames = GROUPS.map((g) => g.title).join(' and ');
   if (ALL_LIVE) {
-    expect(new RegExp(`All ${plan.length} modules are online: ${plan.length} following the MOOC`).test(status), status);
+    expect(status.includes(`All ${plan.length} modules are online: ${MOOC_PLAN.length} following the MOOC`) && (!EXTRAS.length || status.includes(`and ${EXTRAS.length} extra modules of Python Arena's own (${groupNames})`)), status);
     expect(!/so far|added in batches|Being built|later updates/.test(status), 'the finished course is not called unfinished: ' + status);
+  } else if (MOOC_LIVE) {
+    // The MOOC is all online, the extra modules not yet: the course is whole, and the extras come later.
+    const extraLive = EXTRAS.filter((m) => m.live).length;
+    expect(status.includes('The whole course is online') && status.includes(`All ${MOOC_PLAN.length} modules following the MOOC are online`) && status.includes(extraLive ? `${extraLive} of the ${EXTRAS.length} extra modules of Python Arena's own (${groupNames})` : `The ${EXTRAS.length} extra modules of Python Arena's own (${groupNames}) come in later updates`), status);
   } else {
     // The MOOC parts whose modules are all online, from part 1 on.
-    const parts = [...new Set(plan.map((m) => m.part))].sort((a, b) => a - b);
+    const parts = [...new Set(MOOC_PLAN.map((m) => m.part))].sort((a, b) => a - b);
     const open = parts.findIndex((n) => plan.some((m) => m.part === n && !m.live));
     expect(status.includes(`Parts 1 to ${open} of the MOOC are online: ${LIVE_COUNT} of the ${plan.length} planned modules`) && status.includes('The remaining modules come in later updates'), status);
   }
@@ -285,7 +302,7 @@ await test('home page: the app starts, credits in the footer, no errors; the hom
     if (ALL_LIVE) expect(!/so far|added in batches|written yet|later updates/.test(html), `${path || 'home'}: pre-rendered text calls the course unfinished`);
   }
   const learnHtml = await (await fetch(BASE + 'learn/')).text();
-  const described = `${plan.length} modules following the University of Helsinki's Python Programming MOOC, parts 1 to 14. ${ALL_LIVE ? 'All of them are online.' : `${LIVE_COUNT} are online so far.`}`;
+  const described = `${MOOC_PLAN.length} modules following the University of Helsinki's Python Programming MOOC, parts 1 to 14${EXTRAS.length ? `, plus ${EXTRAS.length} extra modules of Python Arena's own (${groupNames})` : ''}. ${ALL_LIVE ? 'All of them are online.' : MOOC_LIVE ? `The MOOC's ${MOOC_PLAN.length} are online${EXTRAS.some((m) => m.live) ? `, and ${EXTRAS.filter((m) => m.live).length} of the extra modules so far.` : '. The extra modules come in later updates.'}` : `${LIVE_COUNT} are online so far.`}`;
   expect(learnHtml.includes(described), `the /learn description: ${learnHtml.match(/<meta name="description" content="[^"]*"/)?.[0]}`);
   if (!ALL_LIVE) expect((learnHtml.match(/\(not written yet\)/g) ?? []).length === plan.length - LIVE_COUNT, 'the pre-rendered course page marks the modules not written yet');
   expect(errors.length === 0, errors.join('\n'));
@@ -298,25 +315,72 @@ await test('an unknown address shows "Page not found"', async () => {
   await ctx.close();
 });
 
-await test('extra modules: the Extra label and the "Extra modules" section show only for extra modules the plan has (it has none), and the end of the course points to none that don\'t exist', async () => {
-  const extras = COURSE_INDEX.plan.filter((m) => m.course === 'extra');
+await test('extra modules: each group is a section of the course page, with its title and about text, listing its modules with the Extra label; the end of the MOOC names the groups and links to their section, and a group\'s last module points on to what comes next', async () => {
   const { ctx, page, errors } = await newPage();
   await page.goto(BASE + 'learn/');
   await page.locator('.module-live').first().waitFor();
   const learn = page.locator('.learn');
-  expect((await learn.locator('li.module .extra-tag').count()) === extras.length, `${await learn.locator('li.module .extra-tag').count()} Extra labels on the course page for ${extras.length} extra modules`);
-  expect((await page.locator('h2', { hasText: 'Extra modules' }).count()) === (extras.length ? 1 : 0), 'the course page has an Extra modules section exactly when the plan has extra modules');
+  expect((await learn.locator('li.module .extra-tag').count()) === EXTRAS.length, `${await learn.locator('li.module .extra-tag').count()} Extra labels on the course page for ${EXTRAS.length} extra modules`);
+  expect((await page.locator('h2', { hasText: 'Extra modules' }).count()) === 0, 'no section is called "Extra modules": each group has its own');
   const learnHtml = await (await fetch(BASE + 'learn/')).text();
-  expect((learnHtml.match(/class="extra-tag"/g) ?? []).length === extras.length && learnHtml.includes('<h2>Extra modules</h2>') === extras.length > 0, 'the pre-rendered course page');
-  // The last MOOC module's page points on to the Pro Track: with no extra modules, not to them.
+  expect((learnHtml.match(/class="extra-tag"/g) ?? []).length === EXTRAS.length, 'the pre-rendered course page labels the extra modules');
+  for (const g of GROUPS) {
+    const section = page.locator(`#group-${g.id}`);
+    expect((await section.locator('h2').innerText()) === g.title, `the section of ${g.id} is headed ${await section.locator('h2').innerText()}`);
+    expect((await section.locator('li.module').count()) === EXTRAS.filter((m) => m.group === g.id).length, `the section of ${g.id} lists its modules`);
+    expect(learnHtml.includes(`<h2 id="group-${g.id}">${esc(g.title)}</h2>`), `the pre-rendered course page has the section of ${g.id}`);
+    // Its about text's links to the site's pages have the base path, and open in the app (the page isn't loaded again).
+    for (const a of await section.locator('.group-about a[href^="/"]').evaluateAll((as) => as.map((x) => x.getAttribute('href')))) expect(a.startsWith(BASE_PATH), `a link in the about text without the base path: ${a}`);
+  }
+  if (GROUPS.some((g) => g.id === INTERVIEW.modules.group)) {
+    const link = page.locator(`#group-${INTERVIEW.modules.group} .group-about a[href$="/interview/"]`);
+    expect((await link.count()) === 1, 'the group of the interview prep page links to it');
+    await page.evaluate(() => (window.__samePage = true));
+    await link.click();
+    await page.locator('#main h1', { hasText: 'Interview prep' }).waitFor();
+    expect(await page.evaluate(() => window.__samePage === true), 'the link loaded the page again instead of opening it in the app');
+  }
+  // The last MOOC module's page points on to the groups (their sections on the course page) and the Pro Track.
   const end = COURSE_INDEX.plan.filter((m) => m.course === 'II').pop();
   if (end.live) {
     await page.goto(BASE + `learn/${end.id}/`);
-    const after = await page.locator('.course-end').innerText();
-    expect(after.includes('Pro Track') && (extras.length > 0 || !/extra modules/i.test(after)), `the end of the course: ${after}`);
-    const html = await (await fetch(BASE + `learn/${end.id}/`)).text();
-    expect(extras.length > 0 || !/extra modules/i.test(html.match(/<section class="card course-end">[\s\S]*?<\/section>/)?.[0] ?? ''), 'the pre-rendered end of the course points to extra modules');
+    const card = page.locator('.course-end').first();
+    const after = await card.innerText();
+    expect(after.includes('Pro Track') && GROUPS.every((g) => after.includes(g.title)) && !/the extra modules/.test(after), `the end of the course: ${after}`);
+    const html = (await (await fetch(BASE + `learn/${end.id}/`)).text()).match(/<section class="card course-end">[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(GROUPS.every((g) => html.includes(`href="${BASE_PATH}learn/#group-${g.id}"`)), `the pre-rendered end of the course: ${html}`);
+    // While no extra module is written, they come in later updates; once some are, the learner goes on with them.
+    if (GROUPS.length) {
+      const extraLive = EXTRAS.filter((m) => m.live).length;
+      const said = extraLive ? `Next, you can go on with ${GROUPS.map((g) => g.title).join(' and ')}, ${EXTRAS.length} extra modules of Python Arena's own${extraLive < EXTRAS.length ? ` (${extraLive} online so far)` : ''}, or try the Pro Track` : `Next come ${GROUPS.map((g) => g.title).join(' and ')}, ${EXTRAS.length} extra modules of Python Arena's own, in later updates. Until then, you can try the Pro Track`;
+      const text = html.replace(/<[^>]+>/g, '');
+      expect(after.includes(said) && text.includes(said), `the end of the course should say "${said}": ${after} / ${text}`);
+    }
+    if (GROUPS.length) {
+      await card.locator('a', { hasText: GROUPS[0].title }).click();
+      await page.locator(`#group-${GROUPS[0].id}`).waitFor();
+      await page.waitForFunction((id) => { const r = document.getElementById(id).getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; }, `group-${GROUPS[0].id}`);
+    }
   } else console.log(`       (the course's last module, ${end.id}, isn't written yet: its "After the course" note is checked once it is)`);
+  // A group's last module points on to Interview prep (for the group that page lists) and the Pro Track, in the app and pre-rendered.
+  for (const g of GROUPS) {
+    const last = EXTRAS.filter((m) => m.group === g.id).at(-1);
+    if (!last?.live) {
+      console.log(`       (the last module of ${g.id}, ${last?.id}, isn't written yet: its "After ${g.title}" card is checked once it is)`);
+      continue;
+    }
+    const parts = groupNextParts(g.id, COURSE_INDEX.interviewGroup);
+    const said = `This is the last module of ${g.title}. ${parts.map((p) => (typeof p === 'string' ? p : p.text)).join('')}`;
+    await page.goto(BASE + `learn/${last.id}/`);
+    const card = page.locator('.course-end', { hasText: `After ${g.title}` });
+    expect((await card.innerText()).includes(said), `the end of ${g.id} should say "${said}": ${await card.innerText()}`);
+    const html = (await (await fetch(BASE + `learn/${last.id}/`)).text()).match(/<section class="card course-end">[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(html.replace(/<[^>]+>/g, '').includes(said), `the pre-rendered end of ${g.id}: ${html}`);
+    for (const p of parts.filter((x) => typeof x !== 'string')) {
+      expect((await card.locator(`a[href="${BASE_PATH}${p.to.slice(1)}"]`, { hasText: p.text }).count()) === 1, `the end of ${g.id} links to ${p.to}`);
+      expect(html.includes(`href="${BASE_PATH}${p.to.slice(1)}"`), `the pre-rendered end of ${g.id} links to ${p.to}`);
+    }
+  }
   // A module of the course and its lessons have no label, and their credit names their MOOC sections.
   await page.goto(BASE + `learn/${FIRST_MODULE.id}/`);
   await page.locator('.module-page h1').waitFor();
@@ -1758,12 +1822,14 @@ await test('daily challenge: one answer a day, kept after a reload, with the str
 
 await test('placement quiz: one question per written module; the first miss sets the start; skipping unlocks drills and moves Continue', async () => {
   const { ctx, page, errors } = await newPage();
-  expect(DRILLS.placement.length === LIVE_COUNT && DRILLS.placement.every((q, i) => q.module === COURSE_INDEX.modules[i].id), `${DRILLS.placement.length} placement questions for ${LIVE_COUNT} written modules`);
+  // One question for each written module that follows the MOOC (the extra modules are optional, after the course).
+  const placed = COURSE_INDEX.modules.filter((m) => m.course !== 'extra');
+  expect(DRILLS.placement.length === placed.length && DRILLS.placement.every((q, i) => q.module === placed[i].id), `${DRILLS.placement.length} placement questions for ${placed.length} written modules of the MOOC`);
   await page.goto(BASE + 'placement/');
   // The questions load after the page appears: then the intro says how many there are.
   await page.locator('text=Start the quiz').waitFor();
   const intro = await page.locator('#main').innerText();
-  expect(intro.includes(`Answer ${DRILLS.placement.length} quick questions, one for each module${ALL_LIVE ? '' : ' written so far'}`), intro);
+  expect(intro.includes(`Answer ${DRILLS.placement.length} quick questions, one for each module that follows the MOOC${MOOC_LIVE ? '' : ' written so far'}`), intro);
   await page.click('text=Start the quiz');
   // Right, right, then "I don't know" for the rest: start at the third module.
   for (let i = 0; i < DRILLS.placement.length; i++) {
@@ -2791,7 +2857,7 @@ await test('offline: after one visit, pages and Python work without a connection
 console.log('Accessibility and layout');
 const lessonPath = (found) => `learn/${found.moduleId}/${found.step.slug}/`;
 const PREDICT_STEP = findChallenge(({ ex, index }) => index === 0 && ex.kind === 'predict');
-const PAGES = ['', 'learn/', `learn/${FIRST_MODULE.id}/`, firstPath, lessonPath(INPUT_CHALLENGE), lessonPath(PREDICT_STEP), lessonPath(CALL_CHALLENGE), lessonPath(FILES_CHALLENGE), 'playground/', 'deathmatch/', 'daily/', 'placement/', 'settings/', 'about/', 'transfer/', 'projects/', 'pro/', 'topics/', 'record/', 'learn/nowhere/'];
+const PAGES = ['', 'learn/', `learn/${FIRST_MODULE.id}/`, firstPath, lessonPath(INPUT_CHALLENGE), lessonPath(PREDICT_STEP), lessonPath(CALL_CHALLENGE), lessonPath(FILES_CHALLENGE), 'playground/', 'deathmatch/', 'daily/', 'placement/', 'settings/', 'about/', 'transfer/', 'projects/', 'pro/', 'topics/', 'interview/', 'record/', 'learn/nowhere/'];
 for (const colorScheme of ['light', 'dark']) {
   await test(`axe, ${colorScheme} theme: every page type`, async () => {
     const { ctx, page } = await newPage({ colorScheme });
@@ -3126,6 +3192,124 @@ await test('Topics A to Z: what is typed in the search box before the app starts
   await ctx.close();
 });
 
+console.log('Interview prep');
+await test("Interview prep: pre-rendered with its sections, tables and links, in the sitemap and saved for offline use; the home page, the footer, the course page's group and Deathmatch link to it", async () => {
+  const html = await (await fetch(BASE + 'interview/')).text();
+  const group = GROUPS.find((g) => g.id === INTERVIEW.modules.group);
+  for (const h of [group.title, 'Interview questions in Deathmatch', 'Which technique fits?', "What Python's operations cost", 'Working through a problem', "Python's tools for interview problems", 'Places to practice']) expect(html.includes(`>${esc(h)}</h2>`), `the pre-rendered page has the section ${h}`);
+  // A header row and a row for each technique and each operation.
+  expect((html.match(/<tr role="row">/g) ?? []).length === 2 + INTERVIEW.patterns.rows.length + INTERVIEW.costs.rows.length, 'the two tables, row by row');
+  for (const r of INTERVIEW.patterns.rows) expect(html.includes(`href="${BASE_PATH}learn/${r.step.module}/${r.step.slug}/"`), `the pre-rendered page links to the step ${r.step.id}`);
+  for (const x of [...INTERVIEW.practice.sites, ...INTERVIEW.tools.modules]) expect(html.includes(`href="${x.url}"`), `the pre-rendered page links to ${x.url}`);
+  for (const set of COURSE_INDEX.interviewSets) expect(html.includes(esc(set.title)) && html.includes(`${set.drills} questions`), `the pre-rendered page names the drill set ${set.id}`);
+  expect(html.includes(`href="${BASE_PATH}deathmatch/?mode=interview"`), 'the pre-rendered page starts interview prep in Deathmatch');
+  expect((html.match(/<li class="module module-(live|planned)">/g) ?? []).length === EXTRAS.filter((m) => m.group === group.id).length, "the pre-rendered page lists the group's modules");
+  const sitemap = await (await fetch(BASE + 'sitemap.xml')).text();
+  const sw = await (await fetch(BASE + 'sw.js')).text();
+  expect(sitemap.includes('/interview/</loc>') && sw.includes('"interview/"'), 'interview/ is in the sitemap and saved for offline use');
+  // The links to it: a feature card on the home page, the footer, the group's section of the course page, the Deathmatch lobby.
+  const { ctx, page, errors } = await newPage();
+  for (const [path, where, ready] of [['', '#main .features', '.hero h1'], ['about/', 'footer', '#main h1'], ['learn/', `#group-${group.id}`, '.module-live'], ['deathmatch/', '#main .page-head', '.lobby .rank-card']]) {
+    await page.goto(BASE + path);
+    await page.locator(ready).first().waitFor();
+    expect((await page.locator(`${where} a[href$="/interview/"]`).count()) === 1, `${path || 'home'}: one link to the interview prep page in ${where}`);
+  }
+  expect((await page.locator('header a[href$="/interview/"]').count()) === 0, 'the header navigation stays as it is');
+  expect(errors.length === 0, errors.join('\n'));
+  await ctx.close();
+});
+
+await test('Interview prep: the page shows the modules with this browser\'s progress, the drill sets and the tables; its links resolve and open in the app; its button starts interview prep in Deathmatch; axe in both themes', async () => {
+  const group = GROUPS.find((g) => g.id === INTERVIEW.modules.group);
+  const groupModules = COURSE_INDEX.modules.filter((m) => m.group === group.id);
+  // One module of the group finished, when one is written.
+  const st = progress(groupModules.length ? { steps: finished([groupModules[0].id]) } : {});
+  const { ctx, page, errors } = await newPage();
+  await startWith(ctx, st);
+  await page.goto(BASE + 'interview/');
+  await page.locator('.interview-page a.btn svg').waitFor();
+  const main = page.locator('#main');
+  expect((await main.locator('.iv-modules li.module').count()) === EXTRAS.filter((m) => m.group === group.id).length, "the group's modules");
+  expect((await main.locator('.iv-modules li.module-live').count()) === groupModules.length, 'its written modules are links');
+  if (groupModules.length) {
+    expect((await main.locator('.iv-modules li.module-done').count()) === 1, 'the finished module is marked');
+    expect((await main.innerText()).includes(`You finished 1 of the ${EXTRAS.filter((m) => m.group === group.id).length} modules in this browser.`), 'the page counts the finished modules');
+  }
+  const sets = await main.locator('.iv-sets li').allInnerTexts();
+  expect(sets.length === COURSE_INDEX.interviewSets.length && COURSE_INDEX.interviewSets.every((x, i) => sets[i].includes(x.title) && sets[i].includes(`${x.drills} questions`)), `the drill sets: ${sets.join(' / ')}`);
+  expect((await main.locator('.iv-table tbody tr').count()) === INTERVIEW.patterns.rows.length + INTERVIEW.costs.rows.length, 'the tables');
+  // Every link to the site's pages resolves; the tools' documentation and the places to practice open in a new tab, and say so.
+  const links = await main.locator('a[href]').evaluateAll((as) => as.map((a) => a.href));
+  for (const href of links.filter((h) => h.startsWith(BASE))) expect((await fetch(href)).status === 200, `${href} doesn't resolve`);
+  const away = await main.locator('.iv-tools a, .iv-sites a').evaluateAll((as) => as.map((a) => ({ href: a.href, target: a.target, rel: a.rel, text: a.textContent })));
+  expect(away.length === INTERVIEW.tools.modules.length + INTERVIEW.practice.sites.length, `${away.length} links to other sites`);
+  for (const l of away) expect(l.target === '_blank' && l.rel.includes('noopener') && l.text.endsWith('(opens in a new tab)'), `${JSON.stringify(l)} doesn't open in a new tab, or doesn't say so`);
+  await bothThemes(page, 'the interview prep page');
+  // A technique's step opens in the app.
+  const row = INTERVIEW.patterns.rows[0];
+  await page.evaluate(() => (window.__samePage = true));
+  await main.locator('.iv-table a', { hasText: row.step.title }).first().click();
+  await page.waitForURL(`**/learn/${row.step.module}/${row.step.slug}/`);
+  await page.locator('#main h1', { hasText: row.step.title }).waitFor();
+  expect(await page.evaluate(() => window.__samePage === true), 'the step was loaded as a new page');
+  // The button: Deathmatch in its interview prep mode, at once, with the address back to the lobby's.
+  await page.goBack();
+  await page.locator('.interview-page a.btn svg').waitFor();
+  await page.click('text=Start interview prep in Deathmatch');
+  await page.locator('.hud-mode', { hasText: 'Interview prep' }).waitFor();
+  await page.locator('.rep').waitFor();
+  expect(new URL(page.url()).search === '', `the address keeps ${new URL(page.url()).search}`);
+  const d = drillById.get(await page.locator('.rep').getAttribute('data-drill'));
+  expect(d?.topic === 'interview', `the first rep is ${d?.topic}`);
+  await page.click('text=Leave');
+  await page.locator('.lobby .rank-card').waitFor();
+  // The address opened directly does the same.
+  await page.goto(BASE + 'deathmatch/?mode=interview');
+  await page.locator('.hud-mode', { hasText: 'Interview prep' }).waitFor();
+  expect(errors.length === 0, errors.join('\n'));
+  await ctx.close();
+});
+
+/** The values of a fill-in's blanks that make it `code` (a slow solution fills the same blanks). */
+function blanksOf(template, code) {
+  const { parts } = parseTemplate(template);
+  const re = new RegExp(`^${parts.map(reEsc).join('([^\\n]*?)')}$`);
+  return re.exec(code)?.slice(1) ?? null;
+}
+// A big test (big: true) is sized so that a correct but slow solution runs out of time; the build keeps
+// each such challenge's slow solution in src/generated/ (not in the files the page loads) for this test.
+const BIG_CHALLENGE = findChallenge(({ ex }) => ex.kind !== 'predict' && ex.slow && ex.tests.some((t) => t.big));
+await test('a big test: a slow solution passes the other tests and gets the note that it is too slow for a big input (not that a loop never ends), with big tests marked big; the big tests after it don\'t run; the model solution passes', async () => {
+  if (!BIG_CHALLENGE) return void console.log('       (no lesson has a big test yet: this is checked once one does)');
+  const { ex } = BIG_CHALLENGE;
+  const { ctx, page, errors } = await newPage();
+  await openChallenge(page, BIG_CHALLENGE);
+  const card = await page.locator('.task-card').innerText();
+  if (ex.tests.some((t) => t.big && t.hidden)) expect(/big tests?: a way that is too slow runs out of time/.test(card), `the task card doesn't mention the big tests: ${card}`);
+  if (ex.kind === 'fill') await fillBlanks(page, blanksOf(ex.seed, ex.slow));
+  else await setProgram(page, ex.slow);
+  const t0 = Date.now();
+  const out = await check(page);
+  const ms = Date.now() - t0;
+  expect(out.includes('Too slow for a big input: your program ran for more than 10 seconds') && out.includes('40 billion times') && !out.includes('never ends'), out);
+  expect(ms >= 9_500 && ms < 60_000, `the check took ${ms} ms`);
+  // The build only promises that the slow way runs out of time on one big test: a big test before that
+  // one may pass, and the big tests after it don't run.
+  const small = ex.tests.filter((t) => !t.big).length;
+  const bigCount = ex.tests.filter((t) => t.big).length;
+  const failedBig = await page.locator('.tests .t-fail .big-tag').count();
+  const passed = await page.locator('.tests .t-pass').count();
+  expect((await page.locator('.tests .big-tag').count()) === bigCount, 'every big test is marked big');
+  expect(failedBig >= 1 && passed === small + bigCount - failedBig, `${passed} tests passed and ${failedBig} big tests failed, of ${small} small and ${bigCount} big`);
+  if (failedBig > 1) expect(out.includes('Not run: a test before it already ran out of time, and this big one would too.'), out);
+  await axe(page, 'a big test that ran out of time');
+  if (ex.kind === 'fill') await fillBlanks(page, blankAnswers(ex));
+  else await setProgram(page, ex.solution);
+  expect((await check(page)).includes('All tests passed'), 'the model solution passes');
+  expect(errors.length === 0, errors.join('\n'));
+  await ctx.close();
+});
+
 for (const width of [360, 390]) {
   await test(`phone width ${width} px: no sideways scrolling, axe passes`, async () => {
     const { ctx, page } = await newPage({ viewport: { width, height: 800 }, isMobile: true, hasTouch: true, colorScheme: width === 360 ? 'dark' : 'light' });
@@ -3358,6 +3542,8 @@ const PASS_PAGES = [
   ['Settings', 'settings/', appDrew('#main h1')],
   ['About', 'about/', appDrew('#main h1')],
   ['topics', 'topics/', appDrew('#topics-q')],
+  // The app's button has an icon, which the pre-rendered page's doesn't.
+  ['interview prep', 'interview/', appDrew('.interview-page a.btn svg')],
   ['the Pro Track', 'pro/', appDrew('#main h1')],
   ['page not found', 'learn/nowhere/', appDrew('#main h1')],
 ];

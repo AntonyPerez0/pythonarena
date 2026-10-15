@@ -48,7 +48,8 @@ const HASH_SEEDS = ["0", "12345"];
 /**
  * A pool of Python workers (PYTHON_WORKERS of them, or one per CPU up to 8). run(spec) resolves
  * with the harness's result (see pyworker.py), plus timedOut. `seed` picks the PYTHONHASHSEED (0 or 1): set and dict orders of strings differ between
- * the two, so a program whose output depends on them prints differently.
+ * the two, so a program whose output depends on them prints differently. A run may have a time limit
+ * of its own (`timeLimitMs` in run's options), in place of the pool's.
  */
 export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || Math.max(2, Math.min(8, os.cpus().length)), timeLimitMs = 10_000 }) {
   const workers = HASH_SEEDS.map((seed) => Array.from({ length: Math.ceil(size / 2) }, () => ({ seed, proc: null, busy: false, job: null })));
@@ -104,6 +105,7 @@ export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || M
     w.busy = true;
     w.job = job;
     job.id = ++lastId;
+    const limit = job.timeLimitMs ?? timeLimitMs;
     job.timer = setTimeout(() => {
       // An endless loop: what it printed is lost, as the page would keep it only for showing.
       w.job = null;
@@ -111,15 +113,15 @@ export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || M
       const proc = w.proc;
       w.proc = null;
       proc?.kill("SIGKILL");
-      job.resolve({ stdout: "", stderr: "", output: "", exit: null, truncated: false, files: {}, callStart: null, callError: false, loadInput: false, repl: null, timedOut: true });
+      job.resolve({ stdout: "", stderr: "", output: "", exit: null, truncated: false, files: {}, callStart: null, callError: false, loadInput: false, repl: null, ms: limit, timedOut: true });
       next(w);
-    }, timeLimitMs);
+    }, limit);
     w.proc.stdin.write(JSON.stringify({ id: job.id, spec: job.spec }) + "\n");
   }
 
-  function run(spec, seed = 0) {
+  function run(spec, seed = 0, options = {}) {
     return new Promise((resolve, reject) => {
-      queues[seed].push({ spec, resolve, reject });
+      queues[seed].push({ spec, resolve, reject, timeLimitMs: options.timeLimitMs ?? null });
       for (const w of workers[seed]) next(w);
     });
   }

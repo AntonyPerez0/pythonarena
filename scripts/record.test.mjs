@@ -130,3 +130,22 @@ test("the Pro Track on the record: projects with items the learner ticked, count
   assert.match(page, /marked as done by you/);
   assert.doesNotMatch(page, /verified|graded|passed the tests/i, "the record never says the site checked a Pro Track project");
 });
+
+test("each group of extra modules is a part of its own, after the MOOC's parts, in the plan's order", () => {
+  const gmod = (id, number, group) => ({ ...mod(id, number, "extra", null, [step(`${id}1`)]), group });
+  const grouped = [...modules.slice(0, 3), gmod("g1", 5, "dsa"), gmod("g2", 6, "dsa"), gmod("w1", 7, "web")];
+  const gplan = [...plan.slice(0, 4), ...grouped.slice(3).map((m) => ({ id: m.id, number: m.number, title: m.title, course: "extra", group: m.group, part: null, mooc: [], steps: 1, live: true }))];
+  const s = state({ steps: { g11: done(T), g21: done(T + DAY), w11: done(T + 2 * DAY) } });
+  const r = buildRecord(s, gplan, grouped, projects);
+  assert.deepEqual(
+    r.parts.map((p) => [p.course, p.part, p.group, p.finished.map((m) => m.id), p.complete]),
+    [
+      ["I", 1, null, [], false],
+      ["I", 2, null, [], false],
+      ["extra", null, "dsa", ["g1", "g2"], true],
+      ["extra", null, "web", ["w1"], true],
+    ],
+  );
+  // Groups aren't parts of the MOOC.
+  assert.equal(r.totals.partsTotal, 2);
+});

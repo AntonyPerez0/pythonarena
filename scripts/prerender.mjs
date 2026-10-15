@@ -16,6 +16,9 @@ import { RECORD_NOTICE } from "../src/lib/record.ts";
 import { PRO_GUIDE_HTML, PRO_HONEST, PRO_LEAD } from "../src/lib/pro-guide.ts";
 import { readProTrack } from "./pro-track/site.mjs";
 import { PYTHON_DOCS_URL, KIND_LABEL, TOPICS_LEAD, aboutParts, matchCount, topicLetter } from "../src/lib/topics.ts";
+import { withBase } from "../src/lib/site-links.ts";
+import { groupNextParts } from "../src/lib/group-end.ts";
+import { COST_COLUMNS, INTERVIEW_HEADINGS, INTERVIEW_START, INTERVIEW_TITLE, PATTERN_COLUMNS, questions } from "../src/lib/interview.ts";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const DIST = path.join(ROOT, "dist");
@@ -117,8 +120,12 @@ const extraTag = (m) => (m.course === "extra" ? ` <span class="extra-tag" title=
 const COURSES = [
   ["I", "Introduction to Programming", "Parts 1 to 7 of the MOOC: printing and input, variables, conditions, loops, strings, functions, lists, dictionaries, files, errors and modules."],
   ["II", "Advanced Course in Programming", "Parts 8 to 14 of the MOOC: classes and objects, encapsulation, inheritance, operator overloading, comprehensions, recursion, functional programming, regular expressions and games with pygame."],
-  ["extra", "Extra modules", "Topics the MOOC doesn't cover. Optional, for after the course."],
 ];
+/** The groups of extra modules (content/course.yaml), each a section of the course page after the MOOC's courses. */
+const GROUPS = index.groups ?? [];
+/** Markdown whose links to the site's pages start with / (a group's about, the interview prep page), with the base path in front. */
+const siteMd = (text, top = 2) => withBase(md(text, top), BASE);
+const siteInline = (text) => withBase(marked.parseInline(text, { async: false }), BASE);
 
 function credit(m) {
   // An extra module never gets a MOOC section line, whatever course.yaml says (the content build refuses one anyway).
@@ -131,7 +138,11 @@ const pages = [];
 // Whether every planned module is written, and how many modules follow the MOOC and how many are extras.
 const allLive = content.modules.length === content.plan.length;
 const extraCount = content.plan.filter((m) => m.course === "extra").length;
+const extraLive = content.plan.filter((m) => m.course === "extra" && m.live).length;
 const moocCount = content.plan.length - extraCount;
+// Every module that follows the MOOC is online, while some extra modules aren't yet (as src/pages/Home.tsx says it).
+const moocLive = !allLive && content.plan.every((m) => m.course === "extra" || m.live);
+const groupNames = GROUPS.map((g) => g.title).join(" and ");
 const page = (route, p) => pages.push({ route, index: true, type: "website", jsonld: null, ...p });
 
 // The MOOC parts whose modules are all online, from part 1 on (as the home page says).
@@ -150,27 +161,56 @@ page("/", {
   },
   body: `<h1>Learn Python by writing real Python</h1>
 <p>Every exercise is run by real Python (CPython 3.14, compiled to WebAssembly), inside your browser, on your own device. The lessons follow the University of Helsinki's Python Programming MOOC, from your first print to classes, recursion, regular expressions and games with pygame, with their own explanations and exercises.</p>
-<p>${allLive ? `All ${content.plan.length} modules are online: ${moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming)${extraCount ? ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own` : ""}, with ${stepCount} steps and ${challengeCount} challenges.` : `${partsLive ? `Parts 1 to ${partsLive} of the MOOC are online: ` : ""}${content.modules.length} of the ${content.plan.length} planned modules, with ${stepCount} steps and ${challengeCount} challenges. The remaining modules come in later updates.`}</p>
+<p>${
+    allLive
+      ? `All ${content.plan.length} modules are online: ${moocCount} following the MOOC (Introduction to Programming and the Advanced Course in Programming)${extraCount ? ` and ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own (${esc(groupNames)})` : ""}, with ${stepCount} steps and ${challengeCount} challenges.`
+      : moocLive
+        ? `All ${moocCount} modules following the MOOC are online (Introduction to Programming and the Advanced Course in Programming)${extraLive ? `, and ${extraLive} of the ${extraCount} extra modules of Python Arena's own (${esc(groupNames)})` : ""}, with ${stepCount} steps and ${challengeCount} challenges. ${extraLive ? "The other extra modules come" : `The ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own (${esc(groupNames)}) come`} in later updates.`
+        : `${partsLive ? `Parts 1 to ${partsLive} of the MOOC are online: ` : ""}${content.modules.length} of the ${content.plan.length} planned modules, with ${stepCount} steps and ${challengeCount} challenges. The remaining modules come in later updates.`
+  }</p>
 <ul>${content.modules.map((m) => `<li><a href="${link(modulePath(m))}">Module ${m.number}: ${esc(m.title)}</a>${extraTag(m)}</li>`).join("")}<li><a href="${link("/learn")}">All modules</a></li></ul>
 <p>Practice: <a href="${link("/deathmatch")}">Deathmatch drills</a>, <a href="${link("/daily")}">the daily challenge</a> and <a href="${link("/placement")}">a placement quiz</a>.</p>
+<p><a href="${link("/interview")}">${INTERVIEW_TITLE}</a>: interview questions to drill, the modules on data structures and algorithms, which technique fits which problem, and what Python's operations cost.</p>
 <p><a href="${link("/projects")}">Projects</a>: larger programs built over several milestones.</p>
 <p><a href="${link("/pro")}">Pro Track</a>: after the course, projects to build on your own computer with Python and pytest tests.</p>`,
 });
 
 page("/learn", {
   title: `All modules | ${NAME}`,
-  description: `The course plan: ${moocCount} modules following the University of Helsinki's Python Programming MOOC, parts 1 to 14${extraCount ? `, plus ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own` : ""}. ${allLive ? "All of them are online." : `${content.modules.length} are online so far.`}`,
+  description: `The course plan: ${moocCount} modules following the University of Helsinki's Python Programming MOOC, parts 1 to 14${extraCount ? `, plus ${extraCount} extra ${extraCount === 1 ? "module" : "modules"} of Python Arena's own (${groupNames})` : ""}. ${allLive ? "All of them are online." : moocLive ? `The MOOC's ${moocCount} are online${extraLive ? `, and ${extraLive} of the extra modules so far.` : `. The extra ${extraCount === 1 ? "module comes" : "modules come"} in later updates.`}` : `${content.modules.length} are online so far.`}`,
   body:
     `<h1>The course</h1><p>Python Arena follows the order and topics of the University of Helsinki's Python Programming MOOC, parts 1 to 14, with its own lessons and exercises.${allLive ? "" : " Modules that aren't written yet are listed so you can see what's coming."}</p><p><a href="${link("/projects")}">Projects</a>: larger programs built over several milestones, each after the modules it needs.</p><p><a href="${link("/pro")}">Pro Track</a>: projects for your own computer, for after the course.</p><p><a href="${link("/topics")}">Topics A to Z</a>: Python keywords, functions, methods and ideas, each with the steps that teach it.</p>` +
-    COURSES.filter(([c]) => content.plan.some((m) => m.course === c))
-      .map(([c, name, note]) => `<h2>${esc(name)}</h2><p>${esc(note)}</p><ol>` + content.plan.filter((m) => m.course === c).map((m) => `<li value="${m.number}">${m.live ? `<a href="${link(modulePath(m))}">${esc(m.title)}</a>` : `${esc(m.title)} (not written yet)`}${extraTag(m)}</li>`).join("") + `</ol>`)
+    [
+      ...COURSES.filter(([c]) => content.plan.some((m) => m.course === c)).map(([c, name, note]) => ({ id: null, name, note: `<p>${esc(note)}</p>`, list: content.plan.filter((m) => m.course === c && m.group == null) })),
+      ...GROUPS.map((g) => ({ id: `group-${g.id}`, name: g.title, note: siteMd(g.about), list: content.plan.filter((m) => m.group === g.id) })),
+    ]
+      .map(({ id, name, note, list }) => `<h2${id ? ` id="${id}"` : ""}>${esc(name)}</h2>${note}<ol>` + list.map((m) => `<li value="${m.number}">${m.live ? `<a href="${link(modulePath(m))}">${esc(m.title)}</a>` : `${esc(m.title)} (not written yet)`}${extraTag(m)}</li>`).join("") + `</ol>`)
       .join(""),
 });
 
-/** The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the Pro Track, as src/pages/ModulePage.tsx does. */
+/**
+ * The MOOC's last module (the end of the Advanced Course in Programming): its page points on to the groups
+ * of extra modules and the Pro Track (while none of the extra modules is written, they come in later
+ * updates), and a group's last module to what comes after it, as src/pages/ModulePage.tsx does.
+ */
 const COURSE_END = content.plan.filter((m) => m.course === "II").pop()?.id;
-const courseEnd = (m) =>
-  m.id === COURSE_END ? `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. Next, you can ${content.plan.some((x) => x.course === "extra") ? "go on with the extra modules" : `<a href="${link("/projects")}">build the projects</a>`}, or try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a></p></section>` : "";
+const PRO_NEXT = `try the Pro Track: projects for your own computer with Python and pytest. <a href="${link("/pro")}">See the Pro Track</a>`;
+function courseEndNext() {
+  if (!GROUPS.length) return `Next, you can <a href="${link("/projects")}">build the projects</a>, or ${PRO_NEXT}`;
+  const extras = GROUPS.flatMap((g) => content.plan.filter((m) => m.group === g.id));
+  const live = extras.filter((m) => m.live).length;
+  const names = GROUPS.map((g, i) => `${i > 0 ? (i === GROUPS.length - 1 ? " and " : ", ") : ""}<a href="${link("/learn")}#group-${g.id}">${esc(g.title)}</a>`).join("");
+  const what = `${names}, ${extras.length} extra ${extras.length === 1 ? "module" : "modules"} of Python Arena's own`;
+  if (!live) return `Next come ${what}, in later updates. Until then, you can ${PRO_NEXT}`;
+  return `Next, you can go on with ${what}${live < extras.length ? ` (${live} online so far)` : ""}, or ${PRO_NEXT}`;
+}
+const courseEnd = (m) => {
+  if (m.id === COURSE_END) return `<section class="card course-end"><h2 class="h3">After the course</h2><p>This is the last module of the MOOC. ${courseEndNext()}</p></section>`;
+  const g = GROUPS.find((x) => x.id === m.group);
+  if (!g || content.plan.filter((x) => x.group === g.id).at(-1)?.id !== m.id) return "";
+  const next = groupNextParts(g.id, index.interviewGroup).map((p) => (typeof p === "string" ? esc(p) : `<a href="${link(p.to)}">${esc(p.text)}</a>`));
+  return `<section class="card course-end"><h2 class="h3">After ${esc(g.title)}</h2><p>This is the last module of ${esc(g.title)}. ${next.join("")}</p></section>`;
+};
 for (const m of content.modules) {
   page(modulePath(m), {
     title: `Module ${m.number}: ${m.title} | ${NAME}`,
@@ -349,6 +389,43 @@ if (topics.length)
 <nav class="topics-letters" aria-label="Letters"><ul>${topicGroups.map(([l]) => `<li><a href="#${letterId(l)}"${l === "#" ? ' aria-label="Operators and symbols"' : ""}>${esc(l)}</a></li>`).join("")}</ul></nav>
 ${topicGroups.map(([l, list]) => `<section aria-labelledby="${letterId(l)}"><h2 id="${letterId(l)}" class="topics-letter">${l === "#" ? "Operators and symbols" : l}</h2><ul class="topic-list">${list.map(topicHtml).join("")}</ul></section>`).join("\n")}</div>`,
   });
+// The interview prep page (content/interview.yaml, checked by the content build), as src/pages/Interview.tsx
+// shows it: the text, its group's modules (without a browser's progress), the interview drill sets.
+const interview = fs.existsSync(path.join(GEN, "interview.json")) ? JSON.parse(fs.readFileSync(path.join(GEN, "interview.json"), "utf8")) : null;
+if (interview) {
+  const lead = (text) => (text ? `<div class="md iv-lead">${siteMd(text)}</div>` : "");
+  // With the same name, roles and column names on its cells as the page's (a phone shows each row as a block).
+  const table = (name, columns, rows, cls = "") =>
+    `<div class="table-scroll iv-table${cls ? ` ${cls}` : ""}" tabindex="0" role="region" aria-label="${esc(name)}, table"><table role="table"><thead role="rowgroup"><tr role="row">${columns.map((c) => `<th scope="col" role="columnheader">${esc(c)}</th>`).join("")}</tr></thead><tbody role="rowgroup">${rows.map((cells) => `<tr role="row">${cells.map((c, i) => `<td role="cell" data-label="${esc(columns[i])}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  const group = GROUPS.find((g) => g.id === interview.modules.group);
+  const moduleItem = (m) =>
+    m.live
+      ? `<li class="module module-live"><a href="${link(modulePath(m))}" class="module-link"><span class="module-num" aria-hidden="true">${m.number}</span><span class="module-title"><span class="visually-hidden">Module ${m.number}: </span>${esc(m.title)}</span><span class="module-count">${content.modules.find((x) => x.id === m.id).steps.length} steps</span></a></li>`
+      : `<li class="module module-planned"><span class="module-num" aria-hidden="true">${m.number}</span><span class="module-title"><span class="visually-hidden">Module ${m.number}: </span>${esc(m.title)}</span><span class="module-count">not written yet</span></li>`;
+  page("/interview", {
+    title: `${INTERVIEW_TITLE}: data structures, algorithms and Python's costs | ${NAME}`,
+    description: summary(interview.intro),
+    layout: true,
+    body: `<div class="interview-page narrow"><nav class="crumbs" aria-label="Breadcrumb"><a href="${link("/learn")}">Learn</a> › <span>${INTERVIEW_TITLE}</span></nav><div class="page-head"><h1>${INTERVIEW_TITLE}</h1><div class="md lead iv-intro">${siteMd(interview.intro)}</div></div>
+<section aria-labelledby="iv-modules-h"><h2 id="iv-modules-h">${esc(group?.title ?? "")}</h2>${lead(interview.modules.lead)}<ol class="modules iv-modules">${content.plan.filter((m) => m.group === interview.modules.group).map(moduleItem).join("")}</ol></section>
+<section aria-labelledby="iv-drills-h"><h2 id="iv-drills-h">${INTERVIEW_HEADINGS.drills}</h2>${lead(interview.drills.lead)}<ul class="iv-sets">${(index.interviewSets ?? []).map((x) => `<li><span class="iv-set-title">${esc(x.title)}</span> <span class="muted">${questions(x.drills)}</span></li>`).join("")}</ul><p><a class="btn btn-primary" href="${link(INTERVIEW_START)}">Start interview prep in Deathmatch</a></p></section>
+<section aria-labelledby="iv-patterns-h"><h2 id="iv-patterns-h">${esc(INTERVIEW_HEADINGS.patterns)}</h2>${lead(interview.patterns.lead)}${table(
+      INTERVIEW_HEADINGS.patterns,
+      PATTERN_COLUMNS,
+      interview.patterns.rows.map((r) => [siteInline(r.signal), siteInline(r.technique), `<a href="${link(stepPath({ id: r.step.module }, r.step))}">${esc(r.step.title)}</a> <span class="muted">(module ${r.step.number})</span>`]),
+    )}</section>
+<section aria-labelledby="iv-costs-h"><h2 id="iv-costs-h">${esc(INTERVIEW_HEADINGS.costs)}</h2>${lead(interview.costs.lead)}${table(
+      INTERVIEW_HEADINGS.costs,
+      COST_COLUMNS,
+      interview.costs.rows.map((r) => [siteInline(r.operation), `<b class="iv-cost">${esc(r.cost)}</b>`, siteInline(r.note)]),
+      "iv-costs",
+    )}${lead(interview.costs.after)}</section>
+<section aria-labelledby="iv-checklist-h"><h2 id="iv-checklist-h">${INTERVIEW_HEADINGS.checklist}</h2>${lead(interview.checklist.lead)}<ol class="iv-checklist">${interview.checklist.items.map((i) => `<li>${siteInline(i)}</li>`).join("")}</ol></section>
+<section aria-labelledby="iv-tools-h"><h2 id="iv-tools-h">${esc(INTERVIEW_HEADINGS.tools)}</h2>${lead(interview.tools.lead)}<ul class="iv-tools">${interview.tools.modules.map((t) => `<li><h3 class="h3"><a href="${t.url}"><code>${esc(t.name)}</code></a></h3><p>${siteInline(t.about)}</p></li>`).join("")}</ul></section>
+<section aria-labelledby="iv-practice-h"><h2 id="iv-practice-h">${INTERVIEW_HEADINGS.practice}</h2>${lead(interview.practice.lead)}<ul class="iv-sites">${interview.practice.sites.map((x) => `<li><a href="${x.url}">${esc(x.name)}</a>: ${siteInline(x.about)}</li>`).join("")}</ul></section></div>`,
+  });
+}
+
 page("/playground", {
   title: `Python playground | ${NAME}`,
   description: "Write any Python program and run it with your own input, with real Python running in your browser. Share programs as links.",
@@ -361,7 +438,7 @@ page("/deathmatch", {
   title: `Deathmatch: Python practice drills | ${NAME}`,
   description: "Endless quick Python drills from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, and small programs to write. Spaced review and interview prep.",
   layout: true,
-  body: `<div class="lobby practice-page"><div class="page-head"><h1>Deathmatch</h1><p class="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, pick one. Every 8th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p><p class="muted small">Stuck on a keyword or a function? <a href="${link("/topics")}">Topics A to Z</a> says what it is in one line and links to the step that teaches it.</p></div></div>`,
+  body: `<div class="lobby practice-page"><div class="page-head"><h1>Deathmatch</h1><p class="muted">Endless quick reps from the lessons you've finished: predict the output, fill the blank, spot the bug, will it run, pick one. Every 8th rep is a boss rep, a small program you write and run for real. Drills you miss come back more often until you know them.</p><p class="muted small">Stuck on a keyword or a method? <a href="${link("/topics")}">Topics A to Z</a> says what it is in one line and links to the step that teaches it.</p><p class="muted small">Getting ready for a coding interview? Interview prep mode is open to everyone, and the <a href="${link("/interview")}">${INTERVIEW_TITLE}</a> page has the modules on data structures and algorithms, which technique fits which problem, and what Python's operations cost.</p></div></div>`,
 });
 page("/daily", {
   title: `Daily Python challenge | ${NAME}`,
@@ -371,9 +448,9 @@ page("/daily", {
 });
 page("/placement", {
   title: `Placement quiz: where to start with Python | ${NAME}`,
-  description: "Already know some Python? A short quiz, one question per module, shows where to start and which modules you can skip.",
+  description: "Already know some Python? A short quiz, one question for each module that follows the MOOC, shows where to start and which modules you can skip.",
   layout: true,
-  body: `<div class="narrow"><div class="page-head"><h1>Placement quiz</h1><p>Already know some Python? Answer a few quick questions, one for each module${allLive ? "" : " written so far"}. The first one you miss shows where to start, and you can skip the modules before it.</p></div></div>`,
+  body: `<div class="narrow"><div class="page-head"><h1>Placement quiz</h1><p>Already know some Python? Answer a few quick questions, one for each module that follows the MOOC${content.plan.every((m) => m.course === "extra" || m.live) ? "" : " written so far"}. The first one you miss shows where to start, and you can skip the modules before it.</p></div></div>`,
 });
 
 page("/settings", { title: `Settings | ${NAME}`, description: "Theme, text size, the Python download, and your progress on this device: move it to another device with a transfer link, a QR code or a progress file.", body: `<h1>Settings</h1><p>Theme, text size, the Python download, and your progress. Everything here is saved in this browser only; a transfer link, a QR code or a progress file moves your progress to another device.</p>` });
@@ -424,7 +501,7 @@ const ARENAS = [
 ];
 const arenaText = (name, sub) => `<span class="arena-text"><span class="arena-name">${name}</span><span class="arena-sub">${sub}</span></span>`;
 const ARENA_ROW = `<div class="arena-family"><h2>Arena sites</h2><p>Learn another language the same way, free.</p><ul class="arena-cards">${ARENAS.map(([id, name, language, url]) => `<li>${id === "python" ? `<div class="arena-item arena-here">${ARENA_MARKS[id]}${arenaText(name, "You're here")}</div>` : `<a class="arena-item" href="${url}">${ARENA_MARKS[id]}${arenaText(name, `Learn ${language} <span aria-hidden="true">·</span> ${new URL(url).host}`)}</a>`}</li>`).join("")}</ul></div>`;
-const FOOTER = `<footer class="footer"><div class="footer-inner"><div class="footer-grid"><div class="footer-brand">${BRAND}<p>Learn Python with the real Python, running in your browser. Free and non-commercial.</p></div><div class="footer-col"><h2>Learn</h2><ul><li><a href="${link("/learn")}">All modules</a></li><li><a href="${link("/learn/printing")}">Start with module 1</a></li><li><a href="${link("/projects")}">Projects</a></li><li><a href="${link("/pro")}">Pro Track</a></li><li><a href="${link("/topics")}">Topics A to Z</a></li><li><a href="${link("/playground")}">Playground</a></li></ul></div><div class="footer-col"><h2>Practice</h2><ul><li><a href="${link("/deathmatch")}">Deathmatch</a></li><li><a href="${link("/daily")}">Daily challenge</a></li><li><a href="${link("/placement")}">Placement quiz</a></li></ul></div><div class="footer-col"><h2>Site</h2><ul><li><a href="${link("/settings")}">Settings</a></li><li><a href="${link("/about")}">About and credits</a></li><li><a href="${REPO}">Source on GitHub</a></li><li><a href="${REPO}/issues/new">Report a problem</a></li></ul></div></div>${ARENA_ROW}<div class="footer-bottom"><p>The course's lessons follow the order and topics of the <a href="${MOOC}">Python Programming MOOC</a> by the University of Helsinki, licensed under <a href="${LICENSE}" rel="license">CC BY-NC-SA 4.0</a>. Python Arena's lessons are shared under the same license; the site's code is MIT licensed. Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation. "Python" is a registered trademark of the Python Software Foundation.</p><p>Your progress stays in this browser. No account, no ads, no tracking.</p></div></div></footer>`;
+const FOOTER = `<footer class="footer"><div class="footer-inner"><div class="footer-grid"><div class="footer-brand">${BRAND}<p>Learn Python with the real Python, running in your browser. Free and non-commercial.</p></div><div class="footer-col"><h2>Learn</h2><ul><li><a href="${link("/learn")}">All modules</a></li><li><a href="${link("/learn/printing")}">Start with module 1</a></li><li><a href="${link("/projects")}">Projects</a></li><li><a href="${link("/pro")}">Pro Track</a></li><li><a href="${link("/topics")}">Topics A to Z</a></li><li><a href="${link("/playground")}">Playground</a></li></ul></div><div class="footer-col"><h2>Practice</h2><ul><li><a href="${link("/deathmatch")}">Deathmatch</a></li><li><a href="${link("/daily")}">Daily challenge</a></li><li><a href="${link("/interview")}">Interview prep</a></li><li><a href="${link("/placement")}">Placement quiz</a></li></ul></div><div class="footer-col"><h2>Site</h2><ul><li><a href="${link("/settings")}">Settings</a></li><li><a href="${link("/about")}">About and credits</a></li><li><a href="${REPO}">Source on GitHub</a></li><li><a href="${REPO}/issues/new">Report a problem</a></li></ul></div></div>${ARENA_ROW}<div class="footer-bottom"><p>The course's lessons follow the order and topics of the <a href="${MOOC}">Python Programming MOOC</a> by the University of Helsinki, licensed under <a href="${LICENSE}" rel="license">CC BY-NC-SA 4.0</a>. Python Arena's lessons are shared under the same license; the site's code is MIT licensed. Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation. "Python" is a registered trademark of the Python Software Foundation.</p><p>Your progress stays in this browser. No account, no ads, no tracking.</p></div></div></footer>`;
 // The fonts are needed for the first paint: fetch them right away instead of after the CSS.
 const FONTS = fs
   .readdirSync(path.join(DIST, "assets"))

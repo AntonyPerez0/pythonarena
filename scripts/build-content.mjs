@@ -16,6 +16,16 @@
 // and each model solution must still pass every earlier milestone's visible tests, except those
 // a milestone names in `replaces`.
 //
+// A test with `big: true` is sized so that a correct but slow solution runs out of time; a challenge
+// with one has `slow`, a correct but slow solution, which must pass every other test and still be
+// running after twice the page's time limit on a big test, while the model solution keeps well within
+// it (scripts/content/speed.mjs). The slow solutions' big tests, and a big test over the model's budget,
+// run in a quiet pass at the end of the build, alone, once every other run is done.
+//
+// Extra modules (Python Arena's own, after the MOOC) belong to groups (scripts/content/groups.mjs), and
+// content/interview.yaml is the interview prep page's text (scripts/content/interview.mjs), written to
+// src/generated/interview.json.
+//
 // It also writes fidelity/out/content-checks.json: every program with its inputs and CPython's
 // results, which scripts/content-pyodide.mjs replays in Pyodide.
 //
@@ -34,6 +44,11 @@ import { compareWrites, dataPathProblem } from "../src/grader/writes.js";
 import { blockKindProblem } from "../src/components/code-blocks.ts";
 import { importsPygame } from "../src/engine/pygame-import.ts";
 import { checkTopics } from "./content/topics.mjs";
+import { checkGroups } from "./content/groups.mjs";
+import { checkInterview } from "./content/interview.mjs";
+import { htmlLike, sitePages, textProblems } from "./content/site-text.mjs";
+import { MODEL_BUDGET_MS, SLOW_MARGIN, budgetProblems, quietSlowProblems, slowFitsFill, slowSmallProblems, speedShapeProblems } from "./content/speed.mjs";
+import { BIG_TIME_LIMIT_MS, timeLimitFor } from "../src/grader/limits.ts";
 import { pythonPool, referencePython, runKey } from "./content/python.mjs";
 import { pyodidePool, pyodideVersion } from "./content/pyodide.mjs";
 
@@ -114,19 +129,32 @@ const t0 = Date.now();
  * Runs a program with the harness: spec is arena.run's spec ({ files, main, stdin, given, args,
  * call, repl }). Results are cached by the spec, the interpreter and the harness. With `twice`, it
  * runs with both hash seeds and `stable` says whether the two runs printed the same and left the
- * same files.
+ * same files. Options for a slow solution's runs: `timeLimitMs` (in place of the pool's; part of the
+ * cache's key), `seed` (which of the two, to share the work between the pool's workers) and
+ * `keepTimeout`, for a run alone in the quiet pass: a timeout there is the machine's real speed, and
+ * what a slow solution's big test should give, so it's cached too. `fresh` runs it again whatever the
+ * cache has (and caches the new run).
  */
-async function run(spec, { twice = false } = {}) {
+/** A run's key in the cache: the spec, the interpreter (and a time limit of its own) and the hash seed. */
+const cacheKey = (spec, timeLimitMs, seed) => runKey(spec, usesPygame(spec) ? `pyodide-${pyodideVersion()}` : timeLimitMs ? `${pythonVersion} limit ${timeLimitMs}` : pythonVersion, seed);
+
+/** Keeps a cached run for the next build without running it (a check skipped this time, still to come). */
+function keepCached(spec, timeLimitMs, seed = 0) {
+  const key = cacheKey(spec, timeLimitMs, seed);
+  if (cache[key]) usedCache[key] = cache[key];
+}
+
+async function run(spec, { twice = false, seed: first = 0, timeLimitMs = null, keepTimeout = false, fresh = false } = {}) {
   const pygame = usesPygame(spec);
   const once = async (seed) => {
-    const key = runKey(spec, pygame ? `pyodide-${pyodideVersion()}` : pythonVersion, seed);
-    if (cache[key]) return (usedCache[key] = cache[key]);
-    const r = pygame ? await (windowPool ??= pyodidePool()).run(spec, seed) : await pool.run(spec, seed);
-    // A run that timed out isn't cached: it may have been a busy machine.
-    if (!r.timedOut) usedCache[key] = r;
+    const key = cacheKey(spec, timeLimitMs, seed);
+    if (cache[key] && !fresh) return (usedCache[key] = cache[key]);
+    const r = pygame ? await (windowPool ??= pyodidePool()).run(spec, seed) : await pool.run(spec, seed, timeLimitMs ? { timeLimitMs } : {});
+    // A run that timed out isn't cached (unless it ran alone): it may have been a busy machine.
+    if (!r.timedOut || keepTimeout) usedCache[key] = r;
     return r;
   };
-  const a = await once(0);
+  const a = await once(first);
   if (!twice) return { ...a, stable: true };
   const b = await once(1);
   const stable = a.output === b.output && JSON.stringify(a.files) === JSON.stringify(b.files) && a.exit === b.exit;
@@ -226,14 +254,14 @@ const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 const KEYS = {
   module: ["id", "summary", "steps"],
-  step: ["id", "slug", "title", "text", "fill", "seed", "solution", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "assets", "more"],
-  challenge: ["task", "fill", "seed", "solution", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "assets"],
+  step: ["id", "slug", "title", "text", "fill", "seed", "solution", "slow", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "assets", "more"],
+  challenge: ["task", "fill", "seed", "solution", "slow", "predict", "hints", "tests", "require", "forbid", "seedMayPass", "assets"],
   rule: ["pattern", "flags", "message", "min", "max", "raw"],
-  test: ["name", "stdin", "args", "call", "files", "writes", "expect", "hidden", "window"],
-  drillFile: ["topic", "drills"],
+  test: ["name", "stdin", "args", "call", "files", "writes", "expect", "hidden", "big", "window"],
+  drillFile: ["topic", "title", "drills"],
   project: ["id", "title", "after", "summary", "intro", "seed", "milestones"],
-  milestone: ["id", "title", "task", "files", "hints", "tests", "require", "forbid", "solution", "replaces", "assets"],
-  drill: ["id", "type", "prompt", "code", "stdin", "answer", "expect", "fix", "choices", "runs", "verify", "why", "after", "seed", "solution", "hints", "tests", "require", "forbid", "module"],
+  milestone: ["id", "title", "task", "files", "hints", "tests", "require", "forbid", "solution", "slow", "replaces", "assets"],
+  drill: ["id", "type", "prompt", "code", "stdin", "answer", "expect", "fix", "choices", "runs", "verify", "why", "after", "seed", "solution", "slow", "hints", "tests", "require", "forbid", "module"],
 };
 function checkKeys(where, obj, kind) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
@@ -288,9 +316,6 @@ function codeOf(where, value) {
 function tabProblems(code) {
   return splitFiles(code).flatMap((f) => (/^\t/m.test(f.text) ? [`${f.path} indents with a tab; lessons indent with 4 spaces`] : []));
 }
-
-/** True when Markdown text has something that looks like an HTML tag or comment outside code. */
-const htmlLike = (text) => /<[a-zA-Z!\/?]/.test(String(text).replace(/```[\s\S]*?```/g, "").replace(/(`+)[\s\S]*?\1/g, ""));
 
 /** The hints of a challenge: a list of Markdown text. YAML reads an unquoted ": " as a key, which is caught here. */
 function checkHints(where, hints) {
@@ -503,7 +528,7 @@ function exampleFiles(w, blocks, i) {
  */
 async function buildPredict(where, raw, hints) {
   const program = codeOf(where, raw.predict);
-  for (const k of ["seed", "solution", "fill", "tests", "require", "forbid"]) if (raw[k] != null) errors.push(`${where}: a predict challenge can't have ${k}`);
+  for (const k of ["seed", "solution", "slow", "fill", "tests", "require", "forbid"]) if (raw[k] != null) errors.push(`${where}: a predict challenge can't have ${k}`);
   for (const m of tabProblems(program)) errors.push(`${where}: ${m}`);
   const spec = specOf(program);
   const r = await run(spec, { twice: true });
@@ -517,11 +542,33 @@ async function buildPredict(where, raw, hints) {
   return { kind: "predict", seed: program, solution: program, hints, tests: [{ name: "Output", stdin: "", expect: out, hidden: false }], require: [], forbid: [], lines };
 }
 
+/**
+ * The big tests' first runs of the model solutions, for the quiet pass at the end of the build
+ * (scripts/content/speed.mjs): { where, ms, rerun, check }, `check` the test's entry in the checks
+ * file, which gets the time that counts.
+ */
+const bigRuns = [];
+/** The model solutions' times on big tests, for the build's last line: { where, ms }. */
+const bigTimes = [];
+/** The slow solutions' big tests, for the quiet pass: slowBigProblems's arguments (scripts/content/speed.mjs), one per challenge. */
+const slowChecks = [];
+
 /** Whether a run passes a built test (as the browser's grader decides it). */
 function passes(t, r) {
   const size = (a, b) => !a || !b || (a[0] === b[0] && a[1] === b[1]);
   const window = !t.expectWindow || (r.window && r.window.frames === t.expectWindow.frames && size(t.expectWindow.size, r.window.size) && normalizeOutput(r.window.log) === normalizeOutput(t.expectWindow.log));
   return !r.timedOut && r.exit === 0 && !r.callError && graded(r, t) === t.expect && (!t.returns || r.callValue === "value") && (!t.writes || compareWrites(t.writes, r.files).every((f) => f.pass)) && window;
+}
+
+/** What is wrong with a run of a built test, in words, or null when it passes (for a slow solution's runs). */
+function whatsWrong(t, r) {
+  if (passes(t, r)) return null;
+  if (r.timedOut) return "runs out of time";
+  if (r.exit !== 0) return `stops with an error: ${lastErrorLine(r.stderr)}`;
+  const got = graded(r, t);
+  if (got !== t.expect) return /\n/.test(got + t.expect) ? `prints\n${got}\nbut the model solution prints\n${t.expect}\n(on this test)` : `prints ${got || "nothing"} where the model solution prints ${t.expect}`;
+  if (t.returns && r.callValue !== "value") return "returns None";
+  return "doesn't leave the files the test checks";
 }
 
 /**
@@ -562,6 +609,8 @@ async function buildExercise(where, raw, { startName = null, assets: inherited =
 
   const testsRaw = raw.tests?.length ? raw.tests : [{}];
   for (const t of testsRaw) checkKeys(`${where} test`, t, "test");
+  const speedShape = speedShapeProblems(where, testsRaw, raw.slow);
+  errors.push(...speedShape);
   if (testsRaw.every((t) => t.hidden)) errors.push(`${where}: at least one test must be visible`);
   if (testsRaw.some((t) => t.stdin || t.call) && testsRaw.length > 1 && !testsRaw.some((t) => t.hidden)) warnings.push(`${where}: has input or calls but no hidden test`);
   const built = testsRaw.map((t, i) => {
@@ -593,6 +642,7 @@ async function buildExercise(where, raw, { startName = null, assets: inherited =
       if (win) out.window = win;
       if (t.call != null) errors.push(`${n}: a test with a window runs the program, so it can't have call`);
     }
+    if (t.big === true && usesPygame(specOf(solution, out, assets))) errors.push(`${n}: a pygame program's test can't be big (big tests are for the speed of a way)`);
     return out;
   });
   const runs = await Promise.all(built.map((b) => run(specOf(solution, b, assets), { twice: true })));
@@ -629,9 +679,43 @@ async function buildExercise(where, raw, { startName = null, assets: inherited =
     const call = b.call;
     const name = t.name ?? (call && !call.trim().includes("\n") ? call.trim() : testsRaw.length > 1 ? `Test ${i + 1}` : writes ? (actual ? "Output and files" : "Files") : "Output");
     const shownName = b.window && !t.name && testsRaw.length === 1 ? "Window" : null;
-    return { name: shownName ?? name, stdin: b.stdin, ...(b.args ? { args: b.args } : {}), ...(call ? { call } : {}), ...(b.files ? { files: b.files } : {}), ...(writes ? { writes } : {}), ...(b.window ? { window: b.window, ...(expectWindow ? { expectWindow } : {}) } : {}), expect: actual, hidden: !!t.hidden, ...(call && r.callValue === "value" ? { returns: true } : {}) };
+    return { name: shownName ?? name, stdin: b.stdin, ...(b.args ? { args: b.args } : {}), ...(call ? { call } : {}), ...(b.files ? { files: b.files } : {}), ...(writes ? { writes } : {}), ...(b.window ? { window: b.window, ...(expectWindow ? { expectWindow } : {}) } : {}), expect: actual, hidden: !!t.hidden, ...(t.big === true ? { big: true } : {}), ...(call && r.callValue === "value" ? { returns: true } : {}) };
   });
-  tests.forEach((t, i) => checks.push({ where: `${where} test ${i + 1}`, spec: specOf(solution, t, assets), stdout: runs[i].stdout, stderr: runs[i].stderr, exit: runs[i].exit, ...(t.writes ? { files: runs[i].files } : {}) }));
+  tests.forEach((t, i) => {
+    const check = { where: `${where} test ${i + 1}`, spec: specOf(solution, t, assets), stdout: runs[i].stdout, stderr: runs[i].stderr, exit: runs[i].exit, ...(t.writes ? { files: runs[i].files } : {}), ...(t.big ? { big: true, ms: runs[i].ms } : {}) };
+    checks.push(check);
+    // The model solution's time on a big test is checked in the quiet pass, once every other run is done.
+    if (t.big && !runs[i].timedOut) bigRuns.push({ where: check.where, ms: runs[i].ms, rerun: () => run(check.spec, { fresh: true }), check });
+  });
+
+  // Speed tests (scripts/content/speed.mjs): the slow solution passes every other test and is still
+  // running after twice the page's limit on a big one. While the big tests are written wrong (said
+  // above), its runs would say little.
+  let slow = null;
+  if (tests.some((t) => t.big) && raw.slow != null && !speedShape.length) {
+    slow = kind === "fill" ? ensureNl(String(raw.slow)) : codeOf(`${where} slow`, raw.slow);
+    if (kind === "fill" && (typeof raw.slow !== "string" || !slowFitsFill(seed, slow))) errors.push(`${where}: a fill-in's slow is the whole program with its blanks filled the slow way; the text outside the blanks stays as it is`);
+    if (kind === "code" && splitFiles(slow).map((f) => f.path).join() !== splitFiles(solution).map((f) => f.path).join()) errors.push(`${where}: slow must have the same files as the solution, in the same order`);
+    if (slow === solution) errors.push(`${where}: slow is the same as the solution`);
+    for (const m of tabProblems(slow)) errors.push(`${where}: slow: ${m}`);
+    const slowRules = checkRules(slow, require, forbid);
+    if (slowRules.length) errors.push(`${where}: the slow solution breaks the challenge's rules (${slowRules.join("; ")}); it must follow them, so that only speed separates it from the model solution`);
+    const limitMs = timeLimitFor({ tests });
+    const wrong = (i, r) => whatsWrong(tests[i], r);
+    // The tests that aren't big run now, at the page's limit, each in one of the two halves of the pool
+    // (so the work is shared and each run's cache key stays the same).
+    errors.push(...(await slowSmallProblems({ where, tests, run: (i) => run(specOf(slow, tests[i], assets), { seed: i % 2, timeLimitMs: limitMs }), wrong })));
+    // The big tests wait for the quiet pass: beside the other programs, slow would look slower than it is.
+    slowChecks.push({
+      where,
+      tests,
+      limitMs,
+      run: (i, timeLimitMs) => run(specOf(slow, tests[i], assets), { timeLimitMs, keepTimeout: true }),
+      // When the quiet pass doesn't run (something else is wrong), the timeouts it cached before are kept.
+      keep: () => tests.forEach((t) => t.big && keepCached(specOf(slow, t, assets), SLOW_MARGIN * limitMs)),
+      wrong,
+    });
+  }
 
   // Starter code must not already pass, or the challenge would be free.
   if (kind === "code" && seed && !raw.seedMayPass) {
@@ -644,7 +728,7 @@ async function buildExercise(where, raw, { startName = null, assets: inherited =
     const er = await Promise.all(tests.map((t) => run(specOf(empty, t, assets))));
     if (tests.every((t, i) => passes(t, er[i])) && checkRules(empty, require, forbid).length === 0) errors.push(`${where}: the program passes with every blank left empty`);
   }
-  return { kind, seed, solution, hints, tests, require, forbid, ...(assets.length ? { assets } : {}) };
+  return { kind, seed, solution, hints, tests, require, forbid, ...(assets.length ? { assets } : {}), ...(slow ? { slow } : {}) };
 }
 
 /**
@@ -668,6 +752,10 @@ if (!course?.modules) {
   process.exit(1);
 }
 const planned = new Map(course.modules.map((m, i) => [m.id, { ...m, number: i + 1 }]));
+// The groups of extra modules (scripts/content/groups.mjs); their `about` text is checked once the
+// modules are built (its links may name them).
+const { groups, errors: groupErrors } = checkGroups(course);
+errors.push(...groupErrors);
 // An extra module (course: extra) is Python Arena's own, not part of the MOOC: it has no MOOC part or
 // sections, and the extras come after the course.
 {
@@ -741,7 +829,7 @@ async function buildModules() {
       if (data.steps.length !== plan.steps) warnings.push(`${file}: ${data.steps.length} steps, the plan says ${plan.steps}`);
       const slugs = new Set();
       const steps = (await Promise.all(data.steps.map((s, i) => buildStep(file, plan, s, i, slugs, ids)))).filter(Boolean);
-      return { id: plan.id, number: plan.number, title: plan.title, course: plan.course, part: plan.part ?? null, mooc: plan.mooc ?? [], summary: String(data.summary ?? ""), steps };
+      return { id: plan.id, number: plan.number, title: plan.title, course: plan.course, group: plan.group ?? null, part: plan.part ?? null, mooc: plan.mooc ?? [], summary: String(data.summary ?? ""), steps };
     }),
   );
   for (const m of built) if (m) out.push(m);
@@ -889,6 +977,9 @@ async function buildDrill(where, id, topic, d, moduleSteps) {
   return null;
 }
 
+/** The interview drill sets (content/drills/interview-*.yaml): each file's name, title and number of drills. */
+const interviewSets = [];
+
 async function buildDrills(modules) {
   const dir = path.join(ROOT, "content", "drills");
   const files = (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).sort() : []).filter((f) => (!drillFileArg || f === drillFileArg) && (!moduleFileArg || modules.some((m) => f === `${m.id}.yaml`)));
@@ -905,6 +996,11 @@ async function buildDrills(modules) {
       const interview = topic === "interview";
       if (!interview && !byId.has(topic)) return void errors.push(`${file}: topic ${topic} is not a written module (or "interview")`);
       if (!interview && name !== `${topic}.yaml`) errors.push(`${file}: the file should be named ${topic}.yaml`);
+      if (interview && !/^interview-[a-z0-9-]+\.yaml$/.test(name)) errors.push(`${file}: an interview drill file is named interview-<name>.yaml`);
+      // An interview set's title is shown on the interview prep page; a module's drills go by the module's title.
+      if (interview && (typeof data.title !== "string" || !data.title.trim() || /\n/.test(data.title.trim()))) errors.push(`${file}: needs a title, one line that the interview prep page shows for this set`);
+      if (!interview && data.title != null) errors.push(`${file}: a module's drills have no title of their own (they go by the module's)`);
+      if (typeof data.title === "string" && /[\u2013\u2014]/.test(data.title)) errors.push(`${file}: the title has a dash (an en or em dash); write it with a comma or a colon`);
       if (!Array.isArray(data.drills) || !data.drills.length) return void errors.push(`${file}: needs drills`);
       const stem = name.replace(/\.ya?ml$/, "");
       const built = await Promise.all(
@@ -916,9 +1012,11 @@ async function buildDrills(modules) {
         }),
       );
       out.push({ file: name, drills: built.filter(Boolean) });
+      if (interview) interviewSets.push({ id: stem, title: String(data.title ?? "").trim(), drills: built.filter(Boolean).length });
     }),
   );
   out.sort((a, b) => a.file.localeCompare(b.file));
+  interviewSets.sort((a, b) => a.id.localeCompare(b.id));
   return out.flatMap((f) => f.drills);
 }
 
@@ -937,6 +1035,8 @@ async function buildPlacement(modules) {
       errors.push(`${where}: module ${q?.module} is not a written module`);
       continue;
     }
+    // The quiz finds where to start the course; the extra modules are optional and come after it.
+    if (modules[at].course === "extra") errors.push(`${where}: module ${q.module} is an extra module; the placement quiz has questions only for the MOOC's modules`);
     if (at < last) errors.push(`${where}: the questions must follow the course order`);
     last = at;
     const { module, ...rest } = q;
@@ -1019,7 +1119,7 @@ async function buildProject(name) {
     });
     if (!tests.length) return null;
     const from = k === 0 ? "the project's seed" : "the previous milestone's model solution";
-    const ex = await buildExercise(where, { seed: start, solution: raw.solution, hints: raw.hints, tests, require: raw.require, forbid: raw.forbid }, { startName: added.length ? `${from} with this milestone's files` : from });
+    const ex = await buildExercise(where, { seed: start, solution: raw.solution, slow: raw.slow, hints: raw.hints, tests, require: raw.require, forbid: raw.forbid }, { startName: added.length ? `${from} with this milestone's files` : from });
     if (!ex) return null;
     checkTaskOutput(where, raw.task, ex);
     const task = await checkExamples(`${where} task`, String(raw.task ?? "").trim() + "\n");
@@ -1061,18 +1161,67 @@ function buildTopics(modules, drills) {
   return checked.topics;
 }
 
+// ---------------------------------------------------------------- the interview prep page and the groups' text
+/** content/interview.yaml (scripts/content/interview.mjs): the interview prep page, as the page uses it. */
+async function buildInterview(modules, projects) {
+  const file = path.join(ROOT, "content", "interview.yaml");
+  if (!fs.existsSync(file)) {
+    errors.push("content/interview.yaml is missing: it holds the interview prep page's text (/interview/)");
+    return null;
+  }
+  const raw = readYaml(file);
+  if (raw == null) return null;
+  const steps = new Map(modules.flatMap((m) => m.steps.map((s) => [s.id, { step: s, module: m }])));
+  const checked = checkInterview(raw, { steps, groups, pages: sitePages({ modules, projects }) });
+  errors.push(...checked.errors);
+  // The page links each standard library module to its documentation: Python must have it.
+  if (checked.modules.length) {
+    const r = await run({ files: { [MAIN_FILE]: checked.modules.map((n) => `import ${n}\n`).join("") }, main: MAIN_FILE, stdin: "", given: {}, args: [], call: null });
+    if (r.timedOut || r.exit !== 0) errors.push(`content/interview.yaml tools: a module isn't one of Python's: ${lastErrorLine(r.stderr)}`);
+  }
+  return checked.page;
+}
+
+/** Each group's `about` (content/course.yaml) is site text: Markdown whose links go to pages the site has. */
+function checkGroupText(modules, projects) {
+  const pages = sitePages({ modules, projects });
+  for (const g of groups) for (const p of textProblems(g.about, pages)) errors.push(`content/course.yaml group ${g.id}, about: ${p}`);
+}
+
 // ---------------------------------------------------------------- build
+/** A count with its word, singular for one: "1 project", "4 projects". */
+const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 let modules = [];
 let drills = [];
 let placement = [];
 let projects = [];
 let topics = [];
+let interview = null;
 try {
   modules = projectFileArg ? [] : await buildModules();
   drills = projectFileArg ? [] : await buildDrills(modules);
   placement = projectFileArg || moduleFileArg || (drillFileArg && drillFileArg !== "placement.yaml") ? [] : await buildPlacement(modules);
   projects = moduleFileArg || drillFileArg ? [] : await buildProjects();
   topics = moduleFileArg || drillFileArg || projectFileArg ? [] : buildTopics(modules, drills);
+  // The interview page and the groups' text link to the site's pages, so they're checked with the whole course.
+  if (!moduleFileArg && !drillFileArg && !projectFileArg) {
+    interview = await buildInterview(modules, projects);
+    checkGroupText(modules, projects);
+  }
+  // The quiet pass: every other run is done, so each run here is alone. A model solution's big test over
+  // the budget is timed again; then each slow solution runs its big tests, until one is still running
+  // after twice the page's limit. Those take 20 seconds each (once: a timeout here is cached), so they
+  // wait until nothing else is wrong.
+  const budget = await budgetProblems({ checks: bigRuns });
+  errors.push(...budget.errors);
+  budget.times.forEach((t, k) => (bigRuns[k].check.ms = t.ms));
+  bigTimes.push(...budget.times);
+  if (!errors.length) errors.push(...(await quietSlowProblems(slowChecks)));
+  else if (slowChecks.length) {
+    for (const c of slowChecks) c.keep();
+    warnings.push(`the big tests of ${count(slowChecks.length, "slow solution")} didn't run: they run, alone, once nothing else is wrong`);
+  }
 } finally {
   pool.close();
   windowPool?.close();
@@ -1091,29 +1240,40 @@ if (errors.length) {
   process.exit(1);
 }
 
-/** A count with its word, singular for one: "1 project", "4 projects". */
-const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+/** The big tests, for the last line: how many, the model solutions' slowest time on them, and the slow solutions. */
+const bigLine = () =>
+  bigTimes.length ? `; ${count(bigTimes.length, "big test")}, the model solutions' slowest in ${Math.round(Math.max(...bigTimes.map((b) => b.ms)))} ms on CPython (at most ${MODEL_BUDGET_MS}), and ${count(slowChecks.length, "slow solution")} still running after ${(SLOW_MARGIN * BIG_TIME_LIMIT_MS) / 1000} s` : "";
 
 if (dry) {
-  console.log(`check ok (nothing written): ${count(modules.length, "module")}${moduleFileArg ? ` (${moduleFileArg})` : ""}, ${count(modules.reduce((a, m) => a + m.steps.length, 0), "step")}, ${count(drills.length, "drill")}${drillFileArg ? ` in ${drillFileArg}` : ""}, ${count(placement.length, "placement question")}, ${count(projects.length, "project")}${projectFileArg ? ` (${projectFileArg})` : ""}${topics.length ? `, ${count(topics.length, "topic")}` : ""}`);
+  console.log(`check ok (nothing written): ${count(modules.length, "module")}${moduleFileArg ? ` (${moduleFileArg})` : ""}, ${count(modules.reduce((a, m) => a + m.steps.length, 0), "step")}, ${count(drills.length, "drill")}${drillFileArg ? ` in ${drillFileArg}` : ""}, ${count(placement.length, "placement question")}, ${count(projects.length, "project")}${projectFileArg ? ` (${projectFileArg})` : ""}${topics.length ? `, ${count(topics.length, "topic")}` : ""}${bigLine()}`);
   process.exit(0);
 }
 
 // The app loads a small index (every page needs it) and each step's lesson only when it's opened:
 // public/lessons/<module>/<slug>-<hash>.json, where the hash of its content makes a saved copy
-// never stale. The whole modules are for the pre-rendered pages and the tests.
-const lessonJson = new Map(modules.flatMap((m) => m.steps.map((s) => [s.id, JSON.stringify(s)])));
+// never stale. The whole modules are for the pre-rendered pages and the tests. The slow solutions
+// (for the build's speed check and the tests) stay out of what the page loads.
+// A challenge's slow solution (on an exercise, a milestone or a boss drill: whatever has tests) stays
+// out of the files the page loads; a data file that happens to be called slow stays in.
+const forPage = (value) =>
+  JSON.stringify(value, function (k, v) {
+    return k === "slow" && Array.isArray(this?.tests) ? undefined : v;
+  });
+const lessonJson = new Map(modules.flatMap((m) => m.steps.map((s) => [s.id, forPage(s)])));
 const lessonHash = (s) => crypto.createHash("sha256").update(lessonJson.get(s.id)).digest("hex").slice(0, 10);
-const projectJson = new Map(projects.map((x) => [x.id, JSON.stringify(x)]));
+const projectJson = new Map(projects.map((x) => [x.id, forPage(x)]));
 const projectHash = (x) => crypto.createHash("sha256").update(projectJson.get(x.id)).digest("hex").slice(0, 10);
 const live = new Set(modules.map((m) => m.id));
-const plan = course.modules.map((m, i) => ({ id: m.id, number: i + 1, title: m.title, course: m.course, part: m.part ?? null, mooc: m.mooc ?? [], steps: m.steps, live: live.has(m.id) }));
+const plan = course.modules.map((m, i) => ({ id: m.id, number: i + 1, title: m.title, course: m.course, group: m.group ?? null, part: m.part ?? null, mooc: m.mooc ?? [], steps: m.steps, live: live.has(m.id) }));
 const index = {
   python: pythonVersion,
   moocUrl: course.moocUrl,
   plan,
+  groups,
   modules: modules.map(({ steps, ...m }) => ({ ...m, drills: drills.filter((d) => d.topic === m.id).length, steps: steps.map((s) => ({ id: s.id, slug: s.slug, title: s.title, hash: lessonHash(s), challenges: 1 + s.more.length, drills: drills.filter((d) => d.after === s.id).length })) })),
   interviewDrills: drills.filter((d) => d.topic === "interview").length,
+  interviewSets,
+  interviewGroup: interview?.modules.group ?? null,
   placementQuestions: placement.length,
   images: assetNames(),
   projects: projects.map((x) => ({ id: x.id, title: x.title, summary: x.summary, after: x.after, hash: projectHash(x), milestones: x.milestones.map((m) => ({ id: m.id, title: m.title })) })),
@@ -1150,16 +1310,17 @@ fs.mkdirSync(path.join(GENERATED, "modules"), { recursive: true });
 fs.mkdirSync(path.join(GENERATED, "projects"), { recursive: true });
 fs.writeFileSync(path.join(GENERATED, "course.json"), JSON.stringify(index));
 fs.writeFileSync(path.join(GENERATED, "topics.json"), JSON.stringify(topics));
+fs.writeFileSync(path.join(GENERATED, "interview.json"), JSON.stringify(interview));
 for (const m of modules) fs.writeFileSync(path.join(GENERATED, "modules", `${m.id}.json`), JSON.stringify(m));
-for (const x of projects) fs.writeFileSync(path.join(GENERATED, "projects", `${x.id}.json`), projectJson.get(x.id));
+for (const x of projects) fs.writeFileSync(path.join(GENERATED, "projects", `${x.id}.json`), JSON.stringify(x));
 for (const dir of fs.readdirSync(LESSONS)) {
   const full = path.join(LESSONS, dir);
   for (const f of fs.readdirSync(full)) if (!lessonFiles.has(path.join(full, f))) fs.rmSync(path.join(full, f));
   if (!fs.readdirSync(full).length) fs.rmdirSync(full);
 }
-fs.writeFileSync(path.join(GENERATED, "drills.json"), JSON.stringify({ drills, placement }));
+fs.writeFileSync(path.join(GENERATED, "drills.json"), forPage({ drills, placement }));
 fs.mkdirSync(path.dirname(CHECKS_JSON), { recursive: true });
 fs.writeFileSync(CHECKS_JSON, JSON.stringify({ python: pythonVersion, checks }, null, 1));
 const steps = modules.reduce((a, m) => a + m.steps.length, 0);
 const challenges = modules.reduce((a, m) => a + m.steps.reduce((b, s) => b + 1 + s.more.length, 0), 0);
-console.log(`content ok: ${count(modules.length, "module")}, ${count(steps, "step")}, ${count(challenges, "challenge")}, ${count(drills.length, "drill")}, ${count(placement.length, "placement question")}, ${count(projects.length, "project")} with ${count(projects.reduce((n, x) => n + x.milestones.length, 0), "milestone")}, ${count(topics.length, "topic")}; ${count(checks.length, "program")} checked on CPython ${pythonVersion} in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+console.log(`content ok: ${count(modules.length, "module")}, ${count(steps, "step")}, ${count(challenges, "challenge")}, ${count(drills.length, "drill")}, ${count(placement.length, "placement question")}, ${count(projects.length, "project")} with ${count(projects.reduce((n, x) => n + x.milestones.length, 0), "milestone")}, ${count(topics.length, "topic")}; ${count(checks.length, "program")} checked on CPython ${pythonVersion} in ${((Date.now() - t0) / 1000).toFixed(1)}s${bigLine()}`);

@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
-import App, { loadPlayground, loadPractice, loadProProject, loadProjectPage, loadStepPage, loadTopics } from "./App";
+import App, { loadInterview, loadPlayground, loadPractice, loadProProject, loadProjectPage, loadStepPage, loadTopics } from "./App";
 import { loadProject, loadStep } from "./content";
 import { loadDrills } from "./content/drills";
 import "./styles.css";
@@ -25,7 +25,9 @@ const ready = lesson
           ? Promise.all([practice(), loadDrills()]).catch(() => undefined)
           : /^topics\/?$/.test(path)
             ? loadTopics().catch(() => undefined)
-            : Promise.resolve();
+            : /^interview\/?$/.test(path)
+              ? loadInterview().catch(() => undefined)
+              : Promise.resolve();
 
 // The app replaces the pre-rendered page, which drops the focus of a keyboard user who moved to one
 // of its links before the app started. The same link in the app gets it back: the one at the same

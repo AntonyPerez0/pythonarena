@@ -46,6 +46,14 @@ export const ALLOWED_HOSTS = [
   'cli.github.com',
   'desktop.github.com',
   'git-scm.com',
+  // Places to practice coding interview problems (the interview prep page, content/interview.yaml).
+  'leetcode.com',
+  'neetcode.io',
+  'hackerrank.com',
+  'exercism.org',
+  'codewars.com',
+  'projecteuler.net',
+  'adventofcode.com',
   // Licenses and credits.
   'creativecommons.org',
   'opensource.org',
@@ -110,7 +118,7 @@ export function markdownLinks(text) {
 }
 
 /** The fields of lesson, project and content files that are shown as markdown (the rest is code, input, expected output or data). */
-export const MARKDOWN_FIELDS = new Set(['text', 'task', 'hints', 'intro', 'summary', 'after', 'message', 'about', 'description', 'explanation', 'why', 'question', 'note']);
+export const MARKDOWN_FIELDS = new Set(['text', 'task', 'hints', 'intro', 'summary', 'after', 'message', 'about', 'description', 'explanation', 'why', 'question', 'note', 'lead', 'signal', 'technique', 'operation', 'items']);
 
 /** Every markdown string inside a JSON or YAML value (a string under one of MARKDOWN_FIELDS, at any depth). */
 export function markdownStrings(value, key = '', out = []) {

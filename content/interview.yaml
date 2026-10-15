@@ -1,0 +1,158 @@
+# The interview prep page (/interview/). Checked by the content build (scripts/content/interview.mjs):
+# text is Markdown with no HTML and no en or em dashes, a link to one of the site's pages starts with /
+# and must name a page the site has, and every step in patterns must exist. The modules come from the
+# course plan (the group named under modules), and the drill sets from content/drills/interview-*.yaml.
+intro: |
+  A coding interview often gives you a problem and a short time to solve it, while you explain your thinking out loud. This page brings together what Python Arena has for that: the modules on data structures and algorithms, interview questions to drill, which technique fits which kind of problem, what Python's operations cost, and a plan for working through a problem.
+
+modules:
+  group: dsa
+  lead: |
+    Python Arena's own modules on the data structures and algorithms that interviews ask about. Their big tests stop a slow solution, the way an interviewer asks "can you make it faster?"
+
+drills:
+  lead: |
+    Quick questions on what Python really does: predict the output, spot the bug, pick the right answer, and small programs to write. Interview prep in Deathmatch gives you three lives and is open to everyone, with no lessons needed first.
+
+patterns:
+  lead: |
+    What a problem says often points to the technique that solves it. Each row links to the step that teaches it.
+  rows:
+    - signal: "Have I seen this value before? Are there duplicates?"
+      technique: "A set of the values seen so far: each lookup is O(1) on average"
+      step: more-comprehensions-sets
+    - signal: "How often does each value appear? Which one is the most common?"
+      technique: "A dict of counts, or `collections.Counter`"
+      step: dictionaries-counting
+    - signal: "Put the items into groups by some property"
+      technique: "A dict whose values are lists"
+      step: dictionaries-counting
+    - signal: "Find a value in a sorted list"
+      technique: "Binary search: halve the part to look in each time, O(log n)"
+      step: recursion-binary-search
+    - signal: "The largest, the smallest or the best item by some rule"
+      technique: "One pass that keeps the best item so far, O(n)"
+      step: for-loops-best-item
+    - signal: "Order the items by a property, or take the top few"
+      technique: "Sort with a key function, O(n log n)"
+      step: functions-as-arguments-key
+    - signal: "Data inside data to any depth: folders, a tree, nested lists"
+      technique: "Recursion: handle one level and let the calls handle the rest"
+      step: recursion-examples-nested-structures
+    - signal: "Keep values in order while you add and look them up"
+      technique: "A sorted binary tree, or `bisect` on a sorted list"
+      step: recursion-examples-sorted-tree
+    - signal: "Too many values to keep at once, or only the first few are needed"
+      technique: "A generator that gives one value at a time"
+      step: generators-yield
+
+costs:
+  lead: |
+    How the time of Python's common operations grows with the data, in big O notation: O(1) takes the same time whatever the size, O(log n) grows very slowly, and O(n) grows with n, the number of items. These are CPython's costs, the Python that this site runs.
+  rows:
+    - operation: "`a[i]`, `a[i] = x`, `len(a)` (list)"
+      cost: "O(1)"
+      note: "A list knows where each item is, and keeps its length."
+    - operation: "`a.append(x)`, `a.pop()` (list)"
+      cost: "O(1)"
+      note: "At the end of the list. For `append` this is amortized: now and then the list grows its room and copies its items, but over many appends each one costs O(1)."
+    - operation: "`a.insert(0, x)`, `a.pop(0)`, `del a[i]` (list)"
+      cost: "O(n)"
+      note: "Every item after that place moves one step. Use a `deque` to add and remove at the front."
+    - operation: "`x in a`, `a.index(x)`, `a.count(x)`, `a.remove(x)` (list)"
+      cost: "O(n)"
+      note: "Looks at the items one by one. In a loop over the list, that's a loop inside a loop."
+    - operation: "`a[i:j]` (list)"
+      cost: "O(k)"
+      note: "Makes a new list of the k items in the slice."
+    - operation: "`min(a)`, `max(a)`, `sum(a)`"
+      cost: "O(n)"
+      note: "Each one goes through every item."
+    - operation: "`d[k]`, `d[k] = v`, `k in d`, `del d[k]` (dict)"
+      cost: "O(1) on average, O(n) at worst"
+      note: "The key's hash finds its place in the table at once. Adding a new key is amortized, like `append`: now and then the table grows and every key moves to the new one. The O(n) worst case comes when many keys collide."
+    - operation: "`x in s`, `s.add(x)`, `s.discard(x)` (set)"
+      cost: "O(1) on average, O(n) at worst"
+      note: "A table of hashed values, like a dict's keys, with the same costs: `add` is amortized, as the table grows now and then, and the O(n) worst case comes when many values collide."
+    - operation: "`set(a)`, `dict(pairs)`"
+      cost: "O(n) on average"
+      note: "Adds the n items one at a time."
+    - operation: "`q.append(x)`, `q.appendleft(x)`, `q.pop()`, `q.popleft()` (deque)"
+      cost: "O(1)"
+      note: "A `collections.deque` adds and removes at both ends quickly. Reading `q[i]` in the middle is O(n)."
+    - operation: "`heapq.heappush(h, x)`, `heapq.heappop(h)`"
+      cost: "O(log n)"
+      note: "The smallest item is always `h[0]`, which costs O(1) to read."
+    - operation: "`heapq.heapify(a)`"
+      cost: "O(n)"
+      note: "Turns a list into a heap in place, faster than n pushes."
+    - operation: "`bisect.bisect_left(a, x)` (sorted list)"
+      cost: "O(log n)"
+      note: "Binary search. `bisect.insort(a, x)` finds the place as fast, but inserting there is O(n)."
+    - operation: "`a.sort()`, `sorted(a)`"
+      cost: "O(n log n)"
+      note: "Also at worst. Sorting is stable: equal items keep their order. A list that is already sorted takes only O(n)."
+    - operation: "`s[i]`, `len(s)` (str)"
+      cost: "O(1)"
+      note: "Strings can't be changed, so every change makes a new string."
+    - operation: "`s + t` (str)"
+      cost: "O(len(s) + len(t))"
+      note: "Copies both into a new string."
+    - operation: "`''.join(parts)`"
+      cost: "O(n)"
+      note: "n is the length of the result. The way to build a long string from many pieces: adding pieces with `+=` in a loop can copy the string so far each time, O(n²) in all."
+  after: |
+    Average assumes keys that hash well, as numbers, strings and tuples of them do. Python's wiki has [a longer table of costs](https://wiki.python.org/moin/TimeComplexity).
+
+checklist:
+  lead: |
+    Interviewers want to see how you think as much as the answer. A plan for working through a problem out loud:
+  items:
+    - "Say the problem back in your own words. Ask about the input: how big can it be, can it be empty, can values repeat or be negative?"
+    - "Work through a small example by hand, then a tricky one: empty, one item, all the same."
+    - "Say a simple way first, even a slow one, and what it costs. It's a start, and something to test a faster way against."
+    - "Look for a faster way: which signal from the table above fits? What would a set, a dict, sorting or two pointers give you?"
+    - "Agree on the plan before you code. Then write it, saying what each part does."
+    - "Test it out loud on your examples, line by line, edge cases too."
+    - "Say what it costs in time and in memory, and what you would improve with more time."
+
+tools:
+  lead: |
+    Python's standard library has a tool for many interview problems. Most interviews let you use them; say what each one costs.
+  modules:
+    - name: collections
+      about: "`Counter` counts the items of a list or string in one line. `defaultdict` gives a missing key a starting value, such as an empty list for grouping. `deque` adds and removes at both ends in O(1): the queue for breadth-first search."
+    - name: heapq
+      about: "A heap in a plain list: `heappush` and `heappop` give the smallest item in O(log n). `nlargest` and `nsmallest` give the top k items. For the largest first, push the values negated."
+    - name: bisect
+      about: "Binary search on a sorted list: `bisect_left` finds where a value goes in O(log n), and `insort` puts it there."
+    - name: functools
+      about: "`cache` remembers what a function returned for each argument, so a recursive solution works out each smaller problem only once: memoization, for dynamic programming."
+    - name: itertools
+      about: "`permutations`, `combinations` and `product` go through every arrangement or choice, handy for a brute-force answer to test a faster one against. `accumulate` gives running totals."
+
+practice:
+  lead: |
+    More problems to practice on, on other sites:
+  sites:
+    - name: LeetCode
+      url: https://leetcode.com/
+      about: "A large collection of interview problems by topic and difficulty, which you can solve in Python."
+    - name: NeetCode
+      url: https://neetcode.io/
+      about: "A short list of key interview problems grouped by technique, with video explanations."
+    - name: HackerRank
+      url: https://www.hackerrank.com/
+      about: "Practice tracks on data structures and algorithms. Many companies use it for their coding tests."
+    - name: Exercism
+      url: https://exercism.org/tracks/python
+      about: "Free Python exercises, with mentors who can review your code."
+    - name: Codewars
+      url: https://www.codewars.com/
+      about: "Small puzzles ranked by difficulty. After you solve one, you can read other people's solutions."
+    - name: Project Euler
+      url: https://projecteuler.net/
+      about: "Math puzzles where a slow way can take hours and a clever one a second."
+    - name: Advent of Code
+      url: https://adventofcode.com/
+      about: "A puzzle a day every December, with the puzzles of past years online too."

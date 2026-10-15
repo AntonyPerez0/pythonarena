@@ -6,7 +6,7 @@ import { useEffect, useId } from "react";
 import { Link } from "react-router-dom";
 import { Printer } from "lucide-react";
 import { BrandMark } from "../components/Brand";
-import { COURSE_NAMES, modules, plan, projects } from "../content";
+import { COURSE_NAMES, groupById, modules, plan, projects } from "../content";
 import { NAME_MAX, RECORD_NOTICE, buildRecord, cleanName, isoDay, recordDate, type FinishedModule, type RecordPart } from "../lib/record";
 import { patchSettings, useStore } from "../state/store";
 import { useTitle } from "../lib/title";
@@ -18,7 +18,7 @@ function When({ at }: { at: number | null }) {
   return at == null ? <span className="record-nodate">date not saved</span> : <time dateTime={isoDay(at)}>{recordDate(at)}</time>;
 }
 
-/** "Part 3", or for the extra modules (no part), the numbers they have: "Modules 55 to 59". */
+/** "Part 3", or for a group of extra modules (no part), the numbers they have: "Modules 59 to 65". */
 function partName(p: RecordPart) {
   if (p.part != null) return `Part ${p.part}`;
   const n = p.finished.map((m) => m.number);
@@ -78,7 +78,9 @@ export default function Record() {
     return () => document.documentElement.classList.remove("record-print");
   }, []);
 
-  const courses = (["I", "II", "extra"] as const).map((c) => ({ c, parts: shown.filter((p) => p.course === c) })).filter((x) => x.parts.length);
+  // The MOOC's two courses, then each group of extra modules, by its title.
+  const keys = [...new Set(shown.map((p) => p.group ?? p.course))];
+  const courses = keys.map((c) => ({ c, name: groupById.get(c)?.title ?? COURSE_NAMES[c as keyof typeof COURSE_NAMES] ?? c, parts: shown.filter((p) => (p.group ?? p.course) === c) }));
 
   return (
     <div className="narrow record-page">
@@ -179,12 +181,12 @@ export default function Record() {
           </p>
         ) : (
           <>
-            {courses.map(({ c, parts }) => (
-              <section key={c} className="record-course" aria-label={`${COURSE_NAMES[c]}: modules finished`}>
-                <h3 className="record-course-h">{COURSE_NAMES[c]}</h3>
+            {courses.map(({ c, name, parts }) => (
+              <section key={c} className="record-course" aria-label={`${name}: modules finished`}>
+                <h3 className="record-course-h">{name}</h3>
                 <div className="record-parts">
                   {parts.map((p) => (
-                    <PartBlock key={`${p.course}-${p.part}`} p={p} />
+                    <PartBlock key={`${p.course}-${p.part}-${p.group}`} p={p} />
                   ))}
                 </div>
               </section>

@@ -14,8 +14,8 @@ import Record from "./pages/Record";
 import Projects from "./pages/Projects";
 import ProTrack from "./pages/ProTrack";
 import NotFound from "./pages/NotFound";
-import { dailyPage, deathmatchPage, placementPage, playgroundPage, proProjectPage, projectPage, stepPage, topicsPage } from "./pages/editorPages";
-export { loadPlayground, loadPractice, loadProProject, loadProjectPage, loadStepPage, loadTopics } from "./pages/editorPages";
+import { dailyPage, deathmatchPage, interviewPage, placementPage, playgroundPage, proProjectPage, projectPage, stepPage, topicsPage } from "./pages/editorPages";
+export { loadInterview, loadPlayground, loadPractice, loadProProject, loadProjectPage, loadStepPage, loadTopics } from "./pages/editorPages";
 import { patchSettings } from "./state/store";
 import { useAppearance, useResolvedTheme } from "./lib/appearance";
 import { MOOC_LICENSE_URL, MOOC_URL, REPO_URL } from "./lib/site";
@@ -96,6 +96,9 @@ function Footer() {
               </li>
               <li>
                 <Link to="/daily/">Daily challenge</Link>
+              </li>
+              <li>
+                <Link to="/interview/">Interview prep</Link>
               </li>
               <li>
                 <Link to="/placement/">Placement quiz</Link>
@@ -243,6 +246,7 @@ export default function App() {
           <Route path="/pro" element={<ProTrack />} />
           <Route path="/pro/:proId" element={<proProjectPage.Route />} />
           <Route path="/topics" element={<topicsPage.Route />} />
+          <Route path="/interview" element={<interviewPage.Route />} />
           <Route path="/playground" element={<playgroundPage.Route />} />
           <Route path="/deathmatch" element={<deathmatchPage.Route />} />
           <Route path="/daily" element={<dailyPage.Route />} />
