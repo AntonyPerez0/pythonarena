@@ -32,6 +32,7 @@ import { checkRules, normalizeOutput, parseTemplate, templateSolution } from "..
 import { MAIN_FILE, joinFiles, sourceNameProblem, splitFiles } from "../src/grader/files.js";
 import { compareWrites, dataPathProblem } from "../src/grader/writes.js";
 import { blockKindProblem } from "../src/components/code-blocks.ts";
+import { importsPygame } from "../src/engine/pygame-import.ts";
 import { checkTopics } from "./content/topics.mjs";
 import { pythonPool, referencePython, runKey } from "./content/python.mjs";
 import { pyodidePool, pyodideVersion } from "./content/pyodide.mjs";
@@ -102,8 +103,7 @@ const usedCache = {};
 const pool = pythonPool({ exe: python.exe });
 // Programs that use pygame run in Pyodide (on Node), the browser's own interpreter, started when the first one comes.
 let windowPool = null;
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
-const usesPygame = (spec) => spec.window != null || Object.values(spec.files ?? {}).some((t) => typeof t === "string" && PYGAME.test(t));
+const usesPygame = (spec) => spec.window != null || importsPygame(Object.values(spec.files ?? {}));
 const errors = [];
 const warnings = [];
 const checks = []; // for the Pyodide replay
@@ -428,7 +428,7 @@ async function checkWindowExample(w, blocks, i, shown, edits) {
   if (!win) return;
   const files = exampleFiles(w, blocks, i);
   const spec = specOf(code, { ...(files ? { files } : {}), window: win }, shown);
-  if (!Object.values(spec.files).some((t) => /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m.test(t))) errors.push(`${w}: a python window example is a pygame program (it imports pygame)`);
+  if (!importsPygame(Object.values(spec.files))) errors.push(`${w}: a python window example is a pygame program (it imports pygame)`);
   const r = await run(spec, { twice: true });
   if (!r.stable) errors.push(`${w}: draws or prints something different on each run`);
   if (r.timedOut || r.exit !== 0) return void errors.push(`${w}: ${r.timedOut ? "times out" : `stops with an error:\n${r.stderr}`}`);

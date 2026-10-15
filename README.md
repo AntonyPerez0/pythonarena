@@ -73,7 +73,7 @@ npm run dev        # checks the lessons, then serves http://localhost:5173/
 |---|---|---|
 | `build` | `npm ci`, the unit tests, then `npm run build` (every lesson program checked on CPython 3.14.2, tsc, the site build, the pre-rendered pages) and the link check; keeps the build for the jobs below, and on `main` uploads `dist` for Pages | first |
 | `content-pyodide` | every lesson program replayed in Pyodide and compared with CPython, in 2 shards side by side | after `build` |
-| `e2e` | the browser tests, with screenshots in the artifact `screenshots` | after `build` |
+| `e2e` | the browser tests in 2 jobs side by side, the phone pass and everything else, with screenshots in the artifacts `screenshots` and `screenshots-phone` | after `build` |
 | `pro-track` | `npm run pro-track-check` with Python 3.14 | first, beside `build` |
 | `lighthouse` | Lighthouse scores against `lighthouserc.cjs` | pull requests, after `build` |
 | `deploy` | publishes exactly the `dist` the build job made | `main`, after all of the above |

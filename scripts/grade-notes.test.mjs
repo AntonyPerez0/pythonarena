@@ -10,6 +10,7 @@ import { build } from "esbuild";
 import fs from "node:fs";
 import { pythonPool, referencePython } from "./content/python.mjs";
 import { pyodidePool } from "./content/pyodide.mjs";
+import { PYGAME_IMPORT as PYGAME } from "../src/engine/pygame-import.ts";
 
 let python = null;
 try {
@@ -25,7 +26,6 @@ test.after(() => {
   pool?.close();
   windowPool?.close();
 });
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 // The challenge's images, as the page fetches them from images/.
 globalThis.fetch = async (url) => {
   const name = /images\/([\w.-]+)$/.exec(String(url))?.[1];

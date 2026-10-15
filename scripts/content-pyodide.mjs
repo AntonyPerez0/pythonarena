@@ -11,6 +11,7 @@ import path from "node:path";
 import { loadPyodide } from "pyodide";
 import { normalizeOutput } from "../src/grader/assemble.js";
 import { fileContent } from "../src/grader/writes.js";
+import { importsPygame } from "../src/engine/pygame-import.ts";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const CHECKS = path.join(ROOT, "fidelity", "out", "content-checks.json");
@@ -20,8 +21,7 @@ if (!fs.existsSync(CHECKS)) {
 }
 const { python, checks: all } = JSON.parse(fs.readFileSync(CHECKS, "utf8"));
 // Programs that use pygame already ran in Pyodide in the build (scripts/content/pyodide.mjs): nothing to compare.
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
-const checks = all.filter((c) => c.spec.window == null && !Object.values(c.spec.files ?? {}).some((t) => typeof t === "string" && PYGAME.test(t)));
+const checks = all.filter((c) => c.spec.window == null && !importsPygame(Object.values(c.spec.files ?? {})));
 const shard = /^(\d+)\/(\d+)$/.exec(process.env.CONTENT_SHARD ?? "");
 const mine = shard ? checks.filter((_, i) => i % Number(shard[2]) === Number(shard[1]) - 1) : checks;
 

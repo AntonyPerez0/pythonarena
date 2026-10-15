@@ -32,7 +32,9 @@ import types
 
 OUTPUT_LIMIT = 64 * 1024
 TEST_FILE = "<test>"
-_PYGAME = re.compile(r"^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)", re.M)
+# A line that imports pygame, alone or in a list (`import sys, pygame`, `import os, pygame as pg`, `from pygame
+# import ...`). src/engine/pygame-import.ts has the same expression for the page and the build.
+_PYGAME = re.compile(r"^[ \t]*(?:import[ \t]+(?:[\w.]+(?:[ \t]+as[ \t]+\w+)?[ \t]*,[ \t]*)*pygame\b|from[ \t]+pygame\b)", re.M)
 
 
 def uses_pygame(files):

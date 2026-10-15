@@ -1854,7 +1854,7 @@
   drills: larger-application
 - term: single responsibility principle
   kind: idea
-  about: The rule that each class, and the objects made from it, should have one job in the program.
+  about: The rule that a class should do one kind of work, so there is only one kind of reason to change it.
   aliases:
   - single responsibility
   steps:
@@ -1886,7 +1886,7 @@
   drills: larger-application
 - term: starred assignment
   kind: idea
-  about: An assignment where a `*` in front of the last variable gives it a list of the items left over, as in `species, *places = parts`.
+  about: An assignment where the variable with a `*` in front gets a list of the items left over, as in `title, length, *sessions = parts`.
   aliases:
   - '*rest'
   - extended unpacking

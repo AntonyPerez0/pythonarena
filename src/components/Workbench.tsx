@@ -13,11 +13,11 @@ import SymbolBar from "./SymbolBar";
 import HintsPanel from "./HintsPanel";
 import { DownloadCard, EngineErrorCard, UnsupportedCard, useEngineAutoload, useEngineStatus } from "./Engine";
 import { engineSupported } from "../engine/client";
+import { PYGAME_IMPORT } from "../engine/pygame-import";
 import { splitFiles } from "../grader/files.js";
 
 // A pygame challenge's window (loaded only for those challenges).
 const WindowPanel = lazy(() => import("./WindowPanel"));
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 
 type Props = {
   ex: Exercise;
@@ -82,7 +82,7 @@ export default function Workbench({ ex, progress, onChange, onPass, report }: Pr
   const callsOnly = ex.tests.length > 0 && ex.tests.every((t) => t.call != null);
   // A pygame challenge: "Run with my input" opens its window, with what the first test does in it.
   const windowTest = ex.tests.find((t) => !t.hidden && t.window) ?? ex.tests.find((t) => t.window);
-  const pygame = !!windowTest || PYGAME.test(source);
+  const pygame = !!windowTest || PYGAME_IMPORT.test(source);
   const windowFiles = useMemo(() => (pygame && showConsole ? (splitFiles(source) as { path: string; text: string }[]) : []), [pygame, showConsole, source]);
   const [windowRun, setWindowRun] = useState(0);
 

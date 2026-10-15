@@ -17,7 +17,8 @@
 // Usage: npm run build && node scripts/e2e.mjs [--shots dir]
 // E2E_ONLY=<regular expression> runs only the tests whose names match (while working on something);
 // E2E_SKIP=<regular expression> leaves out the tests whose names match. CI runs the phone pass (the tests
-// named "the phone pass: ...", which need nothing from the others) as a job of its own beside the rest.
+// named "the phone pass: ...", which need nothing from the others) as a job of its own beside the rest
+// (.github/workflows/deploy.yml, the e2e job's two entries).
 import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

@@ -6,6 +6,7 @@ import SymbolBar from "../components/SymbolBar";
 import { DiagnosticList, WrittenFiles } from "../components/Results";
 import { DownloadCard, EngineErrorCard, UnsupportedCard, useEngineAutoload, useEngineStatus } from "../components/Engine";
 import { engineSupported } from "../engine/client";
+import { PYGAME_IMPORT } from "../engine/pygame-import";
 import { runOnly, type FreeRun } from "../grader/grade";
 import { decodeShare, encodeShare } from "../lib/share";
 import { useTitle } from "../lib/title";
@@ -15,7 +16,6 @@ import { splitFiles } from "../grader/files.js";
 
 // A pygame program's window (loaded only for one).
 const WindowPanel = lazy(() => import("../components/WindowPanel"));
-const PYGAME = /^[ \t]*(?:import[ \t]+pygame\b|from[ \t]+pygame\b)/m;
 
 const EXAMPLE = `name = input("What is your name? ")
 print(f"Hello, {name}!")
@@ -82,7 +82,7 @@ export default function Playground() {
   // Each run's number: a result that arrives after another program was put in the editor is dropped.
   const generation = useRef(0);
   // A pygame program runs in a window: each Run starts a new one.
-  const pygame = PYGAME.test(code);
+  const pygame = PYGAME_IMPORT.test(code);
   const [windowRun, setWindowRun] = useState(0);
   const [windowCode, setWindowCode] = useState("");
   const windowFiles = useMemo(() => splitFiles(windowCode) as { path: string; text: string }[], [windowCode]);
@@ -136,7 +136,7 @@ export default function Playground() {
   };
 
   const run = useCallback(async () => {
-    if (PYGAME.test(code)) {
+    if (PYGAME_IMPORT.test(code)) {
       setResult(null);
       setWindowCode(code);
       setWindowRun((n) => n + 1);
