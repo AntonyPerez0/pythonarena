@@ -519,7 +519,8 @@ async function buildPredict(where, raw, hints) {
 
 /** Whether a run passes a built test (as the browser's grader decides it). */
 function passes(t, r) {
-  const window = !t.expectWindow || (r.window && r.window.frames === t.expectWindow.frames && normalizeOutput(r.window.log) === normalizeOutput(t.expectWindow.log));
+  const size = (a, b) => !a || !b || (a[0] === b[0] && a[1] === b[1]);
+  const window = !t.expectWindow || (r.window && r.window.frames === t.expectWindow.frames && size(t.expectWindow.size, r.window.size) && normalizeOutput(r.window.log) === normalizeOutput(t.expectWindow.log));
   return !r.timedOut && r.exit === 0 && !r.callError && graded(r, t) === t.expect && (!t.returns || r.callValue === "value") && (!t.writes || compareWrites(t.writes, r.files).every((f) => f.pass)) && window;
 }
 

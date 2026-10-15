@@ -172,9 +172,12 @@ export function timeLimitFor(ex: Exercise): number {
   return Math.max(DEFAULT_TIME_LIMIT_MS, frames ? 4_000 + frames * 12 : 0);
 }
 
-/** Whether a run's window is the expected one: the same number of frames, and the same drawing in the last. */
+/** Whether two window sizes are the same (no size to compare: the same). */
+const sameSize = (a: [number, number] | null | undefined, b: [number, number] | null | undefined) => !a || !b || (a[0] === b[0] && a[1] === b[1]);
+
+/** Whether a run's window is the expected one: the same size, the same number of frames, and the same drawing in the last. */
 export function sameWindow(want: ExpectedWindow, got: WindowResult | null | undefined): boolean {
-  return !!got && got.frames === want.frames && normalizeOutput(got.log) === normalizeOutput(want.log);
+  return !!got && got.frames === want.frames && sameSize(want.size, got.size) && normalizeOutput(got.log) === normalizeOutput(want.log);
 }
 
 /** Why a window isn't the expected one, in words. */
@@ -184,6 +187,7 @@ export function windowNote(want: ExpectedWindow, got: WindowResult | null | unde
   if (got.frames < want.frames)
     return `Your window showed ${got.frames} ${got.frames === 1 ? "frame" : "frames"} and then the program ended, but it should keep showing frames until the window is closed (${want.frames} in this test). Keep drawing in a loop that ends when the window is closed (pygame.QUIT).`;
   if (got.frames > want.frames) return `Your window showed ${got.frames} frames, but it should show ${want.frames}.`;
+  if (!sameSize(want.size, got.size)) return `Your window is ${got.size![0]} x ${got.size![1]} pixels, but it should be ${want.size![0]} x ${want.size![1]}: check the size you give pygame.display.set_mode (width first, then height).`;
   return "The window's last frame isn't what it should be: compare your window with the expected one, and their drawing as text, below.";
 }
 

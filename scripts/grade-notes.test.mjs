@@ -293,6 +293,12 @@ it("a window that moves too far fails with the window's note, the output compari
   assert.deepEqual(t.windowEvents, windowTest.window.events);
 });
 
+it("a window of another size fails with a note that names both sizes", async () => {
+  const r = await grade(windowChallenge, WINDOW_PROGRAM(MOVING).replace("set_mode((200, 120))", "set_mode((240, 120))"));
+  assert.equal(r.tests[0].window.pass, false);
+  has(r.tests[0].note, "Your window is 240 x 120 pixels, but it should be 200 x 120");
+});
+
 it("a program that draws once and ends, or shows no window, gets a note that says so", async () => {
   const once = await grade(windowChallenge, 'import pygame\nwindow = pygame.display.set_mode((200, 120))\nwindow.fill((0, 0, 0))\nwindow.blit(pygame.image.load("robot.png"), (10, 40))\npygame.display.flip()\n');
   has(once.tests[0].note, "Your window showed 1 frame and then the program ended", "until the window is closed (12 in this test)");
