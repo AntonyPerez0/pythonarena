@@ -1,0 +1,1392 @@
+id: own-game
+summary: Planning and writing a game of your own. What a small game needs, turning an idea into a plan, a main loop that updates the game on every frame, collisions with pygame.Rect, and a complete coin chase with a monster, a time limit and an end.
+steps:
+  - id: own-game-plan
+    slug: plan
+    title: Planning your own game
+    text: |
+      You've built a whole game. The last project of the course is a game of your own: your idea, written with what you've learned. This module helps you plan it, and builds a small game that you can use as a starting point.
+
+      ### What makes a game
+
+      A small game needs only a few things, and you've written each of them already:
+
+      - something the player controls, such as a robot that moves with the arrow keys
+      - things to collect, or enemies to avoid, or both
+      - a clear goal, so that the player knows what to do and when the game is won or lost
+      - a counter that tells the player how they're doing: points, moves, time or lives
+      - code split into methods of a class, each with one job, like the box game
+
+      ### Ideas
+
+      Choose something small enough to finish. You can always add to a game that works. A few ideas:
+
+      - **Coin chase**: collect coins that appear in random places, while a monster follows you.
+      - **Dodge**: monsters bounce around the window, and the robot has to keep away from them. The score is how long it survives.
+      - **Maze run**: build a maze from the tiles of the box game, and find the way out in as few moves as possible, or before the time runs out.
+      - **Keep it up**: bounce a ball off a paddle at the bottom of the window, and count the bounces.
+
+      Besides the robot and the tiles of the box game, the site has these pictures for your games:
+
+      ```asset coin.png
+      ```
+
+      ```asset ball.png
+      ```
+
+      ```asset monster.png
+      ```
+
+      ### From an idea to a plan
+
+      Before writing any code, write down four things in plain words. For the coin chase:
+
+      1. **What's in the game**: the robot, a coin, a monster, and the number of coins collected so far.
+      2. **What the player does**: the arrow keys move the robot.
+      3. **What happens by itself**: the monster moves toward the robot, and a collected coin jumps to a new place.
+      4. **How it ends**: the monster catches the robot.
+
+      The plan turns into code almost by itself. The first list is the game's state, the attributes that `reset` sets up. The second goes in `handle_events`, the third in a method of its own, `update`, and `draw` shows the state in the window.
+
+      ### A game that moves by itself
+
+      The box game waited for the player: between two key presses, nothing changed. In the coin chase, things move on every frame, so the main loop calls `update` between handling the events and drawing:
+
+      ```python fragment
+      def run(self):
+          while True:
+              self.handle_events()
+              self.update()
+              self.draw()
+              self.clock.tick(60)
+      ```
+
+      Now the clock matters: at 60 frames a second, a robot that moves 3 pixels a frame goes 180 pixels a second. To move smoothly, the robot moves on every frame while an arrow key is held down, and as in part 13, `pygame.key.get_pressed()` tells which keys are down right now:
+
+      ```python fragment
+      keys = pygame.key.get_pressed()
+      if keys[pygame.K_LEFT]:
+          self.robot_x -= 3
+      ```
+
+      ### Did they touch?
+
+      Most games ask on every frame whether two things touch: the robot and a coin, the robot and a monster. This is called **collision detection**, and you met pygame's tool for it in part 13: `pygame.Rect` and its method `colliderect`. The game keeps its positions as plain numbers in attributes, and makes the rectangles from them whenever it checks, so they always match the latest positions:
+
+      ```python run
+      import pygame
+
+      robot_x, robot_y = 100, 50
+      coin_x, coin_y = 130, 80
+      robot = pygame.Rect(robot_x, robot_y, 40, 40)
+      coin = pygame.Rect(coin_x, coin_y, 24, 24)
+      print(robot.colliderect(coin))
+
+      coin_x = 140
+      coin = pygame.Rect(coin_x, coin_y, 24, 24)
+      print(robot.colliderect(coin))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      The robot covers x from 100 to 139. The coin at x = 130 overlaps it, but once the coin has moved to x = 140, their edges only touch, and that isn't an overlap.
+
+      ### The first version
+
+      Get a small version working first, then add one thing at a time and try the game after each one, the way the box game was built. Here's the start of the coin chase, without the monster: the robot collects coins, and each collected coin jumps to a random place. On this site, `random` gives the same numbers every time a window runs, so the coins go to the same places every time you play here.
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import random
+
+      import pygame
+
+      WIDTH = 480
+      HEIGHT = 360
+
+
+      class CoinChase:
+          def __init__(self):
+              pygame.init()
+              self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+              pygame.display.set_caption("Coin Chase")
+              self.robot_picture = pygame.image.load("robot.png")
+              self.coin_picture = pygame.image.load("coin.png")
+              self.font = pygame.font.SysFont("Arial", 24)
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def reset(self):
+              self.robot_x = 40
+              self.robot_y = 160
+              self.coins = 0
+              self.place_coin()
+
+          def place_coin(self):
+              self.coin_x = random.randint(0, WIDTH - 24)
+              self.coin_y = random.randint(40, HEIGHT - 24)
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.update()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+          def update(self):
+              keys = pygame.key.get_pressed()
+              if keys[pygame.K_LEFT]:
+                  self.robot_x -= 3
+              if keys[pygame.K_RIGHT]:
+                  self.robot_x += 3
+              if keys[pygame.K_UP]:
+                  self.robot_y -= 3
+              if keys[pygame.K_DOWN]:
+                  self.robot_y += 3
+              robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+              coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+              if robot.colliderect(coin):
+                  self.coins += 1
+                  self.place_coin()
+
+          def draw(self):
+              self.window.fill((30, 90, 60))
+              self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+              self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+              text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+              self.window.blit(text, (10, 10))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = CoinChase()
+          game.run()
+      ```
+
+      ```window
+      {frames: 70, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}]}
+      ```
+
+      **Your turn:** what does this program print? Type each line it prints.
+    predict: |
+      import pygame
+
+      player = pygame.Rect(0, 0, 40, 40)
+      wall = pygame.Rect(40, 0, 10, 100)
+      coin = pygame.Rect(30, 30, 24, 24)
+      print(player.right, player.bottom)
+      print(player.colliderect(wall))
+      print(player.colliderect(coin))
+    hints:
+      - "`right` is x + width, and `bottom` is y + height."
+      - The wall starts at x = 40, exactly where the player ends. Edges that only touch don't count as overlapping.
+      - The coin's top left corner (30, 30) is inside the player's rectangle.
+    more:
+      - task: |
+          The robot walks over the coin without picking it up. In `update`, make a `pygame.Rect` for the robot (40 by 40 pixels) and one for the coin (24 by 24). When they overlap, the coin counter grows by one, and the coin moves to a new place: call `self.place_coin()` for that.
+        assets: [robot.png, coin.png]
+        seed: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.coins = 0
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+
+              def update(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  # Collect the coin here.
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(text, (10, 10))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        solution: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.coins = 0
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+
+              def update(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(text, (10, 10))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        hints:
+          - "The robot's rectangle is `pygame.Rect(self.robot_x, self.robot_y, 40, 40)`, and the coin's is made the same way from `self.coin_x` and `self.coin_y`."
+          - "`if robot.colliderect(coin):` is true while they overlap."
+          - "Inside the `if`, add one to `self.coins` and call `self.place_coin()` once."
+        tests:
+          - name: Down to the coin
+            window: {frames: 70, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}]}
+          - window: {frames: 270, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}, {at: 55, type: keydown, key: K_RIGHT}, {at: 185, type: keyup, key: K_RIGHT}, {at: 185, type: keydown, key: K_UP}, {at: 265, type: keyup, key: K_UP}]}
+            hidden: true
+      - task: |
+          The robot can walk out of the window and get lost. Make `update` keep it inside: right after the robot moves, its x must be between 0 and `WIDTH - 40`, and its y between 0 and `HEIGHT - 40` (the robot is 40 pixels wide and high). A robot that tries to go further stays at the edge.
+        assets: [robot.png, coin.png]
+        seed: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.coins = 0
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+
+              def update(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(text, (10, 10))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        solution: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.coins = 0
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+
+              def update(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+                  self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(text, (10, 10))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        hints:
+          - "If `self.robot_x` is less than 0, set it to 0. If it's more than `WIDTH - 40`, set it to `WIDTH - 40`. Then the same for y."
+          - "Or in one line each: `min(self.robot_x, WIDTH - 40)` is never too big, and `max(0, ...)` around it is never too small."
+          - Put the checks after the four arrow keys have moved the robot, before the coin check.
+        tests:
+          - name: Holding the left arrow
+            window: {frames: 50, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 45, type: keyup, key: K_LEFT}]}
+          - window: {frames: 85, events: [{at: 5, type: keydown, key: K_UP}, {at: 80, type: keyup, key: K_UP}]}
+            hidden: true
+          - window: {frames: 205, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 200, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - window: {frames: 105, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 100, type: keyup, key: K_DOWN}]}
+            hidden: true
+
+  - id: own-game-complete
+    slug: complete
+    title: A complete small game
+    text: |
+      Here's the coin chase finished: a monster, a time limit and an end. Read it through first. The sections after it explain what's new.
+
+      ```asset robot.png
+      ```
+
+      ```asset coin.png
+      ```
+
+      ```asset monster.png
+      ```
+
+      ```python window
+      import random
+
+      import pygame
+
+      WIDTH = 480
+      HEIGHT = 360
+      GAME_TIME = 15
+
+
+      class CoinChase:
+          def __init__(self):
+              pygame.init()
+              self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+              pygame.display.set_caption("Coin Chase")
+              self.robot_picture = pygame.image.load("robot.png")
+              self.coin_picture = pygame.image.load("coin.png")
+              self.monster_picture = pygame.image.load("monster.png")
+              self.font = pygame.font.SysFont("Arial", 24)
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def reset(self):
+              self.robot_x = 40
+              self.robot_y = 160
+              self.monster_x = 420
+              self.monster_y = 40
+              self.coins = 0
+              self.frames = 0
+              self.over = False
+              self.place_coin()
+
+          def place_coin(self):
+              self.coin_x = random.randint(0, WIDTH - 24)
+              self.coin_y = random.randint(40, HEIGHT - 24)
+
+          def seconds_left(self):
+              return GAME_TIME - self.frames // 60
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  if not self.over:
+                      self.update()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                      self.reset()
+
+          def update(self):
+              self.move_robot()
+              self.move_monster()
+              robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+              coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+              monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+              if robot.colliderect(coin):
+                  self.coins += 1
+                  self.place_coin()
+              if robot.colliderect(monster):
+                  self.over = True
+              self.frames += 1
+              if self.seconds_left() == 0:
+                  self.over = True
+
+          def move_robot(self):
+              keys = pygame.key.get_pressed()
+              if keys[pygame.K_LEFT]:
+                  self.robot_x -= 3
+              if keys[pygame.K_RIGHT]:
+                  self.robot_x += 3
+              if keys[pygame.K_UP]:
+                  self.robot_y -= 3
+              if keys[pygame.K_DOWN]:
+                  self.robot_y += 3
+              self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+              self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+          def move_monster(self):
+              if self.monster_x < self.robot_x:
+                  self.monster_x += 1
+              if self.monster_x > self.robot_x:
+                  self.monster_x -= 1
+              if self.monster_y < self.robot_y:
+                  self.monster_y += 1
+              if self.monster_y > self.robot_y:
+                  self.monster_y -= 1
+
+          def draw(self):
+              self.window.fill((30, 90, 60))
+              self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+              self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+              self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+              coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+              self.window.blit(coins_text, (10, 10))
+              time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+              self.window.blit(time_text, (390, 10))
+              if self.over:
+                  message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                  self.window.blit(message, (106, 172))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = CoinChase()
+          game.run()
+      ```
+
+      ```window
+      {frames: 640, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}, {at: 55, type: keydown, key: K_RIGHT}, {at: 190, type: keyup, key: K_RIGHT}, {at: 190, type: keydown, key: K_UP}, {at: 265, type: keyup, key: K_UP}, {at: 265, type: keydown, key: K_LEFT}, {at: 400, type: keyup, key: K_LEFT}]}
+      ```
+
+      ### The monster
+
+      `move_monster` moves the monster one pixel closer to the robot on each axis, on every frame:
+
+      ```python fragment
+      def move_monster(self):
+          if self.monster_x < self.robot_x:
+              self.monster_x += 1
+          if self.monster_x > self.robot_x:
+              self.monster_x -= 1
+          if self.monster_y < self.robot_y:
+              self.monster_y += 1
+          if self.monster_y > self.robot_y:
+              self.monster_y -= 1
+      ```
+
+      The robot moves 3 pixels a frame and the monster only 1, so a player who keeps moving can stay out of its reach. A game like this is all about such numbers. Try other speeds and see how the game changes.
+
+      ### Time
+
+      `self.frames` counts the frames that the game has run. At 60 frames a second, `self.frames // 60` is the number of whole seconds played, and `seconds_left` subtracts it from the game's length, `GAME_TIME`. A constant at the top of the program makes it easy to try a shorter or a longer game.
+
+      ### When the game is over
+
+      The attribute `self.over` tells whether the game has ended. `update` sets it to `True` when the monster catches the robot or the time runs out. From then on the main loop skips `update`, so nothing moves, but `draw` keeps showing the last picture with a message on top. R calls `reset`, which sets everything back, `self.over` included.
+
+      An attribute that tells which **phase** a game is in, playing or over, is common in games. A bigger game could have more phases: a title screen, a pause, the next level.
+
+      ### Make it yours
+
+      Here are some ways to grow the coin chase, or your own game:
+
+      - more monsters, kept in a list, each moved by the same code
+      - a monster that gets faster with every five coins
+      - lives: being caught costs one, and the game ends when they're gone
+      - a best score that stays while the program runs, in an attribute that `reset` doesn't touch
+
+      ### Testing your game
+
+      Test the part you're working on without playing the whole game: start the monster right next to the robot to see the ending, or set `GAME_TIME` to 3. Print values while you look for a bug. Then put the real values back.
+
+      Finally, ask someone to play it. Their answers to a few questions tell you what to work on next. What does the game look like? Is it easy to play, and fun? Is the idea interesting? And if they read the code, is it easy to follow, with methods that each do one job?
+
+      You can write and play a game of your own in the Playground of this site, where all its pictures are available.
+
+      **Your turn:** the monster stands still. Write the method `move_monster`: on every frame, the monster's x moves one pixel toward the robot's x, and its y one pixel toward the robot's y. If the monster's x is already the same as the robot's, it stays as it is, and the same goes for y.
+    assets: [robot.png, coin.png, monster.png]
+    seed: |
+      import random
+
+      import pygame
+
+      WIDTH = 480
+      HEIGHT = 360
+      GAME_TIME = 15
+
+
+      class CoinChase:
+          def __init__(self):
+              pygame.init()
+              self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+              pygame.display.set_caption("Coin Chase")
+              self.robot_picture = pygame.image.load("robot.png")
+              self.coin_picture = pygame.image.load("coin.png")
+              self.monster_picture = pygame.image.load("monster.png")
+              self.font = pygame.font.SysFont("Arial", 24)
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def reset(self):
+              self.robot_x = 40
+              self.robot_y = 160
+              self.monster_x = 420
+              self.monster_y = 40
+              self.coins = 0
+              self.frames = 0
+              self.over = False
+              self.place_coin()
+
+          def place_coin(self):
+              self.coin_x = random.randint(0, WIDTH - 24)
+              self.coin_y = random.randint(40, HEIGHT - 24)
+
+          def seconds_left(self):
+              return GAME_TIME - self.frames // 60
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  if not self.over:
+                      self.update()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                      self.reset()
+
+          def update(self):
+              self.move_robot()
+              self.move_monster()
+              robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+              coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+              monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+              if robot.colliderect(coin):
+                  self.coins += 1
+                  self.place_coin()
+              if robot.colliderect(monster):
+                  self.over = True
+              self.frames += 1
+              if self.seconds_left() == 0:
+                  self.over = True
+
+          def move_robot(self):
+              keys = pygame.key.get_pressed()
+              if keys[pygame.K_LEFT]:
+                  self.robot_x -= 3
+              if keys[pygame.K_RIGHT]:
+                  self.robot_x += 3
+              if keys[pygame.K_UP]:
+                  self.robot_y -= 3
+              if keys[pygame.K_DOWN]:
+                  self.robot_y += 3
+              self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+              self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+          def move_monster(self):
+              # Move the monster one pixel toward the robot, on both axes.
+              pass
+
+          def draw(self):
+              self.window.fill((30, 90, 60))
+              self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+              self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+              self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+              coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+              self.window.blit(coins_text, (10, 10))
+              time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+              self.window.blit(time_text, (390, 10))
+              if self.over:
+                  message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                  self.window.blit(message, (106, 172))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = CoinChase()
+          game.run()
+    solution: |
+      import random
+
+      import pygame
+
+      WIDTH = 480
+      HEIGHT = 360
+      GAME_TIME = 15
+
+
+      class CoinChase:
+          def __init__(self):
+              pygame.init()
+              self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+              pygame.display.set_caption("Coin Chase")
+              self.robot_picture = pygame.image.load("robot.png")
+              self.coin_picture = pygame.image.load("coin.png")
+              self.monster_picture = pygame.image.load("monster.png")
+              self.font = pygame.font.SysFont("Arial", 24)
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def reset(self):
+              self.robot_x = 40
+              self.robot_y = 160
+              self.monster_x = 420
+              self.monster_y = 40
+              self.coins = 0
+              self.frames = 0
+              self.over = False
+              self.place_coin()
+
+          def place_coin(self):
+              self.coin_x = random.randint(0, WIDTH - 24)
+              self.coin_y = random.randint(40, HEIGHT - 24)
+
+          def seconds_left(self):
+              return GAME_TIME - self.frames // 60
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  if not self.over:
+                      self.update()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                      self.reset()
+
+          def update(self):
+              self.move_robot()
+              self.move_monster()
+              robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+              coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+              monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+              if robot.colliderect(coin):
+                  self.coins += 1
+                  self.place_coin()
+              if robot.colliderect(monster):
+                  self.over = True
+              self.frames += 1
+              if self.seconds_left() == 0:
+                  self.over = True
+
+          def move_robot(self):
+              keys = pygame.key.get_pressed()
+              if keys[pygame.K_LEFT]:
+                  self.robot_x -= 3
+              if keys[pygame.K_RIGHT]:
+                  self.robot_x += 3
+              if keys[pygame.K_UP]:
+                  self.robot_y -= 3
+              if keys[pygame.K_DOWN]:
+                  self.robot_y += 3
+              self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+              self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+          def move_monster(self):
+              if self.monster_x < self.robot_x:
+                  self.monster_x += 1
+              if self.monster_x > self.robot_x:
+                  self.monster_x -= 1
+              if self.monster_y < self.robot_y:
+                  self.monster_y += 1
+              if self.monster_y > self.robot_y:
+                  self.monster_y -= 1
+
+          def draw(self):
+              self.window.fill((30, 90, 60))
+              self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+              self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+              self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+              coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+              self.window.blit(coins_text, (10, 10))
+              time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+              self.window.blit(time_text, (390, 10))
+              if self.over:
+                  message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                  self.window.blit(message, (106, 172))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = CoinChase()
+          game.run()
+    hints:
+      - Compare the monster's x with the robot's. If it's smaller, the monster moves right, so x grows by one. If it's bigger, x gets one smaller.
+      - "Use two separate `if` statements, so that nothing happens when they're equal: `if self.monster_x < self.robot_x:` and `if self.monster_x > self.robot_x:`."
+      - Then the same for y, with `self.monster_y` and `self.robot_y`.
+    tests:
+      - name: The monster comes closer
+        window: {frames: 120}
+      - window: {frames: 61, events: [{at: 1, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}]}
+        hidden: true
+      - window: {frames: 360}
+        hidden: true
+    more:
+      - task: |
+          The game never ends, and the time in the corner stays at 15. Add the time limit:
+
+          - in `update`, add one to `self.frames` on every frame
+          - write the method `seconds_left()`, which returns `GAME_TIME` minus the number of whole seconds played (`self.frames // 60`)
+          - at the end of `update`, set `self.over` to `True` when no seconds are left
+        assets: [robot.png, coin.png, monster.png]
+        seed: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+          GAME_TIME = 15
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.monster_picture = pygame.image.load("monster.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.monster_x = 420
+                  self.monster_y = 40
+                  self.coins = 0
+                  self.frames = 0
+                  self.over = False
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def seconds_left(self):
+                  # Return how many whole seconds of the game are left.
+                  return GAME_TIME
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      if not self.over:
+                          self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                          self.reset()
+
+              def update(self):
+                  self.move_robot()
+                  self.move_monster()
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+                  if robot.colliderect(monster):
+                      self.over = True
+
+              def move_robot(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+                  self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+              def move_monster(self):
+                  if self.monster_x < self.robot_x:
+                      self.monster_x += 1
+                  if self.monster_x > self.robot_x:
+                      self.monster_x -= 1
+                  if self.monster_y < self.robot_y:
+                      self.monster_y += 1
+                  if self.monster_y > self.robot_y:
+                      self.monster_y -= 1
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+                  coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(coins_text, (10, 10))
+                  time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+                  self.window.blit(time_text, (390, 10))
+                  if self.over:
+                      message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                      self.window.blit(message, (106, 172))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        solution: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+          GAME_TIME = 15
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.monster_picture = pygame.image.load("monster.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.monster_x = 420
+                  self.monster_y = 40
+                  self.coins = 0
+                  self.frames = 0
+                  self.over = False
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def seconds_left(self):
+                  return GAME_TIME - self.frames // 60
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      if not self.over:
+                          self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                          self.reset()
+
+              def update(self):
+                  self.move_robot()
+                  self.move_monster()
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+                  if robot.colliderect(monster):
+                      self.over = True
+                  self.frames += 1
+                  if self.seconds_left() == 0:
+                      self.over = True
+
+              def move_robot(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+                  self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+              def move_monster(self):
+                  if self.monster_x < self.robot_x:
+                      self.monster_x += 1
+                  if self.monster_x > self.robot_x:
+                      self.monster_x -= 1
+                  if self.monster_y < self.robot_y:
+                      self.monster_y += 1
+                  if self.monster_y > self.robot_y:
+                      self.monster_y -= 1
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+                  coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(coins_text, (10, 10))
+                  time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+                  self.window.blit(time_text, (390, 10))
+                  if self.over:
+                      message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                      self.window.blit(message, (106, 172))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        hints:
+          - "`self.frames` starts at 0 in `reset`. `self.frames += 1` in `update` counts the frames played."
+          - "`seconds_left` is one line: `return GAME_TIME - self.frames // 60`."
+          - "After counting the frame: `if self.seconds_left() == 0:` then `self.over = True`."
+        tests:
+          - name: Two seconds in
+            window: {frames: 130}
+          - name: Seconds left after 61 frames
+            call: |
+              game = CoinChase()
+              game.frames = 61
+              print(game.seconds_left())
+          - window: {frames: 200}
+            hidden: true
+          - call: |
+              game = CoinChase()
+              game.frames = 899
+              game.update()
+              print(game.frames, game.over)
+            hidden: true
+          - call: |
+              game = CoinChase()
+              game.frames = 500
+              game.update()
+              print(game.seconds_left(), game.over)
+            hidden: true
+      - task: |
+          The monster walks right through the robot, and nothing happens. Finish the game's end:
+
+          - in `update`, set `self.over` to `True` when the monster's rectangle and the robot's overlap (both are 40 by 40 pixels)
+          - in `run`, call `update` only while the game isn't over, so that nothing moves after that
+
+          `draw` already shows the message, and R already restarts the game.
+        assets: [robot.png, coin.png, monster.png]
+        seed: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+          GAME_TIME = 15
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.monster_picture = pygame.image.load("monster.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.monster_x = 420
+                  self.monster_y = 40
+                  self.coins = 0
+                  self.frames = 0
+                  self.over = False
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def seconds_left(self):
+                  return GAME_TIME - self.frames // 60
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                          self.reset()
+
+              def update(self):
+                  self.move_robot()
+                  self.move_monster()
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+                  self.frames += 1
+                  if self.seconds_left() == 0:
+                      self.over = True
+
+              def move_robot(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+                  self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+              def move_monster(self):
+                  if self.monster_x < self.robot_x:
+                      self.monster_x += 1
+                  if self.monster_x > self.robot_x:
+                      self.monster_x -= 1
+                  if self.monster_y < self.robot_y:
+                      self.monster_y += 1
+                  if self.monster_y > self.robot_y:
+                      self.monster_y -= 1
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+                  coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(coins_text, (10, 10))
+                  time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+                  self.window.blit(time_text, (390, 10))
+                  if self.over:
+                      message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                      self.window.blit(message, (106, 172))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        solution: |
+          import random
+
+          import pygame
+
+          WIDTH = 480
+          HEIGHT = 360
+          GAME_TIME = 15
+
+
+          class CoinChase:
+              def __init__(self):
+                  pygame.init()
+                  self.window = pygame.display.set_mode((WIDTH, HEIGHT))
+                  pygame.display.set_caption("Coin Chase")
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.coin_picture = pygame.image.load("coin.png")
+                  self.monster_picture = pygame.image.load("monster.png")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def reset(self):
+                  self.robot_x = 40
+                  self.robot_y = 160
+                  self.monster_x = 420
+                  self.monster_y = 40
+                  self.coins = 0
+                  self.frames = 0
+                  self.over = False
+                  self.place_coin()
+
+              def place_coin(self):
+                  self.coin_x = random.randint(0, WIDTH - 24)
+                  self.coin_y = random.randint(40, HEIGHT - 24)
+
+              def seconds_left(self):
+                  return GAME_TIME - self.frames // 60
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      if not self.over:
+                          self.update()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                          self.reset()
+
+              def update(self):
+                  self.move_robot()
+                  self.move_monster()
+                  robot = pygame.Rect(self.robot_x, self.robot_y, 40, 40)
+                  coin = pygame.Rect(self.coin_x, self.coin_y, 24, 24)
+                  monster = pygame.Rect(self.monster_x, self.monster_y, 40, 40)
+                  if robot.colliderect(coin):
+                      self.coins += 1
+                      self.place_coin()
+                  if robot.colliderect(monster):
+                      self.over = True
+                  self.frames += 1
+                  if self.seconds_left() == 0:
+                      self.over = True
+
+              def move_robot(self):
+                  keys = pygame.key.get_pressed()
+                  if keys[pygame.K_LEFT]:
+                      self.robot_x -= 3
+                  if keys[pygame.K_RIGHT]:
+                      self.robot_x += 3
+                  if keys[pygame.K_UP]:
+                      self.robot_y -= 3
+                  if keys[pygame.K_DOWN]:
+                      self.robot_y += 3
+                  self.robot_x = max(0, min(self.robot_x, WIDTH - 40))
+                  self.robot_y = max(0, min(self.robot_y, HEIGHT - 40))
+
+              def move_monster(self):
+                  if self.monster_x < self.robot_x:
+                      self.monster_x += 1
+                  if self.monster_x > self.robot_x:
+                      self.monster_x -= 1
+                  if self.monster_y < self.robot_y:
+                      self.monster_y += 1
+                  if self.monster_y > self.robot_y:
+                      self.monster_y -= 1
+
+              def draw(self):
+                  self.window.fill((30, 90, 60))
+                  self.window.blit(self.coin_picture, (self.coin_x, self.coin_y))
+                  self.window.blit(self.robot_picture, (self.robot_x, self.robot_y))
+                  self.window.blit(self.monster_picture, (self.monster_x, self.monster_y))
+                  coins_text = self.font.render(f"Coins: {self.coins}", True, (255, 255, 255))
+                  self.window.blit(coins_text, (10, 10))
+                  time_text = self.font.render(f"Time: {self.seconds_left()}", True, (255, 255, 255))
+                  self.window.blit(time_text, (390, 10))
+                  if self.over:
+                      message = self.font.render("Game over! Press R to play again.", True, (255, 230, 120))
+                      self.window.blit(message, (106, 172))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = CoinChase()
+              game.run()
+        hints:
+          - "`update` already makes the rectangle `monster`. Check it like the coin: `if robot.colliderect(monster):`."
+          - "In `run`, put the call in an `if`: `if not self.over:` and `self.update()` inside it."
+          - The events and the drawing still happen when the game is over. Only `update` is skipped.
+        tests:
+          - name: Caught by the monster
+            window: {frames: 360}
+          - window: {frames: 380, events: [{at: 350, type: keydown, key: K_RIGHT}, {at: 375, type: keyup, key: K_RIGHT}]}
+            hidden: true
+          - window: {frames: 390, events: [{at: 360, type: keydown, key: K_r}, {at: 360, type: keyup, key: K_r}]}
+            hidden: true

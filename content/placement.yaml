@@ -570,3 +570,26 @@ questions:
     print(box.right, box.bottom)
     print(box.center)
   why: '`right` is x + width (20 + 50) and `bottom` is y + height (30 + 40). The center is half the size from the corner: (20 + 25, 30 + 20).'
+- type: predict
+  module: game-project
+  code: |
+    LEVEL = [
+        "#####",
+        "#.X.#",
+        "#####",
+    ]
+    print(len(LEVEL), len(LEVEL[0]))
+    print(LEVEL[1][2])
+  why: '`len(LEVEL)` counts the rows and `len(LEVEL[0])` the squares of a row. `LEVEL[1][2]` is row 1 first, then the square at index 2 of it.'
+- type: predict
+  module: own-game
+  code: |
+    over = False
+    x = 0
+    for frame in range(5):
+        if not over:
+            x += 2
+        if x == 6:
+            over = True
+    print(x, over)
+  why: After three frames x is 6 and `over` becomes `True`. On the last two frames nothing moves any more.

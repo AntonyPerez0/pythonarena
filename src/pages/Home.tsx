@@ -44,7 +44,7 @@ export default function Home() {
               Learn Python by writing <span className="hero-accent">real</span> Python
             </h1>
             <p className="hero-lead">
-              Every exercise is run by real Python (CPython 3.14, compiled to WebAssembly), inside your browser, on your own device. The lessons follow the University of Helsinki's Python Programming MOOC, from your first <code>print</code> to classes, recursion and regular expressions, with their own explanations and exercises.
+              Every exercise is run by real Python (CPython 3.14, compiled to WebAssembly), inside your browser, on your own device. The lessons follow the University of Helsinki's Python Programming MOOC, from your first <code>print</code> to classes, recursion, regular expressions and games with pygame, with their own explanations and exercises.
             </p>
             <div className="hero-actions">
               {next && (

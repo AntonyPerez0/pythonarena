@@ -5,68 +5,19 @@
 // it somewhere else.
 //
 // pyodidePool() has the interface of python.mjs's pythonPool(): run(spec, seed) resolves with the
-// harness's result, each pygame frame in `frames` (its picture as base64), and timedOut. Each
-// worker is a worker thread with its own Pyodide, started with one of the two hash seeds.
+// harness's result, each pygame frame in `frames` (its picture as base64), and timedOut. Each worker
+// is a process of its own (scripts/content/pyodide-child.mjs) with its own Pyodide, started with one
+// of the two hash seeds. A program past the time limit is stopped by killing its process. A process
+// that dies on its own (WebAssembly engines can crash under memory pressure) is replaced and its
+// program run once more in the new one, so one crash can't fail a build.
+import { fork } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { Worker } from "node:worker_threads";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
+const CHILD = path.join(ROOT, "scripts", "content", "pyodide-child.mjs");
 const HASH_SEEDS = ["0", "12345"];
-
-/** The worker thread: starts Pyodide with pygame and the harness, then runs one spec per message. */
-const WORKER = `
-const { parentPort, workerData } = require("node:worker_threads");
-const fs = require("node:fs");
-const path = require("node:path");
-(async () => {
-  const { loadPyodide } = await import(workerData.pyodide);
-  const py = await loadPyodide({ indexURL: workerData.indexURL, stdout: () => {}, stderr: () => {}, env: { HOME: "/home/pyodide", PYTHONHASHSEED: workerData.seed } });
-  for (const wheel of workerData.wheels) await py.loadPackage(wheel, { messageCallback: () => {}, errorCallback: () => {} });
-  py.FS.mkdirTree("/arena");
-  py.FS.writeFile("/arena/arena.py", fs.readFileSync(path.join(workerData.engine, "arena.py"), "utf8"));
-  py.FS.writeFile("/arena/arena_pygame.py", fs.readFileSync(path.join(workerData.engine, "arena_pygame.py"), "utf8"));
-  py.runPython("import sys\\nsys.path.insert(0, '/arena')\\nimport arena");
-  const run = py.pyimport("arena").run;
-  let count = 0;
-  parentPort.on("message", (spec) => {
-    const parts = { stdout: "", stderr: "", output: "" };
-    const frames = [];
-    const sink = (stream, text) => {
-      if (stream === "frame") {
-        const f = text.toJs({ dict_converter: Object.fromEntries });
-        const png = f.png ? Buffer.from(f.png).toString("base64") : null;
-        if (f.again) {
-          const last = frames.find((x) => x.index === f.index);
-          if (last) last.png = png;
-        } else frames.push({ index: f.index, log: f.log, png, title: f.title, ms: f.ms, ...(f.same ? { same: true } : {}) });
-        return;
-      }
-      parts[stream] += text;
-      parts.output += text;
-    };
-    const given = {};
-    for (const [name, data] of Object.entries(spec.given || {})) given[name] = typeof data === "string" ? data : new Uint8Array(Buffer.from(data.base64, "base64"));
-    const plain = { ...spec, given };
-    for (const k of ["call", "repl", "window"]) if (plain[k] == null) delete plain[k];
-    const p = py.toPy(plain);
-    try {
-      const result = run(p, sink, "/tmp/arena/run" + ++count);
-      const r = result.toJs({ dict_converter: Object.fromEntries });
-      result.destroy();
-      const files = {};
-      for (const [name, data] of Object.entries(r.files || {})) files[name] = typeof data === "string" ? data : { base64: Buffer.from(data).toString("base64") };
-      parentPort.postMessage({ ...parts, exit: r.exit, truncated: r.truncated, files, callStart: r.callStart ?? null, callError: !!r.callError, loadInput: !!r.loadInput, callValue: r.callValue ?? null, repl: r.repl ?? null, window: r.window ?? null, frames });
-    } catch (e) {
-      parentPort.postMessage({ failed: String(e && e.message || e) });
-    } finally {
-      p.destroy();
-    }
-  });
-  parentPort.postMessage({ ready: true });
-})().catch((e) => parentPort.postMessage({ failed: "Pyodide didn't start: " + (e && e.message || e) }));
-`;
 
 /** The wheels of the engine's packages (pygame-ce), as public/engine/manifest.json lists them. */
 function wheels() {
@@ -76,87 +27,111 @@ function wheels() {
   return Object.values(m.packages ?? {}).map((p) => path.join(ROOT, "engine-packages", p.file));
 }
 
+const TIMED_OUT = { stdout: "", stderr: "", output: "", exit: null, truncated: false, files: {}, callStart: null, callError: false, loadInput: false, callValue: null, repl: null, window: null, frames: [], timedOut: true };
+
 export function pyodidePool({ size = Math.max(1, Math.min(4, Number(process.env.PYTHON_WORKERS) || os.cpus().length)), timeLimitMs = 20_000 } = {}) {
-  const workerData = (seed) => ({ seed, pyodide: path.join(ROOT, "node_modules", "pyodide", "pyodide.mjs"), indexURL: path.join(ROOT, "node_modules", "pyodide") + "/", engine: path.join(ROOT, "src", "engine"), wheels: wheels() });
-  const workers = HASH_SEEDS.map((seed) => Array.from({ length: Math.ceil(size / 2) }, () => ({ seed, thread: null, ready: null, busy: false, job: null })));
+  const env = (seed) => ({ PATH: process.env.PATH, HOME: os.tmpdir(), PYODIDE_INDEX: path.join(ROOT, "node_modules", "pyodide"), ARENA_ENGINE: path.join(ROOT, "src", "engine"), PYODIDE_WHEELS: JSON.stringify(wheels()), PYTHONHASHSEED: seed });
+  const workers = HASH_SEEDS.map((seed) => Array.from({ length: Math.ceil(size / 2) }, () => ({ seed, child: null, ready: null, busy: false, job: null })));
   const queues = [[], []];
+  let closed = false;
 
   function start(w) {
-    const thread = new Worker(WORKER, { eval: true, workerData: workerData(w.seed) });
-    w.thread = thread;
+    const child = fork(CHILD, [], { env: env(w.seed), stdio: ["ignore", "ignore", "pipe", "ipc"] });
+    w.child = child;
+    let err = "";
+    child.stderr.on("data", (d) => (err = (err + d).slice(-4000)));
+    const tail = () => err.trim().split("\n").slice(-5).join(" ");
     w.ready = new Promise((resolve, reject) => {
       const first = (m) => {
-        thread.off("message", first);
+        child.off("message", first);
         if (m.ready) resolve();
         else reject(new Error(m.failed));
       };
-      thread.on("message", first);
+      child.on("message", first);
+      child.once("exit", (code, signal) => reject(new Error(`Pyodide's process ended while starting (${signal ?? `exit ${code}`}): ${tail()}`)));
     });
-    thread.on("error", (e) => {
-      if (w.thread !== thread) return;
-      w.thread = null;
+    w.ready.catch(() => {});
+    child.on("exit", (code, signal) => {
+      if (w.child !== child) return;
+      // Died by itself, not by a time limit: a fresh process runs the program once more.
+      w.child = null;
       const job = w.job;
+      w.job = null;
+      w.busy = false;
       if (job) {
         clearTimeout(job.timer);
-        w.job = null;
-        w.busy = false;
-        job.reject(new Error(`the Pyodide worker stopped: ${e.message}`));
-        next(w);
+        if (!job.retried && !closed) {
+          job.retried = true;
+          queues[HASH_SEEDS.indexOf(w.seed)].unshift(job);
+        } else job.reject(new Error(`the Pyodide process stopped (${signal ?? `exit ${code}`}) twice running this program: ${tail()}`));
       }
+      next(w);
     });
   }
 
   async function next(w) {
     const q = queues[HASH_SEEDS.indexOf(w.seed)];
-    if (w.busy || !q.length) return;
+    if (closed || w.busy || !q.length) return;
     const job = q.shift();
     w.busy = true;
     w.job = job;
-    if (!w.thread) start(w);
-    const thread = w.thread;
+    if (!w.child) start(w);
+    const child = w.child;
     try {
       await w.ready;
     } catch (e) {
-      w.busy = false;
-      w.job = null;
-      w.thread = null;
-      thread.terminate();
-      job.reject(e);
+      if (w.child === child) {
+        w.child = null;
+        child.kill("SIGKILL");
+      }
+      if (w.job === job) {
+        w.job = null;
+        w.busy = false;
+        job.reject(e);
+        next(w);
+      }
       return;
     }
+    if (w.job !== job || w.child !== child) return;
     const done = (m) => {
       if (w.job !== job) return;
       clearTimeout(job.timer);
-      thread.off("message", done);
+      child.off("message", done);
       w.job = null;
       w.busy = false;
       if (m.failed) job.reject(new Error(`the harness failed in Pyodide: ${m.failed}`));
       else job.resolve({ ...m, timedOut: false });
       next(w);
     };
-    thread.on("message", done);
+    child.on("message", done);
     job.timer = setTimeout(() => {
-      // An endless loop: the worker is stopped and a new one starts for the next program.
-      thread.off("message", done);
+      // An endless loop: the process is stopped and a new one starts for the next program.
+      child.off("message", done);
       w.job = null;
       w.busy = false;
-      w.thread = null;
-      thread.terminate();
-      job.resolve({ stdout: "", stderr: "", output: "", exit: null, truncated: false, files: {}, callStart: null, callError: false, loadInput: false, callValue: null, repl: null, window: null, frames: [], timedOut: true });
+      w.child = null;
+      child.kill("SIGKILL");
+      job.resolve({ ...TIMED_OUT });
       next(w);
     }, timeLimitMs);
-    thread.postMessage(job.spec);
+    child.send(job.spec);
   }
 
   function run(spec, seed = 0) {
     return new Promise((resolve, reject) => {
-      queues[seed].push({ spec, resolve, reject });
+      queues[seed].push({ spec, resolve, reject, retried: false });
       for (const w of workers[seed]) next(w);
     });
   }
 
   function close() {
-    for (const group of workers) for (const w of group) w.thread?.terminate();
+    closed = true;
+    for (const group of workers)
+      for (const w of group) {
+        const c = w.child;
+        w.child = null;
+        c?.kill("SIGKILL");
+      }
   }
 
   return { run, close };
