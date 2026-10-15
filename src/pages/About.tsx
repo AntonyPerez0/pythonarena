@@ -47,6 +47,9 @@ export default function About() {
       <p>
         Input is typed in advance: a test gives your program its input lines, and each <code>input()</code> takes the next one. The output shows each line you'd have typed after its prompt, as a terminal does. A program that runs for longer than 5 seconds is stopped, so an endless loop can't freeze the page.
       </p>
+      <p>
+        Programs that use pygame (parts 13 and 14) run with <A href="https://pyga.me">pygame-ce</A>, which the browser downloads the first time one does (about 1.5 MB). pygame normally opens a window on your screen; here the window has no screen of its own: each frame the program shows becomes a picture on the page, the keys you press on it and your clicks go to the program at the frame you made them, and the program's clock is counted rather than waited for, so an animation goes the same way every time. Pressing a key runs the program again from the start with everything that happened so far, and the page shows the new frames. Tests compare what each frame draws (fills, images and shapes, which the page can show as text), not the pixels, because letters are drawn a little differently on each computer. Sound is silent. pygame programs are checked when the site is built in Pyodide itself, the same Python the page runs.
+      </p>
 
       <h2>Your data</h2>
       <p>No account, no ads, no analytics. Your progress and code are saved in this browser's storage only. Python is kept in the browser's cache so it works offline.</p>
@@ -65,6 +68,9 @@ export default function About() {
         </li>
         <li>
           Python runs with <A href="https://github.com/pyodide/pyodide">Pyodide</A> (Mozilla Public License 2.0), which includes CPython (Python Software Foundation License) and other open-source parts under their own licenses. Details and where to get their source code: <A href={`${REPO_URL}/blob/main/THIRD_PARTY_NOTICES.md`}>third-party notices</A>.
+        </li>
+        <li>
+          pygame programs use Pyodide's build of <A href="https://github.com/pygame-community/pygame-ce">pygame-ce</A> (GNU Lesser General Public License 2.1), unchanged, with the SDL, FreeType and image libraries it includes and pygame's default font (GNU FreeFont); details in the third-party notices. The images the pygame lessons use are Python Arena's own, under CC BY-NC-SA 4.0 like the lessons.
         </li>
         <li>The Pro Track's projects are MIT-licensed like the site's code. The packages they use (pytest under the MIT license, pygame-ce under the LGPL 2.1) are installed by pip on your computer; they aren't part of Python Arena's download.</li>
       </ul>
