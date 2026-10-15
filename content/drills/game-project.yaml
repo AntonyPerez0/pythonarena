@@ -1,0 +1,225 @@
+topic: game-project
+drills:
+  - type: predict
+    after: map
+    code: |
+      LEVEL = [
+          "#####",
+          "#.X.#",
+          "#####",
+      ]
+      print(len(LEVEL), len(LEVEL[0]))
+      print(LEVEL[1][2])
+    why: "`len(LEVEL)` counts the rows and `len(LEVEL[0])` the squares of a row. `LEVEL[1][2]` is row 1 first, then the square at index 2 of it."
+
+  - type: choice
+    after: map
+    prompt: A map is a list of strings, one string per row. Which expression is the square in column 4 of row 1?
+    choices:
+      - "`level[1][4]`"
+      - "`level[4][1]`"
+      - "`level[1, 4]`"
+    answer: 1
+    why: "The list holds rows, so the row's index comes first: `level[1]` is the row, and `[4]` picks the square in it. In a pygame position the order is the other way round, x first."
+
+  - type: fill
+    after: map
+    code: |
+      SIZE = 40
+      for x, y in [(0, 0), (3, 1)]:
+          print(x * SIZE, [[y * SIZE‖SIZE * y]])
+    why: "Square (x, y) is drawn x tiles from the left and y tiles from the top, so its point in the window is `(x * SIZE, y * SIZE)`."
+
+  - type: predict
+    after: robot
+    code: |
+      robot = (2, 3)
+      dx, dy = 0, -1
+      x, y = robot
+      robot = (x + dx, y + dy)
+      print(robot)
+    why: "The direction (0, -1) keeps x and makes y one smaller, which is one square up, since y counts from the top."
+
+  - type: bug
+    after: robot
+    code: |
+      x, y = 2, 2
+      up = (0, 1)  # BUG
+      dx, dy = up
+      print(x + dx, y + dy)
+    fix: up = (0, -1)
+    why: "y counts from the top of the window, so going up makes y smaller. `(0, 1)` is down."
+
+  - type: predict
+    after: robot
+    code: |
+      LEVEL = [
+          "#####",
+          "#..##",
+          "#####",
+      ]
+      x, y = 2, 1
+      if LEVEL[y][x + 1] == "#":
+          print("blocked")
+      else:
+          print("free")
+    why: "The square to the right of (2, 1) is `LEVEL[1][3]`, and row 1 is `\"#..##\"`, so it's a wall."
+
+  - type: bug
+    after: robot
+    code: |
+      LEVEL = [
+          "#####",
+          "#.X.#",
+          "#####",
+      ]
+      x, y = 2, 1
+      print(LEVEL[x][y])  # BUG
+    fix: print(LEVEL[y][x])
+    why: "The map is a list of rows, so it's read row first: `LEVEL[y][x]`. `LEVEL[2][1]` is a square in the bottom row."
+
+  - type: runs
+    after: robot
+    code: |
+      row = "#...#"
+      x = 4
+      print(row[x + 1])
+    why: "The row has indexes 0 to 4, so `row[5]` stops the program with an `IndexError`. The walls around a map keep a robot from ever reading past its edge."
+
+  - type: predict
+    after: robot
+    code: |
+      row = "#..X"
+      x = 0
+      print(row[x - 1])
+    why: "`row[-1]` is the last character of the row, with no error at all. A robot that stepped left from column 0 would quietly land on the other side."
+
+  - type: choice
+    after: robot
+    prompt: The robot moves one square on each `KEYDOWN` event. Why not move it on every frame while an arrow key is held down?
+    choices:
+      - It would move a square on every frame, 60 squares a second
+      - pygame can't tell which keys are held down
+      - "`KEYDOWN` events come faster than frames"
+    answer: 1
+    why: "A key is held down for many frames. A `KEYDOWN` event comes once for each press, so each press moves the robot exactly one square."
+
+  - type: choice
+    after: robot
+    prompt: The robot picture is transparent around the robot. In what order should `draw` draw a floor tile and the robot standing on it?
+    choices:
+      - The floor tile first, then the robot
+      - The robot first, then the floor tile
+      - The order makes no difference
+    answer: 1
+    why: "What's drawn later covers what was drawn before. Drawn last, the robot is on top, and the floor shows through around it."
+
+  - type: runs
+    after: boxes
+    code: |
+      robot = (2, 3)
+      robot[0] += 1
+      print(robot)
+    why: "A tuple can't be changed, so Python stops with a `TypeError`. Make a new tuple instead: `robot = (robot[0] + 1, robot[1])`."
+
+  - type: predict
+    after: boxes
+    code: |
+      boxes = [(2, 2), (6, 4)]
+      print((2, 2) in boxes)
+      print([6, 4] in boxes)
+    why: "`in` compares with `==`, and a list is never equal to a tuple, even with the same numbers in it."
+
+  - type: predict
+    after: boxes
+    code: |
+      LEVEL = ["#X..X#"]
+      boxes = [(1, 0), (2, 0), (4, 0)]
+      done = 0
+      for x, y in boxes:
+          if LEVEL[y][x] == "X":
+              done += 1
+      print(done, "of", len(boxes))
+    why: "The boxes at (1, 0) and (4, 0) stand on `X` squares, and the one at (2, 0) on floor."
+
+  - type: bug
+    after: finishing
+    code: |
+      START = [(2, 2), (6, 4)]
+      boxes = START  # BUG
+      boxes.remove((2, 2))
+      boxes.append((3, 2))
+      print(START)
+    fix: boxes = list(START)
+    why: "`boxes = START` doesn't copy anything: both names refer to the same list, so moving a box changes the starting places too. `list(START)` makes a new list."
+
+  - type: predict
+    after: finishing
+    code: |
+      def solved(level, boxes):
+          for x, y in boxes:
+              if level[y][x] != "X":
+                  return False
+          return True
+
+
+      print(solved(["X.X"], [(0, 0), (2, 0)]))
+      print(solved(["X.X"], [(0, 0), (1, 0)]))
+    why: "The first call finds every box on an `X`, so the loop ends and the function returns `True`. In the second, the box at (1, 0) is on floor, and `return False` ends the function right there."
+
+  - type: boss
+    after: robot
+    prompt: |
+      Write a function `next_square(level, x, y, dx, dy)` for a grid game. `level` is a map as a list of strings, where `#` is a wall. The function returns the square a robot at (x, y) ends up on when it tries to move in the direction (dx, dy), as a tuple `(x, y)`: the next square in that direction, or the same square if the next one is a wall.
+
+      For example, with `level = ["#####", "#...#", "#####"]`, `next_square(level, 1, 1, 1, 0)` returns `(2, 1)`, and `next_square(level, 1, 1, -1, 0)` returns `(1, 1)`.
+    seed: |
+      def next_square(level, x, y, dx, dy):
+          pass
+    solution: |
+      def next_square(level, x, y, dx, dy):
+          new_x = x + dx
+          new_y = y + dy
+          if level[new_y][new_x] == "#":
+              return (x, y)
+          return (new_x, new_y)
+    hints:
+      - "The next square is at `x + dx`, `y + dy`."
+      - "Read it from the map row first: `level[new_y][new_x]`. If it's `\"#\"`, return the old place, `(x, y)`."
+    tests:
+      - call: next_square(["#####", "#...#", "#####"], 1, 1, 1, 0)
+      - call: next_square(["#####", "#...#", "#####"], 1, 1, -1, 0)
+      - call: next_square(["####", "#..#", "#..#", "####"], 2, 1, 0, 1)
+        hidden: true
+      - call: next_square(["####", "#..#", "#..#", "####"], 2, 1, 0, -1)
+        hidden: true
+      - call: next_square(["#####", "#.#.#", "#...#", "#####"], 1, 2, 0, -1)
+        hidden: true
+
+  - type: boss
+    after: finishing
+    prompt: |
+      Write a function `boxes_left(level, boxes)`. `level` is a map as a list of strings, where `X` is a target, and `boxes` is a list of the boxes' places as `(x, y)` tuples. The function returns how many boxes are not on a target yet.
+
+      For example, `boxes_left(["#X..X#"], [(1, 0), (2, 0), (3, 0)])` returns `2`.
+    seed: |
+      def boxes_left(level, boxes):
+          pass
+    solution: |
+      def boxes_left(level, boxes):
+          left = 0
+          for x, y in boxes:
+              if level[y][x] != "X":
+                  left += 1
+          return left
+    hints:
+      - "Go through the boxes with `for x, y in boxes:` and count the ones whose square isn't a target."
+      - "The square under a box is `level[y][x]`, row first."
+    tests:
+      - call: boxes_left(["#X..X#"], [(1, 0), (2, 0), (3, 0)])
+      - call: boxes_left(["#X..X#"], [(1, 0), (4, 0)])
+        hidden: true
+      - call: boxes_left(["####", "#X.#", "#.X#", "####"], [(2, 1), (1, 2)])
+        hidden: true
+      - call: boxes_left(["#..#"], [])
+        hidden: true

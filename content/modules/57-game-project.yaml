@@ -1,0 +1,2594 @@
+id: game-project
+summary: A whole game in pygame, built piece by piece. A robot pushes boxes onto target squares in a warehouse. The map as data, drawing it from tiles, moving with the arrow keys and stopping at walls, pushing boxes, counting moves, restarting, and noticing when the puzzle is solved.
+steps:
+  - id: game-project-map
+    slug: map
+    title: The game map
+    text: |
+      In this part you put everything from part 13 together into one bigger program: a puzzle game. A robot works in a warehouse. Boxes stand on the floor, some squares of the floor are marked as targets, and the robot's job is to push every box onto a target. It can push a box one square at a time, but it can't pull one, so a box pushed into a corner stays there for good. Puzzles like this are known as **Sokoban**, Japanese for "warehouse keeper".
+
+      Each step of this module adds a piece to the game: the map in this step, then the robot, then the boxes, and last the move counter, restarting and winning. Every step ends with the whole game so far, and you can play it right in the page.
+
+      ### Tiles
+
+      The map is made of **tiles**: small square pictures that fit together side by side, like the tiles of a floor. These three are 40 by 40 pixels each:
+
+      ```asset floor.png
+      ```
+
+      ```asset wall.png
+      ```
+
+      ```asset target.png
+      ```
+
+      ### The map as data
+
+      Before it can draw anything, the program needs to know what the room looks like. That's data, and a list of strings describes it well: one string for each row of squares, one character for each square. Here `#` is a wall, `.` is floor and `X` is a target:
+
+      ```python run
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+      print(len(LEVEL), "rows")
+      print(len(LEVEL[0]), "squares in a row")
+      print(LEVEL[2])
+      print(LEVEL[2][6])
+      ```
+
+      ```output
+      7 rows
+      9 squares in a row
+      #.....X.#
+      X
+      ```
+
+      A list of strings works like a list of lists here: `LEVEL[2]` is the row at index 2, and `LEVEL[2][6]` is the square at index 6 of that row, a target. Notice the order: **the row comes first**. In the map you write `LEVEL[y][x]`, where y counts the rows from the top and x the squares from the left. pygame does it the other way round: a point in the window is `(x, y)`, x first. Both are normal, so keep an eye on which one you are writing.
+
+      Keeping the map as data pays off right away. To change the room, you edit the strings, and the code that draws it stays the same.
+
+      ### Drawing the map
+
+      Square (x, y) of the map goes x * 40 pixels from the left edge of the window and y * 40 pixels from the top. Two loops, one inside the other, go through the rows from top to bottom and the squares of each row from left to right, and a dictionary gives the tile for each character:
+
+      ```python window
+      import pygame
+
+      SIZE = 40
+      ROOM = [
+          "######",
+          "#..X.#",
+          "#....#",
+          "######",
+      ]
+
+      pygame.init()
+      window = pygame.display.set_mode((len(ROOM[0]) * SIZE, len(ROOM) * SIZE))
+      tiles = {
+          "#": pygame.image.load("wall.png"),
+          ".": pygame.image.load("floor.png"),
+          "X": pygame.image.load("target.png"),
+      }
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+          window.fill((0, 0, 0))
+          for y in range(len(ROOM)):
+              for x in range(len(ROOM[y])):
+                  square = ROOM[y][x]
+                  window.blit(tiles[square], (x * SIZE, y * SIZE))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 2}
+      ```
+
+      The window's size comes from the map too. A map 6 squares wide and 4 high gets a window of 240 by 160 pixels, and a bigger map would get a bigger window without any other change.
+
+      ### The game as a class
+
+      The game will grow to about a hundred lines, with many parts that use the same data: the map, the pictures, the window, and soon the robot. A class keeps all of it together in one object, and its methods split the work into parts with names. Here is the start of the game, with the real map:
+
+      ```python window
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.clock = pygame.time.Clock()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+      ```
+
+      ```window
+      {frames: 2}
+      ```
+
+      - `__init__` prepares everything: pygame, the pictures, the map, a window that fits the map, its title and a clock.
+      - `load_pictures` puts the tiles in a dictionary, so the picture of a square is `self.tiles[square]`.
+      - `run` is the main loop. It handles the events, draws the window and ticks the clock, over and over. Nothing in this puzzle moves by itself, but `self.clock.tick(60)` still keeps the loop from drawing thousands of frames a second for nothing.
+      - `handle_events` only closes the window for now. The next step teaches it the arrow keys.
+      - `draw` fills the window and draws every square again, on every frame.
+
+      Creating the game object doesn't start the game: `game.run()` in the main block does. That keeps the two apart, so a game can be created and its data looked at without starting the loop.
+
+      **Your turn:** the `draw` method has lost the place of each tile. Fill in the blanks so that every square is drawn at its own place in the window.
+    assets: [floor.png, wall.png, target.png]
+    fill: |
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.clock = pygame.time.Clock()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], ([[x * SIZE]], [[y * SIZE]]))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+    hints:
+      - Square (x, y) goes x tiles from the left edge and y tiles from the top, and every tile is `SIZE` pixels wide and high.
+      - "The point in the window is x first: `(x * SIZE, y * SIZE)`. Fill the first blank with `x * SIZE` and the second with `y * SIZE`."
+    tests:
+      - window: {frames: 2}
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          ROOM = [
+              "######",
+              "#..X.#",
+              "#.#..#",
+              "######",
+          ]
+          print(len(ROOM), len(ROOM[0]))
+          print(ROOM[2][2])
+          for y in range(len(ROOM)):
+              for x in range(len(ROOM[y])):
+                  if ROOM[y][x] == "X":
+                      print("target at", x, y)
+        hints:
+          - "`len(ROOM)` is the number of rows, and `len(ROOM[0])` the number of characters in the first row."
+          - "`ROOM[2][2]` is row 2 (the third string), and the character at index 2 of it."
+          - The loops go through every square. Only one square is an `X`. Which row is it in, and at which index of that row?
+      - task: |
+          This level isn't a rectangle. The squares outside its walls are spaces in the map, and nothing should be drawn there, so that the window's black shows through.
+
+          Write the two loops in `draw` that draw the map. Go through the rows from top to bottom and the squares of each row from left to right (the check compares the drawing in this order), and draw the tile of every square that isn't a space.
+        assets: [floor.png, wall.png, target.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "  #####  ",
+              "###...###",
+              "#...X...#",
+              "#.#...#.#",
+              "#...X...#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  # Draw the map here.
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "  #####  ",
+              "###...###",
+              "#...X...#",
+              "#.#...#.#",
+              "#...X...#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          if square != " ":
+                              self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - "The outer loop goes through the rows, `for y in range(self.height):`, and the inner one through the squares of a row, `for x in range(self.width):`."
+          - "Inside them, `square = self.map[y][x]` is the character, and its tile goes at `(x * SIZE, y * SIZE)`."
+          - "Draw only when `square != \" \"`. The dictionary has no tile for a space, so `self.tiles[\" \"]` would stop the program with a `KeyError`."
+        tests:
+          - window: {frames: 2}
+
+  - id: game-project-robot
+    slug: robot
+    title: Moving the robot
+    text: |
+      The map is ready, so it's time for the robot. Along with the three tiles of the map, the game now loads its picture:
+
+      ```asset floor.png
+      ```
+
+      ```asset wall.png
+      ```
+
+      ```asset target.png
+      ```
+
+      ```asset robot.png
+      ```
+
+      ### Where is the robot?
+
+      The robot moves, and the map never does. So the game keeps the robot's place in an attribute of its own, `self.robot`: a tuple of its column and its row. `(2, 3)` is the square at x = 2 and y = 3. These are squares, not pixels. Pixels are needed only for drawing, and there `x * SIZE` and `y * SIZE` give them.
+
+      The robot gets its place in a new method, `reset`, which `__init__` calls. Everything that changes during a game is set up there, and in step 4 the game calls it again to start over.
+
+      You could also mark the robot in the map with a character of its own, and search the map for it whenever you need its place. That works, but then the map changes on every move, and every move starts with a search. Keeping the map for what never moves and the robot in an attribute keeps both simple.
+
+      ### Drawing the robot
+
+      The robot picture is transparent around the robot, so when it's drawn on top of a tile, the floor shows through. The order matters: whatever is drawn later covers what was drawn before. So `draw` draws the map first, and the robot after the loops:
+
+      ```python fragment
+      robot_x, robot_y = self.robot
+      self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+      ```
+
+      ### One square per key press
+
+      The robot moves a whole square each time an arrow key is pressed, and a `KEYDOWN` event comes once for each press. (Moving a little on every frame while a key is held down suits smooth movement, but here the robot would race across 60 squares a second.) Each arrow key calls the method `try_move` with a direction: how much x and y change.
+
+      | Key | dx | dy |
+      |---|---|---|
+      | right | 1 | 0 |
+      | left | -1 | 0 |
+      | up | 0 | -1 |
+      | down | 0 | 1 |
+
+      Up is -1 because y counts from the top of the window.
+
+      ### Walls stop the robot
+
+      `try_move` works out the square the robot would step on. If it's a wall, `return` ends the method right there and the robot stays where it is. Otherwise the robot gets its new place:
+
+      ```python fragment
+      def try_move(self, dx, dy):
+          x, y = self.robot
+          new_x = x + dx
+          new_y = y + dy
+          if self.map[new_y][new_x] == "#":
+              return
+          self.robot = (new_x, new_y)
+      ```
+
+      Notice the order again: the map is read row first, `self.map[new_y][new_x]`.
+
+      ### Why the map has walls all around
+
+      The walls around the edge keep the robot on the map. Without them, a robot in the last column that steps right would make the program read a square that isn't there:
+
+      ```python run crash
+      row = "#....."
+      x = 5
+      print(row[x + 1])
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          print(row[x + 1])
+                ~~~^^^^^^^
+      IndexError: string index out of range
+      ```
+
+      Stepping left from column 0 is worse: `row[-1]` is the last square of the row, so there's no error at all, and the robot would walk out of the window. A wall around the edge means the robot never gets there.
+
+      Here's the game so far. In the page you can play it with the arrow keys:
+
+      ```python window
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+              self.robot_picture = pygame.image.load("robot.png")
+
+          def reset(self):
+              self.robot = (2, 3)
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          self.try_move(-1, 0)
+                      if event.key == pygame.K_RIGHT:
+                          self.try_move(1, 0)
+                      if event.key == pygame.K_UP:
+                          self.try_move(0, -1)
+                      if event.key == pygame.K_DOWN:
+                          self.try_move(0, 1)
+
+          def try_move(self, dx, dy):
+              x, y = self.robot
+              new_x = x + dx
+              new_y = y + dy
+              if self.map[new_y][new_x] == "#":
+                  return
+              self.robot = (new_x, new_y)
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+              robot_x, robot_y = self.robot
+              self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+      ```
+
+      ```window
+      {frames: 70, events: [{at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}, {at: 40, type: keydown, key: K_RIGHT}, {at: 40, type: keyup, key: K_RIGHT}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}, {at: 60, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}]}
+      ```
+
+      **Your turn:** the up and down arrows don't work yet. Fill in the blanks with the right directions, so that up moves the robot one square up and down one square down.
+    assets: [floor.png, wall.png, target.png, robot.png]
+    fill: |
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+              self.robot_picture = pygame.image.load("robot.png")
+
+          def reset(self):
+              self.robot = (2, 3)
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          self.try_move(-1, 0)
+                      if event.key == pygame.K_RIGHT:
+                          self.try_move(1, 0)
+                      if event.key == pygame.K_UP:
+                          self.try_move([[0]], [[-1]])
+                      if event.key == pygame.K_DOWN:
+                          self.try_move([[0]], [[1]])
+
+          def try_move(self, dx, dy):
+              x, y = self.robot
+              new_x = x + dx
+              new_y = y + dy
+              if self.map[new_y][new_x] == "#":
+                  return
+              self.robot = (new_x, new_y)
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+              robot_x, robot_y = self.robot
+              self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+    hints:
+      - The first number is the change in x, and the second the change in y. Going up or down, x stays the same.
+      - "y counts from the top of the window, so up makes it smaller: up is `(0, -1)` and down is `(0, 1)`."
+    tests:
+      - window: {frames: 25, events: [{at: 5, type: keydown, key: K_UP}, {at: 5, type: keyup, key: K_UP}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_UP}, {at: 15, type: keyup, key: K_UP}, {at: 20, type: keydown, key: K_DOWN}, {at: 20, type: keyup, key: K_DOWN}]}
+      - window: {frames: 20, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 5, type: keyup, key: K_DOWN}, {at: 10, type: keydown, key: K_DOWN}, {at: 10, type: keyup, key: K_DOWN}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}]}
+        hidden: true
+    more:
+      - task: |
+          Write the method `try_move(dx, dy)`. It moves the robot one square in the direction (dx, dy), but if there's a wall on that square, the robot stays where it is.
+        assets: [floor.png, wall.png, target.png, robot.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def try_move(self, dx, dy):
+                  # Move the robot one square in the direction (dx, dy), unless there's a wall there.
+                  pass
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - "The robot's place is `self.robot`. Unpack it first: `x, y = self.robot`."
+          - The new square is `x + dx` and `y + dy`. Check it in the map, row first, before you move the robot there.
+          - "If `self.map[new_y][new_x] == \"#\"`, `return` and change nothing. Otherwise set `self.robot = (new_x, new_y)`."
+        tests:
+          - name: Walking into the middle wall
+            window: {frames: 70, events: [{at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}, {at: 40, type: keydown, key: K_RIGHT}, {at: 40, type: keyup, key: K_RIGHT}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}, {at: 60, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}]}
+          - window: {frames: 45, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_LEFT}, {at: 10, type: keyup, key: K_LEFT}, {at: 15, type: keydown, key: K_LEFT}, {at: 15, type: keyup, key: K_LEFT}, {at: 20, type: keydown, key: K_UP}, {at: 20, type: keyup, key: K_UP}, {at: 25, type: keydown, key: K_UP}, {at: 25, type: keyup, key: K_UP}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}, {at: 35, type: keydown, key: K_UP}, {at: 35, type: keyup, key: K_UP}]}
+            hidden: true
+          - window: {frames: 60, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 5, type: keyup, key: K_DOWN}, {at: 10, type: keydown, key: K_DOWN}, {at: 10, type: keyup, key: K_DOWN}, {at: 15, type: keydown, key: K_DOWN}, {at: 15, type: keyup, key: K_DOWN}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_RIGHT}, {at: 30, type: keyup, key: K_RIGHT}, {at: 35, type: keydown, key: K_RIGHT}, {at: 35, type: keyup, key: K_RIGHT}, {at: 40, type: keydown, key: K_RIGHT}, {at: 40, type: keyup, key: K_RIGHT}, {at: 45, type: keydown, key: K_RIGHT}, {at: 45, type: keyup, key: K_RIGHT}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}]}
+            hidden: true
+      - task: |
+          This level has gaps in its outer walls, and they're **tunnels**: a robot that walks out of the left edge comes back in at the right edge of the same row, and one that walks out of the top comes in at the bottom. Right now the robot walks out of the window, or the program stops with an `IndexError`.
+
+          Change `try_move` so the robot goes through the tunnels. The remainder operator `%` can bring a number that went too far back into range.
+        assets: [floor.png, wall.png, target.png, robot.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "####.####",
+              "#.......#",
+              "#..#.#..#",
+              "....X....",
+              "#..#.#..#",
+              "#.......#",
+              "####.####",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "####.####",
+              "#.......#",
+              "#..#.#..#",
+              "....X....",
+              "#..#.#..#",
+              "#.......#",
+              "####.####",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = (x + dx) % self.width
+                  new_y = (y + dy) % self.height
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - The map has `self.width` columns, with indexes from 0 to `self.width - 1`. A robot that steps left from column 0 should land in column `self.width - 1`, and one that steps right from the last column in column 0.
+          - "In Python, `-1 % 9` is 8 and `9 % 9` is 0: `%` with the width gives exactly the column you want."
+          - Use `%` on both parts of the new square, x with `self.width` and y with `self.height`, before the wall check reads the map.
+        tests:
+          - name: Out of the left edge
+            window: {frames: 25, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_LEFT}, {at: 10, type: keyup, key: K_LEFT}, {at: 15, type: keydown, key: K_LEFT}, {at: 15, type: keyup, key: K_LEFT}, {at: 20, type: keydown, key: K_LEFT}, {at: 20, type: keyup, key: K_LEFT}]}
+          - window: {frames: 40, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_UP}, {at: 15, type: keyup, key: K_UP}, {at: 20, type: keydown, key: K_UP}, {at: 20, type: keyup, key: K_UP}, {at: 25, type: keydown, key: K_UP}, {at: 25, type: keyup, key: K_UP}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}, {at: 35, type: keydown, key: K_UP}, {at: 35, type: keyup, key: K_UP}]}
+            hidden: true
+          - window: {frames: 40, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_RIGHT}, {at: 30, type: keyup, key: K_RIGHT}, {at: 35, type: keydown, key: K_RIGHT}, {at: 35, type: keyup, key: K_RIGHT}]}
+            hidden: true
+
+  - id: game-project-boxes
+    slug: boxes
+    title: Pushing boxes
+    text: |
+      Now the boxes. A box on the floor and a box on its target look different, so the player can see which ones are done:
+
+      ```asset box.png
+      ```
+
+      ```asset box-done.png
+      ```
+
+      ### A list of boxes
+
+      Like the robot, the boxes move, so they don't go in the map. The game keeps a list of their places, which `reset` sets up: `self.boxes = [(2, 2), (6, 4)]`. Whether a square has a box on it is then a question for `in`:
+
+      ```python repl
+      >>> boxes = [(2, 2), (6, 4)]
+      >>> (6, 4) in boxes
+      True
+      >>> (4, 6) in boxes
+      False
+      ```
+
+      `draw` puts each box on top of its square's tile, right after drawing the tile. On a target square, it uses the picture of a finished box:
+
+      ```python fragment
+      if (x, y) in self.boxes:
+          if square == "X":
+              self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+          else:
+              self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+      ```
+
+      ### The rules of pushing
+
+      When the robot steps onto a square with a box, the box moves one square further in the same direction. That works only if the square behind the box is free: no wall and no other box. If it isn't free, nothing moves at all, not the box and not the robot. So a robot can't push two boxes in a row.
+
+      "Free" is a question the game asks often, so it gets a small method of its own:
+
+      ```python fragment
+      def is_free(self, x, y):
+          return self.map[y][x] != "#" and (x, y) not in self.boxes
+      ```
+
+      `try_move` gets a new part between the wall check and the robot's move:
+
+      ```python fragment
+      if (new_x, new_y) in self.boxes:
+          box_x = new_x + dx
+          box_y = new_y + dy
+          if not self.is_free(box_x, box_y):
+              return
+          self.boxes.remove((new_x, new_y))
+          self.boxes.append((box_x, box_y))
+      ```
+
+      The box's place is a tuple, and a tuple can't be changed. So the old place is removed from the list and the new place added. Trying to change the tuple itself stops the program:
+
+      ```python run crash
+      boxes = [(2, 2), (6, 4)]
+      box = boxes[0]
+      box[0] = 3
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 3, in <module>
+          box[0] = 3
+          ~~~^^^
+      TypeError: 'tuple' object does not support item assignment
+      ```
+
+      ### Code that says what it means
+
+      There are other ways to store this game. One is a single grid of numbers for everything: 0 for floor, 1 for a wall, 3 for a box, 5 for a box on its target, and so on. It needs less code, but a line like `if grid[y][x] in [3, 5]:` means nothing unless you remember what each number stands for. Numbers like these are called **magic numbers**, and they make code hard to read and easy to break.
+
+      This game uses characters that look like what they mean, `#` for a wall, and attributes with names, `self.robot` and `self.boxes`, for what moves. When working code is hard to read, it's worth rewriting it to be clearer without changing what it does. That's called **refactoring**.
+
+      Here's the game with boxes. Besides the two box pictures, it loads the pictures from before:
+
+      ```asset floor.png
+      ```
+
+      ```asset wall.png
+      ```
+
+      ```asset target.png
+      ```
+
+      ```asset robot.png
+      ```
+
+      Push the box on the right onto the target above it:
+
+      ```python window
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+              self.robot_picture = pygame.image.load("robot.png")
+              self.box_picture = pygame.image.load("box.png")
+              self.done_picture = pygame.image.load("box-done.png")
+
+          def reset(self):
+              self.robot = (2, 3)
+              self.boxes = [(2, 2), (6, 4)]
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          self.try_move(-1, 0)
+                      if event.key == pygame.K_RIGHT:
+                          self.try_move(1, 0)
+                      if event.key == pygame.K_UP:
+                          self.try_move(0, -1)
+                      if event.key == pygame.K_DOWN:
+                          self.try_move(0, 1)
+
+          def is_free(self, x, y):
+              return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+          def try_move(self, dx, dy):
+              x, y = self.robot
+              new_x = x + dx
+              new_y = y + dy
+              if self.map[new_y][new_x] == "#":
+                  return
+              if (new_x, new_y) in self.boxes:
+                  box_x = new_x + dx
+                  box_y = new_y + dy
+                  if not self.is_free(box_x, box_y):
+                      return
+                  self.boxes.remove((new_x, new_y))
+                  self.boxes.append((box_x, box_y))
+              self.robot = (new_x, new_y)
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                      if (x, y) in self.boxes:
+                          if square == "X":
+                              self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                          else:
+                              self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+              robot_x, robot_y = self.robot
+              self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+      ```
+
+      ```window
+      {frames: 95, events: [{at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 18, type: keydown, key: K_UP}, {at: 18, type: keyup, key: K_UP}, {at: 26, type: keydown, key: K_RIGHT}, {at: 26, type: keyup, key: K_RIGHT}, {at: 34, type: keydown, key: K_RIGHT}, {at: 34, type: keyup, key: K_RIGHT}, {at: 42, type: keydown, key: K_DOWN}, {at: 42, type: keyup, key: K_DOWN}, {at: 50, type: keydown, key: K_DOWN}, {at: 50, type: keyup, key: K_DOWN}, {at: 58, type: keydown, key: K_DOWN}, {at: 58, type: keyup, key: K_DOWN}, {at: 66, type: keydown, key: K_RIGHT}, {at: 66, type: keyup, key: K_RIGHT}, {at: 74, type: keydown, key: K_UP}, {at: 74, type: keyup, key: K_UP}, {at: 82, type: keydown, key: K_UP}, {at: 82, type: keyup, key: K_UP}]}
+      ```
+
+      **Your turn:** the boxes have gone missing from the window, although the robot can still push them. Fill in the blanks in `draw`, so that a box is drawn on every square in the list of boxes, with the finished box's picture on a target.
+    assets: [floor.png, wall.png, target.png, robot.png, box.png, box-done.png]
+    fill: |
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+              self.robot_picture = pygame.image.load("robot.png")
+              self.box_picture = pygame.image.load("box.png")
+              self.done_picture = pygame.image.load("box-done.png")
+
+          def reset(self):
+              self.robot = (2, 3)
+              self.boxes = [(2, 2), (6, 4)]
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          self.try_move(-1, 0)
+                      if event.key == pygame.K_RIGHT:
+                          self.try_move(1, 0)
+                      if event.key == pygame.K_UP:
+                          self.try_move(0, -1)
+                      if event.key == pygame.K_DOWN:
+                          self.try_move(0, 1)
+
+          def is_free(self, x, y):
+              return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+          def try_move(self, dx, dy):
+              x, y = self.robot
+              new_x = x + dx
+              new_y = y + dy
+              if self.map[new_y][new_x] == "#":
+                  return
+              if (new_x, new_y) in self.boxes:
+                  box_x = new_x + dx
+                  box_y = new_y + dy
+                  if not self.is_free(box_x, box_y):
+                      return
+                  self.boxes.remove((new_x, new_y))
+                  self.boxes.append((box_x, box_y))
+              self.robot = (new_x, new_y)
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                      if (x, y) [[in]] self.boxes:
+                          if square == [["X"]]:
+                              self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                          else:
+                              self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+              robot_x, robot_y = self.robot
+              self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+              pygame.display.flip()
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+    hints:
+      - The first blank asks whether the place `(x, y)` is one of the items of the list `self.boxes`.
+      - "Fill the first blank with `in`. The second blank is the character of a target square in the map."
+    tests:
+      - name: A box onto its target
+        window: {frames: 60, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_DOWN}, {at: 25, type: keyup, key: K_DOWN}, {at: 30, type: keydown, key: K_DOWN}, {at: 30, type: keyup, key: K_DOWN}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}, {at: 40, type: keydown, key: K_RIGHT}, {at: 40, type: keyup, key: K_RIGHT}, {at: 45, type: keydown, key: K_UP}, {at: 45, type: keyup, key: K_UP}, {at: 50, type: keydown, key: K_UP}, {at: 50, type: keyup, key: K_UP}]}
+      - window: {frames: 20, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}]}
+        hidden: true
+    more:
+      - task: |
+          Write the method `is_free(x, y)`. It returns `True` when square (x, y) has no wall and no box on it, and `False` otherwise. `try_move` uses it to check the square behind a box, so as it is now, the robot can push boxes into walls and onto other boxes.
+        assets: [floor.png, wall.png, target.png, robot.png, box.png, box-done.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def is_free(self, x, y):
+                  # Return True when square (x, y) has no wall and no box.
+                  return True
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - The square is not free if the map has a wall there, or if its place is in the list of boxes.
+          - "Read the map row first: `self.map[y][x] != \"#\"`. The box check is `(x, y) not in self.boxes`."
+          - Both conditions must hold for a free square, so combine them with `and` and return the result.
+        tests:
+          - name: A box against the wall
+            window: {frames: 20, events: [{at: 5, type: keydown, key: K_UP}, {at: 5, type: keyup, key: K_UP}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}]}
+          - call: BoxGame().is_free(1, 1)
+          - call: BoxGame().is_free(4, 1)
+            hidden: true
+          - call: BoxGame().is_free(2, 2)
+            hidden: true
+          - call: BoxGame().is_free(3, 4)
+            hidden: true
+          - window: {frames: 70, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_RIGHT}, {at: 30, type: keyup, key: K_RIGHT}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}, {at: 40, type: keydown, key: K_DOWN}, {at: 40, type: keyup, key: K_DOWN}, {at: 45, type: keydown, key: K_DOWN}, {at: 45, type: keyup, key: K_DOWN}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}, {at: 55, type: keydown, key: K_UP}, {at: 55, type: keyup, key: K_UP}, {at: 60, type: keydown, key: K_UP}, {at: 60, type: keyup, key: K_UP}]}
+            hidden: true
+      - task: |
+          The robot walks over the boxes as if they weren't there. Add the pushing to `try_move`: when the robot steps onto a box, the box moves one square further in the same direction, if that square is free. If it isn't free, neither the box nor the robot moves. The method `is_free` is ready to use.
+        assets: [floor.png, wall.png, target.png, robot.png, box.png, box-done.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  # Push a box here.
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  pygame.display.flip()
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - "First check whether there's a box on the robot's new square: `if (new_x, new_y) in self.boxes:`."
+          - "The box would go to `new_x + dx`, `new_y + dy`. If `self.is_free` says that square isn't free, `return` before anything moves."
+          - "Otherwise move the box: remove its old place from `self.boxes` and append the new one. The robot's move after that stays as it is."
+        tests:
+          - name: A box onto its target
+            window: {frames: 60, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_DOWN}, {at: 25, type: keyup, key: K_DOWN}, {at: 30, type: keydown, key: K_DOWN}, {at: 30, type: keyup, key: K_DOWN}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}, {at: 40, type: keydown, key: K_RIGHT}, {at: 40, type: keyup, key: K_RIGHT}, {at: 45, type: keydown, key: K_UP}, {at: 45, type: keyup, key: K_UP}, {at: 50, type: keydown, key: K_UP}, {at: 50, type: keyup, key: K_UP}]}
+          - window: {frames: 20, events: [{at: 5, type: keydown, key: K_UP}, {at: 5, type: keyup, key: K_UP}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}]}
+            hidden: true
+          - window: {frames: 70, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_RIGHT}, {at: 20, type: keyup, key: K_RIGHT}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_RIGHT}, {at: 30, type: keyup, key: K_RIGHT}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}, {at: 40, type: keydown, key: K_DOWN}, {at: 40, type: keyup, key: K_DOWN}, {at: 45, type: keydown, key: K_DOWN}, {at: 45, type: keyup, key: K_DOWN}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}, {at: 55, type: keydown, key: K_UP}, {at: 55, type: keyup, key: K_UP}, {at: 60, type: keydown, key: K_UP}, {at: 60, type: keyup, key: K_UP}]}
+            hidden: true
+
+  - id: game-project-finishing
+    slug: finishing
+    title: Finishing the game
+    text: |
+      The puzzle can be played now, but it isn't a finished game yet. This step adds the finishing touches: a counter of moves, keys for starting over and quitting, and a message when the puzzle is solved.
+
+      ### A bar for text
+
+      The text goes in a bar under the map, so the window gets one row of tiles taller, and `__init__` makes a font for the text:
+
+      ```python fragment
+      self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+      self.font = pygame.font.SysFont("Arial", 24)
+      ```
+
+      Make the font once, in `__init__`, and not in `draw`: making a font takes time, and `draw` runs on every frame.
+
+      ### Counting moves
+
+      `reset` sets `self.moves = 0`, and `try_move` adds one at its very end, after all the checks. A bump into a wall returns before it gets there, so it isn't counted. A new method, `draw_bar`, writes the count and the keys in the bar:
+
+      ```python fragment
+      def draw_bar(self):
+          top = self.height * SIZE + 12
+          text = self.font.render(f"Moves: {self.moves}", True, (255, 255, 255))
+          self.window.blit(text, (10, top))
+      ```
+
+      A puzzle player wants to know the count: the same puzzle can be solved in many ways, and the fewer moves, the better.
+
+      ### Starting over and quitting
+
+      Pushing a box into a corner ruins the game, so the player needs a way to start over. The R key calls `reset`, which puts the robot, the boxes and the counter back as they were at the start. The Esc key quits, just like closing the window:
+
+      ```python fragment
+      if event.key == pygame.K_r:
+          self.reset()
+      if event.key == pygame.K_ESCAPE:
+          exit()
+      ```
+
+      This works because `reset` makes a brand new list of boxes every time. If the starting places were in one list kept somewhere else, and `reset` said `self.boxes = START_BOXES`, both names would refer to the same list. Every push would change the starting places too, and R would bring back the boxes where they were last, not where they started. `list(START_BOXES)` would make a copy.
+
+      ### Solved!
+
+      The puzzle is solved when every box is on a target. A method answers the question by going through the boxes. The first box that isn't on a target settles it, so the method can return `False` right there. The answer is `True` only when the loop has checked them all:
+
+      ```python fragment
+      def solved(self):
+          for x, y in self.boxes:
+              if self.map[y][x] != "X":
+                  return False
+          return True
+      ```
+
+      When the puzzle is solved, `draw_bar` shows a message instead of the count, and `try_move` starts with `if self.solved(): return`, so the robot stays still. The player can still look at the finished puzzle, and press R to play again.
+
+      ### Testing the ending
+
+      To test the ending, you'd have to solve the whole puzzle every time you change something. While you work on the ending, make it easy: a test level where one push solves it, or, for a moment, a `solved` that just says `return True`. Remember to put things back when the ending works.
+
+      Here's the finished game, with all six of its pictures:
+
+      ```asset floor.png
+      ```
+
+      ```asset wall.png
+      ```
+
+      ```asset target.png
+      ```
+
+      ```asset robot.png
+      ```
+
+      ```asset box.png
+      ```
+
+      ```asset box-done.png
+      ```
+
+      The window below shows the puzzle solved in 16 moves. That's the fewest possible. Can you find another way to do it in 16?
+
+      ```python window
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.font = pygame.font.SysFont("Arial", 24)
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+              self.robot_picture = pygame.image.load("robot.png")
+              self.box_picture = pygame.image.load("box.png")
+              self.done_picture = pygame.image.load("box-done.png")
+
+          def reset(self):
+              self.robot = (2, 3)
+              self.boxes = [(2, 2), (6, 4)]
+              self.moves = 0
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          self.try_move(-1, 0)
+                      if event.key == pygame.K_RIGHT:
+                          self.try_move(1, 0)
+                      if event.key == pygame.K_UP:
+                          self.try_move(0, -1)
+                      if event.key == pygame.K_DOWN:
+                          self.try_move(0, 1)
+                      if event.key == pygame.K_r:
+                          self.reset()
+                      if event.key == pygame.K_ESCAPE:
+                          exit()
+
+          def is_free(self, x, y):
+              return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+          def try_move(self, dx, dy):
+              if self.solved():
+                  return
+              x, y = self.robot
+              new_x = x + dx
+              new_y = y + dy
+              if self.map[new_y][new_x] == "#":
+                  return
+              if (new_x, new_y) in self.boxes:
+                  box_x = new_x + dx
+                  box_y = new_y + dy
+                  if not self.is_free(box_x, box_y):
+                      return
+                  self.boxes.remove((new_x, new_y))
+                  self.boxes.append((box_x, box_y))
+              self.robot = (new_x, new_y)
+              self.moves += 1
+
+          def solved(self):
+              for x, y in self.boxes:
+                  if self.map[y][x] != "X":
+                      return False
+              return True
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                      if (x, y) in self.boxes:
+                          if square == "X":
+                              self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                          else:
+                              self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+              robot_x, robot_y = self.robot
+              self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+              self.draw_bar()
+              pygame.display.flip()
+
+          def draw_bar(self):
+              top = self.height * SIZE + 12
+              if self.solved():
+                  text = self.font.render(f"Solved in {self.moves} moves!", True, (120, 230, 120))
+              else:
+                  text = self.font.render(f"Moves: {self.moves}", True, (255, 255, 255))
+              self.window.blit(text, (10, top))
+              keys = self.font.render("R: restart  Esc: quit", True, (160, 160, 160))
+              self.window.blit(keys, (196, top))
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+      ```
+
+      ```window
+      {frames: 110, events: [{at: 10, type: keydown, key: K_LEFT}, {at: 10, type: keyup, key: K_LEFT}, {at: 16, type: keydown, key: K_UP}, {at: 16, type: keyup, key: K_UP}, {at: 22, type: keydown, key: K_RIGHT}, {at: 22, type: keyup, key: K_RIGHT}, {at: 28, type: keydown, key: K_UP}, {at: 28, type: keyup, key: K_UP}, {at: 34, type: keydown, key: K_RIGHT}, {at: 34, type: keyup, key: K_RIGHT}, {at: 40, type: keydown, key: K_DOWN}, {at: 40, type: keyup, key: K_DOWN}, {at: 46, type: keydown, key: K_DOWN}, {at: 46, type: keyup, key: K_DOWN}, {at: 52, type: keydown, key: K_UP}, {at: 52, type: keyup, key: K_UP}, {at: 58, type: keydown, key: K_RIGHT}, {at: 58, type: keyup, key: K_RIGHT}, {at: 64, type: keydown, key: K_RIGHT}, {at: 64, type: keyup, key: K_RIGHT}, {at: 70, type: keydown, key: K_DOWN}, {at: 70, type: keyup, key: K_DOWN}, {at: 76, type: keydown, key: K_DOWN}, {at: 76, type: keyup, key: K_DOWN}, {at: 82, type: keydown, key: K_DOWN}, {at: 82, type: keyup, key: K_DOWN}, {at: 88, type: keydown, key: K_RIGHT}, {at: 88, type: keyup, key: K_RIGHT}, {at: 94, type: keydown, key: K_UP}, {at: 94, type: keyup, key: K_UP}, {at: 100, type: keydown, key: K_UP}, {at: 100, type: keyup, key: K_UP}]}
+      ```
+
+      **Your turn:** the moves aren't counted yet. Fill in the blanks: the counter starts at zero, grows by one with every move the robot makes, and its value is shown in the bar.
+    assets: [floor.png, wall.png, target.png, robot.png, box.png, box-done.png]
+    fill: |
+      import pygame
+
+      SIZE = 40
+      LEVEL = [
+          "#########",
+          "#...#...#",
+          "#.....X.#",
+          "#...#...#",
+          "#..X#...#",
+          "#.......#",
+          "#########",
+      ]
+
+
+      class BoxGame:
+          def __init__(self):
+              pygame.init()
+              self.load_pictures()
+              self.map = LEVEL
+              self.height = len(self.map)
+              self.width = len(self.map[0])
+              self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+              pygame.display.set_caption("Box Robot")
+              self.font = pygame.font.SysFont("Arial", 24)
+              self.clock = pygame.time.Clock()
+              self.reset()
+
+          def load_pictures(self):
+              self.tiles = {
+                  "#": pygame.image.load("wall.png"),
+                  ".": pygame.image.load("floor.png"),
+                  "X": pygame.image.load("target.png"),
+              }
+              self.robot_picture = pygame.image.load("robot.png")
+              self.box_picture = pygame.image.load("box.png")
+              self.done_picture = pygame.image.load("box-done.png")
+
+          def reset(self):
+              self.robot = (2, 3)
+              self.boxes = [(2, 2), (6, 4)]
+              self.moves = [[0]]
+
+          def run(self):
+              while True:
+                  self.handle_events()
+                  self.draw()
+                  self.clock.tick(60)
+
+          def handle_events(self):
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          self.try_move(-1, 0)
+                      if event.key == pygame.K_RIGHT:
+                          self.try_move(1, 0)
+                      if event.key == pygame.K_UP:
+                          self.try_move(0, -1)
+                      if event.key == pygame.K_DOWN:
+                          self.try_move(0, 1)
+                      if event.key == pygame.K_r:
+                          self.reset()
+                      if event.key == pygame.K_ESCAPE:
+                          exit()
+
+          def is_free(self, x, y):
+              return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+          def try_move(self, dx, dy):
+              if self.solved():
+                  return
+              x, y = self.robot
+              new_x = x + dx
+              new_y = y + dy
+              if self.map[new_y][new_x] == "#":
+                  return
+              if (new_x, new_y) in self.boxes:
+                  box_x = new_x + dx
+                  box_y = new_y + dy
+                  if not self.is_free(box_x, box_y):
+                      return
+                  self.boxes.remove((new_x, new_y))
+                  self.boxes.append((box_x, box_y))
+              self.robot = (new_x, new_y)
+              [[self.moves += 1]]
+
+          def solved(self):
+              for x, y in self.boxes:
+                  if self.map[y][x] != "X":
+                      return False
+              return True
+
+          def draw(self):
+              self.window.fill((0, 0, 0))
+              for y in range(self.height):
+                  for x in range(self.width):
+                      square = self.map[y][x]
+                      self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                      if (x, y) in self.boxes:
+                          if square == "X":
+                              self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                          else:
+                              self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+              robot_x, robot_y = self.robot
+              self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+              self.draw_bar()
+              pygame.display.flip()
+
+          def draw_bar(self):
+              top = self.height * SIZE + 12
+              if self.solved():
+                  text = self.font.render(f"Solved in {self.moves} moves!", True, (120, 230, 120))
+              else:
+                  text = self.font.render(f"Moves: {[[self.moves]]}", True, (255, 255, 255))
+              self.window.blit(text, (10, top))
+              keys = self.font.render("R: restart  Esc: quit", True, (160, 160, 160))
+              self.window.blit(keys, (196, top))
+
+
+      if __name__ == "__main__":
+          game = BoxGame()
+          game.run()
+    hints:
+      - The counter is the attribute `self.moves`. `reset` gives it the value it starts from, and the f-string in `draw_bar` shows its value between the braces.
+      - "The blank in `try_move` is a whole statement that adds one to the counter: `self.moves += 1`. It's at the very end, so a bump into a wall never gets there."
+    tests:
+      - name: Two moves and a bump
+        window: {frames: 20, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 5, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_RIGHT}, {at: 10, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_UP}, {at: 15, type: keyup, key: K_UP}]}
+      - window: {frames: 35, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_UP}, {at: 20, type: keyup, key: K_UP}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}]}
+        hidden: true
+    more:
+      - task: |
+          The bar promises that R restarts the game and Esc quits, but neither key does anything yet. Make them work in `handle_events`: R puts everything back as it was at the start, and Esc ends the program, as closing the window does.
+        assets: [floor.png, wall.png, target.png, robot.png, box.png, box-done.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+                  self.moves = 0
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  if self.solved():
+                      return
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+                  self.moves += 1
+
+              def solved(self):
+                  for x, y in self.boxes:
+                      if self.map[y][x] != "X":
+                          return False
+                  return True
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  self.draw_bar()
+                  pygame.display.flip()
+
+              def draw_bar(self):
+                  top = self.height * SIZE + 12
+                  if self.solved():
+                      text = self.font.render(f"Solved in {self.moves} moves!", True, (120, 230, 120))
+                  else:
+                      text = self.font.render(f"Moves: {self.moves}", True, (255, 255, 255))
+                  self.window.blit(text, (10, top))
+                  keys = self.font.render("R: restart  Esc: quit", True, (160, 160, 160))
+                  self.window.blit(keys, (196, top))
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+                  self.moves = 0
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+                          if event.key == pygame.K_r:
+                              self.reset()
+                          if event.key == pygame.K_ESCAPE:
+                              exit()
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  if self.solved():
+                      return
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+                  self.moves += 1
+
+              def solved(self):
+                  for x, y in self.boxes:
+                      if self.map[y][x] != "X":
+                          return False
+                  return True
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  self.draw_bar()
+                  pygame.display.flip()
+
+              def draw_bar(self):
+                  top = self.height * SIZE + 12
+                  if self.solved():
+                      text = self.font.render(f"Solved in {self.moves} moves!", True, (120, 230, 120))
+                  else:
+                      text = self.font.render(f"Moves: {self.moves}", True, (255, 255, 255))
+                  self.window.blit(text, (10, top))
+                  keys = self.font.render("R: restart  Esc: quit", True, (160, 160, 160))
+                  self.window.blit(keys, (196, top))
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - "Both keys come as `KEYDOWN` events, like the arrows. Their names are `pygame.K_r` and `pygame.K_ESCAPE`."
+          - "The method `reset` already sets up the robot, the boxes and the counter, so R only needs to call `self.reset()`."
+          - "For Esc, call `exit()`, as the code does for `pygame.QUIT`."
+        tests:
+          - name: Pushing a box, then R
+            window: {frames: 30, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_r}, {at: 20, type: keyup, key: K_r}]}
+          - name: Esc
+            window: {frames: 30, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 3, type: keyup, key: K_RIGHT}, {at: 8, type: keydown, key: K_ESCAPE}, {at: 8, type: keyup, key: K_ESCAPE}]}
+          - window: {frames: 40, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_r}, {at: 20, type: keyup, key: K_r}, {at: 25, type: keydown, key: K_UP}, {at: 25, type: keyup, key: K_UP}, {at: 30, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}]}
+            hidden: true
+          - window: {frames: 40, events: [{at: 4, type: keydown, key: K_UP}, {at: 4, type: keyup, key: K_UP}, {at: 8, type: keydown, key: K_RIGHT}, {at: 8, type: keyup, key: K_RIGHT}, {at: 12, type: keydown, key: K_DOWN}, {at: 12, type: keyup, key: K_DOWN}, {at: 16, type: keydown, key: K_ESCAPE}, {at: 16, type: keyup, key: K_ESCAPE}]}
+            hidden: true
+      - task: |
+          Write the method `solved()`. It returns `True` when every box is on a target square, and `False` otherwise. The rest of the game uses it already: once it works, the bar shows a message when the puzzle is solved, and the robot stops.
+        assets: [floor.png, wall.png, target.png, robot.png, box.png, box-done.png]
+        seed: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+                  self.moves = 0
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+                          if event.key == pygame.K_r:
+                              self.reset()
+                          if event.key == pygame.K_ESCAPE:
+                              exit()
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  if self.solved():
+                      return
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+                  self.moves += 1
+
+              def solved(self):
+                  # Return True when every box is on a target square.
+                  return False
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  self.draw_bar()
+                  pygame.display.flip()
+
+              def draw_bar(self):
+                  top = self.height * SIZE + 12
+                  if self.solved():
+                      text = self.font.render(f"Solved in {self.moves} moves!", True, (120, 230, 120))
+                  else:
+                      text = self.font.render(f"Moves: {self.moves}", True, (255, 255, 255))
+                  self.window.blit(text, (10, top))
+                  keys = self.font.render("R: restart  Esc: quit", True, (160, 160, 160))
+                  self.window.blit(keys, (196, top))
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        solution: |
+          import pygame
+
+          SIZE = 40
+          LEVEL = [
+              "#########",
+              "#...#...#",
+              "#.....X.#",
+              "#...#...#",
+              "#..X#...#",
+              "#.......#",
+              "#########",
+          ]
+
+
+          class BoxGame:
+              def __init__(self):
+                  pygame.init()
+                  self.load_pictures()
+                  self.map = LEVEL
+                  self.height = len(self.map)
+                  self.width = len(self.map[0])
+                  self.window = pygame.display.set_mode((self.width * SIZE, self.height * SIZE + SIZE))
+                  pygame.display.set_caption("Box Robot")
+                  self.font = pygame.font.SysFont("Arial", 24)
+                  self.clock = pygame.time.Clock()
+                  self.reset()
+
+              def load_pictures(self):
+                  self.tiles = {
+                      "#": pygame.image.load("wall.png"),
+                      ".": pygame.image.load("floor.png"),
+                      "X": pygame.image.load("target.png"),
+                  }
+                  self.robot_picture = pygame.image.load("robot.png")
+                  self.box_picture = pygame.image.load("box.png")
+                  self.done_picture = pygame.image.load("box-done.png")
+
+              def reset(self):
+                  self.robot = (2, 3)
+                  self.boxes = [(2, 2), (6, 4)]
+                  self.moves = 0
+
+              def run(self):
+                  while True:
+                      self.handle_events()
+                      self.draw()
+                      self.clock.tick(60)
+
+              def handle_events(self):
+                  for event in pygame.event.get():
+                      if event.type == pygame.QUIT:
+                          exit()
+                      if event.type == pygame.KEYDOWN:
+                          if event.key == pygame.K_LEFT:
+                              self.try_move(-1, 0)
+                          if event.key == pygame.K_RIGHT:
+                              self.try_move(1, 0)
+                          if event.key == pygame.K_UP:
+                              self.try_move(0, -1)
+                          if event.key == pygame.K_DOWN:
+                              self.try_move(0, 1)
+                          if event.key == pygame.K_r:
+                              self.reset()
+                          if event.key == pygame.K_ESCAPE:
+                              exit()
+
+              def is_free(self, x, y):
+                  return self.map[y][x] != "#" and (x, y) not in self.boxes
+
+              def try_move(self, dx, dy):
+                  if self.solved():
+                      return
+                  x, y = self.robot
+                  new_x = x + dx
+                  new_y = y + dy
+                  if self.map[new_y][new_x] == "#":
+                      return
+                  if (new_x, new_y) in self.boxes:
+                      box_x = new_x + dx
+                      box_y = new_y + dy
+                      if not self.is_free(box_x, box_y):
+                          return
+                      self.boxes.remove((new_x, new_y))
+                      self.boxes.append((box_x, box_y))
+                  self.robot = (new_x, new_y)
+                  self.moves += 1
+
+              def solved(self):
+                  for x, y in self.boxes:
+                      if self.map[y][x] != "X":
+                          return False
+                  return True
+
+              def draw(self):
+                  self.window.fill((0, 0, 0))
+                  for y in range(self.height):
+                      for x in range(self.width):
+                          square = self.map[y][x]
+                          self.window.blit(self.tiles[square], (x * SIZE, y * SIZE))
+                          if (x, y) in self.boxes:
+                              if square == "X":
+                                  self.window.blit(self.done_picture, (x * SIZE, y * SIZE))
+                              else:
+                                  self.window.blit(self.box_picture, (x * SIZE, y * SIZE))
+                  robot_x, robot_y = self.robot
+                  self.window.blit(self.robot_picture, (robot_x * SIZE, robot_y * SIZE))
+                  self.draw_bar()
+                  pygame.display.flip()
+
+              def draw_bar(self):
+                  top = self.height * SIZE + 12
+                  if self.solved():
+                      text = self.font.render(f"Solved in {self.moves} moves!", True, (120, 230, 120))
+                  else:
+                      text = self.font.render(f"Moves: {self.moves}", True, (255, 255, 255))
+                  self.window.blit(text, (10, top))
+                  keys = self.font.render("R: restart  Esc: quit", True, (160, 160, 160))
+                  self.window.blit(keys, (196, top))
+
+
+          if __name__ == "__main__":
+              game = BoxGame()
+              game.run()
+        hints:
+          - "Go through the boxes with `for x, y in self.boxes:`, and look at the map under each one."
+          - "If the map has anything but `\"X\"` under a box, the puzzle isn't solved: `return False` right away."
+          - "Return `True` only after the loop, when no box was off its target."
+        tests:
+          - name: Solving the puzzle
+            window: {frames: 100, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_UP}, {at: 20, type: keyup, key: K_UP}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_DOWN}, {at: 30, type: keyup, key: K_DOWN}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}, {at: 40, type: keydown, key: K_UP}, {at: 40, type: keyup, key: K_UP}, {at: 45, type: keydown, key: K_RIGHT}, {at: 45, type: keyup, key: K_RIGHT}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}, {at: 55, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}, {at: 60, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}, {at: 65, type: keydown, key: K_DOWN}, {at: 65, type: keyup, key: K_DOWN}, {at: 70, type: keydown, key: K_RIGHT}, {at: 70, type: keyup, key: K_RIGHT}, {at: 75, type: keydown, key: K_UP}, {at: 75, type: keyup, key: K_UP}, {at: 80, type: keydown, key: K_UP}, {at: 80, type: keyup, key: K_UP}]}
+          - name: Both boxes on targets
+            call: |
+              game = BoxGame()
+              game.boxes = [(6, 2), (3, 4)]
+              print(game.solved())
+          - call: |
+              game = BoxGame()
+              print(game.solved())
+            hidden: true
+          - call: |
+              game = BoxGame()
+              game.boxes = [(6, 2), (3, 3)]
+              print(game.solved())
+            hidden: true
+          - window: {frames: 45, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_UP}, {at: 20, type: keyup, key: K_UP}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_DOWN}, {at: 30, type: keyup, key: K_DOWN}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}]}
+            hidden: true
+          - window: {frames: 110, events: [{at: 5, type: keydown, key: K_LEFT}, {at: 5, type: keyup, key: K_LEFT}, {at: 10, type: keydown, key: K_UP}, {at: 10, type: keyup, key: K_UP}, {at: 15, type: keydown, key: K_RIGHT}, {at: 15, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_UP}, {at: 20, type: keyup, key: K_UP}, {at: 25, type: keydown, key: K_RIGHT}, {at: 25, type: keyup, key: K_RIGHT}, {at: 30, type: keydown, key: K_DOWN}, {at: 30, type: keyup, key: K_DOWN}, {at: 35, type: keydown, key: K_DOWN}, {at: 35, type: keyup, key: K_DOWN}, {at: 40, type: keydown, key: K_UP}, {at: 40, type: keyup, key: K_UP}, {at: 45, type: keydown, key: K_RIGHT}, {at: 45, type: keyup, key: K_RIGHT}, {at: 50, type: keydown, key: K_RIGHT}, {at: 50, type: keyup, key: K_RIGHT}, {at: 55, type: keydown, key: K_DOWN}, {at: 55, type: keyup, key: K_DOWN}, {at: 60, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}, {at: 65, type: keydown, key: K_DOWN}, {at: 65, type: keyup, key: K_DOWN}, {at: 70, type: keydown, key: K_RIGHT}, {at: 70, type: keyup, key: K_RIGHT}, {at: 75, type: keydown, key: K_UP}, {at: 75, type: keyup, key: K_UP}, {at: 80, type: keydown, key: K_UP}, {at: 80, type: keyup, key: K_UP}, {at: 85, type: keydown, key: K_LEFT}, {at: 85, type: keyup, key: K_LEFT}, {at: 90, type: keydown, key: K_LEFT}, {at: 90, type: keyup, key: K_LEFT}]}
+            hidden: true

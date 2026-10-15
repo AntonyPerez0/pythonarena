@@ -1,0 +1,217 @@
+topic: own-game
+drills:
+  - type: choice
+    after: plan
+    prompt: Which of these belongs in a game's `update` method, and not in `draw`?
+    choices:
+      - Moving the monster one step toward the robot
+      - Drawing the coin at its place
+      - Making the text that shows the score
+    answer: 1
+    why: "`update` changes the game's state by its rules, once a frame. `draw` only shows the state as it is, and changes nothing."
+
+  - type: predict
+    after: plan
+    code: |
+      import pygame
+
+      robot = pygame.Rect(0, 0, 40, 40)
+      wall = pygame.Rect(40, 0, 40, 40)
+      coin = pygame.Rect(39, 39, 10, 10)
+      print(robot.colliderect(wall))
+      print(robot.colliderect(coin))
+    why: "The wall starts at x = 40, exactly where the robot ends, so their edges only touch, which isn't an overlap. The coin's corner (39, 39) is inside the robot."
+
+  - type: fill
+    after: plan
+    code: |
+      import pygame
+
+      robot = pygame.Rect(0, 0, 40, 40)
+      coin = pygame.Rect(20, 20, 24, 24)
+      if robot.[[colliderect]](coin):
+          print("Got it!")
+    why: "`colliderect` tells whether two rectangles overlap. The coin's corner (20, 20) is inside the robot's rectangle."
+
+  - type: predict
+    after: plan
+    code: |
+      speed = 3
+      fps = 60
+      print(speed * fps, "pixels a second")
+      print(540 // (speed * fps), "seconds to cross")
+    why: "At 60 frames a second, 3 pixels a frame is 180 pixels a second, and 540 pixels take 3 seconds."
+
+  - type: predict
+    after: plan
+    code: |
+      WIDTH = 480
+      for x in [-6, 100, 470]:
+          print(max(0, min(x, WIDTH - 40)))
+    why: "`min(x, 440)` is never more than 440, and `max(0, ...)` is never less than 0. A value in between stays as it is."
+
+  - type: choice
+    after: plan
+    prompt: In what order does the main loop of a game like the coin chase do its work on each frame?
+    choices:
+      - Handle the events, update the game, draw, tick the clock
+      - Tick the clock, draw, handle the events, update the game
+      - Draw, update the game, tick the clock, handle the events
+    answer: 1
+    why: "First the game reads what the player did, then it moves things by its rules, and then it draws the result. The clock at the end keeps the loop at 60 frames a second."
+
+  - type: choice
+    after: plan
+    prompt: Where should a game keep things like the robot's position, the score and the coin's place?
+    choices:
+      - In attributes of the game object, set up in `reset`
+      - In local variables of `draw`
+      - Nowhere, the window remembers them
+    answer: 1
+    why: "Attributes keep their values from one frame to the next, and every method of the game can use them. Setting them up in `reset` makes starting over easy."
+
+  - type: choice
+    after: plan
+    prompt: The robot should glide smoothly while an arrow key is held down. What does `update` check on every frame?
+    choices:
+      - "`pygame.key.get_pressed()`, the keys that are down right now"
+      - Only the `KEYDOWN` events
+      - Only the `KEYUP` events
+    answer: 1
+    why: "A `KEYDOWN` event comes once per press, which suits moving one square at a time. For smooth movement the robot moves on every frame that the key is down."
+
+  - type: bug
+    after: plan
+    code: |
+      x, speed = 590, 4
+      for frame in range(4):
+          x += speed
+          if x > 600:
+              speed = 4  # BUG
+          print(x)
+    fix: speed = -speed
+    why: "To turn around at the edge, the speed must change its sign. Setting it to 4 again keeps the ball going right, out of the window."
+
+  - type: runs
+    after: complete
+    code: |
+      coins = 3
+      text = "Coins: " + coins
+      print(text)
+    why: "A string and a number can't be added together, so Python stops with a `TypeError`. An f-string makes the text: `f\"Coins: {coins}\"`."
+
+  - type: predict
+    after: complete
+    code: |
+      monster = [10, 50]
+      robot = [12, 50]
+      for frame in range(3):
+          if monster[0] < robot[0]:
+              monster[0] += 1
+          if monster[0] > robot[0]:
+              monster[0] -= 1
+      print(monster)
+    why: "The monster's x goes 11, then 12. On the third frame it's equal to the robot's x, and neither `if` moves it."
+
+  - type: bug
+    after: complete
+    code: |
+      monster_x, robot_x = 100, 40
+      for frame in range(3):
+          if monster_x < robot_x:
+              monster_x += 1
+          if monster_x > robot_x:
+              monster_x += 1  # BUG
+      print(monster_x)
+    fix: monster_x -= 1
+    why: "A monster to the right of the robot has to go left, so its x gets smaller. With `+= 1` it runs away instead."
+
+  - type: predict
+    after: complete
+    code: |
+      GAME_TIME = 15
+      for frames in [59, 60, 900]:
+          print(GAME_TIME - frames // 60)
+    why: "`frames // 60` counts the whole seconds played: 0 after 59 frames, 1 after 60 and 15 after 900."
+
+  - type: predict
+    after: complete
+    code: |
+      over = False
+      x = 0
+      for frame in range(5):
+          if not over:
+              x += 2
+          if x == 6:
+              over = True
+      print(x, over)
+    why: "After three frames x is 6 and `over` becomes `True`. On the last two frames nothing moves any more."
+
+  - type: choice
+    after: complete
+    prompt: What is a game's `reset` method for?
+    choices:
+      - It sets everything that changes during a game back to how it starts
+      - It loads the pictures and opens the window again
+      - It ends the program
+    answer: 1
+    why: "`__init__` does the work that's done only once, such as the window and the pictures. `reset` sets up a new game, so both the start and R can call it."
+
+  - type: boss
+    after: plan
+    prompt: |
+      Write a function `overlap(a, b)` that tells whether two rectangles overlap, without pygame. Each rectangle is a tuple `(x, y, width, height)`. The function returns `True` when they overlap and `False` when they don't, as pygame's `colliderect` does: rectangles whose edges only touch don't overlap.
+
+      For example, `overlap((0, 0, 40, 40), (30, 30, 24, 24))` returns `True`, and `overlap((0, 0, 40, 40), (40, 0, 10, 10))` returns `False`.
+    seed: |
+      def overlap(a, b):
+          pass
+    solution: |
+      def overlap(a, b):
+          ax, ay, aw, ah = a
+          bx, by, bw, bh = b
+          return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
+    hints:
+      - "Unpack the tuples first: `ax, ay, aw, ah = a`."
+      - Two rectangles overlap across if each one starts before the other one ends, so `ax < bx + bw` and `bx < ax + aw`.
+      - "The same goes for up and down, with y and the heights. All four must be true."
+    tests:
+      - call: overlap((0, 0, 40, 40), (30, 30, 24, 24))
+      - call: overlap((0, 0, 40, 40), (40, 0, 10, 10))
+      - call: overlap((50, 50, 20, 20), (10, 10, 50, 50))
+        hidden: true
+      - call: overlap((0, 0, 40, 40), (10, 40, 10, 10))
+        hidden: true
+      - call: overlap((100, 0, 10, 10), (0, 0, 40, 40))
+        hidden: true
+      - call: overlap((0, 0, 100, 100), (40, 40, 5, 5))
+        hidden: true
+
+  - type: boss
+    after: complete
+    prompt: |
+      Write a function `step_toward(value, target, speed)`. It returns `value` moved toward `target` by `speed`, but never past it: when the target is closer than `speed`, the function returns the target itself.
+
+      For example, `step_toward(10, 20, 3)` returns `13`, `step_toward(10, 11, 3)` returns `11`, and `step_toward(10, 4, 3)` returns `7`.
+    seed: |
+      def step_toward(value, target, speed):
+          pass
+    solution: |
+      def step_toward(value, target, speed):
+          if value < target:
+              return min(value + speed, target)
+          if value > target:
+              return max(value - speed, target)
+          return value
+    hints:
+      - When the value is smaller than the target, it grows by `speed`. When it's bigger, it gets smaller by `speed`.
+      - "Going up, `min(value + speed, target)` stops at the target. Going down, `max(value - speed, target)` does."
+    tests:
+      - call: step_toward(10, 20, 3)
+      - call: step_toward(10, 11, 3)
+      - call: step_toward(10, 4, 3)
+        hidden: true
+      - call: step_toward(5, 5, 2)
+        hidden: true
+      - call: step_toward(-3, 0, 5)
+        hidden: true
