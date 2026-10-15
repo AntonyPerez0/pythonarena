@@ -127,10 +127,22 @@ export function selfCallingFunction(sources: SourceFile[]): string | null {
   return null;
 }
 
+/** Text that Markdown shows as it is: every ASCII punctuation mark escaped, so __str__ doesn't turn bold and <lambda> isn't read as a tag. */
+const plainMd = (text: string) => text.replace(/[!-/:-@[-`{-~]/g, "\\$&");
+
+/**
+ * Python's message as a sentence of Markdown: the function it starts with (double(), Person.__init__(),
+ * <lambda>()) as code, the rest as plain text, and a full stop unless it ends with one or with a question.
+ */
+function messageMd(message: string): string {
+  const [, func = "", rest] = /^([\w.<>]+\(\))?([\s\S]*)$/.exec(message)!;
+  return (func && `\`${func}\``) + plainMd(/[.?!]$/.test(rest) ? rest : `${rest}.`);
+}
+
 /**
  * Why a call test couldn't call the learner's code, in words (the error was in the test's own line), and
  * a key that is the same for tests that failed the same way (so the reason is said once). A hidden test's
- * call isn't shown.
+ * call isn't shown. The text is Markdown (code in backticks); what Python said and the notes are plain text in it.
  */
 function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): { key: string; text: string } {
   const e = parseError(r.stderr);
@@ -143,12 +155,12 @@ function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): { key: s
     return { key, text: `The test calls \`${name}\`, but your program doesn't define anything with that name${suggestion ? ` (did you mean to name it \`${name}\`, not \`${suggestion}\`?)` : ""}. Name your function (or class) exactly as the task says, at the top level of the file (not indented inside something else).` };
   }
   if (e?.name === "TypeError" && /takes \d+ positional arguments? but \d+ (?:was|were) given|missing \d+ required positional argument/.test(e.message))
-    return { key, text: `${runs}, but ${e.message.replace(/^(\w+)\(\)/, "`$1()`")}. Give the def line exactly the parameters the task asks for.` };
-  if (e?.name === "TypeError" && /object is not callable/.test(e.message)) return { key, text: `${runs}, but what it calls isn't a function: ${e.message}. Check that your function's name isn't also used for a variable.` };
-  if (e?.name === "AttributeError") return { key, text: `${runs}, but ${e.message}. Name your methods and attributes exactly as the task says.` };
-  if (e?.name === "ImportError" || e?.name === "ModuleNotFoundError") return { key, text: `${runs}, but ${e.message}. Check your file and function names.` };
+    return { key, text: `${runs}, but ${messageMd(e.message)} Give the def line exactly the parameters the task asks for.` };
+  if (e?.name === "TypeError" && /object is not callable/.test(e.message)) return { key, text: `${runs}, but what it calls isn't a function: ${messageMd(e.message)} Check that your function's name isn't also used for a variable.` };
+  if (e?.name === "AttributeError") return { key, text: `${runs}, but ${messageMd(e.message)} Name your methods and attributes exactly as the task says.` };
+  if (e?.name === "ImportError" || e?.name === "ModuleNotFoundError") return { key, text: `${runs}, but ${messageMd(e.message)} Check your file and function names.` };
   const note = e ? explainError(e, sources) : null;
-  return { key, text: `${call ? `The test's own code \`${call}\`` : "A hidden test's own code"} stopped with an error: ${e ? `${e.name}: ${e.message}` : r.stderr.trim()}.${note ? ` ${note}` : ""}` };
+  return { key, text: `${call ? `The test's own code \`${call}\`` : "A hidden test's own code"} stopped with an error: ${e ? `${e.name}: ${messageMd(e.message)}` : plainMd(`${r.stderr.trim()}.`)}${note ? ` ${plainMd(note)}` : ""}` };
 }
 
 /**

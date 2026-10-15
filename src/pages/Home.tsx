@@ -30,8 +30,10 @@ export default function Home() {
   const parts = [...new Set(plan.filter((m) => m.part != null).map((m) => m.part!))].sort((a, b) => a - b);
   const lastPart = parts.findIndex((n) => plan.some((m) => m.part === n && !m.live));
   const partsLive = lastPart < 0 ? parts.length : lastPart;
-  // Fetch the lesson the Continue button opens, so it shows at once.
-  const nextKey = done && next ? [next.module.id, next.step.slug] : null;
+  // The placement quiz skips modules without marking their steps done: then the first step isn't module 1's.
+  const placed = !done && s.placed.length > 0;
+  // Fetch the lesson the Continue (or Start) button opens, so it shows at once.
+  const nextKey = (done || placed) && next ? [next.module.id, next.step.slug] : null;
   useEffect(() => (nextKey ? prefetchStep(nextKey[0], nextKey[1], loadStepPage) : undefined), [nextKey?.[0], nextKey?.[1]]);
   return (
     <div className="landing">
@@ -48,8 +50,8 @@ export default function Home() {
             </p>
             <div className="hero-actions">
               {next && (
-                <Link className="btn btn-brand btn-lg" to={done ? stepPath(next.module, next.step) : modulePath(first)}>
-                  {done ? `Continue: ${next.step.title}` : "Start with module 1"} <ArrowRight className="icon" aria-hidden="true" />
+                <Link className="btn btn-brand btn-lg" to={done || placed ? stepPath(next.module, next.step) : modulePath(first)}>
+                  {done ? `Continue: ${next.step.title}` : placed ? `Start: ${next.step.title}` : "Start with module 1"} <ArrowRight className="icon" aria-hidden="true" />
                 </Link>
               )}
               <Link className="btn btn-lg" to="/learn/">

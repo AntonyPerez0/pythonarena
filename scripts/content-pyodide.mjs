@@ -25,7 +25,8 @@ const checks = all.filter((c) => c.spec.window == null && !importsPygame(Object.
 const shard = /^(\d+)\/(\d+)$/.exec(process.env.CONTENT_SHARD ?? "");
 const mine = shard ? checks.filter((_, i) => i % Number(shard[2]) === Number(shard[1]) - 1) : checks;
 
-const py = await loadPyodide({ indexURL: path.join(ROOT, "node_modules", "pyodide") + "/", stdout: () => {}, stderr: () => {} });
+// UTF-8 mode, as the page and the build's CPython (-X utf8) run.
+const py = await loadPyodide({ indexURL: path.join(ROOT, "node_modules", "pyodide") + "/", stdout: () => {}, stderr: () => {}, env: { HOME: "/home/pyodide", PYTHONUTF8: "1" } });
 const version = py.runPython("import sys; '%d.%d.%d' % sys.version_info[:3]");
 if (version !== python) {
   console.error(`content-pyodide: Pyodide runs Python ${version}, but the checks were made with CPython ${python}`);

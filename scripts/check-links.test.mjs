@@ -5,18 +5,18 @@ import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { checkLinks, externalProblem, htmlLinks, markdownLinks, markdownStrings, resolveInternal } from './check-links.mjs';
+import { checkLinks, externalProblem, htmlLinks, lessonPage, markdownLinks, markdownStrings, resolveInternal } from './check-links.mjs';
 
 const BASE = '/pythonarena/';
 const page = (body, extra = '') => `<!doctype html><html><head><link rel="canonical" href="https://antonyperez0.github.io/pythonarena/${extra}"></head><body><a href="https://github.com/AntonyPerez0/pythonarena">Source</a>${body}</body></html>`;
 
-/** A site in a temporary folder: { 'dist/index.html': '...', 'content/x.yaml': '...' }; returns the check's problems. */
-async function site(files) {
+/** A site in a temporary folder: { 'dist/index.html': '...', 'content/x.yaml': '...' }, served at `base`; returns the check's problems. */
+async function site(files, base = BASE) {
   const root = mkdtempSync(join(tmpdir(), 'links-'));
   try {
     const all = {
       'dist/sitemap.xml': '<urlset><url><loc>https://antonyperez0.github.io/pythonarena/</loc></url></urlset>',
-      'dist/manifest.webmanifest': JSON.stringify({ start_url: BASE, icons: [{ src: `${BASE}icon.png` }] }),
+      'dist/manifest.webmanifest': JSON.stringify({ start_url: base, icons: [{ src: `${base}icon.png` }] }),
       'dist/icon.png': 'x',
       'dist/lessons/a/one.json': JSON.stringify({ text: 'Nothing linked.' }),
       'content/modules/a.yaml': 'text: plain\n',
@@ -26,7 +26,7 @@ async function site(files) {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), text);
     }
-    return (await checkLinks({ root, dist: join(root, 'dist'), base: BASE })).problems;
+    return (await checkLinks({ root, dist: join(root, 'dist'), base })).problems;
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -65,6 +65,41 @@ test("the site's own address is checked as an internal link; this repository's f
   assert.equal(problems.length, 2);
   assert.match(problems[0], /gone\/ leads to no file/);
   assert.match(problems[1], /pro-track\/nothing, which isn't in the repository/);
+});
+
+test("a Pro Track README's images (this repository's raw files) must name files in it", async () => {
+  const raw = 'https://raw.githubusercontent.com/AntonyPerez0/pythonarena/main';
+  const problems = await site({ 'dist/index.html': page(`<img src="${raw}/content/modules/a.yaml" alt=""><img src="${raw}/pro-track/demo/shot.png" alt="">`) });
+  assert.deepEqual(problems, [`index.html: ${raw}/pro-track/demo/shot.png names pro-track/demo/shot.png, which isn't in the repository`]);
+});
+
+test("a local build (pages at /, canonical links naming the live site at /pythonarena/): the site's own address is checked in dist", async () => {
+  const files = {
+    'dist/index.html': page('<a href="/learn/">Learn</a><a href="https://antonyperez0.github.io/pythonarena/learn/">Learn</a>'),
+    'dist/learn/index.html': page('<a href="../">Home</a>', 'learn/'),
+    'dist/sitemap.xml': '<urlset><url><loc>https://antonyperez0.github.io/pythonarena/</loc></url><url><loc>https://antonyperez0.github.io/pythonarena/learn/</loc></url></urlset>',
+  };
+  assert.deepEqual(await site(files, '/'), []);
+  const problems = await site({ ...files, 'dist/sitemap.xml': '<urlset><url><loc>https://antonyperez0.github.io/pythonarena/gone/</loc></url></urlset>' }, '/');
+  assert.deepEqual(problems, ['sitemap.xml: /gone/ leads to no file']);
+});
+
+test("a lesson file's relative links are relative to its step's page, a project file's to the project's page", async () => {
+  const pages = {
+    'dist/index.html': page(''),
+    'dist/learn/index.html': page('', 'learn/'),
+    'dist/learn/a/index.html': page('', 'learn/a/'),
+    'dist/learn/a/two/index.html': page('<h2 id="loops">Loops</h2>', 'learn/a/two/'),
+    'dist/projects/index.html': page('', 'projects/'),
+  };
+  const problems = await site({
+    ...pages,
+    'dist/lessons/a/one-0123456789.json': JSON.stringify({ text: 'See [the module](../) and [the next step](../two/#loops).', hints: ['Not [here](two/).'] }),
+    'dist/lessons/projects/calc-0123456789.json': JSON.stringify({ intro: '[All projects](../) and [module a](../../learn/a/).' }),
+  });
+  assert.deepEqual(problems, ['lessons/a/one-0123456789.json: two/ leads to no file']);
+  assert.equal(lessonPage('lessons/more-loops/while-true-0123456789.json', BASE), `${BASE}learn/more-loops/while-true/`);
+  assert.equal(lessonPage('lessons/projects/game-of-life-e5df4d73a8.json', BASE), `${BASE}projects/game-of-life/`);
 });
 
 test('external links: hosts on the list pass, others and link shorteners fail, in pages, lessons and content', async () => {

@@ -87,13 +87,22 @@ export default function Playground() {
   const [windowCode, setWindowCode] = useState("");
   const windowFiles = useMemo(() => splitFiles(windowCode) as { path: string; text: string }[], [windowCode]);
 
+  // Another program is put in the editor (a share link, Back to my program, Example): the last one's
+  // output and window go, and a run of it still going is dropped when it ends.
+  const clearRuns = useCallback(() => {
+    generation.current++;
+    setResult(null);
+    setWindowRun(0);
+    setWindowCode("");
+  }, []);
+
   const showOwn = useCallback(() => {
     const s = loadSaved();
-    generation.current++;
+    clearRuns();
     setCode(s.code);
     setStdin(s.stdin);
     setShared(false);
-  }, []);
+  }, [clearRuns]);
 
   // A share link can arrive at any time: on load, pasted into this tab, or with Back and Forward.
   // Without one, the learner's own program is shown (for example after "Playground" in the menu).
@@ -107,11 +116,10 @@ export default function Playground() {
     decodeShare(hash).then(
       (p) => {
         if (!current || !p) return;
-        generation.current++;
+        clearRuns();
         setCode(p.code);
         setStdin(p.stdin);
         setShared(true);
-        setResult(null);
         setLive("You opened a shared program. Your own playground program is still saved.");
       },
       () => current && setShareError("This share link is damaged, so it couldn't be opened. Your own program is shown instead."),
@@ -119,7 +127,7 @@ export default function Playground() {
     return () => {
       current = false;
     };
-  }, [hash, showOwn]);
+  }, [hash, showOwn, clearRuns]);
 
   const dropHash = () => navigate({ pathname, search }, { replace: true });
 
@@ -209,7 +217,6 @@ export default function Playground() {
             className="btn btn-sm"
             onClick={() => {
               showOwn();
-              setResult(null);
               dropHash();
               // The banner (and this button) goes away: keep the keyboard focus on the page.
               headingRef.current?.focus();
@@ -257,9 +264,8 @@ export default function Playground() {
             className="btn btn-ghost"
             onClick={() => {
               if (!confirm("Replace your program with the example?")) return;
-              generation.current++;
+              clearRuns();
               edit({ code: EXAMPLE, stdin: "Ada\n" });
-              setResult(null);
             }}
           >
             <RotateCcw className="icon" aria-hidden="true" /> Example

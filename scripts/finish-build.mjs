@@ -43,13 +43,19 @@ writeFileSync(swPath, sw);
 console.log(`finish-build: service worker ${version} with ${assets.length} files`);
 
 // Lighthouse's script budget only sees the page's own scripts, so the worker gets its own budget
-// (Python itself, Pyodide, isn't in it: the worker downloads it from engine/).
-const WORKER_BUDGET = { 'run.worker': 60_000 };
+// (Python itself, Pyodide, isn't in it: the worker downloads it from engine/). Most of the worker is
+// Python as text, the harness and pygame without a screen, so each part has a budget of its own: a
+// library pulled into the worker's code shows, and so does a harness that grows past reason.
+const CARRIED = ['src/engine/arena.py', 'src/engine/arena_pygame.py'];
+const BUDGET = { code: 20_000, python: 90_000 };
+const python = CARRIED.reduce((n, f) => n + statSync(join(root, f)).size, 0);
 for (const f of files.filter((f) => /^assets\/run\.worker-.*\.js$/.test(f))) {
-  const name = 'run.worker';
-  const size = statSync(join(dist, f)).size;
-  console.log(`finish-build: ${name} ${(size / 1000).toFixed(0)} KB (budget ${WORKER_BUDGET[name] / 1000} KB)`);
-  if (size > WORKER_BUDGET[name]) {
+  // The Python is in the worker as strings, a little longer than the files with their escapes, so this
+  // counts the code a little high.
+  const code = statSync(join(dist, f)).size - python;
+  const kb = (n) => (n / 1000).toFixed(0);
+  console.log(`finish-build: run.worker's code ${kb(code)} KB (budget ${kb(BUDGET.code)} KB), the Python it carries ${kb(python)} KB (budget ${kb(BUDGET.python)} KB)`);
+  if (code > BUDGET.code || python > BUDGET.python) {
     console.error(`finish-build: ${f} is over its budget`);
     process.exit(1);
   }

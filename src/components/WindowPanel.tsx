@@ -5,7 +5,9 @@
 // every time: a run is given everything that happened so far (each key and click at the frame it came)
 // and how many frames to show, and draws pictures only for the frames the page doesn't have yet. So a
 // key pressed at frame 40 re-runs the program with that key at frame 40 and shows frame 41 on. random is
-// seeded the same way on every run, so the frames before stay the same.
+// seeded the same way on every run, so the frames before stay the same. A session keeps the program
+// (and input) it began with: edits in the editor wait for Start over or a new Run, so a window never
+// mixes the frames of two programs.
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { Pause, Play, RotateCcw, FastForward } from "lucide-react";
 import { runPython, type RunResult, type SourceFile, type WindowEvent, type WindowFrame } from "../engine/client";
@@ -81,14 +83,17 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
   const [pkg, setPkg] = useState<{ loaded: number; total: number } | null>(null);
   const [size, setSize] = useState<[number, number] | null>(null);
   const [started, setStarted] = useState(false);
+  // Why the session couldn't run at all (its images didn't load).
+  const [failure, setFailure] = useState<string | null>(null);
   const status = useEngineStatus();
-  // The session: what happened so far, how many frames it asks for, and the run in progress.
-  const session = useRef({ events: [] as WindowEvent[], budget: 0, live: false, generation: 0 });
+  // The session: the program it runs, what happened so far, how many frames it asks for, and the run in progress.
+  const session = useRef({ files, stdin, events: [] as WindowEvent[], budget: 0, live: false, generation: 0 });
+  const [program, setProgram] = useState(files);
   const inFlight = useRef<Promise<void> | null>(null);
   const again = useRef<{ from: number } | null>(null);
   const shownRef = useRef(0);
   shownRef.current = shown;
-  const code = useMemo(() => files.map((f) => f.text).join("\n"), [files]);
+  const code = useMemo(() => program.map((f) => f.text).join("\n"), [program]);
   const keys = useMemo(() => keysIn(code), [code]);
   const watchesMouse = /MOUSEMOTION|mouse\.get_pos/.test(code);
   const held = useRef(new Set<string>());
@@ -146,7 +151,7 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
       setRunning(true);
       const job = (async () => {
         const images = await assetFiles(assets);
-        const [r] = await runPython(files, [{ stdin, files: { ...images, ...(given ?? {}) }, window: { frames: s.budget, events: [...s.events], png: "all", pngFrom: from } }], {
+        const [r] = await runPython(s.files, [{ stdin: s.stdin, files: { ...images, ...(given ?? {}) }, window: { frames: s.budget, events: [...s.events], png: "all", pngFrom: from } }], {
           timeLimitMs: 4_000 + s.budget * 12,
           onPackage: (p) => setPkg(p.done ? null : { loaded: p.loaded, total: p.total }),
           onFrame: (_, f: WindowFrame) => {
@@ -160,6 +165,7 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
         });
         setPkg(null);
         if (session.current.generation !== generation) return;
+        setFailure(null);
         setResult(r);
         onRun?.(r);
         // The last frame's picture, when the run's end gave it.
@@ -172,7 +178,13 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
         if (win) for (const k of [...frames.current.keys()]) if (k > win.frames) frames.current.delete(k);
         if (win) setHave(win.frames);
         if (!win || win.ended === "program" || r.exitCode !== 0 || r.timedOut) s.live = false;
-      })();
+      })().catch((e: unknown) => {
+        // Only the images can fail here (runPython reports its own failures in its result): offline
+        // before they were kept, or a failed request. Nothing ran, so the panel says why.
+        if (session.current.generation !== generation) return;
+        s.live = false;
+        setFailure(`The images couldn't be loaded (${e instanceof Error ? e.message : String(e)}). Check the connection, then press Start over.`);
+      });
       inFlight.current = job;
       job.finally(() => {
         inFlight.current = null;
@@ -182,12 +194,15 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
         if (next) runFrom(next.from);
       });
     },
-    [files, assets, given, stdin, onRun],
+    [assets, given, onRun],
   );
 
   const begin = useCallback(() => {
     const s = session.current;
     s.generation++;
+    s.files = files;
+    s.stdin = stdin;
+    setProgram(files);
     s.events = [...(start?.events ?? [])];
     s.budget = start?.frames ?? STEP;
     s.live = interactive && live;
@@ -196,11 +211,12 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
     setShown(0);
     setHave(0);
     setResult(null);
+    setFailure(null);
     setStarted(true);
     setPlaying(true);
     again.current = null;
     runFrom(1);
-  }, [start, interactive, live, runFrom]);
+  }, [files, stdin, start, interactive, live, runFrom]);
 
   useEffect(() => {
     if (autoStart) begin();
@@ -275,16 +291,34 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
   const engineLoading = status.state === "loading";
   const state = !started
     ? null
-    : pkg
-      ? `Loading pygame ${Math.round((pkg.loaded / Math.max(pkg.total, 1)) * 100)}%…`
-      : engineLoading
-        ? "Starting Python…"
-        : running && have <= shown
-          ? "Running…"
+    : failure
+      ? "Stopped: the images couldn't be loaded."
+      : pkg
+        ? `Loading pygame ${Math.round((pkg.loaded / Math.max(pkg.total, 1)) * 100)}%…`
+        : engineLoading
+          ? "Starting Python…"
+          : running && have <= shown
+            ? "Running…"
+            : result?.timedOut
+              ? "Stopped: the program ran too long."
+              : `Frame ${shown} of ${have}${ended === "program" && !running && shown === have ? ", and the program ended" : ""}`;
+  // The last run's note, shown when no run is going. Screen readers keep it while the next run goes (a
+  // live window runs again every second), so it isn't said again each time.
+  const lastNote = result ? describeRun(result, program, 4_000 + budget * 12) : undefined;
+  const output = result && !running ? result.output : "";
+  const note = failure ?? (running ? undefined : lastNote);
+  // What screen readers hear: the window's state when it changes, never the frame counter (it changes
+  // with every frame while the window plays, and is in the line above and on the slider).
+  const said = !started
+    ? ""
+    : (failure ??
+      (pkg
+        ? "Loading pygame…"
+        : engineLoading
+          ? "Starting Python…"
           : result?.timedOut
             ? "Stopped: the program ran too long."
-            : `Frame ${shown} of ${have}${ended === "program" && !running && shown === have ? ", and the program ended" : ""}`;
-  const note = result && !running ? describeRun(result, files, 4_000 + budget * 12) : undefined;
+            : (lastNote ?? (ended === "program" && !running && shown === have ? "The program ended." : running && !have ? "Running…" : ""))));
 
   return (
     <div className="pg-panel" data-frames={have} data-shown={shown} data-runs-done={result ? 1 : 0}>
@@ -409,18 +443,21 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
       )}
 
       {started && (
-        <p className="pg-status muted small" aria-live="polite">
+        <p className="pg-status muted small">
           {state}
-          {interactive && ` · Click the window, then press keys or click in it.`}
+          {interactive && !failure && ` · Click the window, then press keys or click in it.`}
         </p>
       )}
-      {result && !running && (result.output || note) && (
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {said}
+      </p>
+      {(output || note) && (
         <div className="pg-output">
-          {result.output && (
+          {output && (
             <>
               <span className="lbl">Output</span>
               <pre tabIndex={0} className="console">
-                {result.output}
+                {output}
               </pre>
             </>
           )}

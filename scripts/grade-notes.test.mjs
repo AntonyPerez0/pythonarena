@@ -7,6 +7,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
+import { marked } from "marked";
 import fs from "node:fs";
 import { pythonPool, referencePython } from "./content/python.mjs";
 import { pyodidePool } from "./content/pyodide.mjs";
@@ -209,6 +210,31 @@ it("a function with the wrong parameters is a call error", async () => {
   assert.equal(r.callProblems.length, 1, r.callProblems.join(" | "));
   has(r.callProblems[0], "The test runs `print(double(4))`", "takes 0 positional arguments but 1 was given", "exactly the parameters");
   lacks(r.callProblems.join(" "), "double(-3)");
+});
+
+/** A call problem as the page shows it (Results renders it with InlineMd, that is marked.parseInline): its HTML, and its text. */
+const shown = (md) => {
+  const html = marked.parseInline(md, { async: false });
+  const text = html.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  return { html, text };
+};
+
+it("a call problem shows Python's names as Python wrote them: __init__, __str__ and <lambda> aren't read as Markdown", async () => {
+  const person = "class Person:\n    def __init__(self, name):\n        self.name = name\n\n    def __str__(self):\n        return self.name\n";
+  const args = await grade(exercise([{ call: 'p = Person("Ada", 30)', expect: "" }]), person);
+  assert.equal(args.status, "call-error");
+  const a = shown(args.callProblems[0]);
+  has(a.html, "<code>Person.__init__()</code> takes 2 positional arguments but 3 were given. Give the def line");
+  lacks(a.html, "<strong>", "<em>");
+  // Python's suggestion ends with a question mark: no full stop after it.
+  const attr = await grade(exercise([{ call: 'print(Person("Ada").__strr__())', expect: "Ada\n" }]), person);
+  assert.equal(attr.status, "call-error");
+  const b = shown(attr.callProblems[0]);
+  has(b.text, "but 'Person' object has no attribute '__strr__'. Did you mean: '__str__'? Name your methods");
+  lacks(b.html, "<strong>", "<em>");
+  const lambda = await grade(exercise([{ call: "print(double(4))", expect: "8\n" }]), "double = lambda: 8\n");
+  assert.equal(lambda.status, "call-error");
+  has(shown(lambda.callProblems[0]).html, "<code>&lt;lambda&gt;()</code> takes 0 positional arguments but 1 was given.");
 });
 
 it("an error inside the learner's function is a failed test, not a call error", async () => {

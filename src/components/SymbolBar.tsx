@@ -36,6 +36,9 @@ const KEYS: Key[] = [
 
 type Editable = HTMLInputElement | HTMLTextAreaElement | HTMLElement;
 
+/** The one-line boxes the keys type into; other inputs (a new module's name) are left alone. */
+const ANSWER_BOXES = "input.blank, input.answer-input";
+
 function insert(target: Editable, key: Key) {
   const caret = key.caret ?? key.text.length;
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
@@ -78,7 +81,8 @@ export default function SymbolBar({ container }: { container: RefObject<HTMLElem
     if (!el) return;
     const onFocus = (e: FocusEvent) => {
       const t = e.target as HTMLElement;
-      if (t instanceof HTMLInputElement && t.classList.contains("blank")) last.current = t;
+      // A blank in fill-in code, or a predict rep's answer box (output has brackets, quotes and colons too).
+      if (t instanceof HTMLInputElement && t.matches(ANSWER_BOXES)) last.current = t;
       else if (t instanceof HTMLTextAreaElement) last.current = t;
       else if (t.closest?.(".cm-content")) last.current = t.closest(".cm-content") as HTMLElement;
     };
@@ -88,7 +92,7 @@ export default function SymbolBar({ container }: { container: RefObject<HTMLElem
 
   const target = (): Editable | null => {
     if (last.current?.isConnected) return last.current;
-    return (container.current?.querySelector(".cm-content, input.blank") as Editable | null) ?? null;
+    return (container.current?.querySelector(`.cm-content, ${ANSWER_BOXES}`) as Editable | null) ?? null;
   };
 
   return (

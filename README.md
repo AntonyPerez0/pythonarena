@@ -65,6 +65,8 @@ npm run dev        # checks the lessons, then serves http://localhost:5173/
 | `node scripts/build-content.mjs --dry --module-file 05-conditionals.yaml` | Checks one module (and its drills) without writing anything, for writing lessons |
 | `node scripts/make-sprites.mjs` | Draws the pygame lessons' images into `content/assets/` |
 
+A plain `npm run build` (no variables set) makes the site for `/`, and `npm run check-links` checks it as it is. The canonical links and the sitemap still name the live site (`SITE_URL`, by default `https://antonyperez0.github.io/pythonarena`); the link check finds those pages in `dist/`. CI sets `BASE_PATH` and `SITE_URL` for the project page (see Deploy). To build the same way here, set both for the build and for the checks. `node scripts/serve.mjs` serves `dist/` the way GitHub Pages does, at http://127.0.0.1:4173/ (under `BASE_PATH` when it is set).
+
 ## Deploy
 
 `.github/workflows/deploy.yml` builds and tests every pull request, and publishes to GitHub Pages when a pull request merges into `main`:
@@ -79,6 +81,8 @@ npm run dev        # checks the lessons, then serves http://localhost:5173/
 | `deploy` | publishes exactly the `dist` the build job made | `main`, after all of the above |
 
 In the repository's **Settings > Pages**, set **Source** to **GitHub Actions** once. The site is then at `https://<owner>.github.io/<repo>/`; set `CUSTOM_DOMAIN` in the workflow to use your own domain instead.
+
+Search engines read `robots.txt` only at the top of a host, so on a project page they never see the site's own (`/<repo>/robots.txt`), which names the sitemap. Submit the sitemap yourself, once, in [Google Search Console](https://search.google.com/search-console) and [Bing Webmaster Tools](https://www.bing.com/webmasters): `https://<owner>.github.io/<repo>/sitemap.xml` (for this site, https://antonyperez0.github.io/pythonarena/sitemap.xml). With `CUSTOM_DOMAIN` set, `robots.txt` is at the top of the domain and names the sitemap, so there is nothing to submit.
 
 ## License
 

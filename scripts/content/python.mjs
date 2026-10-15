@@ -51,26 +51,32 @@ const HASH_SEEDS = ["0", "12345"];
  * the two, so a program whose output depends on them prints differently.
  */
 export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || Math.max(2, Math.min(8, os.cpus().length)), timeLimitMs = 10_000 }) {
-  const workers = HASH_SEEDS.map((seed) => Array.from({ length: Math.ceil(size / 2) }, () => ({ seed, proc: null, busy: false, buf: "", job: null })));
+  const workers = HASH_SEEDS.map((seed) => Array.from({ length: Math.ceil(size / 2) }, () => ({ seed, proc: null, busy: false, job: null })));
   const queues = [[], []];
+  let lastId = 0;
 
   function start(w) {
-    const proc = spawn(exe, ["-I", "-X", "utf8", WORKER], { env: { PATH: process.env.PATH, PYTHONHASHSEED: w.seed, LC_ALL: "C.UTF-8", HOME: os.tmpdir() }, stdio: ["pipe", "pipe", "pipe"] });
+    // Not -I: it implies -E, and CPython would then ignore PYTHONHASHSEED and pick a random seed.
+    // -s and -P are the rest of -I, and the environment below has none of the user's PYTHON* variables.
+    const proc = spawn(exe, ["-s", "-P", "-X", "utf8", WORKER], { env: { PATH: process.env.PATH, PYTHONHASHSEED: w.seed, LC_ALL: "C.UTF-8", HOME: os.tmpdir() }, stdio: ["pipe", "pipe", "pipe"] });
     w.proc = proc;
-    w.buf = "";
+    let buf = "";
     proc.stdout.setEncoding("utf8");
     proc.stdout.on("data", (d) => {
-      w.buf += d;
+      // A process killed at the time limit may still have answered: that answer is for no one now.
+      if (w.proc !== proc) return;
+      buf += d;
       let i;
-      while ((i = w.buf.indexOf("\n")) >= 0) {
-        const line = w.buf.slice(0, i);
-        w.buf = w.buf.slice(i + 1);
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, i);
+        buf = buf.slice(i + 1);
         const job = w.job;
-        if (!job) continue;
+        const answer = JSON.parse(line);
+        if (!job || answer.id !== job.id) continue;
         clearTimeout(job.timer);
         w.job = null;
         w.busy = false;
-        job.resolve({ ...JSON.parse(line), timedOut: false });
+        job.resolve({ ...answer, timedOut: false });
         next(w);
       }
     });
@@ -97,6 +103,7 @@ export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || M
     if (!w.proc) start(w);
     w.busy = true;
     w.job = job;
+    job.id = ++lastId;
     job.timer = setTimeout(() => {
       // An endless loop: what it printed is lost, as the page would keep it only for showing.
       w.job = null;
@@ -107,7 +114,7 @@ export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || M
       job.resolve({ stdout: "", stderr: "", output: "", exit: null, truncated: false, files: {}, callStart: null, callError: false, loadInput: false, repl: null, timedOut: true });
       next(w);
     }, timeLimitMs);
-    w.proc.stdin.write(JSON.stringify({ id: 0, spec: job.spec }) + "\n");
+    w.proc.stdin.write(JSON.stringify({ id: job.id, spec: job.spec }) + "\n");
   }
 
   function run(spec, seed = 0) {
@@ -124,10 +131,14 @@ export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || M
   return { run, close };
 }
 
+// Besides the spec and the interpreter, a run's result depends on the harness, on the worker that
+// calls it (pyworker.py, or pyodide-child.mjs for pygame programs, which also gathers the frames) and
+// on the pools that start the workers (their flags and environment, such as the hash seed).
+const RUNNERS = [HARNESS, PYGAME_SHIM, WORKER, ...["python.mjs", "pyodide.mjs", "pyodide-child.mjs"].map((f) => path.join(ROOT, "scripts", "content", f))];
 let harnessHash = null;
 
-/** A key for caching a run: the spec, the interpreter's version, the hash seed and the harness's text. */
+/** A key for caching a run: the spec, the interpreter's version, the hash seed and the text of the harness and its runners. */
 export function runKey(spec, version, seed) {
-  harnessHash ??= createHash("sha256").update(fs.readFileSync(HARNESS)).update(fs.readFileSync(PYGAME_SHIM)).update(fs.readFileSync(WORKER)).digest("hex");
+  harnessHash ??= RUNNERS.reduce((h, f) => h.update(fs.readFileSync(f)), createHash("sha256")).digest("hex");
   return createHash("sha256").update(JSON.stringify([version, seed, harnessHash, spec])).digest("hex");
 }

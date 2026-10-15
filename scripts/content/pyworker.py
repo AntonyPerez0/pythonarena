@@ -15,6 +15,11 @@ import os
 import sys
 import tempfile
 
+# The parent picks the hash seed with PYTHONHASHSEED. Under -E or -I CPython ignores it and picks a
+# random one, and the build's check that a program prints the same with both seeds would mean little.
+if "PYTHONHASHSEED" in os.environ and sys.flags.ignore_environment:
+    sys.exit("pyworker.py: PYTHONHASHSEED is ignored under -E or -I; start the worker without them")
+
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "engine"))
 import arena  # noqa: E402
 

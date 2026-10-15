@@ -1143,14 +1143,14 @@ await test('playground: a module in a file of its own; its name is checked; erro
   await setCode(page, 'import helpers\n\nprint(helpers.greet("Ada"))\n');
   const addModule = async (name) => {
     await page.click('text=Add a module');
-    await page.fill('#new-class', name);
+    await page.fill('#new-module', name);
     await page.click('.file-add-form button[type=submit]');
   };
   // Names are checked: a keyword, a module of Python's own, a name that starts with a digit.
   const said = [];
   for (const name of ['class', 'random', '2fast']) {
     await addModule(name);
-    said.push(await page.locator('#new-class-error').innerText());
+    said.push(await page.locator('#new-module-error').innerText());
     await page.click('.file-add-form button:has-text("Cancel")');
   }
   await addModule('helpers');
@@ -1158,7 +1158,7 @@ await test('playground: a module in a file of its own; its name is checked; erro
   expect((await page.locator('.file-tab-on').innerText()).includes('helpers.py'), 'the new file is open');
   expect((await editorText(page)).startsWith('# helpers.py: import it in main.py with: import helpers'), await editorText(page));
   await addModule('helpers');
-  said.push(await page.locator('#new-class-error').innerText());
+  said.push(await page.locator('#new-module-error').innerText());
   await page.click('.file-add-form button:has-text("Cancel")');
   // A mistake in helpers.py: the message names the file, and its tab shows the count.
   await setCode(page, 'def greet(name)\n    return "Hello, " + name + "!"\n');

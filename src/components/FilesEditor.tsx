@@ -17,7 +17,7 @@ type Props = {
   minHeight?: string;
   label?: string;
   runAction?: string;
-  /** The learner may add class files and remove them (the Playground). */
+  /** The learner may add modules of their own and remove them (the Playground). */
   canAddFiles?: boolean;
 };
 
@@ -105,19 +105,19 @@ export default function FilesEditor({ value, onChange, onRun, diagnostics = [], 
             addFile();
           }}
         >
-          <label htmlFor="new-class">New module</label>
-          <input id="new-class" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="helpers" autoComplete="off" autoCapitalize="off" spellCheck={false} aria-describedby={nameError ? "new-class-hint new-class-error" : "new-class-hint"} autoFocus />
+          <label htmlFor="new-module">New module</label>
+          <input id="new-module" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="helpers" autoComplete="off" autoCapitalize="off" spellCheck={false} aria-describedby={nameError ? "new-module-hint new-module-error" : "new-module-hint"} autoFocus />
           <button type="submit" className="btn btn-sm">
             Add
           </button>
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => (setAdding(false), setNameError(""))}>
             Cancel
           </button>
-          <p id="new-class-hint" className="file-add-hint">
+          <p id="new-module-hint" className="file-add-hint">
             A file next to main.py, which main.py can import by its name.
           </p>
           {nameError && (
-            <p id="new-class-error" className="field-error" role="alert">
+            <p id="new-module-error" className="field-error" role="alert">
               {nameError}
             </p>
           )}
