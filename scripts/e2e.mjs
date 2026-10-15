@@ -65,7 +65,12 @@ const expect = (cond, msg) => {
   if (!cond) throw new Error(msg);
 };
 async function shot(page, name) {
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+  if (!SHOTS) return;
+  // A full-page screenshot scrolls the page; it goes back to where it was, so the tests after it see the
+  // page as they would without --shots.
+  const y = await page.evaluate(() => scrollY);
+  await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
+  await page.evaluate((top) => scrollTo(0, top), y);
 }
 async function axe(page, label) {
   // Colour contrast is measured on what's painted: wait for fade-ins (the pass banner's) to end.
@@ -3144,6 +3149,10 @@ for (const width of [360, 390]) {
     await noOverflow(page, `lesson ${width}`);
     await axe(page, `lesson ${width}`);
     await shot(page, `lesson-phone-${width}`);
+    // From the top of the page: a link scrolled half out of the window under the sticky header's own
+    // links is the header's, whether the menu is open or not, and moves on as the page scrolls. The
+    // menu's own edges are checked below, wherever the page is scrolled.
+    await page.evaluate(() => scrollTo(0, 0));
     await page.click('button[aria-label="Open menu"]');
     await axe(page, `menu open ${width}`);
     // Wherever the page is scrolled, a page link half under the open menu's top or bottom edge keeps 24 px to
