@@ -55,7 +55,7 @@ export default function ProProject() {
             <ListChecks className="icon" aria-hidden="true" /> Your checklist ({n} of {page.checklist.length} ticked)
           </a>
         </p>
-        <p className="muted small">Unzip it on your computer and open its README.md. The zip isn't saved for offline use, so downloading it needs a connection. New to Maven? The <Link to={PRO_PATH}>Pro Track page</Link> shows how to set up your computer.</p>
+        <p className="muted small">Unzip it on your computer and open its README.md. The zip isn't saved for offline use, so downloading it needs a connection. New to virtual environments and pytest? The <Link to={PRO_PATH}>Pro Track page</Link> shows how to set up your computer.</p>
       </div>
 
       <section aria-labelledby="pro-practices-h">
