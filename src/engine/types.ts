@@ -29,6 +29,8 @@ export type RunResult = {
   callError: boolean;
   /** A call test: loading the program asked for input (code outside `if __name__ == "__main__":`). */
   loadInput: boolean;
+  /** A call test whose last line is an expression: whether its value was None ("none") or something else ("value"). */
+  callValue: "none" | "value" | null;
   /** Set when the engine failed to run the program at all. */
   internalError?: string;
   /** On the first case only: time from asking for a runner to the program starting. */

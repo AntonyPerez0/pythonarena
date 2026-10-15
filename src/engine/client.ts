@@ -178,7 +178,7 @@ export function engineReady(): Promise<void> {
   });
 }
 
-const failed = (message: string): RunResult => ({ stdout: "", stderr: "", output: "", exitCode: null, timedOut: false, truncated: false, ms: 0, files: {}, callStart: null, callError: false, loadInput: false, internalError: message });
+const failed = (message: string): RunResult => ({ stdout: "", stderr: "", output: "", exitCode: null, timedOut: false, truncated: false, ms: 0, files: {}, callStart: null, callError: false, loadInput: false, callValue: null, internalError: message });
 
 /** Replaces the worker (after a timeout or a crash): the new one starts Python from the cache. */
 function replaceWorker() {
@@ -224,7 +224,7 @@ function runBatch(files: SourceFile[], main: string, cases: RunInput[], first: n
         if (index === first) workerStartMs = started - asked;
         arm(timeLimitMs, () => {
           // What the program printed before it was stopped is kept, so the learner can see where it got stuck.
-          results[index] = { ...partial, exitCode: null, timedOut: true, truncated: false, ms: performance.now() - started, files: {}, callStart: null, callError: false, loadInput: false, workerStartMs: index === first ? workerStartMs : undefined };
+          results[index] = { ...partial, exitCode: null, timedOut: true, truncated: false, ms: performance.now() - started, files: {}, callStart: null, callError: false, loadInput: false, callValue: null, workerStartMs: index === first ? workerStartMs : undefined };
           finish(index + 1, true);
         });
       } else if (m.type === "output") {

@@ -118,7 +118,7 @@ async function start(base: string, m: Manifest) {
   runner = py.pyimport("arena").run;
 }
 
-type Converted = { exit: number; truncated: boolean; files: Map<string, string | Uint8Array> | Record<string, string | Uint8Array>; callStart: number | null; callError: boolean; loadInput: boolean };
+type Converted = { exit: number; truncated: boolean; files: Map<string, string | Uint8Array> | Record<string, string | Uint8Array>; callStart: number | null; callError: boolean; loadInput: boolean; callValue: "none" | "value" | null };
 
 /** Runs one case and reports its output as it comes (so a stopped run still shows what it printed). */
 function runCase(index: number, files: Record<string, string>, main: string, c: RunInput): RunResult {
@@ -151,7 +151,7 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
   flush();
   const ms = performance.now() - started;
   const left = r.files instanceof Map ? Object.fromEntries(r.files) : r.files;
-  return { ...parts, exitCode: r.exit, timedOut: false, truncated: r.truncated, ms, files: left, callStart: r.callStart ?? null, callError: !!r.callError, loadInput: !!r.loadInput };
+  return { ...parts, exitCode: r.exit, timedOut: false, truncated: r.truncated, ms, files: left, callStart: r.callStart ?? null, callError: !!r.callError, loadInput: !!r.loadInput, callValue: r.callValue ?? null };
 }
 
 let ready: Promise<void> | null = null;

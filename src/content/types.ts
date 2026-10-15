@@ -17,6 +17,8 @@ export type TestCase = {
   writes?: Record<string, string>;
   expect: string;
   hidden?: boolean;
+  /** A call test whose call's last line gives a value in the model solution: the learner's must give one too (not None), so printing the result instead of returning it fails. */
+  returns?: boolean;
 };
 export type Rule = { pattern: string; flags?: string; message: string; min?: number; max?: number; raw?: boolean };
 

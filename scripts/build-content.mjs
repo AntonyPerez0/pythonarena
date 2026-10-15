@@ -365,7 +365,7 @@ async function buildPredict(where, raw, hints) {
 
 /** Whether a run passes a built test (as the browser's grader decides it). */
 function passes(t, r) {
-  return !r.timedOut && r.exit === 0 && !r.callError && graded(r, t) === t.expect && (!t.writes || compareWrites(t.writes, r.files).every((f) => f.pass));
+  return !r.timedOut && r.exit === 0 && !r.callError && graded(r, t) === t.expect && (!t.returns || r.callValue === "value") && (!t.writes || compareWrites(t.writes, r.files).every((f) => f.pass));
 }
 
 /**
@@ -459,7 +459,7 @@ async function buildExercise(where, raw, { startName = null } = {}) {
     if (!actual && !writes) errors.push(`${n}: the solution prints nothing`);
     const call = b.call;
     const name = t.name ?? (call && !call.trim().includes("\n") ? call.trim() : testsRaw.length > 1 ? `Test ${i + 1}` : writes ? (actual ? "Output and files" : "Files") : "Output");
-    return { name, stdin: b.stdin, ...(b.args ? { args: b.args } : {}), ...(call ? { call } : {}), ...(b.files ? { files: b.files } : {}), ...(writes ? { writes } : {}), expect: actual, hidden: !!t.hidden };
+    return { name, stdin: b.stdin, ...(b.args ? { args: b.args } : {}), ...(call ? { call } : {}), ...(b.files ? { files: b.files } : {}), ...(writes ? { writes } : {}), expect: actual, hidden: !!t.hidden, ...(call && r.callValue === "value" ? { returns: true } : {}) };
   });
   tests.forEach((t, i) => checks.push({ where: `${where} test ${i + 1}`, spec: specOf(solution, t), stdout: runs[i].stdout, stderr: runs[i].stderr, exit: runs[i].exit, ...(t.writes ? { files: runs[i].files } : {}) }));
 

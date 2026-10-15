@@ -45,11 +45,11 @@ export function referencePython() {
 const HASH_SEEDS = ["0", "12345"];
 
 /**
- * A pool of Python workers. run(spec) resolves with the harness's result (see pyworker.py), plus
- * timedOut. `seed` picks the PYTHONHASHSEED (0 or 1): set and dict orders of strings differ between
+ * A pool of Python workers (PYTHON_WORKERS of them, or one per CPU up to 8). run(spec) resolves
+ * with the harness's result (see pyworker.py), plus timedOut. `seed` picks the PYTHONHASHSEED (0 or 1): set and dict orders of strings differ between
  * the two, so a program whose output depends on them prints differently.
  */
-export function pythonPool({ exe, size = Math.max(2, Math.min(8, os.cpus().length)), timeLimitMs = 10_000 }) {
+export function pythonPool({ exe, size = Number(process.env.PYTHON_WORKERS) || Math.max(2, Math.min(8, os.cpus().length)), timeLimitMs = 10_000 }) {
   const workers = HASH_SEEDS.map((seed) => Array.from({ length: Math.ceil(size / 2) }, () => ({ seed, proc: null, busy: false, buf: "", job: null })));
   const queues = [[], []];
 

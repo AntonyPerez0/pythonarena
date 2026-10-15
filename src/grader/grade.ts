@@ -140,6 +140,14 @@ function callProblem(t: TestCase, r: RunResult, sources: SourceFile[]): string {
   return `The test's own code \`${call}\` stopped with an error: ${e ? `${e.name}: ${e.message}` : r.stderr.trim()}.${note ? ` ${note}` : ""}`;
 }
 
+/** The note for a call that should give a value but gave None: usually a print where a return belongs. */
+function returnedNone(t: TestCase, got: string): string {
+  const call = (t.call ?? "").trim().split("\n").pop() ?? "";
+  return got
+    ? `\`${call}\` printed something but returned None. The task asks for a function that returns its result: use return instead of print inside the function (the test prints what it returns).`
+    : `\`${call}\` returned None, which means the function has no return line with a value (or never reaches one). Give it a return line that returns the result.`;
+}
+
 /** The files a challenge's tests give the program, as the engine takes them. */
 const filesOf = (t: TestCase) => (t.files ? { ...t.files } : undefined);
 
@@ -163,8 +171,10 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
     const r = runs[i];
     const got = r ? normalizeOutput(t.call != null && r.callStart != null ? r.stdout.slice(r.callStart) : r.stdout) : "";
     const writes: WrittenFileCheck[] | undefined = t.writes && r && !r.internalError && !r.timedOut ? compareWrites(t.writes, r.files) : undefined;
-    const pass = !!r && !r.internalError && !r.timedOut && r.exitCode === 0 && got === t.expect && (!t.writes || !!writes?.every((f) => f.pass));
-    const note = pass ? undefined : (describeRun(r, own) ?? (writes && writesNote(writes, t.hidden)));
+    // A function that should return its result but printed it (or returned nothing) fails even when the text matches.
+    const noValue = !!t.returns && !!r && r.exitCode === 0 && !r.timedOut && r.callValue === "none";
+    const pass = !!r && !r.internalError && !r.timedOut && r.exitCode === 0 && got === t.expect && !noValue && (!t.writes || !!writes?.every((f) => f.pass));
+    const note = pass ? undefined : (describeRun(r, own) ?? (noValue ? returnedNone(t, got) : undefined) ?? (writes && writesNote(writes, t.hidden)));
     const crash = !pass && r && !r.internalError && !r.timedOut ? crashOf(r, own) : undefined;
     const loadOutput = t.call != null && r?.callStart ? normalizeOutput(r.stdout.slice(0, r.callStart)) : undefined;
     return {

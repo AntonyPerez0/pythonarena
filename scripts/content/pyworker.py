@@ -52,6 +52,7 @@ for line in sys.stdin:
         "callStart": result["callStart"],
         "callError": result["callError"],
         "loadInput": result["loadInput"],
+        "callValue": result["callValue"],
         "repl": result["repl"],
     }
     channel.write(json.dumps(answer) + "\n")

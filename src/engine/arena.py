@@ -215,11 +215,12 @@ def run(spec, sink, workdir):
     workdir: an empty folder that doesn't exist yet; it is removed afterwards.
 
     Returns {"exit": int, "truncated": bool, "files": {...}, "callStart": int | None,
-             "callError": bool, "loadInput": bool}: the exit code, whether the output cap stopped it, the
-    files left in the folder, where the call's output starts in stdout (call tests: what loading the
-    program printed comes before it), whether a call test couldn't call the learner's code at all (the
-    error is in the test's own line, such as a missing function), and whether loading the program
-    for a call test tried to read input.
+             "callError": bool, "loadInput": bool, "callValue": "none" | "value" | None}: the exit code,
+    whether the output cap stopped it, the files left in the folder, where the call's output starts in
+    stdout (call tests: what loading the program printed comes before it), whether a call test couldn't
+    call the learner's code at all (the error is in the test's own line, such as a missing function),
+    whether loading the program for a call test tried to read input, and what the call's last
+    expression gave: None ("none"), another value ("value"), or no last expression at all (None).
     """
     files = spec.get("files") or {}
     main = spec.get("main") or "main.py"
@@ -282,7 +283,7 @@ def run(spec, sink, workdir):
         frame = frame.f_back
     sys.setrecursionlimit(1000 + depth)
 
-    result = {"exit": 0, "truncated": False, "files": {}, "callStart": None, "callError": False, "loadInput": False, "repl": None}
+    result = {"exit": 0, "truncated": False, "files": {}, "callStart": None, "callError": False, "loadInput": False, "callValue": None, "repl": None}
     try:
         os.chdir(root)
         sys.path.insert(0, root)
@@ -316,6 +317,7 @@ def run(spec, sink, workdir):
                     exec(compile(tree, TEST_FILE, "exec"), namespace)
                     if last is not None:
                         value = eval(compile(ast.Expression(last.value), TEST_FILE, "eval"), namespace)
+                        result["callValue"] = "none" if value is None else "value"
                         if value is not None:
                             sys.stdout.write(repr(value) + "\n")
         except SystemExit as e:

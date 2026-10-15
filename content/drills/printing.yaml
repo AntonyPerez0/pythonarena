@@ -1,0 +1,148 @@
+topic: printing
+drills:
+  - type: predict
+    after: first-program
+    code: |
+      print("Hello")
+      print("world")
+    why: "Each `print` prints one line, so the two words end up on two lines."
+
+  - type: fill
+    after: first-program
+    code: |
+      [[print]]("Ready")
+    why: "`print` is written in small letters, followed by the text in parentheses."
+
+  - type: runs
+    after: first-program
+    code: |
+      Print("Hello")
+    why: "Python's names are case sensitive. `Print` with a capital P isn't a name Python knows, so it stops with a `NameError`."
+
+  - type: predict
+    after: several-lines
+    code: |
+      print("one")
+      print("two")
+      print("one")
+    why: "Each `print` prints its line, in the order the lines are written, even when the same text comes twice."
+
+  - type: choice
+    after: several-lines
+    prompt: In what order does Python run the lines of a program?
+    choices:
+      - From top to bottom, one after another
+      - From bottom to top
+      - The print lines first, then the rest
+    answer: 1
+    why: "A program's lines run in the order they are written, from the first to the last."
+
+  - type: predict
+    after: calculating
+    code: |
+      print(2 + 3 * 4)
+    why: "Multiplication comes before addition: `3 * 4` is 12, and 2 + 12 is 14."
+
+  - type: predict
+    after: calculating
+    code: |
+      print("2 + 3")
+      print(2 + 3)
+    why: "With quotes, `2 + 3` is just text and is printed as it is. Without quotes, Python calculates it."
+
+  - type: predict
+    after: calculating
+    code: |
+      print((2 + 3) * 4)
+    why: "The parentheses are calculated first: 5 * 4 is 20."
+
+  - type: fill
+    after: calculating
+    code: |
+      print(60 [[*]] 24)
+    why: "Multiplication is written with `*`, so `60 * 24` is 1440."
+
+  - type: bug
+    after: calculating
+    code: |
+      print("Days in two weeks:")
+      print("2 * 7")  # BUG
+    fix: print(2 * 7)
+    why: "In quotes, `2 * 7` is printed as text. Without the quotes Python calculates it and prints 14."
+
+  - type: runs
+    after: quotes-and-comments
+    code: |
+      print('It's late')
+    why: "The apostrophe in `It's` ends the string that started with `'`, and Python can't read the rest of the line. Use double quotes around text that has an apostrophe: `\"It's late\"`."
+
+  - type: predict
+    after: quotes-and-comments
+    code: |
+      print('She said "yes"')
+    why: "The string is in single quotes, so the double quotes inside it are just characters, and they're printed."
+
+  - type: predict
+    after: quotes-and-comments
+    code: |
+      # print("one")
+      print("two")  # print("three")
+    why: "Everything after a `#` is a comment, so only `print(\"two\")` runs."
+
+  - type: choice
+    after: quotes-and-comments
+    prompt: What does a line that starts with `#` do?
+    choices:
+      - It prints the rest of the line
+      - Nothing, Python skips it
+      - It stops the program
+    answer: 2
+    why: "A `#` starts a comment, a note for people reading the code. Python ignores it."
+
+  - type: runs
+    after: errors
+    code: |
+      print("Hello"
+    why: "The opening parenthesis is never closed, so Python can't read the program and runs nothing."
+
+  - type: bug
+    after: errors
+    code: |
+      print("Line one")
+      print("Line two)  # BUG
+    fix: print("Line two")
+    why: "The second string has no closing quote, which is a syntax error: Python can't read the program at all."
+
+  - type: boss
+    after: errors
+    prompt: |
+      Write a program that prints this small box exactly, with four `print` commands:
+
+      ```
+      +------+
+      | Py   |
+      | 3.14 |
+      +------+
+      ```
+    seed: |
+      # Print the box shown in the task.
+    solution: |
+      # Print the box shown in the task.
+      print("+------+")
+      print("| Py   |")
+      print("| 3.14 |")
+      print("+------+")
+    hints:
+      - Each line of the box is one `print("...")`.
+      - The spaces inside the box are part of the text, so they go inside the quotes.
+    require:
+      - pattern: \bprint\s*\(
+        min: 4
+        max: 4
+        message: Print the box with exactly four `print` commands, one per line.
+    tests:
+      - expect: |
+          +------+
+          | Py   |
+          | 3.14 |
+          +------+
