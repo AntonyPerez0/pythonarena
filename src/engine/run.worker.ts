@@ -176,7 +176,7 @@ async function packagesFor(files: Record<string, string>, cases: RunInput[]) {
 }
 
 type Converted = { exit: number; truncated: boolean; files: Map<string, string | Uint8Array> | Record<string, string | Uint8Array>; callStart: number | null; callError: boolean; loadInput: boolean; callValue: "none" | "value" | null; window: WindowResult | null };
-type FrameOut = { index: number; log: string; png: Uint8Array | null; title: string; ms: number; again?: boolean };
+type FrameOut = { index: number; log: string; png: Uint8Array | null; title: string; ms: number; same?: boolean; again?: boolean };
 
 /** Runs one case and reports its output as it comes (so a stopped run still shows what it printed). */
 function runCase(index: number, files: Record<string, string>, main: string, c: RunInput): RunResult {
@@ -196,7 +196,7 @@ function runCase(index: number, files: Record<string, string>, main: string, c: 
       const f = (text as PyProxy).toJs({ dict_converter: Object.fromEntries }) as FrameOut;
       if (f.png) lastPicture = f.png;
       flush();
-      if (!f.again) post({ type: "frame", index, frame: { index: f.index, log: f.log, png: f.png, title: f.title, ms: f.ms } });
+      if (!f.again) post({ type: "frame", index, frame: { index: f.index, log: f.log, png: f.png, title: f.title, ms: f.ms, ...(f.same ? { same: true } : {}) } });
       return;
     }
     if (typeof text !== "string") return;

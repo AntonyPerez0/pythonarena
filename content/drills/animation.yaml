@@ -1,0 +1,209 @@
+topic: animation
+drills:
+  - type: predict
+    after: moving
+    code: |
+      x = 10
+      for frame in range(5):
+          x += 4
+      print(x)
+    why: "Five rounds, 4 pixels each: x grows by 20, from 10 to 30."
+
+  - type: predict
+    after: moving
+    code: |
+      x = 0
+      for frame in range(1, 4):
+          print("frame", frame, "shows x =", x)
+          x += 2
+    why: "Each round draws first and moves after, so the first frame shows the starting position and frame n shows 2 × (n - 1)."
+
+  - type: choice
+    after: moving
+    prompt: What does `clock.tick(60)` at the end of the main loop do?
+    choices:
+      - It keeps the loop from going round more than 60 times a second
+      - It moves every image 60 pixels
+      - It ends the program after 60 frames
+    answer: 1
+    why: "`tick(60)` waits for the rest of a 60th of a second when a round was quicker. So the animation has the same speed on every computer."
+
+  - type: choice
+    after: moving
+    prompt: "Where does `clock = pygame.time.Clock()` go?"
+    choices:
+      - Inside the main loop, before `tick`
+      - Once, before the main loop
+      - In the event loop, when an event comes
+    answer: 2
+    why: "The program needs one clock that measures every round. Make it once before the main loop and call `clock.tick(60)` in every round."
+
+  - type: choice
+    after: moving
+    prompt: "An animation forgets to call `window.fill` at the start of each frame. What happens to a moving robot?"
+    choices:
+      - It stays where it started
+      - It leaves a trail of old pictures behind it
+      - The window turns black
+    answer: 2
+    why: "Without the fill, nothing paints over the earlier frames, so every old picture of the robot stays in the window."
+
+  - type: predict
+    after: moving
+    code: |
+      speed = 2
+      fps = 60
+      print(speed * fps, "pixels per second")
+    why: "2 pixels in each frame, 60 frames in each second: 120 pixels per second."
+
+  - type: fill
+    after: bouncing
+    code: |
+      x = 0
+      speed = 5
+      for frame in range(4):
+          x += speed
+          if x >= 10 or x <= 0:
+              speed = [[-speed‖speed * -1‖-1 * speed]]
+          print(x)
+    why: "`speed = -speed` turns the direction around: 5 becomes -5, and -5 becomes 5 again."
+
+  - type: bug
+    after: bouncing
+    code: |
+      x = 0
+      speed = 4
+      for frame in range(40):
+          x += speed
+          if x + 40 == 102 or x <= 0:  # BUG
+              speed = -speed
+      print(x)
+    fix: "if x + 40 >= 102 or x <= 0:"
+    why: "x goes up 4 at a time, so `x + 40` is never exactly 102 and the object never turns. `>=` catches the frame where it reaches or passes the wall."
+
+  - type: choice
+    after: bouncing
+    prompt: A ball is moving right and down when it hits the bottom of the window. What should change?
+    choices:
+      - "`speed_y` turns around, `speed_x` stays as it is"
+      - "`speed_x` turns around, `speed_y` stays as it is"
+      - Both speeds turn around
+    answer: 1
+    why: "The bottom wall stops only the movement down. The ball keeps going right and starts going up."
+
+  - type: predict
+    after: bouncing
+    code: |
+      x = 280
+      speed = 3
+      x += speed
+      if x + 40 >= 320 or x <= 0:
+          speed = -speed
+      print(x, speed)
+    why: "x becomes 283, and its right edge 283 + 40 = 323 is past 320, so the speed turns to -3."
+
+  - type: predict
+    after: circles
+    code: |
+      import math
+
+      print(round(math.cos(0) * 50), round(math.sin(0) * 50))
+    why: "The cosine of 0 is 1 and its sine is 0, so at the angle 0 the point is 50 pixels to the right of the center and not above or below it."
+
+  - type: predict
+    after: circles
+    code: |
+      import math
+
+      angle = math.pi / 2
+      print(round(160 + math.cos(angle) * 80), round(120 + math.sin(angle) * 80))
+    why: "At π / 2 the cosine is 0 and the sine is 1. In pygame y grows downward, so the point is 80 pixels below the center (160, 120)."
+
+  - type: predict
+    after: circles
+    code: |
+      import math
+
+      print(round(math.sin(math.pi / 2), 2))
+      print(round(math.sin(90), 2))
+    why: "`math.sin` takes radians. A quarter of a circle is π / 2 radians, but 90 radians is more than 14 whole rounds, at a different spot."
+
+  - type: predict
+    after: circles
+    code: |
+      import math
+
+      frames = 0
+      angle = 0
+      while angle < 2 * math.pi:
+          angle += 0.5
+          frames += 1
+      print(frames)
+    why: "A full circle is about 6.28 radians. In steps of 0.5, it takes 13 steps to get there (12 steps reach only 6.0)."
+
+  - type: choice
+    after: circles
+    prompt: "What does `pygame.transform.rotate(robot, 90)` do?"
+    choices:
+      - It gives a new image, the robot turned 90 degrees counterclockwise
+      - It turns the robot image itself by 90 radians
+      - It moves the robot 90 pixels round a circle
+    answer: 1
+    why: "`rotate` takes degrees, turns counterclockwise and returns a new image; the original stays as it was."
+
+  - type: choice
+    after: circles
+    prompt: Why does a spinning image get centered by the size of the turned image, not the original's?
+    choices:
+      - Because the turned image is bigger, its corners sticking out, and its size changes with the angle
+      - Because the original image is removed when it's turned
+      - Because `blit` can't draw images that aren't turned
+    answer: 1
+    why: "A 40 x 40 image turned 45 degrees needs 56 x 56 pixels. Centering by the turned size keeps the image's center in place as it spins."
+
+  - type: boss
+    after: bouncing
+    prompt: |
+      An object 40 pixels wide moves back and forth in a window 320 pixels wide, as in the lesson. It starts at x = 0. In each frame it's drawn first; then its x changes by the speed, and if `x + 40 >= 320` or `x <= 0`, the speed turns around.
+
+      Write a function `bounce_positions(speed, frames)` that returns a list of the x positions the first `frames` frames show. For example,
+
+      ```python fragment
+      print(bounce_positions(100, 6))
+      ```
+
+      should print:
+
+      ```
+      [0, 100, 200, 300, 200, 100]
+      ```
+    seed: |
+      def bounce_positions(speed, frames):
+          pass
+
+
+      if __name__ == "__main__":
+          print(bounce_positions(100, 6))
+    solution: |
+      def bounce_positions(speed, frames):
+          positions = []
+          x = 0
+          for frame in range(frames):
+              positions.append(x)
+              x += speed
+              if x + 40 >= 320 or x <= 0:
+                  speed = -speed
+          return positions
+
+
+      if __name__ == "__main__":
+          print(bounce_positions(100, 6))
+    hints:
+      - "Start with `x = 0` and an empty list. A loop goes round once for each frame."
+      - "In each round, first append x (that's the frame being drawn), then add the speed to x and turn the speed around when the object is at a wall."
+    tests:
+      - call: print(bounce_positions(100, 6))
+      - call: bounce_positions(70, 12)
+        hidden: true
+      - call: bounce_positions(3, 4)
+        hidden: true

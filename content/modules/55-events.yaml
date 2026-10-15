@@ -1,0 +1,826 @@
+id: events
+summary: Programs that react to the player. The events pygame hands the main loop and what they tell, key presses, keys held down, keeping a moving robot inside the window, and the mouse's clicks and moves.
+steps:
+  - id: events-keys
+    slug: key-presses
+    title: Events and key presses
+    text: |
+      So far the main loops have handled one kind of event, `pygame.QUIT`. But `pygame.event.get()` hands the program every event: each key pressed or let go, each mouse click, each move of the mouse. Printing them shows what they look like:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+
+      while True:
+          for event in pygame.event.get():
+              print(event)
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 20, events: [{at: 5, type: keydown, key: K_a}, {at: 8, type: keyup, key: K_a}, {at: 12, type: mousedown, pos: [100, 60], button: 1}, {at: 13, type: mouseup, pos: [100, 60], button: 1}, {at: 15, type: keydown, key: K_LEFT}]}
+      ```
+
+      ```output
+      <Event(768-KeyDown {'key': 97, 'mod': 0, 'scancode': 0, 'unicode': 'a'})>
+      <Event(769-KeyUp {'key': 97, 'mod': 0, 'scancode': 0})>
+      <Event(1025-MouseButtonDown {'pos': (100, 60), 'button': 1, 'touch': False})>
+      <Event(1026-MouseButtonUp {'pos': (100, 60), 'button': 1, 'touch': False})>
+      <Event(768-KeyDown {'key': 1073741904, 'mod': 0, 'scancode': 0, 'unicode': ''})>
+      <Event(256-Quit {})>
+      ```
+
+      Every event is an object with a **type**, and each type has attributes of its own. A key event's `key` is a number for the key: 97 is the A key, and 1073741904 the left arrow. Nobody remembers such numbers, so pygame has a name for each one: `pygame.K_a`, `pygame.K_LEFT`, `pygame.K_RIGHT`, `pygame.K_UP`, `pygame.K_DOWN`, `pygame.K_SPACE`, `pygame.K_RETURN` and so on. A mouse button event has the point where it happened in `pos` and the button in `button`. (On your own computer, the events have a few more details, and there are more of them: one for every move of the mouse over the window, for example.)
+
+      The event types have names too:
+
+      | Type | When |
+      |---|---|
+      | `pygame.KEYDOWN` | a key is pressed down |
+      | `pygame.KEYUP` | a key is let go |
+      | `pygame.MOUSEBUTTONDOWN` | a mouse button is pressed |
+      | `pygame.MOUSEBUTTONUP` | a mouse button is let go |
+      | `pygame.MOUSEMOTION` | the mouse moves |
+      | `pygame.QUIT` | the window is closed |
+
+      ### Reacting to keys
+
+      To react to a key, check the event's type first and then its key:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_LEFT:
+                      print("left")
+                  if event.key == pygame.K_RIGHT:
+                      print("right")
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 20, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 4, type: keyup, key: K_RIGHT}, {at: 8, type: keydown, key: K_LEFT}, {at: 9, type: keyup, key: K_LEFT}, {at: 12, type: keydown, key: K_RIGHT}, {at: 13, type: keyup, key: K_RIGHT}]}
+      ```
+
+      ```output
+      right
+      left
+      right
+      ```
+
+      Only a `KEYDOWN` event has a key that this program cares about, so the `KEYUP` events pass by without printing anything.
+
+      On this site you can try it yourself: run the program, click in its window and press keys. A test gives the events itself, and the task card lists them, such as "After 3 frames: the right arrow is pressed and let go."
+
+      ### Moving with the keys
+
+      Now the key presses can move the robot. Each press of an arrow moves it 10 pixels:
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 140
+      y = 200
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_LEFT:
+                      x -= 10
+                  if event.key == pygame.K_RIGHT:
+                      x += 10
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30, events: [{at: 5, type: keydown, key: K_RIGHT}, {at: 6, type: keyup, key: K_RIGHT}, {at: 10, type: keydown, key: K_RIGHT}, {at: 11, type: keyup, key: K_RIGHT}, {at: 15, type: keydown, key: K_RIGHT}, {at: 16, type: keyup, key: K_RIGHT}, {at: 20, type: keydown, key: K_LEFT}, {at: 21, type: keyup, key: K_LEFT}]}
+      ```
+
+      Three steps right and one left: the robot ends 20 pixels right of where it started, at (160, 200). The events are handled at the start of each round, before the drawing, so a press shows in the very next frame.
+
+      **Your turn:** fill in the blanks so that each press of the up arrow moves the robot 20 pixels up. (The down arrow already moves it down.)
+    assets: [robot.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 140
+      y = 100
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.[[KEYDOWN]]:
+                  if event.key == pygame.[[K_UP]]:
+                      y -= 20
+                  if event.key == pygame.K_DOWN:
+                      y += 20
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+    hints:
+      - The first blank is the type of event that comes when a key is pressed down. The second is pygame's name for the up arrow.
+      - "The type is `pygame.KEYDOWN`, and the up arrow is `pygame.K_UP`."
+    tests:
+      - name: Up, up and down
+        window: {frames: 20, events: [{at: 3, type: keydown, key: K_UP}, {at: 4, type: keyup, key: K_UP}, {at: 8, type: keydown, key: K_UP}, {at: 9, type: keyup, key: K_UP}, {at: 13, type: keydown, key: K_DOWN}, {at: 14, type: keyup, key: K_DOWN}]}
+      - window: {frames: 25, events: [{at: 2, type: keydown, key: K_UP}, {at: 3, type: keyup, key: K_UP}, {at: 6, type: keydown, key: K_UP}, {at: 7, type: keyup, key: K_UP}, {at: 10, type: keydown, key: K_UP}, {at: 11, type: keyup, key: K_UP}]}
+        hidden: true
+    more:
+      - task: |
+          Write a program that counts jumps. Each press of the space bar prints `Jump!`. When the window is closed, the program prints how many jumps there were, then ends. Other keys do nothing. With three presses of the space bar, it prints:
+
+          ```
+          Jump!
+          Jump!
+          Jump!
+          Jumps: 3
+          ```
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          jumps = 0
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_SPACE:
+                          print("Jump!")
+                          jumps += 1
+                  if event.type == pygame.QUIT:
+                      print("Jumps:", jumps)
+                      exit()
+
+              window.fill((0, 0, 0))
+              pygame.display.flip()
+        hints:
+          - Keep the count in a variable that starts at 0 before the main loop.
+          - "When an event is a `pygame.KEYDOWN` and its key is `pygame.K_SPACE`, print `Jump!` and add one to the count."
+          - "Print the count in the `pygame.QUIT` branch, before `exit()`: after `exit()` nothing runs any more."
+        tests:
+          - name: Three jumps
+            window: {frames: 15, events: [{at: 2, type: keydown, key: K_SPACE}, {at: 3, type: keyup, key: K_SPACE}, {at: 6, type: keydown, key: K_SPACE}, {at: 7, type: keyup, key: K_SPACE}, {at: 10, type: keydown, key: K_SPACE}, {at: 11, type: keyup, key: K_SPACE}]}
+          - name: Other keys too
+            window: {frames: 20, events: [{at: 1, type: keydown, key: K_SPACE}, {at: 2, type: keyup, key: K_SPACE}, {at: 4, type: keydown, key: K_RETURN}, {at: 5, type: keyup, key: K_RETURN}, {at: 7, type: keydown, key: K_SPACE}, {at: 8, type: keyup, key: K_SPACE}, {at: 12, type: keydown, key: K_a}, {at: 13, type: keyup, key: K_a}]}
+            hidden: true
+          - name: No jumps
+            window: {frames: 8}
+            hidden: true
+      - task: |
+          The robot moves on a grid of 40-pixel tiles. It starts at (140, 100), and each press of an arrow key moves it one tile, 40 pixels, in the arrow's direction: left, right, up or down.
+        assets: [robot.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          x = 140
+          y = 100
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (x, y))
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          x = 140
+          y = 100
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_LEFT:
+                          x -= 40
+                      if event.key == pygame.K_RIGHT:
+                          x += 40
+                      if event.key == pygame.K_UP:
+                          y -= 40
+                      if event.key == pygame.K_DOWN:
+                          y += 40
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (x, y))
+              pygame.display.flip()
+        hints:
+          - In the event loop, check for a `pygame.KEYDOWN` event, then which arrow its key is.
+          - "Four arrows: `pygame.K_LEFT`, `pygame.K_RIGHT`, `pygame.K_UP` and `pygame.K_DOWN`. Left and right change x, up and down change y."
+          - "Up is a smaller y: `y -= 40`."
+        tests:
+          - name: Right, right, down, left
+            window: {frames: 25, events: [{at: 3, type: keydown, key: K_RIGHT}, {at: 4, type: keyup, key: K_RIGHT}, {at: 7, type: keydown, key: K_RIGHT}, {at: 8, type: keyup, key: K_RIGHT}, {at: 11, type: keydown, key: K_DOWN}, {at: 12, type: keyup, key: K_DOWN}, {at: 15, type: keydown, key: K_LEFT}, {at: 16, type: keyup, key: K_LEFT}]}
+          - window: {frames: 30, events: [{at: 2, type: keydown, key: K_UP}, {at: 3, type: keyup, key: K_UP}, {at: 5, type: keydown, key: K_UP}, {at: 6, type: keyup, key: K_UP}, {at: 9, type: keydown, key: K_LEFT}, {at: 10, type: keyup, key: K_LEFT}, {at: 13, type: keydown, key: K_LEFT}, {at: 14, type: keyup, key: K_LEFT}, {at: 17, type: keydown, key: K_LEFT}, {at: 18, type: keyup, key: K_LEFT}]}
+            hidden: true
+
+  - id: events-holding
+    slug: holding-keys
+    title: Keys held down
+    text: |
+      A `KEYDOWN` event comes once, when the key goes down, however long it's held. So with the program of the previous step, the player has to press the arrow again for every step. In most games, holding the key down keeps the character moving.
+
+      The program can know which keys are down by remembering: a key is down from its `KEYDOWN` event until its `KEYUP` event. Keep that in a variable that's `True` in between, and move a little on every frame while it's `True`:
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 140
+      going_left = False
+      going_right = False
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_LEFT:
+                      going_left = True
+                  if event.key == pygame.K_RIGHT:
+                      going_right = True
+              if event.type == pygame.KEYUP:
+                  if event.key == pygame.K_LEFT:
+                      going_left = False
+                  if event.key == pygame.K_RIGHT:
+                      going_right = False
+              if event.type == pygame.QUIT:
+                  exit()
+
+          if going_left:
+              x -= 3
+          if going_right:
+              x += 3
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, 200))
+          pygame.display.flip()
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 80, events: [{at: 10, type: keydown, key: K_RIGHT}, {at: 40, type: keyup, key: K_RIGHT}, {at: 50, type: keydown, key: K_LEFT}, {at: 60, type: keyup, key: K_LEFT}]}
+      ```
+
+      Each round of the main loop now does four things, in this order: it handles the events, moves the robot, draws it and shows the frame. The right arrow was held for 30 frames, so the robot moved 3 × 30 = 90 pixels right, and then 30 pixels back left: it ends at x = 140 + 90 - 30 = 200. The clock matters again, since the robot moves on every frame: 3 pixels per frame at 60 frames per second is 180 pixels per second.
+
+      If both arrows are held, the robot moves 3 left and 3 right in each frame, so it stays put, which is what a player would expect.
+
+      ### Asking which keys are down
+
+      pygame can also say which keys are down right now. `pygame.key.get_pressed()` returns something you can index with a key's name: `keys[pygame.K_RIGHT]` is `True` while the right arrow is held. With it, the moving part is shorter, and the event loop needs only the `QUIT` event:
+
+      ```python fragment
+      keys = pygame.key.get_pressed()
+      if keys[pygame.K_LEFT]:
+          x -= 3
+      if keys[pygame.K_RIGHT]:
+          x += 3
+      ```
+
+      Both ways work, and the checks here accept either. The variables show what really happens: the keys come in as events, and the program remembers them.
+
+      ### Staying in the window
+
+      Nothing stops the robot at the edge: hold the arrow long enough and it walks out of sight. After moving, put it back inside if it went too far. Its x can't be less than 0, and its right edge can't go past the window's right edge, so x can't be more than `320 - robot.get_width()`:
+
+      ```python fragment
+      if x < 0:
+          x = 0
+      if x > 320 - robot.get_width():
+          x = 320 - robot.get_width()
+      ```
+
+      Unlike bouncing, nothing turns around here: the robot just stops at the edge for as long as the player keeps pushing.
+
+      **Your turn:** holding the up arrow should move the robot up, 3 pixels per frame. Fill in the blanks so that the robot stops when the key is let go.
+    assets: [robot.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      y = 200
+      going_up = False
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.KEYDOWN:
+                  if event.key == pygame.K_UP:
+                      going_up = True
+              if event.type == pygame.[[KEYUP]]:
+                  if event.key == pygame.K_UP:
+                      going_up = [[False]]
+              if event.type == pygame.QUIT:
+                  exit()
+
+          if going_up:
+              y -= 3
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (140, y))
+          pygame.display.flip()
+          clock.tick(60)
+    hints:
+      - The key stops being held when it's let go. Which event type is that, and what should the variable become?
+      - "Letting go is `pygame.KEYUP`, and then `going_up` becomes `False`."
+    tests:
+      - name: Up held for 25 frames
+        window: {frames: 40, events: [{at: 5, type: keydown, key: K_UP}, {at: 30, type: keyup, key: K_UP}]}
+      - window: {frames: 30, events: [{at: 2, type: keydown, key: K_UP}, {at: 12, type: keyup, key: K_UP}, {at: 20, type: keydown, key: K_UP}, {at: 25, type: keyup, key: K_UP}]}
+        hidden: true
+    more:
+      - task: |
+          The robot starts at (140, 100). While the up arrow is held, it moves up 4 pixels per frame, and while the down arrow is held, down 4 pixels per frame. It can't leave the window: its y stays between 0 and 200 (the window is 240 high and the robot 40). Use a clock at 60 frames per second, and handle the events, move and draw in that order, as in the lesson.
+        assets: [robot.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          y = 100
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              # Move the robot here.
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, y))
+              pygame.display.flip()
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          y = 100
+          going_up = False
+          going_down = False
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.KEYDOWN:
+                      if event.key == pygame.K_UP:
+                          going_up = True
+                      if event.key == pygame.K_DOWN:
+                          going_down = True
+                  if event.type == pygame.KEYUP:
+                      if event.key == pygame.K_UP:
+                          going_up = False
+                      if event.key == pygame.K_DOWN:
+                          going_down = False
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              if going_up:
+                  y -= 4
+              if going_down:
+                  y += 4
+              if y < 0:
+                  y = 0
+              if y > 240 - robot.get_height():
+                  y = 240 - robot.get_height()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, y))
+              pygame.display.flip()
+              clock.tick(60)
+        hints:
+          - "Use two variables, `going_up` and `going_down`, set to `True` on `KEYDOWN` and to `False` on `KEYUP` (or use `pygame.key.get_pressed()`)."
+          - "Where the comment is, change y by 4 for each arrow that's held."
+          - "Right after moving, put the robot back inside: if y is below 0, make it 0, and if it's above 200, make it 200."
+        tests:
+          - name: Down to the bottom, then up a bit
+            window: {frames: 90, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 60, type: keyup, key: K_DOWN}, {at: 70, type: keydown, key: K_UP}, {at: 80, type: keyup, key: K_UP}]}
+          - name: Up to the top and beyond
+            window: {frames: 60, events: [{at: 2, type: keydown, key: K_UP}, {at: 50, type: keyup, key: K_UP}]}
+            hidden: true
+          - window: {frames: 20, events: [{at: 5, type: keydown, key: K_DOWN}, {at: 10, type: keyup, key: K_DOWN}]}
+            hidden: true
+      - task: |
+          Make the robot fly. It starts on the ground at (140, 200). While the space bar is held, it rises 3 pixels per frame; when the space bar isn't held, it falls 2 pixels per frame. Its y stays between 0 and 200, so it can't fly out of the window or fall through the ground. Use a clock at 60 frames per second, and handle the events, move and draw in that order.
+        assets: [robot.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          y = 200
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              # Move the robot here.
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, y))
+              pygame.display.flip()
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          y = 200
+          flying = False
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                      flying = True
+                  if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+                      flying = False
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              if flying:
+                  y -= 3
+              else:
+                  y += 2
+              if y < 0:
+                  y = 0
+              if y > 200:
+                  y = 200
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, y))
+              pygame.display.flip()
+              clock.tick(60)
+        hints:
+          - "Keep a variable that's `True` while the space bar is held: set it on `KEYDOWN` and clear it on `KEYUP`, when the key is `pygame.K_SPACE`."
+          - "In every frame the robot moves one way or the other: an `if` that rises 3 with an `else` that falls 2."
+          - After moving, keep y between 0 and 200, as in the lesson.
+        tests:
+          - name: A short flight
+            window: {frames: 50, events: [{at: 5, type: keydown, key: K_SPACE}, {at: 45, type: keyup, key: K_SPACE}]}
+          - name: Up to the top
+            window: {frames: 90, events: [{at: 10, type: keydown, key: K_SPACE}]}
+            hidden: true
+          - name: Up and down again
+            window: {frames: 70, events: [{at: 3, type: keydown, key: K_SPACE}, {at: 23, type: keyup, key: K_SPACE}, {at: 40, type: keydown, key: K_SPACE}, {at: 44, type: keyup, key: K_SPACE}]}
+            hidden: true
+
+  - id: events-mouse
+    slug: mouse
+    title: The mouse
+    text: |
+      A mouse click is two events: `pygame.MOUSEBUTTONDOWN` when the button goes down, and `pygame.MOUSEBUTTONUP` when it comes back up. Both have two attributes: `pos`, the point in the window where it happened, as a tuple (x, y), and `button`, which button it was: 1 is the left button, 2 the middle one and 3 the right one.
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.MOUSEBUTTONDOWN:
+                  print("button", event.button, "at", event.pos)
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 20, events: [{at: 4, type: mousedown, pos: [50, 40], button: 1}, {at: 5, type: mouseup, pos: [50, 40], button: 1}, {at: 10, type: mousedown, pos: [270, 200], button: 3}, {at: 11, type: mouseup, pos: [270, 200], button: 3}]}
+      ```
+
+      ```output
+      button 1 at (50, 40)
+      button 3 at (270, 200)
+      ```
+
+      `event.pos[0]` is the x of the click and `event.pos[1]` its y.
+
+      ### Drawing where the player clicks
+
+      This program moves the robot to each click. The click should be at the robot's center, so its top-left corner goes half its size to the left and up:
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 0
+      y = 0
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.MOUSEBUTTONDOWN:
+                  x = event.pos[0] - robot.get_width() // 2
+                  y = event.pos[1] - robot.get_height() // 2
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30, events: [{at: 5, type: mousedown, pos: [200, 60], button: 1}, {at: 6, type: mouseup, pos: [200, 60], button: 1}, {at: 15, type: mousedown, pos: [100, 150], button: 1}, {at: 16, type: mouseup, pos: [100, 150], button: 1}]}
+      ```
+
+      The click only changes the variables. The drawing still happens in every frame, from the variables, as in every program so far. To keep something for every click, such as a coin at each one, append the points to a list and draw everything in the list in each frame.
+
+      ### Following the mouse
+
+      `pygame.MOUSEMOTION` comes whenever the mouse moves over the window, and its `pos` is where the mouse pointer is now. Here the robot's center sticks to the pointer:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 140
+      y = 100
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.MOUSEMOTION:
+                  x = event.pos[0] - robot.get_width() // 2
+                  y = event.pos[1] - robot.get_height() // 2
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+      ```
+
+      ```window
+      {frames: 30, events: [{at: 5, type: mousemove, pos: [180, 120]}, {at: 10, type: mousemove, pos: [220, 110]}, {at: 15, type: mousemove, pos: [260, 90]}]}
+      ```
+
+      Instead of jumping, the robot can also walk toward the pointer: keep the point it's heading for in variables of its own, and in each frame move the robot a step closer to it, as the second challenge below does.
+
+      ### Did the click hit?
+
+      A click hits an image when its point is inside the image's rectangle. The image covers x from its left edge up to (but not including) its left edge plus its width, and the same for y:
+
+      ```python fragment
+      mouse_x, mouse_y = event.pos
+      if x <= mouse_x < x + robot.get_width() and y <= mouse_y < y + robot.get_height():
+          print("Got the robot!")
+      ```
+
+      Python lets you chain comparisons like this: `x <= mouse_x < x + 40` means `x <= mouse_x and mouse_x < x + 40`.
+
+      **Your turn:** each click should leave a coin centered at the point of the click. Fill in the blanks: the type of event for a press of the mouse button, and the attribute that has the point.
+    assets: [coin.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      coin = pygame.image.load("coin.png")
+
+      coins = []
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.[[MOUSEBUTTONDOWN]]:
+                  x, y = event.[[pos]]
+                  coins.append((x - 12, y - 12))
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          for place in coins:
+              window.blit(coin, place)
+          pygame.display.flip()
+    hints:
+      - "The event comes when a mouse button goes down. Its point is a tuple (x, y)."
+      - "The type is `pygame.MOUSEBUTTONDOWN`, and the point is `event.pos`."
+    tests:
+      - name: Three clicks
+        window: {frames: 20, events: [{at: 3, type: mousedown, pos: [40, 50], button: 1}, {at: 4, type: mouseup, pos: [40, 50], button: 1}, {at: 8, type: mousedown, pos: [160, 120], button: 1}, {at: 9, type: mouseup, pos: [160, 120], button: 1}, {at: 13, type: mousedown, pos: [280, 200], button: 1}, {at: 14, type: mouseup, pos: [280, 200], button: 1}]}
+      - window: {frames: 15, events: [{at: 2, type: mousedown, pos: [100, 30], button: 1}, {at: 3, type: mouseup, pos: [100, 30], button: 1}, {at: 6, type: mousedown, pos: [60, 180], button: 1}, {at: 7, type: mouseup, pos: [60, 180], button: 1}]}
+        hidden: true
+    more:
+      - task: |
+          The robot walks toward the mouse pointer. It starts at (0, 0) and heads for the point that puts its center at the pointer: (pointer's x - 20, pointer's y - 20). In each frame it moves 2 pixels closer across (if it isn't there yet) and 2 pixels closer up or down (if it isn't there yet). Until the mouse moves, it heads for (0, 0), so it stays put. Use a clock at 60 frames per second, and handle the events, move and draw in that order. (The tests move the mouse only to points with even numbers, so the robot always ends exactly there.)
+        assets: [robot.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          x = 0
+          y = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (x, y))
+              pygame.display.flip()
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          x = 0
+          y = 0
+          target_x = 0
+          target_y = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.MOUSEMOTION:
+                      target_x = event.pos[0] - robot.get_width() // 2
+                      target_y = event.pos[1] - robot.get_height() // 2
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              if x < target_x:
+                  x += 2
+              if x > target_x:
+                  x -= 2
+              if y < target_y:
+                  y += 2
+              if y > target_y:
+                  y -= 2
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (x, y))
+              pygame.display.flip()
+              clock.tick(60)
+        hints:
+          - "Keep the point the robot heads for in two variables of its own, `target_x` and `target_y`, which start at 0. A `pygame.MOUSEMOTION` event sets them."
+          - "After the event loop, compare the robot's position with the target: if `x < target_x`, x grows by 2; if `x > target_x`, it shrinks by 2. The same for y."
+          - Draw the robot at its own position, not at the target.
+        tests:
+          - name: The mouse moves once
+            window: {frames: 120, events: [{at: 5, type: mousemove, pos: [200, 150]}]}
+          - name: The mouse moves twice
+            window: {frames: 150, events: [{at: 5, type: mousemove, pos: [300, 40]}, {at: 60, type: mousemove, pos: [60, 200]}]}
+            hidden: true
+          - name: Still on its way
+            window: {frames: 30, events: [{at: 2, type: mousemove, pos: [160, 120]}]}
+            hidden: true
+      - task: |
+          Whack the monster! The monster appears at the first of these places, its top-left corner given:
+
+          ```python fragment
+          places = [(40, 40), (240, 160), (140, 100), (240, 40)]
+          ```
+
+          When the player clicks with the left button (button 1) on the monster, that's a hit, and the monster jumps to the next place in the list; after the last place it goes back to the first. A click that misses the monster, or a click with another button, does nothing. When the window is closed, the program prints the number of hits as `Hits: 2`, then ends. The monster is 40 x 40, and a click hits it when it's inside the monster's rectangle, as in the lesson.
+        assets: [monster.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          monster = pygame.image.load("monster.png")
+
+          places = [(40, 40), (240, 160), (140, 100), (240, 40)]
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(monster, places[0])
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          monster = pygame.image.load("monster.png")
+
+          places = [(40, 40), (240, 160), (140, 100), (240, 40)]
+          place = 0
+          hits = 0
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                      x, y = places[place]
+                      mouse_x, mouse_y = event.pos
+                      if x <= mouse_x < x + 40 and y <= mouse_y < y + 40:
+                          hits += 1
+                          place = (place + 1) % len(places)
+                  if event.type == pygame.QUIT:
+                      print("Hits:", hits)
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(monster, places[place])
+              pygame.display.flip()
+        hints:
+          - "Keep the index of the monster's place in a variable, and draw the monster at `places[index]`. Keep the hits in another variable."
+          - "On a `pygame.MOUSEBUTTONDOWN` event with `event.button == 1`, take the monster's corner `x, y` and the click's `event.pos`, and check `x <= mouse_x < x + 40` and the same for y."
+          - "On a hit, add one to the hits and move to the next place: `(index + 1) % len(places)` goes back to 0 after the last one. Print the hits in the `QUIT` branch, before `exit()`."
+        tests:
+          - name: Two hits and a miss
+            window: {frames: 30, events: [{at: 3, type: mousedown, pos: [50, 50], button: 1}, {at: 4, type: mouseup, pos: [50, 50], button: 1}, {at: 8, type: mousedown, pos: [100, 100], button: 1}, {at: 9, type: mouseup, pos: [100, 100], button: 1}, {at: 13, type: mousedown, pos: [270, 190], button: 1}, {at: 14, type: mouseup, pos: [270, 190], button: 1}]}
+          - name: All the way round
+            window: {frames: 40, events: [{at: 2, type: mousedown, pos: [40, 40], button: 1}, {at: 3, type: mouseup, pos: [40, 40], button: 1}, {at: 6, type: mousedown, pos: [279, 199], button: 1}, {at: 7, type: mouseup, pos: [279, 199], button: 1}, {at: 10, type: mousedown, pos: [160, 120], button: 1}, {at: 11, type: mouseup, pos: [160, 120], button: 1}, {at: 14, type: mousedown, pos: [250, 50], button: 1}, {at: 15, type: mouseup, pos: [250, 50], button: 1}, {at: 18, type: mousedown, pos: [79, 79], button: 1}, {at: 19, type: mouseup, pos: [79, 79], button: 1}]}
+            hidden: true
+          - name: Edges and the right button
+            window: {frames: 30, events: [{at: 2, type: mousedown, pos: [80, 60], button: 1}, {at: 3, type: mouseup, pos: [80, 60], button: 1}, {at: 6, type: mousedown, pos: [60, 60], button: 3}, {at: 7, type: mouseup, pos: [60, 60], button: 3}, {at: 10, type: mousedown, pos: [39, 60], button: 1}, {at: 11, type: mouseup, pos: [39, 60], button: 1}, {at: 14, type: mousedown, pos: [60, 79], button: 1}, {at: 15, type: mouseup, pos: [60, 79], button: 1}]}
+            hidden: true

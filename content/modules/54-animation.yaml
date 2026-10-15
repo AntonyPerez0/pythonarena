@@ -1,0 +1,701 @@
+id: animation
+summary: Pictures that move. Animation as frames that each differ a little, a clock that keeps the speed steady, turning around at the walls, bouncing in two directions, going round in a circle with sine and cosine, and turning an image.
+steps:
+  - id: animation-moving
+    slug: moving
+    title: Moving pictures
+    text: |
+      An **animation** is a series of pictures shown quickly one after another, each a little different from the one before, and the eye sees movement. A pygame program already has the series of pictures: the frames of its main loop. To animate something, keep its position in variables and change them a little on every round of the loop.
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 0
+      y = 100
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+
+          x += 2
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 60}
+      ```
+
+      The variables `x` and `y` hold the robot's position. They get their first values once, before the main loop. Every round draws the robot where it is, shows the frame, and then moves it: `x += 2`. So the first frame shows the robot at x = 0, the second at 2 and the third at 4: frame number n shows it at 2 × (n - 1). The window above showed 60 frames, so its last frame has the robot at x = 118:
+
+      ```text
+      fill (0, 0, 0)
+      blit robot.png at (118, 100)
+      ```
+
+      ### Fill every frame
+
+      The `fill` at the start of each frame paints over the frame before. Without it, the old pictures stay in the window and the robot smears a trail behind it. Here the window is filled only once, before the main loop:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 0
+      clock = pygame.time.Clock()
+      window.fill((0, 0, 0))
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.blit(robot, (x, 100))
+          pygame.display.flip()
+
+          x += 2
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 20}
+      ```
+
+      Its window as text has a `blit` line for every frame, since nothing has painted over them.
+
+      ### The clock
+
+      `clock = pygame.time.Clock()` makes a **clock**, and `clock.tick(60)` at the end of each round keeps the loop from going round more than 60 times a second: when a round took less than a 60th of a second, `tick` waits for the rest of it. That's 60 **frames per second** (FPS), a common speed for games. Without the clock, the loop would run as fast as the computer can go. The robot would cross the window in a blink, and at a different speed on every computer. With the clock, the speed is easy to work out: 2 pixels per frame at 60 frames per second is 120 pixels per second.
+
+      Make the clock once, before the main loop, and call `tick` once in every round.
+
+      On this site the clock is counted, not waited for: `tick(60)` moves the program's clock on by a 60th of a second at once. So a run of 120 frames takes only a moment, and it comes out the same in every run. Play shows the frames at the program's own pace, 60 per second.
+
+      **Your turn:** the ball should fall from the top of the window, 3 pixels per frame, at 60 frames per second. Fill in the blanks: the name of the clock's type, and the operator that moves the ball down.
+    assets: [ball.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      ball = pygame.image.load("ball.png")
+
+      y = 0
+      clock = pygame.time.[[Clock]]()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(ball, (146, y))
+          pygame.display.flip()
+
+          y [[+=]] 3
+          clock.tick(60)
+    hints:
+      - The clock is made with `pygame.time.Clock()`. Down in the window means a bigger y.
+      - "`y += 3` adds 3 to y on every frame."
+    tests:
+      - window: {frames: 40}
+      - window: {frames: 55}
+        hidden: true
+    more:
+      - task: |
+          Make the robot climb: on the first frame it's at (140, 200), at the bottom of the window, and after each frame it moves 2 pixels up. Use a clock at 60 frames per second.
+        assets: [robot.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, 200))
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+
+          y = 200
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, y))
+              pygame.display.flip()
+
+              y -= 2
+              clock.tick(60)
+        hints:
+          - Keep the robot's y in a variable that starts at 200, before the main loop, and draw the robot at `(140, y)`.
+          - Up in the window means a smaller y. After `flip`, make y 2 smaller.
+          - "Make the clock before the main loop, `clock = pygame.time.Clock()`, and call `clock.tick(60)` at the end of each round."
+        require:
+          - pattern: \.tick\s*\(
+            message: "Keep the speed steady with a clock: `clock.tick(60)` in every round."
+        tests:
+          - window: {frames: 50}
+          - window: {frames: 80}
+            hidden: true
+      - task: |
+          Two things move at once. The robot walks right along the bottom of the window, 2 pixels per frame, and a coin falls, 3 pixels per frame. On the first frame the robot is at (0, 200) and the coin at (148, 0). Draw the robot first, then the coin, and use a clock at 60 frames per second.
+        assets: [robot.png, coin.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+          coin = pygame.image.load("coin.png")
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (0, 200))
+              window.blit(coin, (148, 0))
+              pygame.display.flip()
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+          coin = pygame.image.load("coin.png")
+
+          robot_x = 0
+          coin_y = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (robot_x, 200))
+              window.blit(coin, (148, coin_y))
+              pygame.display.flip()
+
+              robot_x += 2
+              coin_y += 3
+              clock.tick(60)
+        hints:
+          - Each moving thing needs a variable for the part of its position that changes, such as `robot_x` and `coin_y`.
+          - "Draw both at their variables' positions, and after `flip` change both: `robot_x += 2` and `coin_y += 3`."
+          - Then add the clock, as in the lesson.
+        tests:
+          - window: {frames: 45}
+          - window: {frames: 70}
+            hidden: true
+
+  - id: animation-bouncing
+    slug: bouncing
+    title: Turning around at the walls
+    text: |
+      The robot of the previous step walks out of the window and is gone. Things in games usually turn around at the walls. For that, the program needs to know which way the robot is going, so it keeps the robot's **velocity**, how much its position changes per frame, in a variable of its own:
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 0
+      speed = 3
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, 100))
+          pygame.display.flip()
+
+          x += speed
+          if x + robot.get_width() >= 320 or x <= 0:
+              speed = -speed
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 150}
+      ```
+
+      `speed` is 3 while the robot goes right and -3 while it goes left: `x += speed` with a negative speed makes x smaller. The robot's right edge is at `x + robot.get_width()`. When it reaches the window's right edge, `speed = -speed` turns 3 into -3, and the robot heads back. When its left edge reaches 0, -3 turns back into 3.
+
+      ### `>=`, not `==`
+
+      The test is `x + robot.get_width() >= 320`, not `== 320`. The robot moves 3 pixels at a time, so its right edge goes 316, 319, 322: it's never exactly 320. With `==` the test would never be true, and the robot would walk out of the window. In the same way, `x <= 0` catches 0 and anything below it. This small program prints the positions near the right edge, with 40 for the robot's width:
+
+      ```python run
+      x = 270
+      speed = 3
+      for frame in range(6):
+          x += speed
+          if x + 40 >= 320 or x <= 0:
+              speed = -speed
+          print(x, speed)
+      ```
+
+      ```output
+      273 3
+      276 3
+      279 3
+      282 -3
+      279 -3
+      276 -3
+      ```
+
+      For one frame the robot sticks out 2 pixels past the edge, which nobody notices. Start the robot inside the window, though: one that starts past an edge turns around on every frame and stays stuck there.
+
+      ### Bouncing in two directions
+
+      A ball that moves at a slant has a velocity in each direction: `speed_x` across and `speed_y` up and down. Each one turns around at its own walls: `speed_x` at the left and right edges, `speed_y` at the top and the bottom.
+
+      ```asset ball.png
+      ```
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      ball = pygame.image.load("ball.png")
+
+      x = 0
+      y = 0
+      speed_x = 4
+      speed_y = 3
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(ball, (x, y))
+          pygame.display.flip()
+
+          x += speed_x
+          y += speed_y
+          if x + ball.get_width() >= 320 or x <= 0:
+              speed_x = -speed_x
+          if y + ball.get_height() >= 240 or y <= 0:
+              speed_y = -speed_y
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 240}
+      ```
+
+      **Your turn:** the robot should go back and forth between the left and the right edges of the window, as in the first example, but the condition for turning around is missing two pieces. Fill in the blanks.
+    assets: [robot.png]
+    fill: |
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      x = 0
+      speed = 2
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, 60))
+          pygame.display.flip()
+
+          x += speed
+          if x + robot.[[get_width]]() >= 320 or x [[<=]] 0:
+              speed = -speed
+          clock.tick(60)
+    hints:
+      - The robot's right edge is its x plus its width. It turns around at the left edge when x is 0 or less.
+      - "The image's width is `robot.get_width()`, and \"0 or less\" is `x <= 0`."
+    tests:
+      - window: {frames: 200}
+      - window: {frames: 333}
+        hidden: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          x = 0
+          speed = 40
+          for frame in range(6):
+              x += speed
+              if x >= 120 or x <= 0:
+                  speed = -speed
+              print(x)
+        hints:
+          - "x grows by 40 until it reaches 120. Then the speed turns into -40."
+          - "From 120, x goes back down by 40 each time, and at 0 the speed turns around again."
+      - task: |
+          The monster patrols between two boxes. The boxes stand at (0, 100) and (280, 100), and the monster walks between them along y = 100, 4 pixels per frame. On the first frame it's at (120, 100), heading right. When its right edge reaches the right box's left edge (x = 280) or goes past it, it turns around, and when its left edge reaches the left box's right edge (x = 40) or goes past it, it turns around again. Draw the boxes first, then the monster. As in the lesson, move the monster after each frame is shown, then check for turning.
+        assets: [box.png, monster.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          box = pygame.image.load("box.png")
+          monster = pygame.image.load("monster.png")
+
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(box, (0, 100))
+              window.blit(box, (280, 100))
+              window.blit(monster, (120, 100))
+              pygame.display.flip()
+
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          box = pygame.image.load("box.png")
+          monster = pygame.image.load("monster.png")
+
+          x = 120
+          speed = 4
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(box, (0, 100))
+              window.blit(box, (280, 100))
+              window.blit(monster, (x, 100))
+              pygame.display.flip()
+
+              x += speed
+              if x + monster.get_width() >= 280 or x <= 40:
+                  speed = -speed
+              clock.tick(60)
+        hints:
+          - Keep the monster's x and its speed in variables, as the lesson keeps the robot's.
+          - "The walls are the boxes now, not the window's edges. The monster's right edge is `x + monster.get_width()`, and it turns when that is 280 or more."
+          - "On the left it turns when `x <= 40`, since the left box covers x from 0 to 39."
+        tests:
+          - window: {frames: 100}
+          - window: {frames: 177}
+            hidden: true
+          - window: {frames: 20}
+            hidden: true
+
+  - id: animation-circles
+    slug: circles
+    title: Going round in circles
+    text: |
+      Moving in a straight line needs only adding. Moving in a circle needs a little trigonometry, and the `math` module has the functions for it.
+
+      A point on a circle is given by its **angle**. `math.cos` and `math.sin` take the angle in **radians**, in which a full circle is 2π, about 6.28 (`math.pi` is π). For a circle with its center at (cx, cy) and radius r, the point at the angle `a` is
+
+      ```python fragment
+      x = cx + math.cos(a) * r
+      y = cy + math.sin(a) * r
+      ```
+
+      At the angle 0 the point is straight to the right of the center, since the cosine of 0 is 1 and its sine is 0. A quarter of a circle later, at π / 2, the cosine is 0 and the sine is 1:
+
+      ```python repl
+      >>> import math
+      >>> math.cos(0), math.sin(0)
+      (1.0, 0.0)
+      >>> round(math.cos(math.pi / 2), 2), round(math.sin(math.pi / 2), 2)
+      (0.0, 1.0)
+      >>> round(2 * math.pi, 2)
+      6.28
+      ```
+
+      In pygame y grows downward, so the point at π / 2 is below the center: as the angle grows, the point goes round clockwise.
+
+      ### Round and round
+
+      To go round, add a little to the angle on every frame:
+
+      ```asset robot.png
+      ```
+
+      ```python window
+      import math
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      angle = 0
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          x = 160 + math.cos(angle) * 80 - robot.get_width() / 2
+          y = 120 + math.sin(angle) * 80 - robot.get_height() / 2
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+
+          angle += 0.05
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 90}
+      ```
+
+      The robot's center goes round the window's center (160, 120) at a distance of 80 pixels. Subtracting half of the robot's width and height moves its top-left corner so that the image is centered on the point. The angle grows by 0.05 per frame, so one round takes 6.28 / 0.05, about 126 frames: a little over two seconds at 60 frames per second. The positions are floats, and `blit` drops their fractions, so the window as text shows whole numbers.
+
+      Several things go round the same circle when their angles are spread evenly: for six coins, 2π / 6 apart. In each frame, coin number `i` is at the angle `angle + i * 2 * math.pi / 6`.
+
+      ### Turning an image
+
+      `pygame.transform.rotate(image, degrees)` gives a new image: the old one turned counterclockwise by that many **degrees** (not radians: a full circle is 360). The turned image is bigger, because its corners stick out: the robot turned by 45 degrees needs a 56 x 56 image. So to keep a spinning image in place, center it by the turned image's own size:
+
+      ```python window
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      angle = 0
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          turned = pygame.transform.rotate(robot, angle)
+          x = 160 - turned.get_width() // 2
+          y = 120 - turned.get_height() // 2
+
+          window.fill((0, 0, 0))
+          window.blit(turned, (x, y))
+          pygame.display.flip()
+
+          angle += 3
+          clock.tick(60)
+      ```
+
+      ```window
+      {frames: 15}
+      ```
+
+      Turn the original image by the whole angle in every frame, as here. Turning an already turned image again and again would make it bigger and blurrier each time. The window as text says what was drawn: `blit robot.png rotated 42 at (132, 92)`.
+
+      **Your turn:** fill in the blanks so the robot goes round the center of the window on a circle of radius 80, as in the lesson.
+    assets: [robot.png]
+    fill: |
+      import math
+      import pygame
+
+      pygame.init()
+      window = pygame.display.set_mode((320, 240))
+      robot = pygame.image.load("robot.png")
+
+      angle = 0
+      clock = pygame.time.Clock()
+
+      while True:
+          for event in pygame.event.get():
+              if event.type == pygame.QUIT:
+                  exit()
+
+          x = 160 + math.[[cos]](angle) * 80 - 20
+          y = 120 + math.[[sin]](angle) * 80 - 20
+
+          window.fill((0, 0, 0))
+          window.blit(robot, (x, y))
+          pygame.display.flip()
+
+          angle += 0.04
+          clock.tick(60)
+    hints:
+      - One of the functions gives the x direction and the other the y direction.
+      - "x uses `math.cos` and y uses `math.sin`."
+    tests:
+      - window: {frames: 50}
+      - window: {frames: 120}
+        hidden: true
+    more:
+      - task: |
+          A coin goes round the robot. The robot stays at (140, 100), so its center is the window's center (160, 120). The coin's center goes round that point on a circle of radius 60: the angle is 0 on the first frame and grows by 0.1 after each frame. The coin is 24 x 24, so its top-left corner is 12 pixels left of and above its center. Draw the robot first, then the coin.
+        assets: [robot.png, coin.png]
+        seed: |
+          import math
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+          coin = pygame.image.load("coin.png")
+
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, 100))
+              pygame.display.flip()
+
+              clock.tick(60)
+        solution: |
+          import math
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          robot = pygame.image.load("robot.png")
+          coin = pygame.image.load("coin.png")
+
+          angle = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              x = 160 + math.cos(angle) * 60 - 12
+              y = 120 + math.sin(angle) * 60 - 12
+
+              window.fill((0, 0, 0))
+              window.blit(robot, (140, 100))
+              window.blit(coin, (x, y))
+              pygame.display.flip()
+
+              angle += 0.1
+              clock.tick(60)
+        hints:
+          - "Keep the angle in a variable that starts at 0, and add 0.1 to it after each frame."
+          - "The coin's center is at `160 + math.cos(angle) * 60` across and `120 + math.sin(angle) * 60` down."
+          - Subtract 12 from both to get the coin's top-left corner, and draw the coin there after the robot.
+        tests:
+          - window: {frames: 40}
+          - window: {frames: 77}
+            hidden: true
+      - task: |
+          Make the monster spin in the center of the window: on the first frame it's turned by 0 degrees, and after each frame it turns 5 degrees more, counterclockwise. Turn the original image by the whole angle in each frame, and put the turned image's top-left corner at (160 - width // 2, 120 - height // 2), where width and height are the turned image's.
+        assets: [monster.png]
+        seed: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          monster = pygame.image.load("monster.png")
+
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              window.fill((0, 0, 0))
+              window.blit(monster, (140, 100))
+              pygame.display.flip()
+
+              clock.tick(60)
+        solution: |
+          import pygame
+
+          pygame.init()
+          window = pygame.display.set_mode((320, 240))
+          monster = pygame.image.load("monster.png")
+
+          angle = 0
+          clock = pygame.time.Clock()
+
+          while True:
+              for event in pygame.event.get():
+                  if event.type == pygame.QUIT:
+                      exit()
+
+              turned = pygame.transform.rotate(monster, angle)
+              x = 160 - turned.get_width() // 2
+              y = 120 - turned.get_height() // 2
+
+              window.fill((0, 0, 0))
+              window.blit(turned, (x, y))
+              pygame.display.flip()
+
+              angle += 5
+              clock.tick(60)
+        hints:
+          - "Keep the angle in a variable. In each frame, `pygame.transform.rotate(monster, angle)` gives the turned image."
+          - "The turned image's size changes with the angle, so ask it: `turned.get_width()` and `turned.get_height()`."
+          - Draw `turned`, not `monster`, and add 5 to the angle after each frame.
+        require:
+          - pattern: pygame\.transform\.rotate\s*\(
+            message: "Turn the image with `pygame.transform.rotate`."
+        tests:
+          - window: {frames: 30}
+          - window: {frames: 50}
+            hidden: true
+          - window: {frames: 9}
+            hidden: true

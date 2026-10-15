@@ -5,7 +5,7 @@ steps:
     slug: first-window
     title: A window of your own
     text: |
-      So far your programs have printed text and read what the user types. In this part you'll write programs with **graphics**: a window with pictures in it that move and react to the keyboard and the mouse. The tool for it is **pygame**, a library for writing games in Python. A **library** is a collection of modules that someone else has written for you to use. Unlike `math` and `random`, pygame doesn't come with Python: on your own computer you'd install it first with the command `pip install pygame-ce` (pygame-ce is the community edition of pygame, the version that's actively developed, and programs still say `import pygame`). On this site there's nothing to install. The site runs pygame for you and shows its window on the page.
+      So far your programs have printed text and read what the user types. In this part you'll write programs with **graphics**: a window with pictures in it that move and react to the keyboard and the mouse. The tool for it is **pygame**, a library for writing games in Python. A **library** is a collection of modules that someone else has written for you to use. Unlike `math` and `random`, pygame doesn't come with Python: on your own computer you'd install it first with the command `pip install pygame-ce` (pygame-ce is the actively developed edition of pygame, and programs still say `import pygame`). On this site there's nothing to install. The site runs pygame for you and shows its window on the page.
 
       ### A first window
 
@@ -40,6 +40,8 @@ steps:
       - `pygame.display.flip()` shows what has been drawn. The drawing happens out of sight, and `flip` shows the finished picture all at once, so the player never sees a half-drawn one. Each picture shown is a **frame**.
 
       So every round of the main loop does three things: it handles the events, draws the picture and shows it. Here the picture is the same in every frame. In the next module it changes a little from one frame to the next, and that's animation.
+
+      You may see pygame programs that draw their picture once, before the main loop, and then only wait for events. That works here too: the window keeps showing that picture until it's closed. But games redraw in every round, because their picture changes, and the programs in these lessons do the same from the start.
 
       ### Colors
 
@@ -566,56 +568,19 @@ steps:
         hidden: true
     more:
       - task: |
-          Draw a floor along the bottom of a black 320 x 240 window: a row of 8 floor tiles (40 x 40 each) whose top edge is at y = 200, drawn from left to right with a `for` loop. Then draw the robot standing on the floor in the middle of the window, at (140, 160).
-        assets: [floor.png, robot.png]
-        seed: |
-          import pygame
-
-          pygame.init()
-          window = pygame.display.set_mode((320, 240))
-          floor = pygame.image.load("floor.png")
-          robot = pygame.image.load("robot.png")
-
-          while True:
-              for event in pygame.event.get():
-                  if event.type == pygame.QUIT:
-                      exit()
-
-              window.fill((0, 0, 0))
-              window.blit(floor, (0, 200))
-              pygame.display.flip()
-        solution: |
-          import pygame
-
-          pygame.init()
-          window = pygame.display.set_mode((320, 240))
-          floor = pygame.image.load("floor.png")
-          robot = pygame.image.load("robot.png")
-
-          while True:
-              for event in pygame.event.get():
-                  if event.type == pygame.QUIT:
-                      exit()
-
-              window.fill((0, 0, 0))
-              for i in range(8):
-                  window.blit(floor, (i * 40, 200))
-              window.blit(robot, (140, 160))
-              pygame.display.flip()
+          What does this program print? Type each line it prints.
+        predict: |
+          places = []
+          for row in range(2):
+              for column in range(3):
+                  places.append((column * 40, row * 40))
+          print(len(places))
+          print(places[0], places[2])
+          print(places[3], places[-1])
         hints:
-          - The starter code draws the first tile. The next ones are 40 pixels further to the right each time.
-          - "In a loop `for i in range(8):`, tile number `i` goes to `(i * 40, 200)`."
-          - Draw the robot after the loop, so it's drawn once and stands in front of the floor.
-        require:
-          - pattern: \bfor\b
-            message: Draw the tiles with a `for` loop.
-          - pattern: \.blit\s*\(
-            max: 2
-            message: "Use one `blit` for the tiles, inside a loop, and one for the robot."
-        tests:
-          - window: {frames: 10}
-          - window: {frames: 3}
-            hidden: true
+          - The inner loop goes through all three columns for each of the two rows, so the list gets 2 × 3 points.
+          - "The points come row by row: first the three of row 0, with y = 0, then the three of row 1, with y = 40."
+          - "`places[2]` is the last point of the first row, and `places[3]` the first point of the second row."
       - task: |
           Draw a room in a 320 x 240 window, which is 8 tiles wide and 6 tiles high (each tile is 40 x 40). The tiles along the four edges of the window are walls, and all the others are floor. Draw the tiles row by row from the top, each row from left to right, with two loops. Then draw the robot in the room at (120, 80).
         assets: [wall.png, floor.png, robot.png]

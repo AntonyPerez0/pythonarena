@@ -150,8 +150,11 @@ export default function WindowPanel({ files, assets, given, stdin = "", start, i
           timeLimitMs: 4_000 + s.budget * 12,
           onPackage: (p) => setPkg(p.done ? null : { loaded: p.loaded, total: p.total }),
           onFrame: (_, f: WindowFrame) => {
-            if (session.current.generation !== generation || !f.png || f.index < from) return;
-            frames.current.set(f.index, { blob: new Blob([f.png as BlobPart], { type: "image/png" }), log: f.log, ms: f.ms, title: f.title });
+            if (session.current.generation !== generation || f.index < from) return;
+            // A held frame (the program was waiting for events) shows the picture before it again.
+            const blob = f.png ? new Blob([f.png as BlobPart], { type: "image/png" }) : f.same ? frames.current.get(f.index - 1)?.blob : undefined;
+            if (!blob) return;
+            frames.current.set(f.index, { blob, log: f.log, ms: f.ms, title: f.title });
             setHave((h) => Math.max(h, f.index));
           },
         });
