@@ -150,6 +150,10 @@ const challengesOf = (mod) => mod.steps.flatMap((step) => [step, ...(step.more ?
 /** Every challenge of the course, in course order. */
 const ALL_CHALLENGES = COURSE_INDEX.modules.flatMap((m) => challengesOf(moduleOf(m.id)));
 const findChallenge = (pred) => ALL_CHALLENGES.find(pred);
+// The drills, the projects and the topics reference, read now too, with the rest of the build's files.
+const DRILLS = JSON.parse(readFileSync(new URL('../src/generated/drills.json', import.meta.url), 'utf8'));
+const PROJECTS = (COURSE_INDEX.projects ?? []).map((p) => JSON.parse(readFileSync(new URL(`../src/generated/projects/${p.id}.json`, import.meta.url), 'utf8')));
+const TOPICS = JSON.parse(readFileSync(new URL('../src/generated/topics.json', import.meta.url), 'utf8'));
 /** Whether every planned module is written (modules are added in batches: the tests don't assume either). */
 const ALL_LIVE = COURSE_INDEX.plan.every((m) => m.live);
 const LIVE_COUNT = COURSE_INDEX.modules.length;
@@ -904,8 +908,14 @@ const SHOT_STEP = (() => {
   }
   return null;
 })();
-/** A pygame challenge whose task card shows a window: a visible test with frames (and maybe events) and the window it should end with. */
-const WINDOW_CHALLENGE = findChallenge(({ ex }) => ex.kind === 'code' && ex.tests.some((t) => !t.hidden && t.window && t.expectWindow));
+/**
+ * A pygame challenge whose task card shows a window: a visible test with frames (events too, when a
+ * challenge has them) and the window it should end with, and a model solution that fills the window
+ * with a color (so a wrong color makes a wrong window).
+ */
+const FILLS = /\.fill\(\(\d+, \d+, \d+\)\)/;
+const windowChallenge = (events) => findChallenge(({ ex }) => ex.kind === 'code' && FILLS.test(ex.solution) && ex.tests.some((t) => !t.hidden && t.window && t.expectWindow && (!events || t.window.events.length > 0)));
+const WINDOW_CHALLENGE = windowChallenge(true) ?? windowChallenge(false);
 /** The window panel's state: frames it has, the frame shown, the run counter of the page. */
 const panelState = (panel) => panel.evaluate((p) => ({ frames: Number(p.dataset.frames), shown: Number(p.dataset.shown), status: p.querySelector('.pg-status')?.textContent ?? '' }));
 /** Waits until the window panel has at least `frames` frames and shows frame `shown` or later. */
@@ -981,20 +991,31 @@ await test('a window challenge: the task card says what the test does and shows 
   const cardImg = card.locator('figure.pg-window img');
   expect((await cardImg.getAttribute('src')).endsWith(want.image), 'the task card draws the expected window');
   expect((await card.locator('details.pg-astext pre').textContent()) === (want.log || '(nothing drawn)'), 'the task card\'s window as text');
-  // The starter program fails; when its window differs, both are shown with the lines that differ marked.
+  // The starter program fails.
   await setProgram(page, ex.seed);
-  const out = await check(page);
+  let out = await check(page);
   expect(out.includes('Not yet'), out);
-  const cmp = page.locator('.t-fail', { hasText: shown.name }).first().locator('.pg-compare');
-  if (await cmp.count()) {
-    const sides = cmp.locator('.t-cmp > div');
-    expect((await sides.count()) === 2, 'two windows side by side');
-    const expectedLog = (await sides.nth(0).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '');
-    expect(expectedLog.trim() === (want.log || '(nothing drawn)').trim(), `the expected window as text: ${expectedLog}`);
-    const yours = (await sides.nth(1).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '').split('\n');
-    const marked = (await sides.nth(0).locator('.pg-diff').allTextContents()).map((t) => t.replace(/ \(differs\)\n?$/, ''));
-    expect(marked.every((l) => !yours.includes(l)), `marked lines your window has too: ${marked}`);
-  }
+  // The model solution with the window filled with another color: both windows are shown, with the lines that differ marked.
+  const [, color] = /\.fill\((\(\d+, \d+, \d+\))\)/.exec(ex.solution);
+  const other = color === '(1, 2, 3)' ? '(3, 2, 1)' : '(1, 2, 3)';
+  await setProgram(page, ex.solution.replace(`.fill(${color})`, `.fill(${other})`));
+  out = await check(page);
+  expect(out.includes('Not yet'), out);
+  const failed = page.locator('.t-fail', { hasText: shown.name }).first();
+  const cmp = failed.locator('.pg-compare');
+  expect((await cmp.count()) === 1, `no window comparison: ${out}`);
+  expect((await failed.locator('.t-note').innerText()).includes("The window's last frame isn't what it should be"), await failed.locator('.t-note').innerText());
+  const sides = cmp.locator('.t-cmp > div');
+  expect((await sides.count()) === 2, 'two windows side by side');
+  expect(/the window after \d+ frames? should be/i.test(await sides.nth(0).locator('.lbl').first().innerText()) && /your window after \d+ frames?/i.test(await sides.nth(1).locator('.lbl').first().innerText()), await cmp.innerText());
+  const expectedLog = (await sides.nth(0).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '');
+  expect(expectedLog.trim() === (want.log || '(nothing drawn)').trim(), `the expected window as text: ${expectedLog}`);
+  const yours = (await sides.nth(1).locator('pre.pg-log').textContent()).replace(/ \(differs\)/g, '').split('\n');
+  const marked = (await sides.nth(0).locator('.pg-diff').allTextContents()).map((t) => t.replace(/ \(differs\)\n?$/, ''));
+  const markedYours = (await sides.nth(1).locator('.pg-diff').allTextContents()).map((t) => t.replace(/ \(differs\)\n?$/, ''));
+  expect(marked.length > 0 && marked.every((l) => !yours.includes(l)) && markedYours.some((l) => l.includes(`fill ${other}`)), `marked in the expected window: ${marked}; in yours: ${markedYours}`);
+  // Both pictures are drawn.
+  await page.waitForFunction((e) => [...e.querySelectorAll('img')].length === 2 && [...e.querySelectorAll('img')].every((i) => i.complete && i.naturalWidth > 0), await cmp.elementHandle());
   // A hidden test never shows the window it expects.
   expect((await page.locator('.t-fail .pg-compare').count()) <= ex.tests.filter((t) => !t.hidden && t.expectWindow).length, 'a hidden test shows its window');
   await bothThemes(page, 'a failed window challenge');
@@ -1335,7 +1356,6 @@ await test('playground: a pygame program opens its window and its frames play; a
 
 console.log('Practice');
 // The right answers come from the build's own drill file.
-const DRILLS = JSON.parse(readFileSync(new URL('../src/generated/drills.json', import.meta.url), 'utf8'));
 const drillById = new Map([...DRILLS.drills, ...DRILLS.placement].map((d) => [d.id, d]));
 /** Answers the rep on screen, right or wrong. Boss reps are answered right only. */
 async function answerRep(page, right = true) {
@@ -2007,8 +2027,6 @@ await test('moving progress: /transfer/ works offline after a visit', async () =
 });
 
 console.log('Projects');
-/** The projects of the build (content/projects), whole, in course order. */
-const PROJECTS = (COURSE_INDEX.projects ?? []).map((p) => JSON.parse(readFileSync(new URL(`../src/generated/projects/${p.id}.json`, import.meta.url), 'utf8')));
 /** A program with a comment line after main.py's code, so the code that passed can be told from the model solution. */
 const markMain = (code, mark) => joinFiles(splitFiles(code).map((f) => (f.path === 'main.py' ? { ...f, text: f.text.replace(/\n*$/, `\n# ${mark}\n`) } : f)));
 /** A program with a milestone's new files after its own (src/lib/projects.ts withFiles). */
@@ -2695,8 +2713,10 @@ await test('offline: after one visit, pages and Python work without a connection
   await lessonReady(page);
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller), 'service worker controls the page');
   await ctx.setOffline(true);
+  // The list of Python's files is asked from the network first, then read from the copy saved with
+  // Python (src/engine/manifest.ts): that one request fails offline by design.
   const failed = [];
-  page.on('requestfailed', (r) => failed.push(r.url()));
+  page.on('requestfailed', (r) => r.url().endsWith('/engine/manifest.json') || failed.push(r.url()));
   await page.reload();
   await lessonReady(page);
   await setCode(page, 'name = input("Name: ")\nprint(f"{name} works offline")\n');
@@ -2921,8 +2941,6 @@ await test('the other Arena sites on a phone: no header button; the menu lists t
 });
 
 console.log('Topics A to Z');
-/** The topics reference as the content build wrote it (content/topics.yaml, checked against the lessons). */
-const TOPICS = JSON.parse(readFileSync(new URL('../src/generated/topics.json', import.meta.url), 'utf8'));
 
 await test('Topics A to Z: pre-rendered with every entry, in the sitemap and saved for offline use; Learn, Deathmatch and the footer link to it', async () => {
   const html = await (await fetch(BASE + 'topics/')).text();
