@@ -2444,3 +2444,118 @@
   steps:
   - pygame-techniques-game
   drills: pygame-techniques
+- term: Sokoban
+  kind: idea
+  about: A puzzle game in which a worker pushes boxes onto target squares one square at a time, and can't pull them back.
+  aliases:
+  - box pushing
+  - warehouse puzzle
+  steps:
+  - game-project-map
+  drills: game-project
+- term: tile
+  kind: idea
+  about: A small square picture; tiles drawn side by side in a grid make up a game's map.
+  aliases:
+  - tiles
+  - tile map
+  steps:
+  - game-project-map
+  drills: game-project
+- term: game map
+  kind: idea
+  about: A game's level kept as data, such as a list of strings with one character per square, which the program reads as `level[y][x]` and draws tile by tile.
+  aliases:
+  - level
+  - map
+  steps:
+  - game-project-map
+  drills: game-project
+- term: grid coordinates
+  kind: idea
+  about: A place counted in squares of a grid, column x and row y, which becomes a point in pixels when each is multiplied by the size of a square, as in `(x * SIZE, y * SIZE)`.
+  aliases:
+  - grid position
+  - square
+  check:
+  - x * SIZE
+  steps:
+  - game-project-map
+  - game-project-robot
+  drills: game-project
+- term: early return
+  kind: idea
+  about: A `return` in the middle of a function or method, which ends it at once, for example when a check finds that there's nothing to do.
+  aliases:
+  - return early
+  - guard clause
+  check:
+  - ends the method right there
+  steps:
+  - game-project-robot
+  drills: game-project
+- term: magic number
+  kind: idea
+  about: A number in code whose meaning the reader has to know or guess, such as 3 for a box; a name or a character that looks like what it means is clearer.
+  steps:
+  - game-project-boxes
+  drills: game-project
+- term: draw order
+  kind: idea
+  about: The order in which a program draws on the window; whatever is drawn later covers what was drawn before, so tiles come before the things that stand on them.
+  aliases:
+  - drawing order
+  - layers
+  check:
+  - drawn later covers
+  steps:
+  - game-project-robot
+  drills: game-project
+- term: refactoring
+  kind: idea
+  about: Rewriting working code to make it clearer or simpler, without changing what it does.
+  aliases:
+  - refactor
+  steps:
+  - game-project-boxes
+- term: collision detection
+  kind: idea
+  about: Finding out whether two things in a game touch, such as the robot and a coin, often by checking whether their rectangles overlap.
+  aliases:
+  - collision
+  - hit test
+  steps:
+  - own-game-plan
+  drills: own-game
+- term: test level
+  kind: idea
+  about: A small, easy level made only for testing one part of a game, such as its ending, without playing the whole game every time.
+  aliases:
+  - testing a game
+  steps:
+  - game-project-finishing
+- term: clamping
+  kind: idea
+  about: Keeping a value between a lowest and a highest allowed value, for example a position inside the window with `max(0, min(x, WIDTH - 40))`.
+  aliases:
+  - clamp
+  - keep inside
+  check:
+  - max(0
+  - min(
+  steps:
+  - own-game-plan
+  - own-game-complete
+  drills: own-game
+- term: game phase
+  kind: idea
+  about: Which part of a game is going on, such as playing or game over, kept in an attribute that the main loop and the drawing check.
+  aliases:
+  - game over
+  - game state
+  - mode
+  check:
+  - phase
+  steps:
+  - own-game-complete
+  drills: own-game
