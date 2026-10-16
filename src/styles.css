@@ -1375,6 +1375,8 @@ mark.fx-differs { background: color-mix(in srgb, var(--bad) 20%, transparent); c
 .iv-cost { font-weight: 600; }
 /* Code in a cell breaks only where it must (not inside a name), as in lesson tables. */
 .iv-table td code { overflow-wrap: break-word; }
+/* A link in a cell can sit in a sentence: underlined, so it's told from the text by more than its color. */
+.iv-table td a { text-decoration: underline; text-underline-offset: 3px; }
 .iv-costs th:first-child { width: 34%; }
 .iv-costs th:nth-child(2) { width: 18%; }
 /* Phones: each row is a block of its own, each cell under its column's name (the table keeps its roles). */

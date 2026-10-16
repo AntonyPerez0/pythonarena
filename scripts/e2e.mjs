@@ -186,11 +186,13 @@ async function fillBlanks(page, answers) {
   expect((await blanks.count()) === answers.length, `${await blanks.count()} blanks, not ${answers.length}`);
   for (const [i, a] of answers.entries()) await blanks.nth(i).fill(a);
 }
-async function openChallenge(page, { moduleId, step, index }) {
+async function openChallenge(page, { moduleId, step, index, ex = index ? step.more[index - 1] : step }) {
   await page.goto(BASE + `learn/${moduleId}/${step.slug}/`);
-  await lessonReady(page);
+  // A step whose first challenge is "What does it print?" starts Python only once a challenge that runs
+  // code is open, so the tab comes first, and a "What does it print?" challenge doesn't wait for Python.
   if (index > 0) await page.locator('.challenge-tab').nth(index).click();
   await page.locator('.task-card', { hasText: `Challenge ${index + 1} of` }).waitFor();
+  if (ex.kind !== 'predict') await lessonReady(page);
 }
 /** The path of each file tab, in order (none when the program is one file). */
 const tabPaths = (page) => page.locator('.file-tab').evaluateAll((els) => els.map((e) => (e.getAttribute('aria-label') ?? e.textContent).replace(/,?\s*\d+\s*errors?$/, '').trim()));
@@ -3241,7 +3243,8 @@ await test('Interview prep: the page shows the modules with this browser\'s prog
   // Every link to the site's pages resolves; the tools' documentation and the places to practice open in a new tab, and say so.
   const links = await main.locator('a[href]').evaluateAll((as) => as.map((a) => a.href));
   for (const href of links.filter((h) => h.startsWith(BASE))) expect((await fetch(href)).status === 200, `${href} doesn't resolve`);
-  const away = await main.locator('.iv-tools a, .iv-sites a').evaluateAll((as) => as.map((a) => ({ href: a.href, target: a.target, rel: a.rel, text: a.textContent })));
+  // (A tool's text can also link to the step that teaches it: that link stays in the site.)
+  const away = (await main.locator('.iv-tools a, .iv-sites a').evaluateAll((as) => as.map((a) => ({ href: a.href, target: a.target, rel: a.rel, text: a.textContent })))).filter((l) => !l.href.startsWith(BASE));
   expect(away.length === INTERVIEW.tools.modules.length + INTERVIEW.practice.sites.length, `${away.length} links to other sites`);
   for (const l of away) expect(l.target === '_blank' && l.rel.includes('noopener') && l.text.endsWith('(opens in a new tab)'), `${JSON.stringify(l)} doesn't open in a new tab, or doesn't say so`);
   await bothThemes(page, 'the interview prep page');
@@ -3644,7 +3647,7 @@ await test('the phone pass: a project milestone, a lesson with results, the Play
   {
     const { ctx, page } = await passPage(progress(), 'topics/', appDrew('#topics-q'));
     await page.getByLabel('Search the topics').fill('list');
-    await page.waitForFunction(() => document.querySelectorAll('#main .topic').length < 60);
+    await page.waitForFunction((n) => document.querySelectorAll('#main .topic').length < n, TOPICS.length);
     await pass(page, 'the topics with a search');
     await ctx.close();
   }
