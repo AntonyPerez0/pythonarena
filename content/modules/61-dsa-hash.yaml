@@ -1824,7 +1824,7 @@ steps:
 
       ### OrderedDict
 
-      `collections.OrderedDict` is a dict made for exactly this. `move_to_end(key)` moves a key to the end, and `popitem(last=False)` removes the first pair, the oldest, and returns it. Both are O(1):
+      `collections.OrderedDict` is a dict made for exactly this. `move_to_end(key)` moves a key to the end, and `popitem(last=False)` removes the first pair, the oldest, and returns it. Both are O(1) on average: each finds the key by its hash, as a dict does.
 
       ```python run
       from collections import OrderedDict
@@ -1844,7 +1844,7 @@ steps:
       ['Rome', 'Oslo']
       ```
 
-      Beside its hash table, an OrderedDict keeps its keys in a chain where each key knows the one before it and the one after it, so it can take a key out of the middle and put it at the end without moving anything else. A plain dict's oldest key is `next(iter(d))`, but each key removed from the front leaves an empty place that iteration has to skip until the dict is rebuilt, so taking the oldest out again and again can get slow. For a cache, use OrderedDict.
+      Beside its hash table, an OrderedDict keeps its keys in a chain where each key knows the one before it and the one after it, so it can take a key out of the middle and put it at the end without moving anything else. Such a chain is called a **doubly linked list**. An interviewer may ask you to build the cache without OrderedDict, from a plain dict and a doubly linked list of your own, which is what OrderedDict does inside: the dict finds a key's link in the chain, and the link comes out and goes to the end in O(1). The module on trees builds a linked list. A plain dict's oldest key is `next(iter(d))`, but each key removed from the front leaves an empty place that iteration has to skip until the dict is rebuilt, so taking the oldest out again and again can get slow. For a cache, use OrderedDict.
 
       ### The cache
 
@@ -1989,7 +1989,7 @@ steps:
     hints:
       - "Keep the pairs in an `OrderedDict`, oldest first. `get` returns `None` for a key that isn't there; otherwise it calls `move_to_end(key)` and returns the value."
       - "`put` stores the value and calls `move_to_end(key)`: a key that was already there keeps its old place otherwise. If there are now more than `capacity` keys, `popitem(last=False)` removes the oldest."
-      - "Keeping the order in a list or a deque and calling `remove` on it costs O(capacity) for each call, whichever end holds the newest key, and so does finding the oldest key with `list(self.items)[0]`. A plain dict whose oldest key is `next(iter(...))` gets slow too, as it has to skip every key already removed from the front. All of these are too slow for the big test."
+      - "Keeping the order in a list and calling `remove` on it costs O(capacity) for each call, whichever end holds the newest key, and so does finding the oldest key with `list(self.items)[0]`. A plain dict whose oldest key is `next(iter(...))` gets slow too, as it has to skip every key already removed from the front. All of these are too slow for the big test."
     tests:
       - call: |
           cache = LRUCache(2)

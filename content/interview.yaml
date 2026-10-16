@@ -3,52 +3,154 @@
 # and must name a page the site has, and every step in patterns must exist. The modules come from the
 # course plan (the group named under modules), and the drill sets from content/drills/interview-*.yaml.
 intro: |
-  A coding interview often gives you a problem and a short time to solve it, while you explain your thinking out loud. This page brings together what Python Arena has for that: the modules on data structures and algorithms, interview questions to drill, which technique fits which kind of problem, what Python's operations cost, and a plan for working through a problem.
+  A coding interview gives you a problem, a short time to solve it, and someone who wants to hear how you think. This page brings together what Python Arena has for it: the modules on data structures and algorithms, interview questions to drill, which technique fits which problem, what Python's operations cost, a plan for working through a problem, and the standard library tools that save you code. With weeks to go, work through the modules in order. With days, drill the questions and study the two tables.
 
 modules:
   group: dsa
   lead: |
-    Python Arena's own modules on the data structures and algorithms that interviews ask about. Their big tests stop a slow solution, the way an interviewer asks "can you make it faster?"
+    Python Arena's own modules, for after the course: Big-O and the classic speed-ups, sorting, hash tables, trees and heaps, graphs, backtracking and dynamic programming. Many challenges have a big hidden test that a slow solution can't finish in time, the way an interviewer asks "can you make it faster?" Start with the first module: the others build on its Big-O.
 
 drills:
   lead: |
-    Quick questions on what Python really does: predict the output, spot the bug, pick the right answer, and small programs to write. Interview prep in Deathmatch gives you three lives and is open to everyone, with no lessons needed first.
+    Quick questions like the ones interviewers ask, about Python itself and about algorithms and their costs: predict the output, fill in a blank, spot the bug, say whether it runs, pick the right answer. Every 8th question is a small program to write. Interview prep in Deathmatch is open to everyone, with no lessons needed first, and gives you three lives.
 
 patterns:
   lead: |
-    What a problem says often points to the technique that solves it. Each row links to the step that teaches it.
+    What a problem asks often points to the technique that solves it. Find the row that sounds like your problem: it names a technique, what it costs, and the step that teaches it. n is the number of items, h a tree's height, and V and E a graph's vertices and edges.
   rows:
-    - signal: "Have I seen this value before? Are there duplicates?"
-      technique: "A set of the values seen so far: each lookup is O(1) on average"
-      step: more-comprehensions-sets
+    - signal: "Is there a duplicate? Are there two values that add up to a target?"
+      technique: "A set of the values seen so far, or a dict from each value to its index (two sum): O(n) on average"
+      step: dsa-complexity-sets-and-dicts
     - signal: "How often does each value appear? Which one is the most common?"
-      technique: "A dict of counts, or `collections.Counter`"
-      step: dictionaries-counting
-    - signal: "Put the items into groups by some property"
-      technique: "A dict whose values are lists"
-      step: dictionaries-counting
-    - signal: "Find a value in a sorted list"
-      technique: "Binary search: halve the part to look in each time, O(log n)"
-      step: recursion-binary-search
-    - signal: "The largest, the smallest or the best item by some rule"
-      technique: "One pass that keeps the best item so far, O(n)"
-      step: for-loops-best-item
-    - signal: "Order the items by a property, or take the top few"
-      technique: "Sort with a key function, O(n log n)"
-      step: functions-as-arguments-key
-    - signal: "Data inside data to any depth: folders, a tree, nested lists"
-      technique: "Recursion: handle one level and let the calls handle the rest"
+      technique: "A dict of counts, or `collections.Counter`, whose `most_common(k)` gives the top k: O(n) on average to count"
+      step: dsa-complexity-sets-and-dicts
+    - signal: "Put the items into groups, such as the words that are anagrams of each other"
+      technique: "A dict of lists, keyed by what the items share: `tuple(sorted(word))` for anagrams. O(n·m log m) on average for n words of up to m letters"
+      step: dsa-hash-own-keys
+    - signal: "Design a hash set or a hash map without `set` or `dict`"
+      technique: "A list of buckets, each a chain of keys, and `hash(key) % len(buckets)` to pick one: O(1) on average while there are about as many buckets as keys"
+      step: dsa-hash-buckets
+    - signal: "Design a cache that drops the least recently used item when it's full"
+      technique: "An `OrderedDict`, a dict plus a doubly linked list: `move_to_end` on each use, `popitem(last=False)` when full. O(1) per call on average"
+      step: dsa-hash-lru-cache
+    - signal: "The largest, the smallest or the best so far, such as the best profit from buying low and selling later"
+      technique: "One pass that remembers the best so far (the lowest price): O(n) time, O(1) memory"
+      step: dsa-complexity-big-o
+    - signal: "Find a value in a sorted list, where it would go, or how many lie in a range. Or the smallest value that passes a check"
+      technique: "Binary search, or `bisect_left` and `bisect_right`: O(log n) each, once the list is sorted. On the answer, O(log S) calls of the check for answers up to S"
+      step: dsa-complexity-binary-search
+    - signal: "A pair with a given sum in a sorted list, or two sorted lists to merge"
+      technique: "Two pointers, each moving only one way: O(n), with no set or dict"
+      step: dsa-complexity-two-pointers
+    - signal: "The sum of a range, asked many times, or how many stretches add up to exactly k, with negative values too"
+      technique: "Prefix sums, built once in O(n): each range sum is then O(1). For exactly k, a dict counting the earlier prefix sums, O(n)"
+      step: dsa-complexity-prefix-sums
+    - signal: "The biggest sum of a stretch of any length, with negative values too"
+      technique: "Kadane's algorithm: the best sum of a stretch that ends at each value, `max(value, ending + value)`. O(n) time, O(1) memory"
+      step: dsa-complexity-prefix-sums
+    - signal: "The best stretch of values in a row: k in a row with the biggest sum, the longest with no repeat"
+      technique: "A sliding window: add what enters on the right, take out what leaves on the left. O(n)"
+      step: dsa-complexity-sliding-window
+    - signal: "The two closest values, a repeat, or items in order by a property"
+      technique: "Sort first, with a key if needed (a tuple breaks ties): O(n log n). Then each item needs only its neighbor"
+      step: dsa-sorting-python-sort
+    - signal: "Meetings that overlap: is there a clash? Merge them, or fit the most into one room"
+      technique: "Sorted by start, merge in one pass by stretching the last end. Sorted by end, take each meeting that starts once the last one taken has ended, a greedy choice that is provably right. O(n log n)"
+      step: dsa-sorting-python-sort
+    - signal: "How far from sorted is a list? Count its inversions, the pairs in the wrong order"
+      technique: "Merge sort that counts while it merges: O(n log n)"
+      step: dsa-sorting-merge
+    - signal: "Sort a list of only a few different values, such as 0s, 1s and 2s, in one pass"
+      technique: "A three-way partition with three indexes: O(n) time, no extra list"
+      step: dsa-sorting-quicksort
+    - signal: "Sort many small whole numbers, such as a million scores from 0 to 100"
+      technique: "Counting sort: count each value, then write them out in order. O(n + k) for values from 0 to k"
+      step: dsa-sorting-counting
+    - signal: "The k smallest or largest, the k-th smallest, or the median"
+      technique: "`heapq.nsmallest` or `nlargest`, O(n log k). Quickselect for one value, O(n) on average"
+      step: dsa-sorting-k-smallest
+    - signal: "Always take the smallest or most urgent next while new items arrive, the k-th largest so far, or merge k sorted lists"
+      technique: "A heap with `heapq`: push and pop in O(log n), the smallest is `h[0]`. For the k-th largest, keep only the k largest. To merge k sorted lists, keep the next item of each in the heap: O(N log k) for N items"
+      step: dsa-trees-heaps
+    - signal: "Data nested to any depth, such as lists inside lists"
+      technique: "Recursion: a loop goes across one level, and a call goes down into each list inside it. O(n) for n items in all"
       step: recursion-examples-nested-structures
-    - signal: "Keep values in order while you add and look them up"
-      technique: "A sorted binary tree, or `bisect` on a sorted list"
-      step: recursion-examples-sorted-tree
-    - signal: "Too many values to keep at once, or only the first few are needed"
-      technique: "A generator that gives one value at a time"
-      step: generators-yield
+    - signal: "A question about a whole tree: its size or height, is it balanced, are two trees the same?"
+      technique: "Recursion: handle the root and let the calls handle its subtrees, with the empty tree (`None`) as the base case. O(n)"
+      step: dsa-trees-binary-trees
+    - signal: "Reverse a linked list, find its middle, or does it loop?"
+      technique: "A loop that follows the links: `prev`, `node` and `nxt` to reverse it, a slow and a fast pointer for the middle or a loop. O(n) time, O(1) memory"
+      step: dsa-trees-binary-trees
+    - signal: "Keep values in order while you add them and look them up"
+      technique: "A binary search tree, O(h) per step, O(log n) when balanced. In Python, a sorted list with `bisect`: O(log n) to look up, O(n) to add"
+      step: dsa-trees-search-trees
+    - signal: "Is this a valid binary search tree? What's its k-th smallest value?"
+      technique: "An in-order walk, which visits a search tree's values in sorted order, or bounds passed down. O(n)"
+      step: dsa-trees-traversals
+    - signal: "Brackets that must match, or the next bigger value to the right of each item, such as the days until a warmer day"
+      technique: "A stack, a list with `append` and `pop`: push each opening bracket and pop at each closing one. For the next bigger value, a stack of the items still waiting, kept in order. O(n)"
+      step: dsa-trees-traversals
+    - signal: "A tree level by level: the widest level, the view from the right side"
+      technique: "A `deque` as the queue, taking `len(queue)` nodes each round: O(n) time"
+      step: dsa-trees-level-order
+    - signal: "All the words that start with a prefix, as someone types"
+      technique: "A trie: O(m) to add a word or to find a prefix of m letters"
+      step: dsa-trees-tries
+    - signal: "The fewest steps through a maze or a network"
+      technique: "Breadth-first search: a `deque` as the queue, each vertex marked when it joins. O(V + E)"
+      step: dsa-graphs-bfs
+    - signal: "Count the islands, fill a region, or can I get from here to there?"
+      technique: "Depth-first search with a stack of your own and one shared visited set: O(V + E)"
+      step: dsa-graphs-dfs
+    - signal: "An order for tasks that wait for others, such as courses with prerequisites, or is there a cycle?"
+      technique: "Topological sort with Kahn's algorithm, in-degrees and a queue: O(V + E)"
+      step: dsa-graphs-topological-sort
+    - signal: "The cheapest route when each road has its own cost"
+      technique: "Dijkstra's algorithm with a heap, for costs that aren't negative: O((V + E) log V)"
+      step: dsa-graphs-dijkstra
+    - signal: "Groups that keep merging: are these two connected yet? Which link is redundant?"
+      technique: "Union-find with union by size and path compression: almost O(1) per operation"
+      step: dsa-graphs-union-find
+    - signal: "List every subset of the items"
+      technique: "Backtracking that takes or leaves each item: choose, explore, un-choose. O(n·2ⁿ)"
+      step: dsa-backtracking-subsets
+    - signal: "List every ordering of the items, or of the letters of a word with repeats"
+      technique: "Backtracking that puts an unused item in each place: O(n·n!) for n different items. When letters repeat, choose among the letters left, with a count for each"
+      step: dsa-backtracking-permutations
+    - signal: "Every combination of numbers that adds up to a target"
+      technique: "Backtracking on the sorted numbers, with `break` once one is too big: still exponential at worst, but whole branches are cut"
+      step: dsa-backtracking-pruning
+    - signal: "Place things so that none clash, such as queens on a board"
+      technique: "Backtracking that checks each choice before making it, in O(1) with sets. Exponential at worst, so prune early"
+      step: dsa-backtracking-n-queens
+    - signal: "Fill in a sudoku, or any grid where each empty cell allows only a few values"
+      technique: "Backtracking that fills first the cell with the fewest allowed values and backs up as soon as a cell has none. Exponential at worst"
+      step: dsa-backtracking-sudoku
+    - signal: "Is a word hidden in a grid of letters? Every path through a maze?"
+      technique: "Depth-first search that marks a cell on the way in and unmarks it on the way out. Exponential at worst"
+      step: dsa-backtracking-grid-paths
+    - signal: "A recursive answer that asks the same smaller question again and again"
+      technique: "Memoization with a dict or `@cache`: the number of different questions times the work for each"
+      step: dsa-dp-memoization
+    - signal: "In how many ways can you climb n stairs? The most you can earn, never working two days in a row?"
+      technique: "A table filled from the smallest case up: O(n) time, and O(1) memory when only the last two values are kept. When the problem asks for the count modulo a big prime such as 1,000,000,007, take it after every addition"
+      step: dsa-dp-bottom-up
+    - signal: "The fewest coins that make an amount, or the number of ways to make it"
+      technique: "A table over the amounts from 0 up (greedy can fail): O(amount × coins)"
+      step: dsa-dp-coin-change
+    - signal: "Count the paths through a grid that move right and down, or find the cheapest one"
+      technique: "A table where each cell builds on the cell above it and the one to its left: O(rows × cols)"
+      step: dsa-dp-grid-paths
+    - signal: "Compare two strings: their longest common subsequence, or the fewest edits from one to the other"
+      technique: "A table over the prefixes of both strings: O(n × m) for lengths n and m"
+      step: dsa-dp-lcs
+    - signal: "Pick items under a weight limit for the most value, or numbers that add up to exactly t"
+      technique: "The 0/1 knapsack: a table, or one row looped downward. O(n × capacity)"
+      step: dsa-dp-knapsack
 
 costs:
   lead: |
-    How the time of Python's common operations grows with the data, in big O notation: O(1) takes the same time whatever the size, O(log n) grows very slowly, and O(n) grows with n, the number of items. These are CPython's costs, the Python that this site runs.
+    How the time of Python's common operations grows with the data, in Big-O: O(1) takes the same time whatever the size, O(log n) grows very slowly, and O(n) grows with n, the number of items. These are CPython's costs, the Python that this site runs. Watch for the O(n) ones inside a loop over the data: that's a loop inside a loop, O(n²). [Big-O in practice](/learn/dsa-complexity/big-o/) explains the notation.
   rows:
     - operation: "`a[i]`, `a[i] = x`, `len(a)` (list)"
       cost: "O(1)"
@@ -56,42 +158,51 @@ costs:
     - operation: "`a.append(x)`, `a.pop()` (list)"
       cost: "O(1)"
       note: "At the end of the list. For `append` this is amortized: now and then the list grows its room and copies its items, but over many appends each one costs O(1)."
-    - operation: "`a.insert(0, x)`, `a.pop(0)`, `del a[i]` (list)"
-      cost: "O(n)"
-      note: "Every item after that place moves one step. Use a `deque` to add and remove at the front."
+    - operation: "`a.insert(i, x)`, `a.pop(i)`, `del a[i]` (list)"
+      cost: "O(n - i)"
+      note: "The items from place i to the end shift by one: O(n) at the front, O(1) at the end. To add and remove at the front, use a `deque`."
     - operation: "`x in a`, `a.index(x)`, `a.count(x)`, `a.remove(x)` (list)"
       cost: "O(n)"
-      note: "Looks at the items one by one. In a loop over the list, that's a loop inside a loop."
-    - operation: "`a[i:j]` (list)"
+      note: "Looks at the items one by one. Inside a loop over the list, that's O(n²): put the items in a set first, or in a dict of their positions or counts."
+    - operation: "`a[i:j]`, `a.copy()` (list)"
       cost: "O(k)"
-      note: "Makes a new list of the k items in the slice."
+      note: "Copies the k items it takes into a new list: all n for `a.copy()` or `a[:]`. `a + b` copies both lists too."
     - operation: "`min(a)`, `max(a)`, `sum(a)`"
       cost: "O(n)"
-      note: "Each one goes through every item."
+      note: "Each one goes through every item. Inside a loop, keep the best so far in a variable instead."
     - operation: "`d[k]`, `d[k] = v`, `k in d`, `del d[k]` (dict)"
       cost: "O(1) on average, O(n) at worst"
-      note: "The key's hash finds its place in the table at once. Adding a new key is amortized, like `append`: now and then the table grows and every key moves to the new one. The O(n) worst case comes when many keys collide."
+      note: "The key's hash finds its place in the table at once. Adding a new key is amortized, like `append`: now and then the table grows and every key moves to the new one. The O(n) worst case comes when many keys collide. [Load factor and rehashing](/learn/dsa-hash/rehashing/) shows how."
     - operation: "`x in s`, `s.add(x)`, `s.discard(x)` (set)"
       cost: "O(1) on average, O(n) at worst"
       note: "A table of hashed values, like a dict's keys, with the same costs: `add` is amortized, as the table grows now and then, and the O(n) worst case comes when many values collide."
-    - operation: "`set(a)`, `dict(pairs)`"
-      cost: "O(n) on average"
-      note: "Adds the n items one at a time."
+    - operation: "`set(a)`, `dict(pairs)`, `Counter(a)`"
+      cost: "O(n) on average, O(n²) at worst"
+      note: "Adds the n items one at a time, each at a dict's or a set's cost."
+    - operation: "`c.most_common(k)` (Counter)"
+      cost: "O(m log k)"
+      note: "m is the number of different items. It keeps the k biggest counts in a heap, as `heapq.nlargest` does. Without k it sorts all m, O(m log m)."
+    - operation: "`od.move_to_end(k)`, `od.popitem(last=False)` (OrderedDict)"
+      cost: "O(1) on average, O(n) at worst"
+      note: "Finds the key by its hash, like a dict, then moves it in a chain of keys kept in order: the two moves of an LRU cache."
     - operation: "`q.append(x)`, `q.appendleft(x)`, `q.pop()`, `q.popleft()` (deque)"
       cost: "O(1)"
-      note: "A `collections.deque` adds and removes at both ends quickly. Reading `q[i]` in the middle is O(n)."
+      note: "A `collections.deque` adds and removes at both ends quickly. `q[0]` and `q[-1]` are O(1) too, but `q[i]` in the middle is O(n)."
     - operation: "`heapq.heappush(h, x)`, `heapq.heappop(h)`"
       cost: "O(log n)"
-      note: "The smallest item is always `h[0]`, which costs O(1) to read."
+      note: "The smallest item is always `h[0]`, which costs O(1) to read. `heapq.heapreplace` pops and pushes in one O(log n) step."
     - operation: "`heapq.heapify(a)`"
       cost: "O(n)"
-      note: "Turns a list into a heap in place, faster than n pushes."
-    - operation: "`bisect.bisect_left(a, x)` (sorted list)"
+      note: "Turns a list into a heap in place, faster than n pushes, which cost O(n log n)."
+    - operation: "`heapq.nsmallest(k, a)`, `heapq.nlargest(k, a)`"
+      cost: "O(n log k)"
+      note: "Keeps the k best seen so far in a heap. Cheaper than sorting everything when k is small."
+    - operation: "`bisect.bisect_left(a, x)`, `bisect.bisect_right(a, x)` (sorted list)"
       cost: "O(log n)"
       note: "Binary search. `bisect.insort(a, x)` finds the place as fast, but inserting there is O(n)."
     - operation: "`a.sort()`, `sorted(a)`"
       cost: "O(n log n)"
-      note: "Also at worst. Sorting is stable: equal items keep their order. A list that is already sorted takes only O(n)."
+      note: "Also at worst. Sorting is stable: equal items keep their order. A list that is already sorted takes only O(n). A `key` function is called once per item."
     - operation: "`s[i]`, `len(s)` (str)"
       cost: "O(1)"
       note: "Strings can't be changed, so every change makes a new string."
@@ -102,38 +213,41 @@ costs:
       cost: "O(n)"
       note: "n is the length of the result. The way to build a long string from many pieces: adding pieces with `+=` in a loop can copy the string so far each time, O(n²) in all."
   after: |
-    Average assumes keys that hash well, as numbers, strings and tuples of them do. Python's wiki has [a longer table of costs](https://wiki.python.org/moin/TimeComplexity).
+    Average assumes keys that hash well, as numbers, strings and tuples of them do. `len` is O(1) for lists, strings, tuples, dicts, sets and deques. Python's wiki has [a longer table of costs](https://wiki.python.org/moin/TimeComplexity).
 
 checklist:
   lead: |
     Interviewers want to see how you think as much as the answer. A plan for working through a problem out loud:
   items:
     - "Say the problem back in your own words. Ask about the input: how big can it be, can it be empty, can values repeat or be negative?"
-    - "Work through a small example by hand, then a tricky one: empty, one item, all the same."
+    - "Let the size guide you. Plain Python does roughly ten to fifty million simple steps a second, so for 100,000 items O(n²) is far too slow, while O(n log n) is fine."
+    - "Work through a small example by hand, then the tricky ones: empty, one item, all the same, already sorted."
     - "Say a simple way first, even a slow one, and what it costs. It's a start, and something to test a faster way against."
-    - "Look for a faster way: which signal from the table above fits? What would a set, a dict, sorting or two pointers give you?"
-    - "Agree on the plan before you code. Then write it, saying what each part does."
+    - "Look for a faster way. Which row of the techniques table sounds like the problem? Is there a hidden loop, such as `in` on a list or a slice inside a loop? What would a set, a dict, sorting or two pointers give you?"
+    - "Agree on the plan before you code. Then write it, saying what each part does. If recursion could go deeper than about 1,000 calls, Python's limit, use a loop with a stack, a queue or a table instead."
     - "Test it out loud on your examples, line by line, edge cases too."
     - "Say what it costs in time and in memory, and what you would improve with more time."
 
 tools:
   lead: |
-    Python's standard library has a tool for many interview problems. Most interviews let you use them; say what each one costs.
+    Python's standard library has a tool for many interview problems. Most interviewers let you use them, as long as you can say what each one costs and could write the idea yourself. Each module's name links to its documentation.
   modules:
     - name: collections
-      about: "`Counter` counts the items of a list or string in one line. `defaultdict` gives a missing key a starting value, such as an empty list for grouping. `deque` adds and removes at both ends in O(1): the queue for breadth-first search."
+      about: "`Counter` does the counting of [Counting and grouping](/learn/dictionaries/counting/) in one line, and `most_common(k)` gives the k most common, as in [Sets and dicts for speed](/learn/dsa-complexity/sets-and-dicts/). `defaultdict(list)` gives a missing key an empty list, handy for grouping and for [adjacency lists](/learn/dsa-graphs/adjacency-lists/). `deque` adds and removes at both ends in O(1): the queue of [level order](/learn/dsa-trees/level-order/) and [breadth-first search](/learn/dsa-graphs/bfs/). `OrderedDict` moves a key to the end and drops the oldest, both O(1) on average: the heart of [an LRU cache](/learn/dsa-hash/lru-cache/)."
     - name: heapq
-      about: "A heap in a plain list: `heappush` and `heappop` give the smallest item in O(log n). `nlargest` and `nsmallest` give the top k items. For the largest first, push the values negated."
+      about: "A heap in a plain list, as in [Heaps and heapq](/learn/dsa-trees/heaps/): `heappush` adds an item and `heappop` takes out the smallest, each in O(log n), and `heapify` turns a list into a heap in O(n). `nsmallest` and `nlargest` give the k smallest or largest in O(n log k), as in [The k smallest and the median](/learn/dsa-sorting/k-smallest/). For the largest first, push the values negated. `merge` goes through k sorted lists as one sorted sequence, keeping the next item of each in a heap: O(N log k) for N items in all."
     - name: bisect
-      about: "Binary search on a sorted list: `bisect_left` finds where a value goes in O(log n), and `insort` puts it there."
+      about: "Binary search on a sorted list, as in [Binary search](/learn/dsa-complexity/binary-search/): `bisect_left` finds where a value goes in O(log n), and `bisect_right(a, high) - bisect_left(a, low)` counts the values from low to high. `insort` puts a value in its place, but inserting it there is O(n)."
     - name: functools
-      about: "`cache` remembers what a function returned for each argument, so a recursive solution works out each smaller problem only once: memoization, for dynamic programming."
+      about: "`cache` remembers what a function returned for each argument, so a recursive solution works out each smaller question only once: [memoization](/learn/dsa-dp/memoization/), for dynamic programming. `lru_cache(maxsize=...)` keeps only the most recently used answers, as in [an LRU cache](/learn/dsa-hash/lru-cache/). The arguments must be hashable: pass a tuple, not a list."
     - name: itertools
-      about: "`permutations`, `combinations` and `product` go through every arrangement or choice, handy for a brute-force answer to test a faster one against. `accumulate` gives running totals."
+      about: "`permutations`, `combinations` and `product` go through every ordering or choice, handy for a brute-force answer to test a faster one against ([Permutations](/learn/dsa-backtracking/permutations/), [Combinations and pruning](/learn/dsa-backtracking/pruning/)). `accumulate` gives running totals: `list(accumulate(values, initial=0))` is the list of [prefix sums](/learn/dsa-complexity/prefix-sums/)."
+    - name: math
+      about: "`inf` is bigger than any other number: the start of a running minimum, or the mark for an amount that can't be made in [Coin change](/learn/dsa-dp/coin-change/). `comb(n, k)` counts the ways to choose k of n items without making them, and `gcd` gives the greatest common divisor."
 
 practice:
   lead: |
-    More problems to practice on, on other sites:
+    Other sites with many more problems. When a row of the techniques table feels easy, solve a few problems of that kind there, out loud and against the clock.
   sites:
     - name: LeetCode
       url: https://leetcode.com/
@@ -155,4 +269,4 @@ practice:
       about: "Math puzzles where a slow way can take hours and a clever one a second."
     - name: Advent of Code
       url: https://adventofcode.com/
-      about: "A puzzle a day every December, with the puzzles of past years online too."
+      about: "Two-part puzzles released each December, with every past year's puzzles still online."

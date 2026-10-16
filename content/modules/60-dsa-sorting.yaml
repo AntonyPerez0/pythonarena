@@ -1268,6 +1268,43 @@ steps:
 
       Why are neighbors enough? Take two prices `a` and `c` that aren't side by side in the sorted list. The price right after `a`, call it `b`, sits between them: `a <= b <= c`, so `b - a` is at most `c - a`. The neighbors `a` and `b` are at least as close, so a pair that is further apart in the sorted order never beats the best pair of neighbors. Repeats work the same way: equal values end up side by side. The cost is O(n log n) for the sort and O(n) for the pass, instead of O(n²) for all the pairs.
 
+      ### Meetings: merge them, or fit the most
+
+      Two more interview classics start with a sort. They're about **intervals**, pairs `(start, end)` such as meetings, where a meeting that ends at 60 doesn't clash with one that starts at 60. To **merge** the meetings that overlap, sort them by their start. Then one pass is enough: a meeting that starts before the last merged one ends joins it and may stretch its end, and any other meeting starts a new one. To **fit the most** meetings into one room, sort them by their end instead, and take each meeting that starts once the last one taken has ended:
+
+      ```python run
+      def merge(meetings):
+          merged = []
+          for start, end in sorted(meetings):
+              if merged and start < merged[-1][1]:
+                  merged[-1][1] = max(merged[-1][1], end)
+              else:
+                  merged.append([start, end])
+          return merged
+
+
+      def most_meetings(meetings):
+          chosen = []
+          for start, end in sorted(meetings, key=lambda meeting: meeting[1]):
+              if not chosen or start >= chosen[-1][1]:
+                  chosen.append((start, end))
+          return chosen
+
+
+      meetings = [(60, 90), (0, 30), (25, 50), (10, 20), (100, 130), (85, 110)]
+      print(merge(meetings))
+      print(most_meetings(meetings))
+      ```
+
+      ```output
+      [[0, 50], [60, 130]]
+      [(10, 20), (25, 50), (60, 90), (100, 130)]
+      ```
+
+      `merge` keeps each merged meeting as a list, so that its end can change. The `max` matters: (10, 20) lies inside (0, 30) and must not cut its end short. Both functions are O(n log n) for the sort and O(n) for the pass.
+
+      `most_meetings` makes a **greedy** choice: it takes what looks best right now, the meeting that ends first, and never goes back on it. Greedy choices can go wrong (the module on dynamic programming shows some), but this one is safe. Take any plan with the most meetings. Its first meeting ends no earlier than the meeting that ends first of all, so swapping the two leaves room for every other meeting in the plan. So some best plan starts with the meeting that ends first, and the same argument works for each meeting after it. Sorted by start instead, (0, 30) would be taken first, and it leaves room for only 3 meetings.
+
       **Your turn:** a library lists its books by year, the newest first, and the books of the same year by title from A to Z. Fill in the blank in the key of the first sort, the index of the part of a book it sorts by, so that the two sorts give that order. The program should print:
 
       ```

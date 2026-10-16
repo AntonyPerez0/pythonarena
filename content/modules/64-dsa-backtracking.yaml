@@ -1421,7 +1421,7 @@ steps:
 
       ### How it works
 
-      `allowed` collects the digits in the cell's row, column and box in a set. The 0s of the empty cells go in too, which does no harm: 0 is never a digit to try. The box of a cell starts at row `row // 2 * 2` and column `col // 2 * 2`: `//` rounds down, so the rows 0 and 1 give 0, and the rows 2 and 3 give 2. On a 9 × 9 board the boxes are 3 × 3, so it's `// 3 * 3`, and cell (7, 4), in the eighth row and the fifth column, is in the box that starts at (6, 3):
+      `allowed` collects the digits in the cell's row, column and box in a set. `used.update(...)` adds every item it's given to the set, as `add` does for one item. The 0s of the empty cells go in too, which does no harm: 0 is never a digit to try. The box of a cell starts at row `row // 2 * 2` and column `col // 2 * 2`: `//` rounds down, so the rows 0 and 1 give 0, and the rows 2 and 3 give 2. On a 9 × 9 board the boxes are 3 × 3, so it's `// 3 * 3`, and cell (7, 4), in the eighth row and the fifth column, is in the box that starts at (6, 3):
 
       ```python repl
       >>> [row // 3 * 3 for row in range(9)]

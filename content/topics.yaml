@@ -673,8 +673,10 @@
   - reverse
   check:
   - scores.sort()
+  - names.sort()
   steps:
   - lists-sorting
+  - dsa-sorting-python-sort
   drills: lists
 - term: sorted
   kind: function
@@ -684,6 +686,7 @@
   steps:
   - lists-sorting
   - strings-and-lists-immutable
+  - dsa-sorting-python-sort
   drills: lists
 - term: max
   kind: function
@@ -824,6 +827,7 @@
   steps:
   - more-lists-nested
   - references-copying
+  - dsa-dp-grid-paths
   drills: more-lists
 - term: matrix
   kind: idea
@@ -902,6 +906,7 @@
   steps:
   - dictionaries-basics
   - dictionaries-keys-and-values
+  - dsa-hash-buckets
   drills: dictionaries
 - term: key
   kind: idea
@@ -919,6 +924,7 @@
   steps:
   - dictionaries-basics
   - dictionaries-counting
+  - dsa-hash-like-a-dict
   drills: dictionaries
 - term: hash
   kind: idea
@@ -928,6 +934,7 @@
   - hashable
   steps:
   - dictionaries-keys-and-values
+  - dsa-hash-own-keys
   drills: dictionaries
 - term: dict.items
   kind: method
@@ -966,6 +973,7 @@
   about: The error Python raises when a dictionary gains or loses keys while a `for` loop goes through it.
   steps:
   - dictionaries-removing
+  - dsa-hash-like-a-dict
   drills: dictionaries
 - term: tuple
   kind: type
@@ -1199,15 +1207,18 @@
   drills: own-modules
 - term: math
   kind: module
-  about: Mathematical functions and values, such as `math.sqrt`, `math.floor`, `math.ceil` and `math.pi`.
+  about: Mathematical functions and values, such as `math.sqrt`, `math.floor`, `math.ceil`, `math.pi` and `math.inf`, a float bigger than every finite number.
   aliases:
   - sqrt
   - square root
   - pi
   - floor
+  - inf
+  - infinity
   steps:
   - modules-import
   - modules-from-import
+  - dsa-dp-coin-change
   drills: modules
 - term: math.ceil
   kind: function
@@ -1774,6 +1785,7 @@
   steps:
   - oop-techniques-comparisons
   - oop-techniques-equality
+  - dsa-sorting-python-sort
   drills: oop-techniques
 - term: __eq__
   kind: method
@@ -1782,6 +1794,7 @@
   - __ne__
   steps:
   - oop-techniques-equality
+  - dsa-hash-own-keys
   drills: oop-techniques
 - term: __add__
   kind: method
@@ -1816,6 +1829,7 @@
   about: Runs when a `for` loop starts going through an object, and returns the iterator that hands out the items, often the object itself.
   steps:
   - oop-techniques-iterators
+  - dsa-hash-like-a-dict
   drills: oop-techniques
 - term: __next__
   kind: method
@@ -1925,8 +1939,11 @@
 - term: set
   kind: type
   about: A collection that holds each value only once and keeps no order, written `{1, 2, 3}` or made with `set()`.
+  aliases:
+  - two sum
   steps:
   - more-comprehensions-sets
+  - dsa-complexity-sets-and-dicts
   drills: more-comprehensions
 - term: set.add
   kind: method
@@ -1935,6 +1952,15 @@
   - colors.add(
   steps:
   - more-comprehensions-sets
+- term: set.update
+  kind: method
+  about: Adds every item it's given to a set, such as the items of a list, as `add` does for one item.
+  aliases:
+  - update
+  check:
+  - used.update(
+  steps:
+  - dsa-backtracking-sudoku
 - term: recursion
   kind: idea
   about: A function calling itself to solve a smaller version of the same problem.
@@ -1943,6 +1969,7 @@
   steps:
   - recursion-calling-itself
   - recursion-return-values
+  - dsa-trees-binary-trees
   drills: recursion
 - term: base case
   kind: idea
@@ -1953,9 +1980,10 @@
   drills: recursion
 - term: RecursionError
   kind: exception
-  about: Raised when a function calls itself too many times without stopping, usually because the base case is missing or never reached.
+  about: 'Raised when too many calls wait at once, past Python''s limit of about 1000: usually a missing base case, or a recursion too deep for its input.'
   steps:
   - recursion-calling-itself
+  - dsa-graphs-dfs
   drills: recursion
 - term: iterative
   kind: idea
@@ -1976,11 +2004,14 @@
   - recursion-return-values
 - term: Fibonacci sequence
   kind: idea
-  about: The numbers 1, 1, 2, 3, 5, 8 and so on, where each number is the sum of the two before it.
+  about: The numbers 1, 1, 2, 3, 5, 8 and so on, where each number is the sum of the two before it; some start from 0, as 0, 1, 1, 2, 3.
   aliases:
   - Fibonacci
+  check:
+  - Fibonacci numbers
   steps:
   - recursion-smaller-pieces
+  - dsa-dp-memoization
 - term: palindrome
   kind: idea
   about: A string that reads the same backwards and forwards, such as "racecar".
@@ -1989,8 +2020,12 @@
 - term: binary search
   kind: idea
   about: Finds a value in a sorted list by looking at the middle item and going on in the half that can hold the value.
+  aliases:
+  - binary search on the answer
+  - search on the answer
   steps:
   - recursion-binary-search
+  - dsa-complexity-binary-search
   drills: recursion
 - term: linear search
   kind: idea
@@ -2005,6 +2040,7 @@
   steps:
   - recursion-examples-binary-trees
   - recursion-examples-sorted-tree
+  - dsa-trees-binary-trees
   drills: recursion-examples
 - term: node
   kind: idea
@@ -2031,6 +2067,7 @@
   - BST
   steps:
   - recursion-examples-sorted-tree
+  - dsa-trees-search-trees
   drills: recursion-examples
 - term: key function
   kind: idea
@@ -2099,9 +2136,11 @@
   drills: functional
 - term: functools
   kind: module
-  about: A module of tools for working with functions, such as `reduce`.
+  about: A module of tools for working with functions, such as `reduce`, `cache` and `lru_cache`.
   steps:
   - functional-reduce
+  - dsa-hash-lru-cache
+  - dsa-dp-memoization
   drills: functional
 - term: functools.reduce
   kind: function
@@ -2559,3 +2598,603 @@
   steps:
   - own-game-complete
   drills: own-game
+- term: Big-O notation
+  kind: idea
+  about: Says how the work of a program grows with the size of its input, such as O(n) or O(n²), leaving out constant factors.
+  aliases:
+  - big O
+  - Big-O
+  - O(n)
+  - time complexity
+  - complexity
+  steps:
+  - dsa-complexity-big-o
+  drills: dsa-complexity
+- term: collections.Counter
+  kind: type
+  about: A dict that counts. `Counter(values)` maps each value to how often it appears, a missing value counts as 0, and `most_common(k)` gives the k most common.
+  aliases:
+  - Counter
+  - most_common
+  - Counter.most_common
+  - top k frequent
+  steps:
+  - dsa-complexity-sets-and-dicts
+- term: enumerate
+  kind: function
+  about: Gives each item of a list together with its index, as in `for i, x in enumerate(values):`, in place of `range(len(values))`.
+  steps:
+  - dsa-complexity-sets-and-dicts
+  drills: dsa-complexity
+- term: bisect.bisect_left
+  kind: function
+  about: Gives the index where a value would go in a sorted list, before any equal items, in O(log n); `bisect_right` gives the index after them.
+  aliases:
+  - bisect
+  - bisect_left
+  - bisect.bisect_right
+  - bisect_right
+  - bisect.insort
+  check:
+  - bisect_left(
+  steps:
+  - dsa-complexity-binary-search
+  drills: dsa-complexity
+- term: two pointers
+  kind: idea
+  about: Two indexes that walk along sorted data, each in one direction only, where the order tells which one to move next, so the whole walk is O(n).
+  aliases:
+  - two-pointer technique
+  - two sum
+  steps:
+  - dsa-complexity-two-pointers
+  drills: dsa-complexity
+- term: prefix sum
+  kind: idea
+  about: A list whose item `i` is the sum of the first `i` values, so the sum of any stretch `values[a:b]` is `prefix[b] - prefix[a]`, in O(1).
+  aliases:
+  - prefix sums
+  - cumulative sum
+  - range sum
+  steps:
+  - dsa-complexity-prefix-sums
+  drills: dsa-complexity
+- term: Kadane's algorithm
+  kind: idea
+  about: Finds the biggest sum of a stretch of values in a row, negative values too, in O(n), by keeping the best sum of a stretch that ends at each value.
+  aliases:
+  - Kadane
+  - maximum subarray
+  - max subarray
+  - largest sum
+  steps:
+  - dsa-complexity-prefix-sums
+- term: itertools.accumulate
+  kind: function
+  about: Gives the running totals of a list, so `list(accumulate([5, 2, 7], initial=0))` is `[0, 5, 7, 14]`, the prefix sums.
+  aliases:
+  - accumulate
+  - itertools
+  - running totals
+  steps:
+  - dsa-complexity-prefix-sums
+  drills: dsa-complexity
+- term: sliding window
+  kind: idea
+  about: A stretch of values in a row that moves along a list, updated with what enters it and what leaves it instead of being worked out again, for O(n) in all.
+  aliases:
+  - window
+  - sliding windows
+  steps:
+  - dsa-complexity-sliding-window
+  drills: dsa-complexity
+- term: insertion sort
+  kind: idea
+  about: 'Sorts a list by taking the items one at a time and sliding each one left past the bigger ones: O(n²) in general, but O(n) on a nearly sorted list.'
+  steps:
+  - dsa-sorting-insertion
+  drills: dsa-sorting
+- term: merge sort
+  kind: idea
+  about: Sorts by splitting the list in halves, sorting each half the same way and merging the two sorted halves, in O(n log n) time with O(n) extra memory.
+  aliases:
+  - merge
+  - divide and conquer
+  steps:
+  - dsa-sorting-merge
+  drills: dsa-sorting
+- term: quicksort
+  kind: idea
+  about: 'Sorts by moving the items smaller than a pivot before it and the rest after it, then sorting both sides: O(n log n) on average, O(n²) with bad pivots.'
+  aliases:
+  - quick sort
+  - pivot
+  - partition
+  - three-way partition
+  steps:
+  - dsa-sorting-quicksort
+  drills: dsa-sorting
+- term: quickselect
+  kind: idea
+  about: 'Finds the k-th smallest value without sorting, by partitioning around a pivot as quicksort does and going on only in the side that holds it: O(n) on average, O(n²) at worst.'
+  aliases:
+  - k-th smallest
+  - kth smallest
+  steps:
+  - dsa-sorting-k-smallest
+  drills: dsa-sorting
+- term: counting sort
+  kind: idea
+  about: 'Sorts small whole numbers without comparing them, by counting how many times each value appears: O(n + k) for n values from 0 to k.'
+  steps:
+  - dsa-sorting-counting
+  drills: dsa-sorting
+- term: stable sort
+  kind: idea
+  about: A sort that keeps items that compare equal in the order they had; Python's `sort` and `sorted` (Timsort) are stable, so you can sort in several passes.
+  aliases:
+  - stable
+  - stability
+  - Timsort
+  check:
+  - stable
+  steps:
+  - dsa-sorting-merge
+  - dsa-sorting-python-sort
+  drills: dsa-sorting
+- term: hash table
+  kind: idea
+  about: Keeps keys in buckets picked by each key's hash, so that finding, adding and removing a key take O(1) on average; `dict` and `set` are hash tables.
+  aliases:
+  - hash map
+  - hash function
+  - bucket
+  - buckets
+  - open addressing
+  - linear probing
+  steps:
+  - dsa-hash-buckets
+  - dsa-hash-rehashing
+  drills: dsa-hash
+- term: hash collision
+  kind: idea
+  about: Two keys that land in the same bucket of a hash table; collisions can't be avoided, and if every key collides, each lookup takes O(n).
+  aliases:
+  - collision
+  - separate chaining
+  - chaining
+  check:
+  - collision
+  steps:
+  - dsa-hash-buckets
+  - dsa-hash-own-keys
+  drills: dsa-hash
+- term: load factor
+  kind: idea
+  about: The number of keys in a hash table divided by its number of buckets; when it passes a limit, the table grows and moves every key to its new bucket, which is rehashing.
+  aliases:
+  - rehashing
+  - rehash
+  steps:
+  - dsa-hash-rehashing
+  drills: dsa-hash
+- term: amortized time
+  kind: idea
+  about: 'A cost averaged over a whole series of operations: n appends to a list take O(n) in all, so each is O(1) amortized, though a few of them are slow.'
+  aliases:
+  - amortized
+  - amortized cost
+  - O(1) amortized
+  check:
+  - amortized
+  steps:
+  - dsa-hash-rehashing
+  drills: dsa-hash
+- term: __getitem__
+  kind: method
+  about: The method Python calls for `m[key]`, as it calls `__setitem__`, `__delitem__`, `__contains__` and `__len__` for storing, `del`, `in` and `len`.
+  aliases:
+  - __setitem__
+  - __delitem__
+  - __contains__
+  - __len__
+  steps:
+  - dsa-hash-like-a-dict
+  drills: dsa-hash
+- term: __hash__
+  kind: method
+  about: The method `hash` calls on an object; objects that are equal must have equal hashes, so a class with `__eq__` needs it to work in sets and as dict keys.
+  aliases:
+  - hashable
+  steps:
+  - dsa-hash-own-keys
+  drills: dsa-hash
+- term: LRU cache
+  kind: idea
+  about: A cache that, when it's full, throws out the item that was used longest ago; an `OrderedDict` keeps the order of use in O(1) on average.
+  aliases:
+  - least recently used
+  - cache
+  steps:
+  - dsa-hash-lru-cache
+  drills: dsa-hash
+- term: collections.OrderedDict
+  kind: type
+  about: A dict that moves a key to its end with `move_to_end(key)` and removes its first pair with `popitem(last=False)`, both in O(1) on average.
+  aliases:
+  - OrderedDict
+  - move_to_end
+  - popitem
+  steps:
+  - dsa-hash-lru-cache
+  drills: dsa-hash
+- term: functools.lru_cache
+  kind: function
+  about: A decorator that remembers a function's results for the arguments it was called with, keeping at most `maxsize` of them and pushing out the least recently used.
+  aliases:
+  - lru_cache
+  - '@lru_cache'
+  - cache_info
+  check:
+  - '@lru_cache('
+  steps:
+  - dsa-hash-lru-cache
+  drills: dsa-hash
+- term: tree traversal
+  kind: idea
+  about: 'Visiting every node of a tree once: pre-order puts each node before its subtrees, in-order between them (sorted, in a BST) and post-order after them.'
+  aliases:
+  - traversal
+  - pre-order
+  - in-order
+  - post-order
+  - preorder
+  - inorder
+  - postorder
+  check:
+  - traversal
+  steps:
+  - dsa-trees-traversals
+  drills: dsa-trees
+- term: stack
+  kind: idea
+  about: A collection where the item added last comes out first; a list with `append` and `pop` is one, and it can take the place of deep recursion.
+  aliases:
+  - LIFO
+  - last in, first out
+  - matching brackets
+  - balanced brackets
+  steps:
+  - dsa-trees-traversals
+  - dsa-graphs-dfs
+  drills: dsa-graphs
+- term: monotonic stack
+  kind: idea
+  about: A stack whose items stay in order from bottom to top, which finds the next greater value for every item of a list in O(n).
+  aliases:
+  - next greater element
+  - next greater value
+  - daily temperatures
+  steps:
+  - dsa-trees-traversals
+- term: linked list
+  kind: idea
+  about: A chain of nodes, each with a value and a link to the next node. It adds a node at its front in O(1), but reaching the k-th node takes k steps.
+  aliases:
+  - linked lists
+  - singly linked list
+  - doubly linked list
+  - reverse a linked list
+  - ListNode
+  steps:
+  - dsa-trees-binary-trees
+  - dsa-hash-lru-cache
+- term: slow and fast pointers
+  kind: idea
+  about: 'Two pointers that walk a linked list, one node at a time and two at a time: the slow one ends at the middle, and they meet when the list loops.'
+  aliases:
+  - fast and slow pointers
+  - tortoise and hare
+  - cycle detection
+  - middle of a linked list
+  steps:
+  - dsa-trees-binary-trees
+- term: collections.deque
+  kind: type
+  about: A queue that adds and removes items at both of its ends in O(1), with `append` and `popleft`, where a list's `pop(0)` is O(n).
+  aliases:
+  - deque
+  - queue
+  - popleft
+  - deque.popleft
+  - FIFO
+  - first in, first out
+  steps:
+  - dsa-trees-level-order
+  - dsa-graphs-bfs
+  drills: dsa-trees
+- term: heap
+  kind: idea
+  about: A tree kept in a list with every parent no bigger than its children, so the smallest item is at index 0, and adding an item or removing the smallest takes O(log n).
+  aliases:
+  - binary heap
+  - priority queue
+  - min-heap
+  - max-heap
+  steps:
+  - dsa-trees-heaps
+  drills: dsa-trees
+- term: heapq
+  kind: module
+  about: Keeps a heap in a plain list, with `heappush`, `heappop` and `heapify`, and finds the k smallest or largest items with `nsmallest` and `nlargest`.
+  aliases:
+  - heapq.heapify
+  - heapify
+  - heapq.nsmallest
+  - heapq.nlargest
+  - nsmallest
+  - nlargest
+  steps:
+  - dsa-sorting-k-smallest
+  - dsa-trees-heaps
+  drills: dsa-trees
+- term: heapq.heappush
+  kind: function
+  about: Adds an item to a heap in O(log n), keeping the smallest at index 0; `heapq.heappop` removes and returns the smallest, also in O(log n).
+  aliases:
+  - heappush
+  - heapq.heappop
+  - heappop
+  steps:
+  - dsa-trees-heaps
+  - dsa-graphs-dijkstra
+  drills: dsa-trees
+- term: trie
+  kind: idea
+  about: A tree that stores words letter by letter, so that words with the same beginning share nodes, and finding a word or a prefix of m letters takes O(m).
+  aliases:
+  - prefix tree
+  - autocomplete
+  steps:
+  - dsa-trees-tries
+  drills: dsa-trees
+- term: graph
+  kind: idea
+  about: A set of vertices (the things) and edges (the links between pairs of them); edges can go one way only, and they can have weights.
+  aliases:
+  - vertex
+  - vertices
+  - edge
+  - edges
+  - directed graph
+  - undirected graph
+  - weighted graph
+  steps:
+  - dsa-graphs-adjacency-lists
+  drills: dsa-graphs
+- term: adjacency list
+  kind: idea
+  about: Keeps a graph as a dict or a list that maps each vertex to the list of its neighbors, in O(V + E) memory for V vertices and E edges.
+  aliases:
+  - adjacency matrix
+  - neighbors
+  - degree
+  - in-degree
+  steps:
+  - dsa-graphs-adjacency-lists
+  drills: dsa-graphs
+- term: breadth-first search
+  kind: idea
+  about: Searches a graph or a tree level by level with a queue, finding everything one step from the start before anything two steps away, in O(V + E).
+  aliases:
+  - BFS
+  - level order
+  - shortest path
+  steps:
+  - dsa-trees-level-order
+  - dsa-graphs-bfs
+  drills: dsa-graphs
+- term: depth-first search
+  kind: idea
+  about: Searches a graph by following one way as far as it goes before backing up, with recursion or a stack of your own, in O(V + E).
+  aliases:
+  - DFS
+  - flood fill
+  - connected components
+  steps:
+  - dsa-graphs-dfs
+  drills: dsa-graphs
+- term: topological sort
+  kind: idea
+  about: Orders the vertices of a directed graph so that every edge points forward, as for jobs that wait for others; Kahn's algorithm finds one, or shows there is a cycle.
+  aliases:
+  - topological order
+  - Kahn's algorithm
+  - DAG
+  - directed acyclic graph
+  - cycle
+  steps:
+  - dsa-graphs-topological-sort
+  drills: dsa-graphs
+- term: Dijkstra's algorithm
+  kind: idea
+  about: Finds the cheapest way from a start to every vertex of a graph whose edges have weights, none of them negative, with a heap, in O((V + E) log V).
+  aliases:
+  - Dijkstra
+  - shortest path
+  - weighted graph
+  steps:
+  - dsa-graphs-dijkstra
+  drills: dsa-graphs
+- term: union-find
+  kind: idea
+  about: Keeps groups that only ever merge as trees in a list of parents; with union by size and path compression, joining two groups and asking if two items share one take almost O(1).
+  aliases:
+  - disjoint set union
+  - DSU
+  - path compression
+  - union by size
+  steps:
+  - dsa-graphs-union-find
+  drills: dsa-graphs
+- term: recursion limit
+  kind: idea
+  about: The most calls Python lets wait at once, about 1000; past it a `RecursionError` stops the program, so a deep search uses a loop and a stack of its own.
+  aliases:
+  - maximum recursion depth
+  - sys.setrecursionlimit
+  - sys.getrecursionlimit
+  steps:
+  - dsa-graphs-dfs
+  - dsa-dp-memoization
+  drills: dsa-graphs
+- term: backtracking
+  kind: idea
+  about: 'Tries the options one at a time with a recursive function: choose one, explore what follows from it, then take it back and try the next.'
+  aliases:
+  - exhaustive search
+  - brute force
+  - choose, explore, un-choose
+  - subset
+  - subsets
+  - power set
+  - N queens
+  - word search
+  - sudoku
+  check:
+  - un-choose
+  steps:
+  - dsa-backtracking-subsets
+  - dsa-backtracking-n-queens
+  - dsa-backtracking-sudoku
+  drills: dsa-backtracking
+- term: itertools.permutations
+  kind: function
+  about: Gives every ordering of the items as tuples, such as `('a', 'b')` and `('b', 'a')`; n items give n! of them.
+  aliases:
+  - permutations
+  - permutation
+  steps:
+  - dsa-backtracking-permutations
+  drills: dsa-backtracking
+- term: combination
+  kind: idea
+  about: A choice of k items in which the order doesn't matter; a search makes each one only once by picking the items in increasing order.
+  aliases:
+  - combinations
+  - itertools.combinations
+  steps:
+  - dsa-backtracking-pruning
+  drills: dsa-backtracking
+- term: pruning
+  kind: idea
+  about: Stopping a branch of a search as soon as it can't lead to an answer, such as a queen on an attacked square, so whole subtrees of choices are never tried.
+  aliases:
+  - prune
+  steps:
+  - dsa-backtracking-pruning
+  - dsa-backtracking-n-queens
+  drills: dsa-backtracking
+- term: dynamic programming
+  kind: idea
+  about: Builds an answer from the answers to smaller questions of the same kind, working out each one only once, top down with a memo or bottom up with a table.
+  aliases:
+  - DP
+  - tabulation
+  - bottom-up
+  - top-down
+  - overlapping subproblems
+  - optimal substructure
+  - coin change
+  check:
+  - tabulation
+  steps:
+  - dsa-dp-memoization
+  - dsa-dp-bottom-up
+  drills: dsa-dp
+- term: memoization
+  kind: idea
+  about: Storing each answer of a function in a dict, a memo, by its arguments, so that a repeated call looks the answer up instead of working it out again.
+  aliases:
+  - memo
+  - memoize
+  steps:
+  - dsa-hash-lru-cache
+  - dsa-dp-memoization
+  drills: dsa-dp
+- term: functools.cache
+  kind: function
+  about: 'A decorator that memoizes a function: with `@cache` above its `def`, every result is kept by its arguments, which must be hashable.'
+  aliases:
+  - '@cache'
+  steps:
+  - dsa-dp-memoization
+  drills: dsa-dp
+- term: greedy algorithm
+  kind: idea
+  about: 'Takes the choice that looks best right now and never goes back: right for fitting the most meetings, but it can miss the best answer, as with the coins 1, 4 and 5 for 8.'
+  aliases:
+  - greedy
+  - coin change
+  check:
+  - greedy
+  steps:
+  - dsa-sorting-python-sort
+  - dsa-dp-coin-change
+  drills: dsa-dp
+- term: interval
+  kind: idea
+  about: A pair `(start, end)` such as a meeting. Sorted by start, the intervals that overlap merge in one pass; sorted by end, a greedy pass fits the most.
+  aliases:
+  - intervals
+  - merge intervals
+  - overlapping intervals
+  - meeting rooms
+  - interval scheduling
+  steps:
+  - dsa-sorting-python-sort
+- term: longest common subsequence
+  kind: idea
+  about: The longest string you can get from both of two strings by crossing out characters, found with a table of their prefixes in O(n × m) time.
+  aliases:
+  - LCS
+  - subsequence
+  steps:
+  - dsa-dp-lcs
+  drills: dsa-dp
+- term: edit distance
+  kind: idea
+  about: The fewest one-character inserts, deletes and replaces that turn one string into another, found with a table of their prefixes in O(n × m) time.
+  aliases:
+  - Levenshtein distance
+  steps:
+  - dsa-dp-lcs
+  drills: dsa-dp
+- term: knapsack problem
+  kind: idea
+  about: Choosing items, each whole or not at all, for the most value within a weight limit; a table of items by capacity solves it in O(n × capacity).
+  aliases:
+  - 0/1 knapsack
+  - knapsack
+  - subset sum
+  check:
+  - knapsack
+  steps:
+  - dsa-dp-knapsack
+  drills: dsa-dp
+- term: '|'
+  kind: operator
+  about: Makes the union of two sets, a set of everything that is in either of them, as in `a | b`; `a |= b` puts every item of `b` into `a`.
+  aliases:
+  - union
+  - set union
+  - '|='
+  steps:
+  - dsa-dp-knapsack
+  drills: dsa-dp
+- term: zip
+  kind: function
+  about: Goes through two or more lists side by side, giving tuples of the items at the same place, as in `for w, v in zip(weights, values):`.
+  steps:
+  - dsa-dp-knapsack
+  drills: dsa-dp

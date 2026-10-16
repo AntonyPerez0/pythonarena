@@ -87,7 +87,7 @@ steps:
 
       An adjacency list takes O(V + E) memory: a list for each vertex, plus an entry for each directed edge (two for an undirected one). Going through the neighbors of v takes O(deg v), and through the neighbors of every vertex O(V + E). That's what the searches of the next steps do.
 
-      "Is there an edge from a to b?" is `b in graph[a]`: O(deg a) with a list. With a **set** of neighbors instead, it's O(1) on average, the trade you saw in the module on hash tables. (Sets of strings have no fixed order, so sort them before you print them.) The other classic layout, an **adjacency matrix**, is a V by V table of `True` and `False`, a list of V lists in Python. It answers in O(1) too, but takes O(V²) memory, whatever the number of edges. Take a city's street map: 50,000 crossings, each joined to about 4 others. Its adjacency lists hold about 200,000 entries. Its matrix has 2.5 billion cells, and since every item of a Python list is an 8-byte reference, that's 20 GB, almost all of it `False`. Graphs like this one, with far fewer than V² edges, are called **sparse**, and most real graphs are, so adjacency lists are the usual choice.
+      "Is there an edge from a to b?" is `b in graph[a]`: O(deg a) with a list. With a **set** of neighbors instead, it's O(1) on average, the trade of memory for speed from the step on sets and dicts in the module on complexity. (Sets of strings have no fixed order, so sort them before you print them.) The other classic layout, an **adjacency matrix**, is a V by V table of `True` and `False`, a list of V lists in Python. It answers in O(1) too, but takes O(V²) memory, whatever the number of edges. Take a city's street map: 50,000 crossings, each joined to about 4 others. Its adjacency lists hold about 200,000 entries. Its matrix has 2.5 billion cells, and since every item of a Python list is an 8-byte reference, that's 20 GB, almost all of it `False`. Graphs like this one, with far fewer than V² edges, are called **sparse**, and most real graphs are, so adjacency lists are the usual choice.
 
       **Your turn:** `build` makes the adjacency list of an undirected graph whose vertices are numbered 0 to n - 1. Fill in the blanks: the edge's way back, and each vertex's degree. The program should print:
 
@@ -750,7 +750,7 @@ steps:
       RecursionError: maximum recursion depth exceeded
       ```
 
-      A big image, a maze with long corridors or a long chain of friends easily goes deeper than that. Raising the limit with `sys.setrecursionlimit` is a risky fix: the recursion goes deeper, but every waiting call still takes memory, and the browser's Python, with its smaller stack, can crash outright. Interviewers like to ask about this. The answer is to keep the waiting work in a list of your own, a **stack**: `append` pushes an item (O(1) amortized) and `pop` takes the one pushed last (O(1)). A list can hold millions of items.
+      A big image, a maze with long corridors or a long chain of friends easily goes deeper than that. Raising the limit with `sys.setrecursionlimit` is a risky fix: the recursion goes deeper, but every waiting call still takes memory, and the browser's Python, with its smaller stack, can crash outright. Interviewers like to ask about this. The answer is to keep the waiting work in a list of your own, a stack, as in the module on trees: `append` pushes an item (O(1) amortized) and `pop` takes the one pushed last (O(1)). A list can hold millions of items.
 
       ### Flood fill with a stack
 

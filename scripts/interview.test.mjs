@@ -68,12 +68,24 @@ test("every section is there with its own keys, and its lists have something in 
   assert.match(check(names).errors.join("\n"), /tools modules 2: name must be the name of a module.*\n.*tools modules 3: the module collections is on the list twice/);
 });
 
-test("content/interview.yaml has the shape the check asks for, and the five tools of Python's library the page names", () => {
-  // The real file, with every step it names standing in as written (the content build checks the real steps).
+/** The written modules' pages, from content/modules/*.yaml as the build names them (a step's slug, or its title made into one). */
+function writtenModules() {
+  const dir = new URL("../content/modules/", import.meta.url);
+  const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".yaml"))
+    .map((f) => YAML.parse(fs.readFileSync(new URL(f, dir), "utf8")))
+    .map((m) => ({ id: m.id, steps: (m.steps ?? []).map((s) => ({ slug: s.slug ?? slugify(s.title ?? "") })) }));
+}
+
+test("content/interview.yaml has the shape the check asks for, and the tools of Python's library the page names", () => {
+  // The real file, with every step it names standing in as written (the content build checks the real
+  // steps), and links to the lessons the course really has.
   const raw = YAML.parse(fs.readFileSync(new URL("../content/interview.yaml", import.meta.url), "utf8"));
   const named = new Map(raw.patterns.rows.map((r) => [r.step, { step: { slug: r.step, title: r.step }, module: { id: "m", number: 1, title: "M" } }]));
-  const { errors, modules } = checkInterview(raw, { steps: named, groups, pages: sitePages() });
+  const { errors, modules } = checkInterview(raw, { steps: named, groups, pages: sitePages({ modules: writtenModules() }) });
   assert.deepEqual(errors, []);
-  assert.deepEqual(modules, ["collections", "heapq", "bisect", "functools", "itertools"]);
+  assert.deepEqual(modules, ["collections", "heapq", "bisect", "functools", "itertools", "math"]);
   assert.equal(docsUrl("heapq"), "https://docs.python.org/3/library/heapq.html");
 });

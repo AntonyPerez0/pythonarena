@@ -159,12 +159,15 @@ drills:
       for start in graph:
           if start not in seen:
               [[groups += 1‖groups = groups + 1]]
-              layer = {start}
-              while layer:
-                  seen.update(layer)
-                  layer = {w for v in layer for w in graph[v]} - seen
+              seen.add(start)
+              stack = [start]
+              while stack:
+                  for w in graph[stack.pop()]:
+                      if w not in seen:
+                          seen.add(w)
+                          stack.append(w)
       print(groups)
-    why: "A start that hasn't been seen belongs to no group found so far, so it starts a new one, and the search marks the whole group as seen, one layer of neighbors at a time. The groups are 1 and 2, 3 alone, and 4 and 5."
+    why: "A start that hasn't been seen belongs to no group found so far, so it starts a new one, and the search from it marks the whole group as seen. The groups are 1 and 2, 3 alone, and 4 and 5."
 
   - type: predict
     after: topological-sort
