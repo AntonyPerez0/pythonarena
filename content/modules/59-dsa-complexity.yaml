@@ -344,7 +344,7 @@ steps:
       [('tea', 3), ('coffee', 2)]
       ```
 
-      "The k most common values" is a classic interview question. Counting is O(n) on average. Then `most_common(k)` picks the top k of the m different values with a heap, in O(m log k), and without a k it sorts all of them, O(m log m).
+      "The k most common values" is a classic interview question. Counting is O(n) on average. Then `most_common(k)` picks the top k of the m different values in O(m log k) (the module on sorting shows how), and without a k it sorts all of them, O(m log m).
 
       ### Two values that add up to a target
 
@@ -1224,14 +1224,14 @@ steps:
 
       ### The biggest sum of a stretch
 
-      Another classic: which stretch of values in a row has the biggest sum, when values can be negative? The sum of a stretch is `prefix[end] - prefix[start]`, so this is `best_profit` from the first step, run on the prefix sums: remember the smallest prefix sum so far. It's usually written another way, known as **Kadane's algorithm**: keep the best sum of a stretch that ends at the current value. That stretch either starts fresh at the value or adds the value to the best stretch that ended just before it, whichever is bigger:
+      Another classic: which stretch of values in a row has the biggest sum, when values can be negative? The sum of a stretch is `prefix[end] - prefix[start]`, so this is much like `best_profit` from the first step, run on the prefix sums: remember the smallest prefix sum so far. Only much like, though: `best_profit` never gives less than 0, as if you could always buy and sell on the same day. On prefix sums that's a stretch of no values at all, so it gives 0 when every value is negative. The biggest sum is usually found another way, known as **Kadane's algorithm**: keep the best sum of a stretch that ends at the current value. That stretch either starts fresh at the value or adds the value to the best stretch that ended just before it, whichever is bigger. For a list that isn't empty:
 
       ```python run
       def biggest_stretch(values):
-          ending = values[0]
           best = values[0]
-          for i in range(1, len(values)):
-              ending = max(values[i], ending + values[i])
+          ending = 0
+          for value in values:
+              ending = max(value, ending + value)
               best = max(best, ending)
           return best
 
@@ -1245,7 +1245,7 @@ steps:
       -2
       ```
 
-      The best stretch is 4, -1, 2, 1. At the 4, the best stretch ending just before it adds up to -2, so starting fresh is better, and the 3 and the -5 are left behind. When every value is negative, the best stretch is the biggest value on its own, -2. One pass, O(n) time and O(1) memory.
+      The best stretch is 4, -1, 2, 1. At the 4, the best stretch ending just before it adds up to -2, so starting fresh is better, and the 3 and the -5 are left behind. When every value is negative, the best stretch is the biggest value on its own, -2, which is why `best` starts at the first value and not at 0. One pass, O(n) time and O(1) memory.
 
       **Your turn:** `minutes` holds how many minutes you practiced the piano each day, and `practiced(first_day, last_day)` should give the minutes from `first_day` to `last_day`, both days included. Fill in the blank with the right index of `prefix`. The program should print:
 

@@ -1268,21 +1268,11 @@ steps:
 
       Why are neighbors enough? Take two prices `a` and `c` that aren't side by side in the sorted list. The price right after `a`, call it `b`, sits between them: `a <= b <= c`, so `b - a` is at most `c - a`. The neighbors `a` and `b` are at least as close, so a pair that is further apart in the sorted order never beats the best pair of neighbors. Repeats work the same way: equal values end up side by side. The cost is O(n log n) for the sort and O(n) for the pass, instead of O(n²) for all the pairs.
 
-      ### Meetings: merge them, or fit the most
+      ### Meetings: fit the most
 
-      Two more interview classics start with a sort. They're about **intervals**, pairs `(start, end)` such as meetings, where a meeting that ends at 60 doesn't clash with one that starts at 60. To **merge** the meetings that overlap, sort them by their start. Then one pass is enough: a meeting that starts before the last merged one ends joins it and may stretch its end, and any other meeting starts a new one. To **fit the most** meetings into one room, sort them by their end instead, and take each meeting that starts once the last one taken has ended:
+      Another interview classic starts with a sort. It's about **intervals**, pairs `(start, end)` such as meetings, where a meeting that ends at 60 doesn't clash with one that starts at 60. To fit the most meetings into one room, sort them by their end, and take each meeting that starts once the last one taken has ended:
 
       ```python run
-      def merge(meetings):
-          merged = []
-          for start, end in sorted(meetings):
-              if merged and start < merged[-1][1]:
-                  merged[-1][1] = max(merged[-1][1], end)
-              else:
-                  merged.append([start, end])
-          return merged
-
-
       def most_meetings(meetings):
           chosen = []
           for start, end in sorted(meetings, key=lambda meeting: meeting[1]):
@@ -1292,18 +1282,14 @@ steps:
 
 
       meetings = [(60, 90), (0, 30), (25, 50), (10, 20), (100, 130), (85, 110)]
-      print(merge(meetings))
       print(most_meetings(meetings))
       ```
 
       ```output
-      [[0, 50], [60, 130]]
       [(10, 20), (25, 50), (60, 90), (100, 130)]
       ```
 
-      `merge` keeps each merged meeting as a list, so that its end can change. The `max` matters: (10, 20) lies inside (0, 30) and must not cut its end short. Both functions are O(n log n) for the sort and O(n) for the pass.
-
-      `most_meetings` makes a **greedy** choice: it takes what looks best right now, the meeting that ends first, and never goes back on it. Greedy choices can go wrong (the module on dynamic programming shows some), but this one is safe. Take any plan with the most meetings. Its first meeting ends no earlier than the meeting that ends first of all, so swapping the two leaves room for every other meeting in the plan. So some best plan starts with the meeting that ends first, and the same argument works for each meeting after it. Sorted by start instead, (0, 30) would be taken first, and it leaves room for only 3 meetings.
+      That's O(n log n) for the sort and O(n) for the pass. `most_meetings` makes a **greedy** choice: it takes what looks best right now, the meeting that ends first, and never goes back on it. Greedy choices can go wrong (the module on dynamic programming shows some), but this one is safe. Take any plan with the most meetings. Its first meeting ends no earlier than the meeting that ends first of all, so swapping the two leaves room for every other meeting in the plan. So some best plan starts with the meeting that ends first, and the same argument works for each meeting after it. Sorted by start instead, (0, 30) would be taken first, and it leaves room for only 3 meetings.
 
       **Your turn:** a library lists its books by year, the newest first, and the books of the same year by title from A to Z. Fill in the blank in the key of the first sort, the index of the part of a book it sorts by, so that the two sorts give that order. The program should print:
 
@@ -1348,66 +1334,75 @@ steps:
           - "`reverse=True` puts the 5s first, and it's still stable: Bob and Dee keep the order they have in the list, and so do Ann and Cid."
           - "The last lines sort from low to high, `Ann, Cid, Bob, Dee`, and then reverse the whole list, which turns equal scores around too."
       - task: |
-          Write `has_overlap(meetings)`. Each meeting is a tuple `(start, end)` of minutes, and a meeting that ends at 60 doesn't overlap one that starts at 60. Return `True` when some two meetings overlap, and `False` otherwise. It must be fast for 60,000 meetings: sort them, then compare each meeting only with the one just before it.
+          Write `busy_times(meetings)`. Each meeting is a tuple `(start, end)` of minutes. Return the times when the room is busy: a list of `(start, end)` tuples, ordered by start, where meetings that overlap or touch are **merged** into one. A meeting that ends at 75 and one that starts at 75 make one busy stretch, as there's no free minute between them. It must be fast for 60,000 meetings: sort them first, then make one pass.
 
-          For example, `has_overlap([(60, 90), (0, 30), (25, 50)])` returns:
+          For example, `busy_times([(45, 75), (0, 20), (15, 40), (5, 10), (75, 80)])` returns:
 
           ```
-          True
+          [(0, 40), (45, 80)]
           ```
         seed: |
-          def has_overlap(meetings):
+          def busy_times(meetings):
               pass
 
 
           if __name__ == "__main__":
-              print(has_overlap([(60, 90), (0, 30), (25, 50)]))
+              print(busy_times([(45, 75), (0, 20), (15, 40), (5, 10), (75, 80)]))
         solution: |
-          def has_overlap(meetings):
-              ordered = sorted(meetings)
-              for i in range(1, len(ordered)):
-                  if ordered[i][0] < ordered[i - 1][1]:
-                      return True
-              return False
+          def busy_times(meetings):
+              merged = []
+              for start, end in sorted(meetings):
+                  if merged and start <= merged[-1][1]:
+                      merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+                  else:
+                      merged.append((start, end))
+              return merged
 
 
           if __name__ == "__main__":
-              print(has_overlap([(60, 90), (0, 30), (25, 50)]))
+              print(busy_times([(45, 75), (0, 20), (15, 40), (5, 10), (75, 80)]))
         slow: |
-          def has_overlap(meetings):
-              for i in range(len(meetings)):
-                  for j in range(i + 1, len(meetings)):
-                      a = meetings[i]
-                      b = meetings[j]
-                      if a[0] < b[1] and b[0] < a[1]:
-                          return True
-              return False
+          def busy_times(meetings):
+              merged = []
+              for start, end in meetings:
+                  kept = []
+                  for other in merged:
+                      if other[0] <= end and start <= other[1]:
+                          start = min(start, other[0])
+                          end = max(end, other[1])
+                      else:
+                          kept.append(other)
+                  kept.append((start, end))
+                  merged = kept
+              return sorted(merged)
 
 
           if __name__ == "__main__":
-              print(has_overlap([(60, 90), (0, 30), (25, 50)]))
+              print(busy_times([(45, 75), (0, 20), (15, 40), (5, 10), (75, 80)]))
         hints:
-          - "Tuples sort by their first item, so `sorted(meetings)` orders the meetings by their start."
-          - "In the sorted list, a meeting overlaps the one before it when it starts before that one ends: `ordered[i][0] < ordered[i - 1][1]`."
-          - "Why neighbors are enough: if a meeting overlaps one further down the sorted list, it also overlaps the very next one, which starts no later. Comparing every pair is right too, but that's 1.8 billion pairs for 60,000 meetings."
+          - "Sort by start this time: tuples sort by their first item, so `sorted(meetings)` does it. Then a meeting can only join the last busy stretch you've found so far, `merged[-1]`."
+          - "If the meeting starts no later than that stretch ends, `start <= merged[-1][1]`, it joins the stretch: replace `merged[-1]` with a tuple that has the same start and the bigger of the two ends. Otherwise it starts a new stretch, with `append`."
+          - "Take the bigger end with `max`: in the example, (5, 10) lies inside (0, 20) and must not cut its end short. And check that `merged` isn't empty before you look at `merged[-1]`."
         tests:
-          - call: has_overlap([(60, 90), (0, 30), (25, 50)])
-          - call: has_overlap([(60, 90), (0, 30), (30, 60)])
+          - call: busy_times([(45, 75), (0, 20), (15, 40), (5, 10), (75, 80)])
+          - call: busy_times([(40, 45), (0, 10), (20, 30), (5, 6)])
             hidden: true
-          - call: has_overlap([])
+          - call: busy_times([])
             hidden: true
-          - call: has_overlap([(10, 20)])
+          - call: busy_times([(10, 20)])
             hidden: true
-          - call: has_overlap([(0, 100), (10, 20), (30, 40)])
+          - call: busy_times([(0, 100), (10, 20), (30, 40)])
             hidden: true
-          - call: has_overlap([(5, 10), (0, 3), (20, 30), (10, 15)])
+          - call: busy_times([(5, 10), (0, 3), (20, 30), (10, 15), (3, 4)])
             hidden: true
-          - call: has_overlap([(40, 45), (0, 10), (20, 30), (5, 6)])
+          - call: busy_times([(50, 60), (10, 20), (55, 70), (15, 30), (70, 80)])
             hidden: true
-          - call: has_overlap([(i * 7919 % 60_000 * 10, i * 7919 % 60_000 * 10 + 10) for i in range(60_000)])
+          - call: |
+              times = busy_times([(i * 7919 % 60_000 * 10, i * 7919 % 60_000 * 10 + 5) for i in range(60_000)])
+              print(len(times), times[:2], times[-1])
             hidden: true
             big: true
-          - call: has_overlap([(i * 7919 % 60_000 * 10, i * 7919 % 60_000 * 10 + 10) for i in range(60_000)] + [(123_455, 123_465)])
+          - call: busy_times([(i * 7919 % 60_000 * 10, i * 7919 % 60_000 * 10 + 10) for i in range(60_000)])
             hidden: true
             big: true
 

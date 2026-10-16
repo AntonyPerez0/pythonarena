@@ -534,7 +534,7 @@ steps:
     slug: coin-change
     title: Coin change
     text: |
-      A vending machine has to give change. With the coins 1, 5, 10 and 25, the obvious way is **greedy**: take the biggest coin that fits, again and again. For these coins greedy happens to give the fewest coins. For others it doesn't:
+      A vending machine has to give change. With the coins 1, 5, 10 and 25, the obvious way is greedy, like fitting the most meetings into a room in the module on sorting: take the biggest coin that fits, again and again. For these coins greedy happens to give the fewest coins. For others it doesn't:
 
       ```python run
       def greedy(coins, amount):

@@ -928,10 +928,11 @@
   drills: dictionaries
 - term: hash
   kind: idea
-  about: A number Python makes from a dictionary key to find it fast; a list has none because it can change, so it can't be a key.
+  about: A number Python makes from a key to find it fast; a list has none, as it can change. A class with `__eq__` needs a `__hash__` that gives equal objects equal hashes.
   aliases:
   - unhashable
   - hashable
+  - __hash__
   steps:
   - dictionaries-keys-and-values
   - dsa-hash-own-keys
@@ -2656,6 +2657,9 @@
   - prefix sums
   - cumulative sum
   - range sum
+  - subarray
+  - subarrays
+  - subarray sum
   steps:
   - dsa-complexity-prefix-sums
   drills: dsa-complexity
@@ -2667,6 +2671,8 @@
   - maximum subarray
   - max subarray
   - largest sum
+  - subarray
+  - subarrays
   steps:
   - dsa-complexity-prefix-sums
 - term: itertools.accumulate
@@ -2685,6 +2691,8 @@
   aliases:
   - window
   - sliding windows
+  - subarray
+  - subarrays
   steps:
   - dsa-complexity-sliding-window
   drills: dsa-complexity
@@ -2693,6 +2701,17 @@
   about: 'Sorts a list by taking the items one at a time and sliding each one left past the bigger ones: O(n²) in general, but O(n) on a nearly sorted list.'
   steps:
   - dsa-sorting-insertion
+  drills: dsa-sorting
+- term: inversion
+  kind: idea
+  about: A pair of items in the wrong order, a bigger one before a smaller one; insertion sort makes one move for each, and merge sort can count them in O(n log n).
+  aliases:
+  - inversions
+  - count inversions
+  - number of inversions
+  steps:
+  - dsa-sorting-insertion
+  - dsa-sorting-merge
   drills: dsa-sorting
 - term: merge sort
   kind: idea
@@ -2801,14 +2820,6 @@
   steps:
   - dsa-hash-like-a-dict
   drills: dsa-hash
-- term: __hash__
-  kind: method
-  about: The method `hash` calls on an object; objects that are equal must have equal hashes, so a class with `__eq__` needs it to work in sets and as dict keys.
-  aliases:
-  - hashable
-  steps:
-  - dsa-hash-own-keys
-  drills: dsa-hash
 - term: LRU cache
   kind: idea
   about: A cache that, when it's full, throws out the item that was used longest ago; an `OrderedDict` keeps the order of use in O(1) on average.
@@ -2840,6 +2851,21 @@
   steps:
   - dsa-hash-lru-cache
   drills: dsa-hash
+- term: balanced tree
+  kind: idea
+  about: A tree in which the two subtrees of every node have about the same height, the number of nodes on the longest path down, so the whole tree is about log₂ n high.
+  aliases:
+  - balanced trees
+  - balanced binary tree
+  - height-balanced
+  - tree height
+  - height of a tree
+  - maximum depth
+  - balanced BST
+  steps:
+  - dsa-trees-binary-trees
+  - dsa-trees-search-trees
+  drills: dsa-trees
 - term: tree traversal
   kind: idea
   about: 'Visiting every node of a tree once: pre-order puts each node before its subtrees, in-order between them (sorted, in a BST) and post-order after them.'

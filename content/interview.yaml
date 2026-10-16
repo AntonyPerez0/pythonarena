@@ -12,7 +12,7 @@ modules:
 
 drills:
   lead: |
-    Quick questions like the ones interviewers ask, about Python itself and about algorithms and their costs: predict the output, fill in a blank, spot the bug, say whether it runs, pick the right answer. Every 8th question is a small program to write. Interview prep in Deathmatch is open to everyone, with no lessons needed first, and gives you three lives.
+    Quick questions like the ones interviewers ask, about Python itself and about algorithms and their costs: predict the output, fill in a blank, spot the bug, say whether it runs, pick the right answer. While the Boss reps setting in Deathmatch is on, every 8th question is a small program to write. It's on unless you turn it off or your browser can't run Python. Interview prep in Deathmatch is open to everyone, with no lessons needed first, and gives you three lives.
 
 patterns:
   lead: |
@@ -184,7 +184,7 @@ costs:
       note: "m is the number of different items. It keeps the k biggest counts in a heap, as `heapq.nlargest` does. Without k it sorts all m, O(m log m)."
     - operation: "`od.move_to_end(k)`, `od.popitem(last=False)` (OrderedDict)"
       cost: "O(1) on average, O(n) at worst"
-      note: "Finds the key by its hash, like a dict, then moves it in a chain of keys kept in order: the two moves of an LRU cache."
+      note: "`move_to_end` finds the key by its hash, like a dict, then moves it to the end of a chain of keys kept in order. `popitem(last=False)` takes the first key in that chain, the oldest, and deletes it from the table like `del d[k]`. These are the two moves of an LRU cache."
     - operation: "`q.append(x)`, `q.appendleft(x)`, `q.pop()`, `q.popleft()` (deque)"
       cost: "O(1)"
       note: "A `collections.deque` adds and removes at both ends quickly. `q[0]` and `q[-1]` are O(1) too, but `q[i]` in the middle is O(n)."

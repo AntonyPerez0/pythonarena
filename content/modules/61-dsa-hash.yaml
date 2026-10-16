@@ -1824,7 +1824,7 @@ steps:
 
       ### OrderedDict
 
-      `collections.OrderedDict` is a dict made for exactly this. `move_to_end(key)` moves a key to the end, and `popitem(last=False)` removes the first pair, the oldest, and returns it. Both are O(1) on average: each finds the key by its hash, as a dict does.
+      `collections.OrderedDict` is a dict made for exactly this. `move_to_end(key)` moves a key to the end, and `popitem(last=False)` removes the first pair, the oldest, and returns it. Both are O(1) on average: `move_to_end` finds the key by its hash, as a dict does, and `popitem(last=False)` takes the first key in the order and deletes it from the table, like `del`.
 
       ```python run
       from collections import OrderedDict

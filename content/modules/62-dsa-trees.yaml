@@ -5,7 +5,7 @@ steps:
     slug: binary-trees
     title: Binary trees and recursion
     text: |
-      You built binary trees in the recursion module: a `Node` class with a `value` and two children, `left` and `right`, where `None` means "no child here", and recursive functions that counted the nodes, added up the values and measured the depth of a tree. This module takes trees on to what interviews ask about them. This step asks what those functions cost and where they break, and it ends with the linked list, a chain of nodes with one link each. The next ones add the order of a search tree, other ways to walk a tree, heaps and tries.
+      You built binary trees in the recursion module: a `Node` class with a `value` and two children, `left` and `right`, where `None` means "no child here", and recursive functions that counted the nodes, added up the values and measured the depth of a tree. This module takes trees on to what interviews ask about them. This step asks what those functions cost and where they break, with a short look at the linked list, a chain of nodes with one link each. The next ones add the order of a search tree, other ways to walk a tree, heaps and tries.
 
       Here are the three functions again, with the names interview questions usually give them: `size` is the recursion module's `count_nodes`, and `height` is its `depth`.
 
@@ -149,22 +149,13 @@ steps:
 
       ### Linked lists
 
-      A chain is a list in disguise. Give each node a single link, `next`, and you have a **linked list**, an interview favorite. The list is known by its first node, the **head**, and the last node's `next` is `None`. Walking it is a `while` loop that follows the links. Reversing it takes three variables: `prev`, the part already reversed, `node`, the node to turn around, and `nxt`, which saves the rest of the list before `node.next` changes:
+      A chain is a list in disguise. Give each node a single link, `next`, and you have a **linked list**, an interview favorite. The list is known by its first node, the **head**, and the last node's `next` is `None`. A linked list adds a node at its front in O(1), where a list's `insert(0, x)` is O(n), but reaching the k-th node takes k steps: there's no `head[k]`. Its classic questions are loops that follow the links, each O(n) time and O(1) memory:
 
       ```python run
       class ListNode:
           def __init__(self, value, next_node=None):
               self.value = value
               self.next = next_node
-
-
-      def to_list(head):
-          values = []
-          node = head
-          while node is not None:
-              values.append(node.value)
-              node = node.next
-          return values
 
 
       def reverse(head):
@@ -178,37 +169,13 @@ steps:
           return prev
 
 
-      head = None
-      for value in [5, 4, 3, 2, 1]:
-          head = ListNode(value, head)
-      print(to_list(head))
-      head = reverse(head)
-      print(to_list(head))
-      ```
-
-      ```output
-      [1, 2, 3, 4, 5]
-      [5, 4, 3, 2, 1]
-      ```
-
-      Each new node goes in front of the old head, so the values go in from 5 down to 1. `reverse` turns each link around once: O(n) time and O(1) memory. A linked list adds a node at its front in O(1), where a list's `insert(0, x)` is O(n), but reaching the k-th node takes k steps along the links: there's no `head[k]`.
-
-      Many linked list questions use **slow and fast pointers**, two pointers that walk at different speeds: `slow` moves one node at a time and `fast` moves two. When `fast` reaches the end, `slow` is at the middle. And if the list loops back on itself, `fast` never reaches an end. It goes round the loop and catches up with `slow` from behind, one node closer each round:
-
-      ```python run
-      class ListNode:
-          def __init__(self, value, next_node=None):
-              self.value = value
-              self.next = next_node
-
-
       def middle(head):
           slow = head
           fast = head
           while fast is not None and fast.next is not None:
               slow = slow.next
               fast = fast.next.next
-          return slow.value
+          return slow
 
 
       def has_cycle(head):
@@ -223,24 +190,23 @@ steps:
 
 
       head = None
-      for value in [6, 5, 4, 3, 2, 1]:
+      for value in [5, 4, 3, 2, 1]:
           head = ListNode(value, head)
-      print(middle(head), middle(head.next))
+      head = reverse(head)
+      print(head.value, head.next.value, middle(head).value, middle(None))
       print(has_cycle(head))
-      last = head
-      while last.next is not None:
-          last = last.next
-      last.next = head.next.next
-      print(has_cycle(head))
+      loop = ListNode(1, ListNode(2, ListNode(3)))
+      loop.next.next.next = loop.next
+      print(has_cycle(loop))
       ```
 
       ```output
-      4 4
+      5 4 3 None
       False
       True
       ```
 
-      For 1 to 6, the two middle values are 3 and 4, and `middle` stops at the second one. For 2 to 6, 4 is the exact middle. The last lines link the 6 back to the 3, so the list goes 1, 2, 3, 4, 5, 6, 3, 4, 5, 6 and so on forever: a walk to the end would never stop. `slow is fast` asks whether both point to the same node, not to equal values. Both functions are O(n) time and O(1) memory. A set of the nodes seen so far would find the loop too, but in O(n) memory.
+      The loop builds 1, 2, 3, 4, 5 from the back, each new node in front of the old head, and `reverse` turns it into 5, 4, 3, 2, 1. Its `nxt` saves the rest of the list before `node.next` changes, and `prev` holds the part already reversed. `middle` and `has_cycle` use **slow and fast pointers**: `slow` moves one node at a time and `fast` two, so when `fast` reaches the end, `slow` is at the middle. (`middle` returns the node, so an empty list gives `None`.) `loop` goes 1, 2, 3, 2, 3 and on forever, so there `fast` never reaches an end: it goes round the loop and gains a node on `slow` at each step until they meet. `slow is fast` asks whether both are the same node, not whether their values are equal.
 
       **Your turn:** a tree is **height-balanced** when, at every node, the heights of the two subtrees differ by at most 1. Calling `height` for the two subtrees of every node works, but it walks the nodes below each node again for every node above them: O(n log n) on a balanced tree. `checked_height` does it all in one walk, O(n). It returns the height of the tree, or -1 when some node in it isn't balanced, and a -1 from either subtree passes straight up. Fill in the blanks: when a node isn't balanced, and the height of a node that is. The program should print:
 
@@ -1049,7 +1015,7 @@ steps:
 
       ### Two more jobs for a stack
 
-      A stack fits whenever the newest open item must be dealt with first. **Matching brackets** is the classic: in `([]{})` every closing bracket closes the last bracket still open. Go through the text, push each opening bracket, and at each closing bracket pop the top and check that the two are a pair. The text is balanced when every check passes and the stack ends empty. That's one pass, O(n).
+      A stack fits whenever the newest open item must be dealt with first. **Matching brackets** is the classic: in `([]{})` every closing bracket closes the last bracket still open. Go through the text, push each opening bracket, and at each closing bracket pop the top and check that the two are a pair. If the stack is empty at a closing bracket, or the top isn't its partner, the text isn't balanced: `)(` fails at once. It is balanced when every check passes and the stack ends empty. That's one pass, O(n).
 
       A stack kept in order finds the **next greater value** to the right of each item, such as how many days you wait for a warmer day. Keep a stack of the days still waiting for their answer. Their temperatures never rise from the bottom of the stack to the top, which is why it's called a **monotonic stack**. Each new day pops every waiting day that is colder, since it's their answer, and then waits itself:
 

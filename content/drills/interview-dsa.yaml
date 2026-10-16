@@ -458,3 +458,27 @@ drills:
       - call: two_sum([3 * i for i in range(200_000)] + [1], 599_998)
         hidden: true
         big: true
+
+  - type: bug
+    code: |
+      class ListNode:
+          def __init__(self, value, next_node=None):
+              self.value, self.next = value, next_node
+
+
+      def reverse(head):
+          prev, node = None, head
+          while node is not None:
+              nxt = node.next
+              node.next = prev
+              prev = node
+              node = node.next  # BUG
+          return prev
+
+
+      node = reverse(ListNode(1, ListNode(2, ListNode(3))))
+      while node is not None:
+          print(node.value)
+          node = node.next
+    fix: node = nxt
+    why: "By the last line of the loop, `node.next` has been turned around to point at the node before it, so `node = node.next` steps backward: from the first node straight to `None`. Only the 1 is printed, and the rest of the list is lost. That's why `nxt` saves the link before it changes. The walk goes on with `node = nxt`, and the reversed list prints 3, 2, 1."
