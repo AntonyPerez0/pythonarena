@@ -15,10 +15,11 @@ export const NAME_MAX = 80;
 export type FinishedModule = { id: string; number: number; title: string; doneAt: number | null };
 
 /**
- * A part of the MOOC (or the extra modules, `part` null): its finished modules, how many modules it
- * has, and, when every one of them is finished, `complete` and when the last one was (`doneAt`).
+ * A part of the MOOC (or a group of extra modules: `part` null, and `group` its id): its finished
+ * modules, how many modules it has, and, when every one of them is finished, `complete` and when the
+ * last one was (`doneAt`).
  */
-export type RecordPart = { course: PlannedModule["course"]; part: number | null; total: number; finished: FinishedModule[]; complete: boolean; doneAt: number | null };
+export type RecordPart = { course: PlannedModule["course"]; part: number | null; group: string | null; total: number; finished: FinishedModule[]; complete: boolean; doneAt: number | null };
 
 export type FinishedProject = { id: string; title: string; doneAt: number | null };
 
@@ -37,7 +38,7 @@ export type Totals = {
 };
 
 export type Record = {
-  /** The parts in course order, with the extra modules last. */
+  /** The parts in course order, with the groups of extra modules last. */
   parts: RecordPart[];
   projects: FinishedProject[];
   totals: Totals;
@@ -64,8 +65,9 @@ export function buildRecord(s: State, plan: PlannedModule[], modules: ModuleSumm
   let steps = 0;
   let challenges = 0;
   for (const pm of plan) {
-    let p = parts.find((x) => x.course === pm.course && x.part === pm.part);
-    if (!p) parts.push((p = { course: pm.course, part: pm.part, total: 0, finished: [], complete: false, doneAt: null }));
+    const group = pm.group ?? null;
+    let p = parts.find((x) => x.course === pm.course && x.part === pm.part && x.group === group);
+    if (!p) parts.push((p = { course: pm.course, part: pm.part, group, total: 0, finished: [], complete: false, doneAt: null }));
     p.total++;
     const m = live.get(pm.id);
     if (!m) continue;
@@ -81,7 +83,7 @@ export function buildRecord(s: State, plan: PlannedModule[], modules: ModuleSumm
     p.complete = p.finished.length === p.total;
     p.doneAt = p.complete ? latest(p.finished.map((m) => m.doneAt)) : null;
   }
-  // The extra modules come after every part.
+  // The groups of extra modules come after every part, in their own order.
   parts.sort((a, b) => (a.part == null ? 1 : 0) - (b.part == null ? 1 : 0));
   const done: FinishedProject[] = projects.filter((p) => s.projects?.[p.id]?.done).map((p) => ({ id: p.id, title: p.title, doneAt: s.projects[p.id].doneAt ?? null }));
   const moocParts = parts.filter((p) => p.part != null);

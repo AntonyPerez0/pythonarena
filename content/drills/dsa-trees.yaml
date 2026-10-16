@@ -1,0 +1,406 @@
+topic: dsa-trees
+drills:
+  - type: predict
+    after: binary-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def best(node):
+          if node is None:
+              return 0
+          return node.value + max(best(node.left), best(node.right))
+
+
+      print(best(Node(3, Node(8, Node(1)), Node(5, Node(2), Node(9)))))
+    why: "`best` adds each node's value to the larger answer of its two subtrees. With only positive values, that finds the root-to-leaf path with the greatest sum: 3 + 5 + 9 = 17, more than 3 + 8 + 1 = 12. With negative values, the 0 for a missing child is a trap: `best(Node(3, Node(-1)))` gives 3, as if a path could end at the root, which isn't a leaf."
+
+  - type: bug
+    after: binary-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def height(node):
+          if node is None:
+              return 0
+          return 1 + height(node.left) + height(node.right)  # BUG
+
+
+      print(height(Node(1, Node(2), Node(3, Node(4)))))
+    fix: return 1 + max(height(node.left), height(node.right))
+    why: "Adding both sides counts every node, which is the size of the tree, 4. The height follows only the taller side: the longest path, 1, 3, 4, has 3 nodes."
+
+  - type: boss
+    after: binary-trees
+    prompt: |
+      Write `mirror(node)` that turns a binary tree into its mirror image: it swaps the left and right children of every node, in place, and returns the root. An empty tree stays empty.
+
+      For example, this program:
+
+      ```python fragment
+      root = mirror(Node(1, Node(2, Node(4), Node(5)), Node(3)))
+      print(root.value, root.left.value, root.right.value)
+      print(root.right.left.value, root.right.right.value)
+      ```
+
+      prints:
+
+      ```
+      1 3 2
+      5 4
+      ```
+    seed: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def mirror(node):
+          pass
+
+
+      if __name__ == "__main__":
+          root = mirror(Node(1, Node(2, Node(4), Node(5)), Node(3)))
+          print(root.value, root.left.value, root.right.value)
+          print(root.right.left.value, root.right.right.value)
+    solution: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def mirror(node):
+          if node is not None:
+              node.left, node.right = mirror(node.right), mirror(node.left)
+          return node
+
+
+      if __name__ == "__main__":
+          root = mirror(Node(1, Node(2, Node(4), Node(5)), Node(3)))
+          print(root.value, root.left.value, root.right.value)
+          print(root.right.left.value, root.right.right.value)
+    hints:
+      - "The base case is the empty tree: there's nothing to swap, so return it as it is."
+      - "For a node, mirror both subtrees, then put the mirrored right subtree on the left and the mirrored left subtree on the right."
+      - "One line does both with tuple assignment: `node.left, node.right = mirror(node.right), mirror(node.left)`. Then return the node."
+    tests:
+      - call: |
+          root = mirror(Node(1, Node(2, Node(4), Node(5)), Node(3)))
+          print(root.value, root.left.value, root.right.value)
+          print(root.right.left.value, root.right.right.value)
+      - call: print(mirror(None))
+        hidden: true
+      - call: |
+          root = mirror(Node(1, Node(2, Node(3))))
+          print(root.left, root.right.value, root.right.right.value)
+        hidden: true
+      - call: |
+          root = mirror(Node(5, None, Node(8, Node(6))))
+          print(root.left.value, root.left.right.value, root.right)
+        hidden: true
+
+  - type: predict
+    after: search-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def insert(node, value):
+          if node is None:
+              return Node(value)
+          if value < node.value:
+              node.left = insert(node.left, value)
+          else:
+              node.right = insert(node.right, value)
+          return node
+
+
+      root = None
+      for value in [5, 8, 3, 6, 9, 4]:
+          root = insert(root, value)
+      print(root.right.left.value, root.left.right.value)
+    why: "6 is greater than 5 and smaller than 8, so it becomes the left child of 8. 4 is smaller than 5 and greater than 3, so it becomes the right child of 3."
+
+  - type: bug
+    after: search-trees
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def insert(node, value):
+          if node is None:
+              return Node(value)
+          if value < node.value:
+              insert(node.left, value)  # BUG
+          else:
+              node.right = insert(node.right, value)
+          return node
+
+
+      root = insert(Node(5), 2)
+      print(root.left is None)
+    fix: node.left = insert(node.left, value)
+    why: "`insert` returns the subtree with the new node in it, and its caller must store that. Without `node.left =`, the node for 2 is made and thrown away, and the left side stays empty."
+
+  - type: choice
+    after: search-trees
+    prompt: You insert the values 1, 2, 3, ..., n, in this order, into an empty binary search tree that doesn't balance itself. What does building the whole tree cost?
+    choices:
+      - "O(n log n)"
+      - "O(n²)"
+      - "O(n)"
+    answer: 2
+    why: "Each new value is the greatest so far, so it walks past every node already in the tree, which has become a chain: 0 + 1 + 2 + ... + (n - 1) steps, about n²/2. In a balanced tree, each insert would cost O(log n)."
+
+  - type: predict
+    after: traversals
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      def visit(node, out):
+          if node is not None:
+              visit(node.right, out)
+              out.append(node.value)
+              visit(node.left, out)
+
+
+      out = []
+      visit(Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15))), out)
+      print(out)
+    why: "This is in-order with the sides swapped: the right subtree, the node, then the left subtree. In a BST, the greater values now come out first, so the list is sorted from the largest down."
+
+  - type: choice
+    after: traversals
+    prompt: This in-order traversal returns the right list. What does it cost on a chain of n nodes, where every node has only a right child?
+    code: |
+      def inorder(node):
+          if node is None:
+              return []
+          return inorder(node.left) + [node.value] + inorder(node.right)
+    choices:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "`+` copies the lists it joins. On a chain, the call at depth d returns a list of n - d values, which the call above it copies again: n + (n - 1) + ... + 1 copies, O(n²). Appending to one shared list, as the lesson does, is O(n)."
+
+  - type: fill
+    after: traversals
+    code: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      stack, out = [], []
+      node = Node(5, Node(2, None, Node(4)), Node(9))
+      while stack or node is not None:
+          while node is not None:
+              stack.append(node)
+              node = node.left
+          node = stack.pop()
+          out.append(node.value)
+          node = [[node.right]]
+      print(out)
+    why: "After visiting a node, an in-order traversal goes on with the node's right subtree. The inner `while` loop then runs down that subtree's left side."
+
+  - type: bug
+    after: level-order
+    code: |
+      from collections import deque
+
+
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value, self.left, self.right = value, left, right
+
+
+      order = []
+      queue = deque([Node(1, Node(2, Node(4)), Node(3))])
+      while queue:
+          node = queue.pop()  # BUG
+          order.append(node.value)
+          for child in [node.left, node.right]:
+              if child is not None:
+                  queue.append(child)
+      print(order)
+    fix: node = queue.popleft()
+    why: "`pop` takes from the back, the node added last, so the deque works as a stack and the walk goes deep first: 1, 3, 2, 4. Level order takes the oldest node from the front with `popleft`: 1, 2, 3, 4."
+
+  - type: choice
+    after: level-order
+    prompt: A level-order traversal uses a plain list as its queue and takes each node with `queue.pop(0)`. What does that cost for a full binary tree of n nodes?
+    choices:
+      - "O(n), the same as with a deque"
+      - "O(n log n)"
+      - "O(n²), because each `pop(0)` moves every item behind it"
+    answer: 3
+    why: "`pop(0)` shifts every remaining item one place to the left, which is O(n) per pop. In a full tree, the queue holds up to about n/2 nodes, so the n pops cost O(n²) in all. `deque.popleft()` is O(1)."
+
+  - type: predict
+    after: heaps
+    code: |
+      import heapq
+
+      heap = [7, 2, 9, 4, 1]
+      heapq.heapify(heap)
+      print(heap[0], heap[-1])
+      print(heapq.heappop(heap), heapq.heappop(heap), heap[0])
+    why: "`heapify` only promises that the smallest value, 1, is at index 0. The list becomes `[1, 2, 9, 4, 7]`, so `heap[-1]` is 7, not the largest value 9. Each `heappop` gives the next smallest: 1, then 2, and then 4 comes to the front."
+
+  - type: runs
+    after: heaps
+    code: |
+      import heapq
+
+
+      class Job:
+          def __init__(self, name):
+              self.name = name
+
+
+      heap = []
+      heapq.heappush(heap, (2, Job("print")))
+      heapq.heappush(heap, (2, Job("scan")))
+      print(heap[0][1].name)
+    why: "Tuples compare item by item. The two priorities are equal, so Python compares the two jobs next, and `Job` has no `<`: a `TypeError`. A counter as a tie-breaker, `(priority, count, job)`, means the jobs are never compared."
+
+  - type: bug
+    after: heaps
+    code: |
+      import heapq
+
+      prices = [30, 85, 12, 60]
+      heap = []
+      for price in prices:
+          heapq.heappush(heap, price)  # BUG
+      print(-heapq.heappop(heap))
+    fix: heapq.heappush(heap, -price)
+    why: "The program wants the highest price, but `heapq.heappop` always pops the smallest. Pushing the prices negated makes the highest price the smallest number, -85, and negating what comes out gives 85."
+
+  - type: boss
+    after: heaps
+    prompt: |
+      Write `merge_lists(lists)` that merges a list of sorted lists into one sorted list, with a heap. Keep the next item of each list in the heap as `(value, list number, index)`. Pop the smallest, add its value to the result, and push the next item of the same list, if it has one. Some lists may be empty. Don't use `sorted`, `sort` or `heapq.merge`.
+
+      For example, this call:
+
+      ```python fragment
+      print(merge_lists([[1, 4, 9], [2, 3, 10], [], [5]]))
+      ```
+
+      prints:
+
+      ```
+      [1, 2, 3, 4, 5, 9, 10]
+      ```
+    seed: |
+      import heapq
+
+
+      def merge_lists(lists):
+          pass
+
+
+      if __name__ == "__main__":
+          print(merge_lists([[1, 4, 9], [2, 3, 10], [], [5]]))
+    solution: |
+      import heapq
+
+
+      def merge_lists(lists):
+          heap = []
+          for number in range(len(lists)):
+              if len(lists[number]) > 0:
+                  heapq.heappush(heap, (lists[number][0], number, 0))
+          merged = []
+          while heap:
+              value, number, index = heapq.heappop(heap)
+              merged.append(value)
+              if index + 1 < len(lists[number]):
+                  heapq.heappush(heap, (lists[number][index + 1], number, index + 1))
+          return merged
+
+
+      if __name__ == "__main__":
+          print(merge_lists([[1, 4, 9], [2, 3, 10], [], [5]]))
+    hints:
+      - "Start by pushing the first item of every list that isn't empty: `(lists[number][0], number, 0)`. The list number and the index say where the value came from."
+      - "Then, while the heap isn't empty, pop the smallest tuple and append its value to the result."
+      - "If that list has an item after `index`, push `(lists[number][index + 1], number, index + 1)`. The heap never holds more than one item per list, so each step is O(log k) for k lists."
+    forbid:
+      - pattern: \bsorted\s*\(|\.sort\s*\(|\bmerge\s*\(
+        message: Merge the lists with your own heap, without `sorted`, `sort` or `heapq.merge`.
+    tests:
+      - call: print(merge_lists([[1, 4, 9], [2, 3, 10], [], [5]]))
+      - call: merge_lists([])
+        hidden: true
+      - call: merge_lists([[], []])
+        hidden: true
+      - call: merge_lists([[5, 5], [5]])
+        hidden: true
+      - call: merge_lists([[-3, 0, 8]])
+        hidden: true
+      - call: merge_lists([[1], [0], [2]])
+        hidden: true
+      - call: merge_lists([list(range(i, 300, 7)) for i in range(7)]) == list(range(300))
+        hidden: true
+
+  - type: predict
+    after: tries
+    code: |
+      root = {}
+      for word in ["tea", "ten", "to", "team", "tan", "inn"]:
+          node = root
+          for letter in word:
+              if letter not in node:
+                  node[letter] = {}
+              node = node[letter]
+      print(len(root), len(root["t"]), len(root["t"]["e"]), len(root["t"]["e"]["a"]))
+    why: "Words share the nodes of their common beginning. Below the root there are only `t` and `i`. After `t` come `e`, `o` and `a`; after `te` come `a` and `n`; and after `tea` only the `m` of team."
+
+  - type: bug
+    after: tries
+    code: |
+      # "$" marks where a word ends: this trie holds only "card"
+      root = {"c": {"a": {"r": {"d": {"$": True}}}}}
+
+
+      def contains(word):
+          node = root
+          for letter in word:
+              if letter not in node:
+                  return False
+              node = node[letter]
+          return True  # BUG
+
+
+      print(contains("car"), contains("card"))
+    fix: return "$" in node
+    why: "Getting to the end of a word's path only shows that some word starts with it. \"car\" is a prefix of \"card\", but no word ends at its node, so `contains` must check for the end mark there: `\"$\" in node` gives False True."
+
+  - type: choice
+    after: tries
+    prompt: A trie holds a million words. What does checking whether a word of m letters is in it cost?
+    choices:
+      - "O(m): one dict step per letter"
+      - "O(log n) for n words, like binary search"
+      - "O(n·m): it compares the word with every word"
+    answer: 1
+    why: "The check walks down one node per letter, and each step is a dict lookup, O(1) on average. How many words the trie holds doesn't matter."

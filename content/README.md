@@ -1,6 +1,6 @@
 # Lesson content
 
-This folder holds the course: `course.yaml` (every planned module, in order, with the MOOC sections it follows) and one file per written module in `modules/`, named after its place in the course (`01-printing.yaml`). `drills/` holds the practice drills, `projects/` the projects (larger programs built over several milestones), `placement.yaml` the placement quiz and `topics.yaml` the topics reference.
+This folder holds the course: `course.yaml` (every planned module, in order, with the MOOC sections it follows, and the groups of extra modules) and one file per written module in `modules/`, named after its place in the course (`01-printing.yaml`). `drills/` holds the practice drills, `projects/` the projects (larger programs built over several milestones), `placement.yaml` the placement quiz, `topics.yaml` the topics reference and `interview.yaml` the interview prep page.
 
 ## License and credit
 
@@ -20,6 +20,7 @@ The course follows the order and topics of the [Python Programming MOOC 2026](ht
 - every solution follows its own `require` and `forbid` rules;
 - every example program in the lesson text is run, and an `output` (or `crash`) block after it must be exactly what it prints; every `>>>` session is run and must show exactly what Python prints;
 - every step has exactly three challenges, a `**Your turn:**` task and at least one hint per challenge;
+- a challenge with a big test (`big: true`) has a slow solution (`slow`) that passes every other test and is still running after 20 seconds (twice the page's limit) on a big test, while the model solution takes at most 500 ms on each big test (see "Speed tests: big and slow");
 - the expected output a task shows (its last plain ``` block) is exactly what the test the task card shows prints: the first visible test with `writes`, or else the first visible test;
 - every code block in a step's text or a task is of a kind the page knows (see "Code blocks");
 - no key is misspelled, and every hint is a string of text (Markdown), not something YAML read as a list or mapping: **quote a hint, message or `why` that contains `: `** (a colon and a space).
@@ -205,6 +206,48 @@ A **window test** gives the frames and events: `window: {frames: 30, events: [..
 
 In lesson text, a ` ```python window ` example is a pygame program; an optional ` ```window ` block right after it gives its frames and events (`{frames: 90, events: [...]}`, YAML; 60 frames and nothing happening without one), and an ` ```output ` block after that what it prints, if it prints. The build runs it and shows its last frame under the code; the learner can play it in the page. Programs that use pygame run in Pyodide at build time (the browser's own interpreter), so the pictures are what the page shows.
 
+### Speed tests: big and slow
+
+The data structures and algorithms modules teach ways that are fast as well as right. A test with `big: true` is sized so that a correct but slow solution runs out of time: build the big input in the test itself (a call that makes 200,000 values, such as `has_duplicate([i * 7 for i in range(200_000)])`, or a program that reads one number and works up to it), so the lesson file stays small. Big tests are normally hidden, and the first visible test (the one the task card shows) can't be big. A challenge with a big test gets a longer time limit on the page (10 seconds instead of 5), and when a big test runs out of time, the page says plainly that the program is too slow for a big input, not that a loop never ends. Its big tests run after the others, one at a time, and once one runs out of time the rest aren't run.
+
+A challenge with a big test needs `slow`: a correct but slow solution, in the same form as `solution`. A fill-in's `slow` is the whole program with its blanks filled the slow way (the text outside the blanks stays as it is); a program task's is a whole program (or a map of files, like `solution`). The build checks, on the reference CPython:
+
+- `slow` passes every test that isn't big and follows the challenge's `require` and `forbid` rules, so the tests are fair and only speed separates it from the model solution;
+- `slow` is still running after 20 seconds on at least one big test: twice the page's time limit for the challenge, as a learner's computer can be about twice as fast as the machine the build runs on. A slow way that runs out of time at 10 seconds on the build's machine could pass on such a computer. The build runs the slow solutions' big tests at its end, once every other run is done, alone and one at a time: beside the build's other programs, a slow way looks slower than it is. A challenge's big tests run in order, and the first timeout ends the check. A `slow` that finishes every big test means the big test isn't big enough;
+- the model solution takes at most 500 ms on each big test, run on its own. The build first runs every program side by side, which can only make a run slower, so a time within 500 ms there stands; a big test over it is timed again at the end of the build, once every other run is done, alone and one at a time, and the best of two runs counts. Pyodide runs Python up to 3 times slower than CPython and a slow phone up to 5 times slower again, so 500 ms on CPython stays under the 10 s limit on a slow phone; [`src/grader/limits.ts`](../src/grader/limits.ts) says how the limits were chosen. `npm run content:pyodide` times the big tests in Pyodide too.
+
+Each slow solution's check takes those 20 seconds, so the build runs them only once nothing else is wrong with the content (until then a warning says they didn't run), and caches each result: a build pays for a slow solution again only when it or its test changes (CI keeps the cache from one run to the next). A `--dry` check doesn't write the cache, so it waits the 20 seconds for each slow solution every time. Other programs running on the machine, such as other checks, make a slow way look slower than it is, so a check run beside them can pass a slow solution that a quiet build fails: CI's build, alone on its machine, is the one that counts.
+
+```yaml
+      - task: |
+          Write `has_duplicate(values)`: True when some value appears twice. It must be fast for 200,000 values.
+        seed: |
+          def has_duplicate(values):
+              pass
+        solution: |
+          def has_duplicate(values):
+              return len(set(values)) != len(values)
+        slow: |                  # right, but a loop inside a loop: about 20 billion steps for 200,000 values
+          def has_duplicate(values):
+              for i in range(len(values)):
+                  for j in range(i + 1, len(values)):
+                      if values[i] == values[j]:
+                          return True
+              return False
+        hints: [...]
+        tests:
+          - call: has_duplicate([3, 1, 3])
+          - call: has_duplicate([4, 2, 9])
+            hidden: true
+          - call: has_duplicate([i * 7 for i in range(200_000)])
+            hidden: true
+            big: true
+```
+
+The build's last line says how many big tests there are and the model solutions' slowest time; `slow` stays in `src/generated/` for the browser tests and is never in the files the page loads. A fill-in's slow way must fit its blanks, so give a big test to a fill-in only when the blank is where the fast and the slow way differ.
+
+**Recursion and big inputs.** Python allows 1000 frames of recursion (the harness counts from the program's first line, as `python main.py` does), so a recursive function that goes one level deeper for each of 200,000 values stops with a `RecursionError`. DSA tasks with big inputs need iterative solutions (a loop with your own stack or queue, as for depth-first search on a long path) or recursion whose depth stays small (a balanced tree's depth, the halving of binary search or merge sort). Don't ask learners to raise the limit with `sys.setrecursionlimit`: the browser's Python has a smaller stack than CPython, and a deep recursion can crash it. A recursive `slow` (the exponential way of a dynamic programming task) is fine when its depth stays small.
+
 ## Code blocks in lesson text
 
 Every Python block says what it is:
@@ -260,7 +303,7 @@ The lessons are written for people in their first weeks of programming, in the v
 
 ## Drills (Deathmatch, daily challenge, interview prep)
 
-`drills/<module id>.yaml` holds the practice drills of a lesson module, 12 to 18 of them; `drills/interview-*.yaml` (with `topic: interview`) the interview questions, which are open to everyone. Each drill has a `type`, and most show a short program in `code`, which the build runs as a whole program. Predict and runs answers are taken from Python, not typed by hand; a bug's fix must run and change what the program does; a choice's `answer` is written by hand, so `verify: output` should be used whenever the right choice is what the code prints. Prompts, choices and explanations are Markdown: code, and anything with `<`, goes in backticks (the build rejects text that Markdown would read as HTML):
+`drills/<module id>.yaml` holds the practice drills of a lesson module, 12 to 18 of them; `drills/interview-*.yaml` (with `topic: interview`) the interview questions, which are open to everyone. An interview file also has a `title:`, one line that the interview prep page shows for its set, with the number of questions (a module's drills have no title of their own). Each drill has a `type`, and most show a short program in `code`, which the build runs as a whole program. Predict and runs answers are taken from Python, not typed by hand; a bug's fix must run and change what the program does; a choice's `answer` is written by hand, so `verify: output` should be used whenever the right choice is what the code prints. Prompts, choices and explanations are Markdown: code, and anything with `<`, goes in backticks (the build rejects text that Markdown would read as HTML):
 
 ```yaml
 topic: simple-loops           # the module id (the file is simple-loops.yaml)
@@ -304,7 +347,7 @@ drills:
 
 Predict, fill, bug and runs drills may give the program input with `stdin` (echoed in the output as in lessons). Keep drill programs short (2 to 10 lines) so they fit a phone. A good drill set mixes the types, has one or two boss drills, and practices the mistakes beginners really make in that module.
 
-`placement.yaml` holds the placement quiz: `questions:`, each a drill with a `module:`, one per module in course order.
+`placement.yaml` holds the placement quiz: `questions:`, each a drill with a `module:`, one per module that follows the MOOC, in course order. The extra modules are optional and come after the course, so they have no question (the build refuses one).
 
 ## Projects
 
@@ -366,3 +409,66 @@ To check one project: `node scripts/build-content.mjs --dry --project-file text-
 ```
 
 Kinds: `None`, `True` and `False` are literals; `if`, `def`, `in` keywords; `%`, `//`, `==` operators; `print`, `len` (built-in) functions; `str.split` and `list.append` methods (write them with their type, as the documentation does); `int`, `list`, `dict` types; `math`, `random` modules; `ValueError` an exception. The full build checks every entry: each step id must exist, and the term (or one of its check phrases) must be in that step's code (for the kinds of code) or anywhere in it (for ideas and tools).
+
+## Extra modules and their groups
+
+An extra module (`course: extra` in `course.yaml`) is Python Arena's own, not part of the MOOC: it has no `part` or `mooc` sections, and the extra modules come after the course. Each one belongs to a group, which the course page shows as a section of its own, with the group's title and its `about` text:
+
+```yaml
+groups:
+  - id: dsa
+    title: "Data structures and algorithms"
+    about: |                   # Markdown under the section's heading
+      Python Arena's own modules, not part of the MOOC: ... The [Interview prep](/interview/) page puts them together with interview questions to practice.
+modules:
+  # ... the MOOC's modules, then:
+  - id: dsa-hash
+    title: "Hash tables"
+    course: extra
+    group: dsa
+    steps: 5
+```
+
+The build checks that every extra module names a group on the list, that only extra modules have one, that a group's modules come one after another and that every group has modules. `about` is checked as site text, as `interview.yaml` is (below). A group's last module points on to what comes next, and the MOOC's last module names the groups.
+
+## The interview prep page
+
+`interview.yaml` is the text of the interview prep page, `/interview/`. Its modules come from `course.yaml` (the group it names) with each learner's progress, and its drill sets from `drills/interview-*.yaml` (each file's `title` and number of questions), so neither is repeated here. Each section has an optional `lead`, Markdown under its heading:
+
+```yaml
+intro: |                         # Markdown, the page's opening
+modules:
+  group: dsa                     # the group of extra modules to list
+  lead: ...
+drills:
+  lead: ...                      # above the drill sets and the button that starts interview prep in Deathmatch
+patterns:                        # "Which technique fits?"
+  lead: ...
+  rows:
+    - signal: "Have I seen this value before? Are there duplicates?"   # what the problem asks, one line
+      technique: "A set of the values seen so far"                       # one line
+      step: more-comprehensions-sets                                     # the id of the step that teaches it
+costs:                           # "What Python's operations cost" (CPython's)
+  lead: ...
+  rows:
+    - operation: "`x in a`, `a.index(x)` (list)"
+      cost: "O(n)"
+      note: "Looks at the items one by one."
+  after: ...                     # Markdown under the table
+checklist:                       # "Working through a problem", in order
+  lead: ...
+  items: ["Say the problem back in your own words. ...", ...]
+tools:                           # "Python's tools for interview problems": modules of the standard library
+  lead: ...
+  modules:
+    - name: heapq                # linked to its page in Python's documentation
+      about: "A heap in a plain list: ..."
+practice:                        # "Places to practice": other sites
+  lead: ...
+  sites:
+    - name: LeetCode
+      url: https://leetcode.com/   # its host must be on the list in scripts/check-links.mjs
+      about: "..."
+```
+
+The build checks it like lesson text: Markdown without HTML (code, and anything with `<`, in backticks), no en or em dashes, every `step` a written step, every tool a module Python has, and every link a page the site has or a host on the allowed list. A link to one of the site's pages starts with `/` and ends with `/` (`/topics/`, `/learn/dictionaries/counting/`, `/deathmatch/?mode=interview`); the page puts the site's base path in front. A step or module that isn't written yet has no page, so the techniques table names only written steps: when a DSA module is written, point its rows at that module's steps. The costs must be exactly right for CPython (average and worst case where they differ).

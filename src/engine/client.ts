@@ -5,12 +5,12 @@
 import { CACHE_PREFIX, downloadSize, fetchManifest, type Manifest } from "./manifest";
 import { engineSupported } from "./support";
 import type { EngineStatus, RunInput, RunResult, SourceFile, WindowFrame } from "./types";
+import { DEFAULT_TIME_LIMIT_MS } from "../grader/limits";
 
 export type { EngineStatus, RunInput, RunResult, SourceFile, WindowEvent, WindowFrame, WindowResult, WindowSpec } from "./types";
 export { engineSupported } from "./support";
 
-/** Default per-test time limit. Python in WebAssembly is slower than on a desktop, so it's generous. */
-export const DEFAULT_TIME_LIMIT_MS = 5_000;
+export { DEFAULT_TIME_LIMIT_MS };
 /** How long a new worker may take to start Python (from the cache) before a run is reported as failed. */
 const STARTUP_LIMIT_MS = 60_000;
 

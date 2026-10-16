@@ -1,0 +1,484 @@
+topic: interview
+title: "Data structures and algorithms: costs, searching, sorting, hashing, heaps, graphs and dynamic programming"
+drills:
+  - type: choice
+    prompt: "What is the Big-O of `count_steps(n)`?"
+    code: |
+      def count_steps(n):
+          steps = 0
+          for _ in range(n):
+              j = 1
+              while j < n:
+                  j *= 2
+                  steps += 1
+          return steps
+
+
+      print(count_steps(8))
+    choices:
+      - "O(n)"
+      - "O(log n)"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "The outer loop runs n times. The inner loop doubles `j` until it reaches n, which takes about log₂ n rounds: 3 for n = 8, so this prints 24. n rounds of about log n steps each is O(n log n)."
+
+  - type: predict
+    code: |
+      def search(values, target):
+          lo, hi = 0, len(values) - 1
+          while lo <= hi:
+              mid = (lo + hi) // 2
+              if values[mid] == target:
+                  return mid
+              if values[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid - 1
+          return -1
+
+
+      values = [2, 5, 5, 5, 8, 13]
+      print(search(values, 5), search(values, 9))
+    why: "The first `mid` is (0 + 5) // 2 = 2, and `values[2]` is already 5, so it returns 2: a 5, but not the first one, which is at index 1. For 9, the range closes in on 8 and 13 and ends empty, with `lo` past `hi`, so it returns -1. To find the first copy of a value, use `bisect.bisect_left`."
+
+  - type: bug
+    code: |
+      def search(values, target):
+          lo, hi = 0, len(values) - 1
+          while lo < hi:  # BUG
+              mid = (lo + hi) // 2
+              if values[mid] == target:
+                  return mid
+              if values[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid - 1
+          return -1
+
+
+      print(search([1, 4, 6, 9], 9))
+    fix: "while lo <= hi:"
+    why: "`hi` starts at the last index, so the range from `lo` to `hi` includes both ends, and when `lo == hi` one value is still left to check. `while lo < hi` stops before checking it, so 9, the last value, is never found. With an inclusive `hi`, loop `while lo <= hi`. With `hi = len(values)`, one past the end, the loop is `while lo < hi` and the update is `hi = mid`."
+
+  - type: choice
+    prompt: "This binary search makes about log n calls. What does a search cost at worst, for a sorted list of n values?"
+    code: |
+      def contains(values, target):
+          if not values:
+              return False
+          mid = len(values) // 2
+          if values[mid] == target:
+              return True
+          if values[mid] < target:
+              return contains(values[mid + 1:], target)
+          return contains(values[:mid], target)
+
+
+      print(contains([1, 3, 5, 7, 9], 7))
+    choices:
+      - "O(log n)"
+      - "O(n)"
+      - "O(n log n)"
+    answer: 2
+    why: "Each call makes a slice of the half it keeps, and a slice copies its items: about n/2, then n/4, and so on, which is O(n) in all. Passing `lo` and `hi` indexes instead of slices makes each call O(1), and the search O(log n)."
+
+  - type: choice
+    prompt: "`list.append` is O(1) amortized. What does amortized mean here?"
+    choices:
+      - "Every single append takes the same short time"
+      - "Now and then one append is slow, but n appends take O(n) in all, so each one costs O(1) when the total is shared out"
+      - "An append is O(1) for most inputs, and O(n) for unlucky ones"
+    answer: 2
+    why: "A list keeps spare room at its end. When the room runs out, it may have to copy its items to a bigger block of memory: O(n) for that one append. CPython grows the room by about an eighth of the list's size each time, so the copies get rarer as the list grows, and n appends cost O(n) in all. That holds for every series of appends, which is what sets amortized apart from an average over inputs."
+
+  - type: choice
+    prompt: "A lookup `x in s` in a set is O(1) on average. Why can it be O(n) at worst?"
+    choices:
+      - "Values with the same hash collide, and the lookup compares `x` with each of them in turn"
+      - "The set may be growing, and the lookup waits until it's done"
+      - "A set keeps its values sorted, and a lookup is a binary search"
+    answer: 1
+    why: "A set keeps each value at a place worked out from its hash, so `x in s` starts looking where `hash(x)` points, without going through the other values. Values with the same hash compete for the same places and end up one after another along the same path, so a lookup compares `x` with each of them it meets. If all n values collide, a lookup for a value that isn't there compares it with every one of them: O(n). Numbers, strings and tuples hash well (Python even randomizes the hashes of strings), so in practice it's O(1). A class whose `__hash__` returns the same number for every object makes each lookup O(n)."
+
+  - type: choice
+    prompt: "A breadth-first search adds each vertex at the back of its queue and takes the next one from the front. Which choice makes both O(1)?"
+    choices:
+      - "A list, with `append` and `pop(0)`"
+      - "A `collections.deque`, with `append` and `popleft`"
+      - "A list, with `insert(0, x)` and `pop()`"
+      - "A set, with `add` and `pop`"
+    answer: 2
+    why: "A list keeps its items side by side from index 0, so adding or taking an item at the front moves every other item: O(n). A deque is built for both ends, so `popleft` is O(1). A set's `pop` takes an arbitrary item, not the oldest one."
+
+  - type: predict
+    code: |
+      from collections import deque
+
+      graph = {"a": ["c", "b"], "b": ["e"], "c": ["d", "b"], "d": ["e"], "e": []}
+      seen = {"a"}
+      queue = deque(["a"])
+      order = []
+      while queue:
+          node = queue.popleft()
+          order.append(node)
+          for nxt in graph[node]:
+              if nxt not in seen:
+                  seen.add(nxt)
+                  queue.append(nxt)
+      print(order)
+    why: "The queue hands out vertices in the order they were found: a, then its neighbors c and b in the order of its list, then what c and b found, d and then e. A vertex is marked as seen when it goes into the queue, so b, reached again from c, isn't added twice. BFS visits everything 1 step from the start before anything 2 steps away."
+
+  - type: choice
+    prompt: "In a maze where every step costs the same, you want a shortest path from the start to the exit. Which search should you use?"
+    choices:
+      - "Breadth-first search, with a queue"
+      - "Depth-first search, with a stack"
+      - "Either one: the first path either one finds is a shortest one"
+    answer: 1
+    why: "BFS takes cells in order of distance: every cell 1 step away, then every cell 2 steps away, and so on. So when it first reaches the exit, no shorter path exists. DFS follows one path as deep as it goes, and the first path it finds to the exit can be a long way round. When steps cost different amounts (none negative), use Dijkstra's algorithm, with a heap."
+
+  - type: bug
+    code: |
+      land = {(0, 0), (0, 1), (1, 0), (3, 3)}
+      seen = set()
+
+
+      def island_size(cell):
+          if cell not in land:  # BUG
+              return 0
+          seen.add(cell)
+          r, c = cell
+          total = 1
+          for nxt in [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]:
+              total += island_size(nxt)
+          return total
+
+
+      print(island_size((0, 0)))
+    fix: "if cell not in land or cell in seen:"
+    why: "`seen` gets every cell, but nothing ever checks it. So (0, 0) searches (1, 0), which searches (0, 0) again, and the two call each other until Python stops with a `RecursionError`. In a grid, or any graph with edges both ways, neighbors lead back to where you came from, so a search must skip what it has already visited."
+
+  - type: choice
+    prompt: "A program adds numbers to a collection and, again and again, takes out the smallest one. Which way does both in O(log n)?"
+    choices:
+      - "A list sorted with `sort()` after every add, taking the smallest with `pop(0)`"
+      - "A heap in a list, with `heapq.heappush` and `heapq.heappop`"
+      - "A list with `append`, finding the smallest with `min` and taking it out with `remove`"
+    answer: 2
+    why: "A heap keeps the smallest item at index 0 and only partly orders the rest, so a push or a pop fixes just one path from the top of the heap to the bottom, about log n levels. `pop(0)` moves every other item one place to the left, O(n), however well the list is sorted, and `min` and `remove` each look through the list, O(n)."
+
+  - type: predict
+    code: |
+      import heapq
+
+      heap = []
+      for value in [5, 1, 8, 3]:
+          heapq.heappush(heap, value)
+      print(heap)
+      print(heapq.heappop(heap), heapq.heappop(heap))
+      heapq.heappush(heap, 2)
+      print([heapq.heappop(heap) for _ in range(3)])
+    why: "A heap keeps each item no bigger than the two just below it (`heap[k] <= heap[2*k + 1]` and `heap[k] <= heap[2*k + 2]`), so the smallest is at index 0, but the list itself isn't sorted. `heappush` adds the new item at the end and swaps it with the item just above it while it's smaller: the 1 swaps past the 5 to the top, the 8 stays where it lands, and the 3 lands below the 5 and swaps with it, so the 5 ends up last, after the bigger 8: `[1, 3, 8, 5]`. Each `heappop` takes the smallest item left and repairs the heap in O(log n), so the pops come out in sorted order, the 2 pushed later included."
+
+  - type: predict
+    code: |
+      import heapq
+
+      tasks = [(2, "test"), (1, "plan"), (3, "ship"), (1, "eat")]
+      heapq.heapify(tasks)
+      print(heapq.heappop(tasks))
+      print(heapq.heappop(tasks))
+      prices = [-p for p in [40, 90, 15]]
+      heapq.heapify(prices)
+      print(-heapq.heappop(prices))
+    why: "Tuples compare item by item, so the lowest priority comes out first, and the tie at 1 is settled by the names: `\"eat\"` comes before `\"plan\"`. `heappush`, `heappop` and `heapify` make a min-heap. Storing the values negated turns the largest into the smallest, and the minus sign turns it back, in every version of Python. Python 3.14 also has max-heap versions, such as `heapq.heapify_max` and `heapq.heappop_max`."
+
+  - type: runs
+    code: |
+      import heapq
+
+      queue = []
+      heapq.heappush(queue, (2, {"name": "b"}))
+      heapq.heappush(queue, (2, {"name": "a"}))
+      print(heapq.heappop(queue))
+    why: "A heap compares its items, and tuples compare item by item. The priorities tie at 2, so Python compares the dicts, which have no order: `TypeError: '<' not supported between instances of 'dict' and 'dict'`. Put a counter in between, `(priority, count, item)`, so that a tie is settled before the items are compared."
+
+  - type: choice
+    prompt: "`orders` is a list of dicts in order of time. After `orders.sort(key=lambda o: o[\"customer\"])`, in what order are each customer's orders?"
+    choices:
+      - "Still in order of time"
+      - "In no set order: a sort may mix up items with equal keys"
+      - "In reverse order of time"
+    answer: 1
+    why: "Python's `sort` and `sorted` are guaranteed to be stable: items with equal keys keep the order they had. So sorting by a second key first and then by the main key sorts by both, here by customer, and by time within each customer."
+
+  - type: predict
+    code: |
+      words = ["pear", "fig", "kiwi", "apple", "date"]
+      print(sorted(words, key=len))
+      print(sorted(words, key=len, reverse=True))
+    why: "Python's sort is stable: words of the same length keep the order they had, so pear, kiwi and date stay in that order. `reverse=True` keeps that promise too. It doesn't sort and then reverse the result, which would put date before kiwi and pear."
+
+  - type: predict
+    code: |
+      from collections import Counter
+
+      counts = Counter("mississippi")
+      print(counts.most_common(2))
+      print(counts["s"], counts["z"])
+    why: "A `Counter` counts the items in one pass, O(n). `most_common` orders them by count, and items with the same count keep the order in which they were first met: i comes before s in the word. A missing key counts as 0, without a `KeyError`."
+
+  - type: fill
+    prompt: The list is sorted. Fill the blank so the program finds the two values that add up to 13.
+    code: |
+      values = [1, 3, 4, 6, 9]
+      target = 13
+      left, right = 0, len(values) - 1
+      while left < right:
+          total = values[left] + values[right]
+          if total == target:
+              break
+          if total < target:
+              [[left += 1‖left = left + 1]]
+          else:
+              right -= 1
+      print(values[left], values[right])
+    why: "The list is sorted, so a sum that is too small can only grow by moving `left` on to a bigger value. Each step rules out one value for good, so the search is O(n) instead of trying all the O(n²) pairs."
+
+  - type: bug
+    code: |
+      values = [4, 7, 2, 8, 5]
+      for i in range(len(values)):  # BUG
+          if values[i] % 2 == 0:
+              del values[i]
+      print(values)
+    fix: "for i in reversed(range(len(values))):"
+    why: "`range(len(values))` is worked out once, for 5 items. Each `del` moves the items after it one place to the left, so the loop skips each item that moves into the gap (the 7 and the 8), and then runs past the new end with an `IndexError`. Going backwards, a `del` only moves items the loop has already checked. Each `del` moves every item after it, so a loop of them is O(n²) at worst. Simpler and faster is a new list, `[v for v in values if v % 2 != 0]`: one pass, O(n)."
+
+  - type: choice
+    prompt: "This greedy way pays an amount with the largest coin that fits, again and again. With coins of 1, 3 and 4, it pays 6 with 3 coins. Is that the fewest?"
+    code: |
+      def greedy_coins(amount, coins):
+          count = 0
+          for coin in sorted(coins, reverse=True):
+              count += amount // coin
+              amount %= coin
+          return count
+
+
+      print(greedy_coins(6, [1, 3, 4]))
+    choices:
+      - "Yes: taking the largest coin first always gives the fewest coins"
+      - "Yes, because the coins are sorted from largest to smallest first"
+      - "No: 3 + 3 pays 6 with 2 coins"
+    answer: 3
+    why: "Taking the 4 first leaves 2, which needs two 1s: 4 + 1 + 1. A greedy choice is never taken back, so it can rule out the best answer. For coins of 1, 5, 10 and 25 the greedy way happens to be right, but in general you have to compare the options: dynamic programming works out the fewest coins for every amount from 0 up to 6."
+
+  - type: choice
+    prompt: "This `fib` has no memo. How does the number of calls grow with n?"
+    code: |
+      calls = 0
+
+
+      def fib(n):
+          global calls
+          calls += 1
+          if n < 2:
+              return n
+          return fib(n - 1) + fib(n - 2)
+
+
+      print(fib(10), calls)
+    choices:
+      - "O(n)"
+      - "O(n²)"
+      - "Exponentially: each step up in n multiplies it by about 1.6"
+    answer: 3
+    why: "Each call makes two more, and the same values are worked out again and again: fib(10) takes 177 calls, fib(20) 21,891 and fib(30) more than 2.6 million. The count grows like the Fibonacci numbers themselves, about 1.618 times for each step. A memo, such as `functools.cache`, works out each of fib(0) to fib(n) once, so the work is O(n)."
+
+  - type: bug
+    code: |
+      def ways(n, steps, memo={}):  # BUG
+          if memo is None:
+              memo = {}
+          if n < 0:
+              return 0
+          if n == 0:
+              return 1
+          if n not in memo:
+              memo[n] = sum(ways(n - s, steps, memo) for s in steps)
+          return memo[n]
+
+
+      print(ways(4, [1, 2]), ways(4, [1, 3]))
+    fix: "def ways(n, steps, memo=None):"
+    why: "The default `{}` is made once, when `def` runs, so every call shares one memo. The second call finds `memo[4]` from the first, which was worked out with other steps, and gives 5 instead of 3. Defaulting to `None` gives each call from outside a new, empty memo, which its recursive calls then share. A memo is right only for one problem: its keys must hold everything the answer depends on."
+
+  - type: runs
+    code: |
+      def total(values, i=0):
+          if i == len(values):
+              return 0
+          return values[i] + total(values, i + 1)
+
+
+      print(total(list(range(10))))
+      print(total(list(range(5000))))
+    why: "Each call waits for the next one, so 5,000 values need 5,000 nested calls. CPython's limit is a depth of 1000 by default (`sys.getrecursionlimit()`), so after printing 45 for the short list it stops with a `RecursionError`. A loop, or `sum(values)`, has no such limit. In Python, recursion suits problems whose depth stays small."
+
+  - type: runs
+    code: |
+      def search(values, target, lo, hi):
+          if lo > hi:
+              return -1
+          mid = (lo + hi) // 2
+          if values[mid] == target:
+              return mid
+          if values[mid] < target:
+              return search(values, target, mid + 1, hi)
+          return search(values, target, lo, mid - 1)
+
+
+      values = list(range(0, 2_000_000, 2))
+      print(search(values, 1_999_998, 0, len(values) - 1))
+    why: "Each call halves the range, so a million values need only about 20 nested calls, far below the limit of 1000. Recursion is safe when its depth stays small, as with the halving of binary search or the height of a balanced tree."
+
+  - type: boss
+    prompt: |
+      Write `balanced(text)`: it returns `True` when every bracket in `text` is closed by a bracket of the same kind, in the right order, and `False` otherwise. The brackets are `()`, `[]` and `{}`, and other characters don't matter. So `"([)]"` isn't balanced, and a text without brackets is. A stack of the brackets still open does it in one pass, O(n).
+
+      For example, `balanced("(a[b]{c})")` returns:
+
+      ```
+      True
+      ```
+    seed: |
+      def balanced(text):
+          pass
+
+
+      if __name__ == "__main__":
+          print(balanced("(a[b]{c})"))
+    solution: |
+      def balanced(text):
+          partner = {")": "(", "]": "[", "}": "{"}
+          stack = []
+          for char in text:
+              if char in "([{":
+                  stack.append(char)
+              elif char in partner:
+                  if not stack or stack.pop() != partner[char]:
+                      return False
+          return not stack
+
+
+      if __name__ == "__main__":
+          print(balanced("(a[b]{c})"))
+    hints:
+      - "Keep a list `stack` of the opening brackets that are still open. An opening bracket goes on top with `append`."
+      - "A closing bracket must match the bracket on top: if the stack is empty, or `stack.pop()` isn't its partner, return `False`. A dict such as `{\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}` gives each closing bracket its partner. At the end, every bracket must be closed, so the stack must be empty."
+    tests:
+      - call: balanced("(a[b]{c})")
+      - call: balanced("([)]")
+        hidden: true
+      - call: balanced("")
+        hidden: true
+      - call: balanced("no brackets")
+        hidden: true
+      - call: balanced("((")
+        hidden: true
+      - call: balanced("a)b(")
+        hidden: true
+      - call: balanced("]")
+        hidden: true
+      - call: balanced("{[()()]}[]")
+        hidden: true
+      - call: balanced("{[(])}")
+        hidden: true
+
+  - type: boss
+    prompt: |
+      Write `two_sum(numbers, target)`. It returns a tuple `(i, j)`, with `i < j`, of the positions of two numbers that add up to `target`, or `None` when no two numbers do. At most one pair adds up to `target`. A number can't pair with itself, but two equal numbers at different positions can. It must be fast for 200,000 numbers: a loop inside a loop is O(n²), too slow for the hidden test. With a dict of the numbers seen so far, one pass is enough: O(n).
+
+      For example, `two_sum([4, 9, 4, 2], 8)` returns the positions of the two 4s:
+
+      ```
+      (0, 2)
+      ```
+    seed: |
+      def two_sum(numbers, target):
+          pass
+
+
+      if __name__ == "__main__":
+          print(two_sum([4, 9, 4, 2], 8))
+    solution: |
+      def two_sum(numbers, target):
+          seen = {}
+          for j, number in enumerate(numbers):
+              if target - number in seen:
+                  return (seen[target - number], j)
+              seen[number] = j
+          return None
+
+
+      if __name__ == "__main__":
+          print(two_sum([4, 9, 4, 2], 8))
+    slow: |
+      def two_sum(numbers, target):
+          for i in range(len(numbers)):
+              for j in range(i + 1, len(numbers)):
+                  if numbers[i] + numbers[j] == target:
+                      return (i, j)
+          return None
+
+
+      if __name__ == "__main__":
+          print(two_sum([4, 9, 4, 2], 8))
+    hints:
+      - "The partner a number needs is `target - number`. Keep a dict `seen` that maps each number before the current one to its position."
+      - "In one loop with `enumerate`: if the partner is in `seen`, return `(seen[target - number], j)`. Only after that check, add the number itself to `seen`, so it can't pair with itself. After the loop, return `None`."
+    tests:
+      - call: two_sum([4, 9, 4, 2], 8)
+      - call: two_sum([3, 9, 4, 7], 11)
+        hidden: true
+      - call: two_sum([2, 7, 11, 15], 9)
+        hidden: true
+      - call: two_sum([5, 5], 10)
+        hidden: true
+      - call: two_sum([-3, 4, 10], 7)
+        hidden: true
+      - call: two_sum([0, 4, 3, 0], 0)
+        hidden: true
+      - call: print(two_sum([1, 6, 2], 12))
+        hidden: true
+      - call: print(two_sum([], 4))
+        hidden: true
+      - call: two_sum([3 * i for i in range(200_000)] + [1], 599_998)
+        hidden: true
+        big: true
+
+  - type: bug
+    code: |
+      class ListNode:
+          def __init__(self, value, next_node=None):
+              self.value, self.next = value, next_node
+
+
+      def reverse(head):
+          prev, node = None, head
+          while node is not None:
+              nxt = node.next
+              node.next = prev
+              prev = node
+              node = node.next  # BUG
+          return prev
+
+
+      node = reverse(ListNode(1, ListNode(2, ListNode(3))))
+      while node is not None:
+          print(node.value)
+          node = node.next
+    fix: node = nxt
+    why: "By the last line of the loop, `node.next` has been turned around to point at the node before it, so `node = node.next` steps backward: from the first node straight to `None`. Only the 1 is printed, and the rest of the list is lost. That's why `nxt` saves the link before it changes. The walk goes on with `node = nxt`, and the reversed list prints 3, 2, 1."

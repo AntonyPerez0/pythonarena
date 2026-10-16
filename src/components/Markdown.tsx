@@ -1,6 +1,8 @@
 import { lazy, Suspense, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { marked } from "marked";
 import { Play } from "lucide-react";
+import { inAppTarget, withBase } from "../lib/site-links";
 import { codeLinesHtml } from "./code-lines";
 import { highlightHtml } from "./highlight";
 import { readOnlyBlockHtml } from "./code-blocks";
@@ -145,6 +147,36 @@ function ShotFigure({ shot }: { shot: WindowShot }) {
       </button>
     </div>
   );
+}
+
+/**
+ * A click handler for a part of the page with Markdown links to the site's own pages: they open in the
+ * app, as the site's other links do, without loading the page again.
+ */
+export function useInAppLinks() {
+  const navigate = useNavigate();
+  return (e: React.MouseEvent) => {
+    const to = inAppTarget(e, BASE);
+    if (to == null) return;
+    e.preventDefault();
+    navigate(to);
+  };
+}
+
+/**
+ * Markdown whose links to the site's pages start with / (a group's about, the interview prep page): the
+ * links get the site's base path and open in the app.
+ */
+export function SiteMarkdown({ text, className = "", top }: { text: string; className?: string; top?: number }) {
+  const html = useMemo(() => withBase(markdownHtml(text, top), BASE), [text, top]);
+  const onClick = useInAppLinks();
+  return <div className={"md " + className} onClick={onClick} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+/** One line of such Markdown (a table cell), without a paragraph around it. */
+export function SiteInlineMd({ text }: { text: string }) {
+  const html = useMemo(() => withBase(marked.parseInline(text, { async: false }) as string, BASE), [text]);
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 export function InlineMd({ text }: { text: string }) {

@@ -1,4 +1,5 @@
 topic: interview
+title: "Python's surprises: defaults, copies, floats, slices and scope"
 drills:
   - type: predict
     code: |

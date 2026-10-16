@@ -1,12 +1,15 @@
 // Checks a learner's program: run every test with Python in the browser (Pyodide), and compare with
 // the expected output (which came from the reference CPython at build time, through the same harness).
-import { runPython, DEFAULT_TIME_LIMIT_MS, type RunResult, type SourceFile, type WindowEvent, type WindowResult } from "../engine/client";
+import { runPython, type RunInput, type RunResult, type SourceFile, type WindowEvent, type WindowResult } from "../engine/client";
 import { describeError, explainError, parseError, type PyError } from "../engine/friendly";
 import type { ExpectedWindow, Exercise, TestCase } from "../content/types";
 import { assetFiles } from "./assets";
 import { checkRules, normalizeOutput } from "./assemble.js";
 import { MAIN_FILE, splitFiles } from "./files.js";
 import { changedFiles, compareWrites, writesNote } from "./writes.js";
+import { DEFAULT_TIME_LIMIT_MS, timeLimitFor } from "./limits";
+
+export { timeLimitFor };
 
 /** A syntax error, shown like a compiler's error: its place, Python's message and a plain-English note. */
 export type FriendlyDiagnostic = {
@@ -24,6 +27,8 @@ export type TestResult = {
   name: string;
   pass: boolean;
   hidden?: boolean;
+  /** A big test: sized so that a correct but slow solution runs out of time. */
+  big?: boolean;
   stdin?: string;
   /** The command-line arguments the program got. */
   args?: string[];
@@ -78,10 +83,22 @@ export function syntaxDiagnostic(e: PyError | null, sources: SourceFile[]): Frie
   return { kind: "error", name: e.name, file: e.file!, line: e.line, column: e.column ?? 1, message: `${e.name}: ${e.message}`, friendly: explainError(e, sources) };
 }
 
-/** A sentence about what went wrong in a run, or undefined when it ended normally. */
-export function describeRun(r: RunResult | undefined, sources: SourceFile[], limitMs = DEFAULT_TIME_LIMIT_MS): string | undefined {
-  if (!r) return "This test didn't run.";
+/**
+ * What the note says when a big test runs out of time: the program is too slow for a big input, not
+ * stuck in a loop that never ends.
+ */
+export function tooSlowNote(limitMs: number): string {
+  return `Too slow for a big input: your program ran for more than ${limitMs / 1000} seconds on this test's big input, so it was stopped. A way that works on small inputs can take far too long on large ones. For example, a loop inside a loop over 200,000 values runs about 40 billion times. Look for a way that goes through the values once or a few times, with a set, a dict, sorting or two pointers, as the step teaches.`;
+}
+
+/** The note of a big test that wasn't run, because a test before it ran out of time. */
+export const NOT_RUN_NOTE = "Not run: a test before it already ran out of time, and this big one would too.";
+
+/** A sentence about what went wrong in a run, or undefined when it ended normally. `big`: the run was a big test's. */
+export function describeRun(r: RunResult | undefined, sources: SourceFile[], limitMs = DEFAULT_TIME_LIMIT_MS, big = false): string | undefined {
+  if (!r) return big ? NOT_RUN_NOTE : "This test didn't run.";
   if (r.internalError) return `Python couldn't run the program (${r.internalError}). Try again; if it keeps happening, reload the page.`;
+  if (r.timedOut && big) return tooSlowNote(limitMs);
   if (r.timedOut) return `Time limit: the program ran for more than ${limitMs / 1000} seconds and was stopped. Look for a loop that never ends${/\binput\s*\(/.test(sources.map((s) => s.text).join("\n")) ? " (with input from a test, a loop that waits for a word that never comes keeps reading until the input runs out)" : ""}. What it printed until then is shown.`;
   const crash = crashOf(r, sources);
   if (crash) return crash.text;
@@ -178,10 +195,26 @@ function returnedNone(t: TestCase, got: string): string {
 /** The files a challenge's tests give the program, as the engine takes them. */
 const filesOf = (t: TestCase) => (t.files ? { ...t.files } : undefined);
 
-/** How long a challenge's runs may take: a pygame test draws its frames, each taking a few milliseconds. */
-export function timeLimitFor(ex: Exercise): number {
-  const frames = Math.max(0, ...ex.tests.map((t) => t.window?.frames ?? 0));
-  return Math.max(DEFAULT_TIME_LIMIT_MS, frames ? 4_000 + frames * 12 : 0);
+/**
+ * Runs a challenge's tests with the engine, in the order given, except that big tests run last, one at
+ * a time: once a test runs out of time, the big tests after it aren't run (each would take the whole
+ * time limit, for the same answer: a program that never ends on a small test is no faster on a big
+ * one). A test that wasn't run has no result.
+ */
+async function runTests(own: SourceFile[], inputs: RunInput[], tests: TestCase[], timeLimitMs: number): Promise<(RunResult | undefined)[]> {
+  const big = tests.flatMap((t, i) => (t.big ? [i] : []));
+  if (!big.length) return runPython(own, inputs, { timeLimitMs });
+  const small = tests.flatMap((t, i) => (t.big ? [] : [i]));
+  const out: (RunResult | undefined)[] = tests.map(() => undefined);
+  const first = small.length ? await runPython(own, small.map((i) => inputs[i]), { timeLimitMs }) : [];
+  small.forEach((i, k) => (out[i] = first[k]));
+  if (first.some((r) => r?.timedOut)) return out;
+  for (const i of big) {
+    const [r] = await runPython(own, [inputs[i]], { timeLimitMs });
+    out[i] = r;
+    if (!r || r.timedOut) break;
+  }
+  return out;
 }
 
 /** Whether two window sizes are the same (no size to compare: the same). */
@@ -218,16 +251,17 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
     return { stdin: t.stdin, ...(t.args ? { args: t.args } : {}), ...(t.call != null ? { call: t.call } : {}), ...(Object.keys(files).length ? { files } : {}), ...(t.window ? { window: { ...t.window, png: "last" as const } } : {}) };
   });
   const started = performance.now();
-  const runs = await runPython(own, inputs, { timeLimitMs: timeLimitFor(ex) });
+  const limit = timeLimitFor(ex);
+  const runs = await runTests(own, inputs, ex.tests, limit);
   base.runMs = performance.now() - started;
-  if (runs.every((r) => r.internalError)) return { ...base, status: "internal-error", tests: [], internalError: runs[0]?.internalError };
+  if (runs.every((r) => !r || r.internalError)) return { ...base, status: "internal-error", tests: [], internalError: runs.find((r) => r)?.internalError };
   // A syntax error stops every run the same way: shown once, like a compiler's error.
-  const first = runs.find((r) => !r.internalError);
+  const first = runs.find((r) => r && !r.internalError);
   const syntax = first && first.exitCode !== 0 ? syntaxDiagnostic(parseError(first.stderr), own) : null;
   if (syntax) return { ...base, status: "syntax-error", diagnostics: [syntax], errorOutput: first!.stderr, tests: [] };
   // A call test that couldn't call the learner's code at all (no such function, wrong parameters).
   // Each reason once, in the words of the first visible test that failed that way.
-  const failedCalls = ex.tests.flatMap((t, i) => (runs[i]?.callError ? [{ t, p: callProblem(t, runs[i], own) }] : [])).sort((a, b) => Number(!!a.t.hidden) - Number(!!b.t.hidden));
+  const failedCalls = ex.tests.flatMap((t, i) => (runs[i]?.callError ? [{ t, p: callProblem(t, runs[i]!, own) }] : [])).sort((a, b) => Number(!!a.t.hidden) - Number(!!b.t.hidden));
   const seenCalls = new Set<string>();
   const callProblems = failedCalls.filter(({ p }) => !seenCalls.has(p.key) && seenCalls.add(p.key)).map(({ p }) => p.text);
   if (callProblems.length) return { ...base, status: "call-error", callProblems, tests: [] };
@@ -239,13 +273,14 @@ export async function grade(ex: Exercise, code: string): Promise<GradeResult> {
     const noValue = !!t.returns && !!r && r.exitCode === 0 && !r.timedOut && r.callValue === "none";
     const window = t.expectWindow && r && !r.internalError && !r.timedOut ? { expected: t.expectWindow, got: r.window ?? null, pass: sameWindow(t.expectWindow, r.window) } : undefined;
     const pass = !!r && !r.internalError && !r.timedOut && r.exitCode === 0 && got === t.expect && !noValue && (!t.writes || !!writes?.every((f) => f.pass)) && (!t.expectWindow || !!window?.pass);
-    const note = pass ? undefined : (describeRun(r, own, timeLimitFor(ex)) ?? (noValue ? returnedNone(t, got) : undefined) ?? (writes && writesNote(writes, t.hidden)) ?? (window && !window.pass ? windowNote(window.expected, window.got) : undefined));
+    const note = pass ? undefined : (describeRun(r, own, limit, t.big) ?? (noValue ? returnedNone(t, got) : undefined) ?? (writes && writesNote(writes, t.hidden)) ?? (window && !window.pass ? windowNote(window.expected, window.got) : undefined));
     const crash = !pass && r && !r.internalError && !r.timedOut ? crashOf(r, own) : undefined;
     const loadOutput = t.call != null && r?.callStart ? normalizeOutput(r.stdout.slice(0, r.callStart)) : undefined;
     return {
       name: t.name,
       pass,
       hidden: t.hidden,
+      ...(t.big ? { big: true } : {}),
       stdin: t.stdin,
       ...(t.args ? { args: t.args } : {}),
       call: t.call,

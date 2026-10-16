@@ -1,0 +1,2152 @@
+id: dsa-hash
+summary: Build the data structure behind dict and set. Buckets and chaining, a load factor that makes the table grow, a map that works with square brackets, in, len and for like a dict, __eq__ and __hash__ for keys of your own, and an LRU cache with OrderedDict and functools.lru_cache.
+steps:
+  - id: dsa-hash-buckets
+    slug: buckets
+    title: Buckets and chaining
+    text: |
+      You have used dicts and sets since early in the course, and the module on complexity relied on them: `x in seen` takes O(1) on average, however big the set is. In this module you build that data structure yourself, a **hash table**, so you know why it's fast, what it costs, and when it isn't fast at all.
+
+      ### Buckets
+
+      A hash table keeps its items in a list of **buckets**. To decide which bucket a key goes in, a **hash function** turns the key into a whole number, and the remainder after dividing by the number of buckets picks one: `hash(key) % len(buckets)`. To find the key later, you work out the same bucket and look only there, never in the rest of the table.
+
+      For a whole number such as 12, Python's `hash` gives the number itself, so with 5 buckets the key 12 goes in bucket 12 % 5, which is 2:
+
+      ```python run
+      buckets = [[] for i in range(5)]
+      for key in [12, 7, 30, 21, 5, 18, 44]:
+          buckets[key % 5].append(key)
+
+      for i in range(len(buckets)):
+          print(i, buckets[i])
+      ```
+
+      ```output
+      0 [30, 5]
+      1 [21]
+      2 [12, 7]
+      3 [18]
+      4 [44]
+      ```
+
+      Two keys in one bucket, like 12 and 7, is a **collision**. Collisions can't be avoided, since there are far more possible keys than buckets, so each bucket here is a list that holds every key that lands in it. That's called **separate chaining**, and each bucket's list is a **chain**. Python's `%` never gives a negative remainder when the number of buckets is positive, so a negative key gets a real bucket too: `-7 % 5` is 3.
+
+      Each bucket must be a list of its own. `[[]] * 5` looks the same, but it's five references to one and the same list, so a key added to one bucket shows up in all of them:
+
+      ```python run
+      buckets = [[]] * 5
+      buckets[12 % 5].append(12)
+      print(buckets)
+      ```
+
+      ```output
+      [[12], [12], [12], [12], [12]]
+      ```
+
+      ### Hashing strings
+
+      `hash` works on strings too, but the number it gives for a string changes every time Python starts: Python mixes a random value into it, so that nobody can pick keys that all collide on purpose and slow a web server down. To see where words go, write a hash function of your own. This one starts from 0 and, for each character, multiplies the number so far by 37 and adds the character's code, `ord(char)`. The last column is the bucket in a table of 13:
+
+      ```python run
+      def word_hash(word):
+          h = 0
+          for char in word:
+              h = h * 37 + ord(char)
+          return h
+
+
+      for fruit in ["mango", "lemon", "melon", "grape", "peach", "apple"]:
+          print(fruit, word_hash(fruit), word_hash(fruit) % 13)
+      ```
+
+      ```output
+      mango 209351402 0
+      lemon 207678779 9
+      melon 209551571 8
+      grape 198950063 0
+      peach 215158545 4
+      apple 187624178 1
+      ```
+
+      Mango and grape collide in bucket 0. A hash function may follow any rule, with one condition: **a key gets the same number every time it's hashed**. Otherwise a lookup would look in another bucket than the one the key went into. Past that, the more evenly a function scatters keys over the buckets, the shorter the chains. Multiplying by 37 before each addition makes the position of a character matter, so "lemon" and "melon", which have the same letters, land in different buckets.
+
+      ### Keys and values
+
+      A dict keeps a value with each key, so the buckets of a map hold **pairs**. Each pair here is a small list, `[key, value]`, so that its value can be changed:
+
+      ```python run
+      class HashMap:
+          def __init__(self, size):
+              self.buckets = [[] for i in range(size)]
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def put(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+
+          def get(self, key):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      return pair[1]
+              return None
+
+
+      rooms = HashMap(4)
+      rooms.put(101, "Ada")
+      rooms.put(205, "Ben")
+      rooms.put(101, "Cleo")
+      print(rooms.get(101), rooms.get(205), rooms.get(310))
+      print(rooms.buckets)
+      ```
+
+      ```output
+      Cleo Ben None
+      [[], [[101, 'Cleo'], [205, 'Ben']], [], []]
+      ```
+
+      `put` searches the key's bucket first: a key that's already there gets its new value, and only a new key is appended. Without that search, the bucket would hold two pairs for room 101, and `get` would find the old one. The keys are compared with `==` because a bucket can hold other keys too: 101 and 205 share bucket 1.
+
+      ### What it costs
+
+      Working out the bucket is O(1). After that, `get` and `put` go through one chain. With n pairs in m buckets, a chain holds n / m pairs on average, so as long as there are about as many buckets as pairs, each operation takes **O(1) on average**. The worst case is O(n): if every key lands in the same bucket, the table is one long list. With 8 buckets, the keys 0, 8, 16, 24 and so on all go to bucket 0. Python's dict and set have the same worst case, and their hash functions make it rare. The memory is O(n + m): a pair for each key and a list for each bucket.
+
+      **Your turn:** fill in the blanks: the bucket of a key, and what `put` does when the key is already in its bucket. The program should print:
+
+      ```
+      Ivy Max None
+      [[], [[17, 'Ivy'], [21, 'Max']], [], []]
+      ```
+    fill: |
+      class HashMap:
+          def __init__(self, size):
+              self.buckets = [[] for i in range(size)]
+
+          def _index(self, key):
+              return [[hash(key) % len(self.buckets)‖key % len(self.buckets)]]
+
+          def put(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      [[pair[1] = value]]
+                      return
+              bucket.append([key, value])
+
+          def get(self, key):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      return pair[1]
+              return None
+
+
+      ages = HashMap(4)
+      ages.put(17, "Eli")
+      ages.put(21, "Max")
+      ages.put(17, "Ivy")
+      print(ages.get(17), ages.get(21), ages.get(8))
+      print(ages.buckets)
+    hints:
+      - "The bucket is the key's hash divided by the number of buckets, keeping only the remainder."
+      - "`_index` returns `hash(key) % len(self.buckets)`. In `put`, the pair whose key matches gets the new value in its second place: `pair[1] = value`."
+    tests:
+      - expect: |
+          Ivy Max None
+          [[], [[17, 'Ivy'], [21, 'Max']], [], []]
+    more:
+      - task: |
+          Write a class `HashSet` that keeps keys in buckets, without Python's `set` or `dict`:
+
+          - `HashSet(bucket_count)` makes a set with `bucket_count` empty buckets.
+          - `add(key)` adds the key and returns `True`, or returns `False` when the key is already in the set.
+          - `contains(key)` returns whether the key is in the set.
+          - `size()` returns the number of keys.
+
+          Work out a key's bucket with `hash(key) % len(self.buckets)` and look only in that bucket. The hidden test adds 100,000 keys to a set of 100,000 buckets and then looks up 100,000 keys: a set that keeps all its keys in one list would search that whole list every time.
+
+          For example, this program:
+
+          ```python fragment
+          s = HashSet(8)
+          print(s.add(3), s.add(11), s.add(3))
+          print(s.contains(11), s.contains(19), s.size())
+          ```
+
+          prints (3 and 11 share bucket 3; 19 would go there too, but it isn't in the set):
+
+          ```
+          True True False
+          True False 2
+          ```
+        seed: |
+          class HashSet:
+              def __init__(self, bucket_count):
+                  pass
+
+              def add(self, key):
+                  pass
+
+              def contains(self, key):
+                  pass
+
+              def size(self):
+                  pass
+
+
+          if __name__ == "__main__":
+              s = HashSet(8)
+              print(s.add(3), s.add(11), s.add(3))
+              print(s.contains(11), s.contains(19), s.size())
+        solution: |
+          class HashSet:
+              def __init__(self, bucket_count):
+                  self.buckets = [[] for i in range(bucket_count)]
+                  self.count = 0
+
+              def add(self, key):
+                  bucket = self.buckets[hash(key) % len(self.buckets)]
+                  if key in bucket:
+                      return False
+                  bucket.append(key)
+                  self.count += 1
+                  return True
+
+              def contains(self, key):
+                  return key in self.buckets[hash(key) % len(self.buckets)]
+
+              def size(self):
+                  return self.count
+
+
+          if __name__ == "__main__":
+              s = HashSet(8)
+              print(s.add(3), s.add(11), s.add(3))
+              print(s.contains(11), s.contains(19), s.size())
+        slow: |
+          class HashSet:
+              def __init__(self, bucket_count):
+                  self.keys = []
+
+              def add(self, key):
+                  if key in self.keys:
+                      return False
+                  self.keys.append(key)
+                  return True
+
+              def contains(self, key):
+                  return key in self.keys
+
+              def size(self):
+                  return len(self.keys)
+
+
+          if __name__ == "__main__":
+              s = HashSet(8)
+              print(s.add(3), s.add(11), s.add(3))
+              print(s.contains(11), s.contains(19), s.size())
+        hints:
+          - "Start like `HashMap`: in `__init__`, make `bucket_count` empty buckets with `[[] for i in range(bucket_count)]`, and a counter that starts at 0."
+          - "`add` works out the bucket with `hash(key) % len(self.buckets)`. If the key is already in that bucket, return `False`; otherwise append it, add one to the counter and return `True`."
+          - "`contains` looks in the key's bucket only: `key in bucket` searches one short chain, not every key of the set."
+        forbid:
+          - pattern: "[{}]|\\bset\\s*\\(|\\bdict\\s*\\("
+            message: Build the set from your own buckets, without Python's `set` or `dict`.
+        tests:
+          - call: |
+              s = HashSet(8)
+              print(s.add(3), s.add(11), s.add(3))
+              print(s.contains(11), s.contains(19), s.size())
+          - call: |
+              s = HashSet(4)
+              for word in ["fig", "kiwi", "fig", "lime"]:
+                  s.add(word)
+              print(s.size(), s.contains("kiwi"), s.contains("plum"))
+            hidden: true
+          - call: |
+              s = HashSet(5)
+              print(s.add(-3), s.add(2), s.contains(-3), s.contains(-8))
+            hidden: true
+          - call: |
+              s = HashSet(1)
+              print(s.size(), s.add(10), s.add(20), s.add(10), s.size())
+            hidden: true
+          - call: |
+              s = HashSet(100_000)
+              for i in range(100_000):
+                  s.add(i * 7)
+              print(s.size(), sum(1 for i in range(100_000) if s.contains(i * 3)))
+            hidden: true
+            big: true
+      - task: |
+          Add a method `remove(key)` to `HashMap`. It removes the key's pair from its bucket and returns the key's value, or returns `None` when the key isn't in the map. The other pairs in the bucket must stay.
+
+          For example, this program:
+
+          ```python fragment
+          rooms = HashMap(4)
+          rooms.put(101, "Ada")
+          rooms.put(205, "Ben")
+          print(rooms.remove(101), rooms.remove(101))
+          print(rooms.buckets)
+          ```
+
+          prints:
+
+          ```
+          Ada None
+          [[], [[205, 'Ben']], [], []]
+          ```
+        seed: |
+          class HashMap:
+              def __init__(self, size):
+                  self.buckets = [[] for i in range(size)]
+
+              def _index(self, key):
+                  return hash(key) % len(self.buckets)
+
+              def put(self, key, value):
+                  bucket = self.buckets[self._index(key)]
+                  for pair in bucket:
+                      if pair[0] == key:
+                          pair[1] = value
+                          return
+                  bucket.append([key, value])
+
+              def get(self, key):
+                  bucket = self.buckets[self._index(key)]
+                  for pair in bucket:
+                      if pair[0] == key:
+                          return pair[1]
+                  return None
+
+              def remove(self, key):
+                  pass
+
+
+          if __name__ == "__main__":
+              rooms = HashMap(4)
+              rooms.put(101, "Ada")
+              rooms.put(205, "Ben")
+              print(rooms.remove(101), rooms.remove(101))
+              print(rooms.buckets)
+        solution: |
+          class HashMap:
+              def __init__(self, size):
+                  self.buckets = [[] for i in range(size)]
+
+              def _index(self, key):
+                  return hash(key) % len(self.buckets)
+
+              def put(self, key, value):
+                  bucket = self.buckets[self._index(key)]
+                  for pair in bucket:
+                      if pair[0] == key:
+                          pair[1] = value
+                          return
+                  bucket.append([key, value])
+
+              def get(self, key):
+                  bucket = self.buckets[self._index(key)]
+                  for pair in bucket:
+                      if pair[0] == key:
+                          return pair[1]
+                  return None
+
+              def remove(self, key):
+                  bucket = self.buckets[self._index(key)]
+                  for i in range(len(bucket)):
+                      if bucket[i][0] == key:
+                          value = bucket[i][1]
+                          del bucket[i]
+                          return value
+                  return None
+
+
+          if __name__ == "__main__":
+              rooms = HashMap(4)
+              rooms.put(101, "Ada")
+              rooms.put(205, "Ben")
+              print(rooms.remove(101), rooms.remove(101))
+              print(rooms.buckets)
+        hints:
+          - "Find the key's bucket as `get` does, then the position of the key's pair in it."
+          - "`for i in range(len(bucket))` gives the positions. When `bucket[i][0] == key`, keep the value in a variable, remove the pair with `del bucket[i]` (or `bucket.pop(i)`), and return the value."
+          - "Return as soon as the pair is gone: `range(len(bucket))` was worked out before the bucket got shorter, so going on would look past its end and stop with an `IndexError`. When the loop ends without finding the key, return `None`."
+        tests:
+          - call: |
+              rooms = HashMap(4)
+              rooms.put(101, "Ada")
+              rooms.put(205, "Ben")
+              print(rooms.remove(101), rooms.remove(101))
+              print(rooms.buckets)
+          - call: |
+              m = HashMap(4)
+              for key in [1, 5, 9]:
+                  m.put(key, key * 100)
+              print(m.remove(5), m.get(1), m.get(9), m.get(5))
+              print(m.buckets)
+            hidden: true
+          - call: |
+              m = HashMap(4)
+              m.put(2, "two")
+              print(m.remove(6), m.remove(3), m.buckets)
+            hidden: true
+          - call: |
+              m = HashMap(8)
+              m.put("tea", 3)
+              print(m.remove("tea"), m.get("tea"))
+              m.put("tea", 4)
+              print(m.get("tea"))
+            hidden: true
+
+  - id: dsa-hash-rehashing
+    slug: rehashing
+    title: Load factor and rehashing
+    text: |
+      The table of the last step keeps the number of buckets it started with. Put 100,000 pairs into 8 buckets and each chain holds 12,500 of them: every `get` is a linear search again, and adding the 100,000 keys takes more than half a billion comparisons.
+
+      ### The load factor
+
+      The **load factor** is the number of pairs divided by the number of buckets, `count / len(buckets)`: the average length of a chain. A hash table keeps it small by **growing**. When the load factor passes a limit, often 0.75, the table makes twice as many buckets and moves every pair into them. That's called **rehashing**.
+
+      Every pair has to move, because a key's bucket depends on the number of buckets. Four keys that share bucket 1 of 4 split up when there are 8:
+
+      ```python repl
+      >>> keys = [5, 9, 13, 17]
+      >>> [key % 4 for key in keys]
+      [1, 1, 1, 1]
+      >>> [key % 8 for key in keys]
+      [5, 1, 5, 1]
+      ```
+
+      So growing takes three moves:
+
+      1. Keep the old list of buckets in a variable.
+      2. Make a new list with twice as many empty buckets.
+      3. Go through every pair of every old bucket and append it to its bucket in the new list, worked out with the new number of buckets.
+
+      A common mistake is to append empty buckets to the old list and stop there. The table gets bigger, but the old pairs stay where the old size put them: key 13 sits in bucket 1, while `get(13)` now looks in bucket 5 and returns `None`, though the key is still in the table.
+
+      ### Why adding stays O(1)
+
+      A rebuild moves every pair, so the add that triggers it costs O(n). But rebuilds get rarer as the table grows: after one, the table has room for as many new pairs as it already holds. This program counts the pairs moved while n keys go into a table of 8 buckets that grows when the load factor passes 0.75, once by doubling and once by adding 8 buckets each time:
+
+      ```python run
+      def moves_while_adding(n, double):
+          buckets = 8
+          moves = 0
+          for count in range(1, n + 1):
+              if count / buckets > 0.75:
+                  moves += count
+                  if double:
+                      buckets *= 2
+                  else:
+                      buckets += 8
+          return moves
+
+
+      for n in [1000, 10_000, 100_000]:
+          print(n, moves_while_adding(n, True), moves_while_adding(n, False))
+      ```
+
+      ```output
+      1000 1538 83332
+      10000 12293 8333332
+      100000 196617 833333332
+      ```
+
+      With doubling, the moves never get much past twice the number of keys. The rebuilds move 7, 13, 25, 49 pairs and so on, each about twice the one before, so all of them together come to about twice the last one, and the last one is at most n. So n adds cost O(n) in all: **O(1) amortized** per add. Now and then one add is slow, but averaged over all of them each add is O(1), for the same reason that `list.append` is. Adding a fixed 8 buckets instead rebuilds every few adds, and the moves grow like n²: over 800 million for 100,000 keys.
+
+      ### Python's dict: open addressing
+
+      Python's dict and set grow the same way, but they don't keep chains. All the keys sit in one list of **slots**. When a key's slot is taken, the table tries another slot, and another, until it finds the key or an empty slot. That's **open addressing**. The simplest kind, **linear probing**, tries the next slot, and wraps around to the start after the last one:
+
+      ```python run
+      slots = [None] * 8
+      for key in [3, 11, 19, 6]:
+          i = key % 8
+          while slots[i] is not None:
+              i = (i + 1) % 8
+          slots[i] = key
+      print(slots)
+      ```
+
+      ```output
+      [None, None, None, 3, 11, 19, 6, None]
+      ```
+
+      3, 11 and 19 all start at slot 3, so 11 moves on to slot 4 and 19 to slot 5. A search for 19 starts at slot 3 and steps along until it finds it. A search for 27 steps from slot 3 over 3, 11, 19 and 6 to the empty slot 7: an empty slot means the key isn't there. So the table must never fill up, or a search for a missing key would never end, and long runs of taken slots make every search slow. Python's dict grows when about two-thirds of its slots are taken, and instead of the next slot it jumps around in a scrambled order, which keeps the runs short.
+
+      **Your turn:** make `HashMap` grow. `put` already counts the new pairs in `self.count`. After it adds a new pair, when the load factor `self.count / len(self.buckets)` is more than 0.75, it should call `_grow`, which doubles the number of buckets and moves every pair to its new bucket. The table starts with 8 buckets, so the 7th pair makes it grow to 16. The hidden test puts 50,000 pairs in the table, which is only fast when the table doubles each time. This program:
+
+      ```python fragment
+      table = HashMap()
+      for key in range(6):
+          table.put(key, key * 10)
+      print(len(table.buckets))
+      table.put(6, 60)
+      print(len(table.buckets), table.get(3), table.get(6))
+      ```
+
+      prints:
+
+      ```
+      8
+      16 30 60
+      ```
+    seed: |
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def put(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+              # grow here when the load factor is more than 0.75
+
+          def get(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              return None
+
+          def _grow(self):
+              pass
+
+
+      if __name__ == "__main__":
+          table = HashMap()
+          for key in range(6):
+              table.put(key, key * 10)
+          print(len(table.buckets))
+          table.put(6, 60)
+          print(len(table.buckets), table.get(3), table.get(6))
+    solution: |
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def put(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+              if self.count / len(self.buckets) > 0.75:
+                  self._grow()
+
+          def get(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              return None
+
+          def _grow(self):
+              old = self.buckets
+              self.buckets = [[] for i in range(len(old) * 2)]
+              for bucket in old:
+                  for pair in bucket:
+                      self.buckets[self._index(pair[0])].append(pair)
+
+
+      if __name__ == "__main__":
+          table = HashMap()
+          for key in range(6):
+              table.put(key, key * 10)
+          print(len(table.buckets))
+          table.put(6, 60)
+          print(len(table.buckets), table.get(3), table.get(6))
+    slow: |
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def put(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+              if self.count / len(self.buckets) > 0.75:
+                  self._grow()
+
+          def get(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              return None
+
+          def _grow(self):
+              old = self.buckets
+              self.buckets = [[] for i in range(len(old) + 8)]
+              for bucket in old:
+                  for pair in bucket:
+                      self.buckets[self._index(pair[0])].append(pair)
+
+
+      if __name__ == "__main__":
+          table = HashMap()
+          for key in range(6):
+              table.put(key, key * 10)
+          print(len(table.buckets))
+          table.put(6, 60)
+          print(len(table.buckets), table.get(3), table.get(6))
+    hints:
+      - "In `put`, after `self.count += 1`, check `self.count / len(self.buckets) > 0.75`, and call `self._grow()` when it's true."
+      - "In `_grow`, keep the old buckets in a variable, `old = self.buckets`, and set `self.buckets` to a list of twice as many empty buckets."
+      - "Then go through every bucket of `old` and every pair in it, and append the pair to `self.buckets[self._index(pair[0])]`: `_index` uses the new number of buckets now. Growing by a fixed number of buckets instead of doubling gives the right answers, but too slowly for the big test."
+    forbid:
+      - pattern: "[{}]|\\bset\\s*\\(|\\bdict\\s*\\("
+        message: Grow your own buckets, without Python's `set` or `dict`.
+    tests:
+      - call: |
+          table = HashMap()
+          for key in range(6):
+              table.put(key, key * 10)
+          print(len(table.buckets))
+          table.put(6, 60)
+          print(len(table.buckets), table.get(3), table.get(6))
+      - call: |
+          t = HashMap()
+          keys = [5, 13, 21, 29, 37, 45, 53]
+          for key in keys:
+              t.put(key, key + 1)
+          print([t.get(key) for key in keys], t.get(61), len(t.buckets))
+        hidden: true
+      - call: |
+          t = HashMap()
+          for i in range(10):
+              t.put("x", i)
+          print(t.get("x"), t.count, len(t.buckets))
+        hidden: true
+      - call: |
+          t = HashMap()
+          words = ["ant", "bee", "cat", "dog", "eel", "fox", "gnu", "hen"]
+          for word in words:
+              t.put(word, len(word) * 2)
+          t.put("cat", 0)
+          print([t.get(word) for word in words], t.get("owl"), t.count)
+        hidden: true
+      - call: |
+          t = HashMap()
+          for i in range(50_000):
+              t.put(i * 7, i)
+          print(t.get(7 * 49_999), t.get(70), t.get(5), t.count)
+        hidden: true
+        big: true
+    more:
+      - task: |
+          What does this program print? It follows a table that starts with 4 buckets and doubles when its load factor is more than 0.75. Type each line it prints.
+        predict: |
+          buckets = 4
+          count = 0
+          for key in range(10):
+              count += 1
+              if count / buckets > 0.75:
+                  buckets *= 2
+                  print("grow at", count, "to", buckets)
+          print(buckets, count / buckets)
+        hints:
+          - "Work out `count / buckets` after each key. The table grows only when the result is more than 0.75: exactly 0.75 isn't."
+          - "With 4 buckets, the 4th key gives 1.0, so the table grows to 8. With 8 buckets, which count is the first to give more than 0.75?"
+          - "After the last key, `count` is 10. Divide it by the final number of buckets."
+      - task: |
+          Write a class `OpenSet`: a set that keeps its keys with open addressing and linear probing, as the last example of the lesson does. The keys sit in one list, `self.slots`, where `None` marks an empty slot (a key is never `None`), and `self.count` is the number of keys. The seed starts with 4 slots and a count of 0.
+
+          - The search for a key starts at slot `hash(key) % len(self.slots)` and moves one slot to the right at a time, back to slot 0 after the last one, until it reaches the key or an empty slot.
+          - `add(key)` returns `False` when the search reaches the key. Otherwise it stores the key in the empty slot the search reached, adds one to `self.count`, and returns `True`.
+          - `contains(key)` returns whether the key is in the set.
+          - Like Python's dict, the table grows when more than two-thirds of its slots are taken. After `add` stores a new key, if `self.count * 3 > len(self.slots) * 2`, the table makes twice as many empty slots and stores every key again: a key's first slot depends on the number of slots.
+
+          The hidden test adds 100,000 keys and looks up 100,000: `key in self.slots` would search the whole list every time.
+
+          For example, this program:
+
+          ```python fragment
+          s = OpenSet()
+          print(s.add(7), s.add(15), s.add(7))
+          print(s.slots)
+          print(s.contains(15), s.contains(23))
+          ```
+
+          prints (7 and 15 both start at slot 3, the last one, so 15 goes around to slot 0; a search for 23 starts at slot 3, goes on to slot 0 and stops at the empty slot 1):
+
+          ```
+          True True False
+          [15, None, None, 7]
+          True False
+          ```
+        seed: |
+          class OpenSet:
+              def __init__(self):
+                  self.slots = [None] * 4
+                  self.count = 0
+
+              def add(self, key):
+                  pass
+
+              def contains(self, key):
+                  pass
+
+
+          if __name__ == "__main__":
+              s = OpenSet()
+              print(s.add(7), s.add(15), s.add(7))
+              print(s.slots)
+              print(s.contains(15), s.contains(23))
+        solution: |
+          class OpenSet:
+              def __init__(self):
+                  self.slots = [None] * 4
+                  self.count = 0
+
+              def _find(self, key):
+                  i = hash(key) % len(self.slots)
+                  while self.slots[i] is not None and self.slots[i] != key:
+                      i = (i + 1) % len(self.slots)
+                  return i
+
+              def add(self, key):
+                  i = self._find(key)
+                  if self.slots[i] == key:
+                      return False
+                  self.slots[i] = key
+                  self.count += 1
+                  if self.count * 3 > len(self.slots) * 2:
+                      old = self.slots
+                      self.slots = [None] * (len(old) * 2)
+                      for k in old:
+                          if k is not None:
+                              self.slots[self._find(k)] = k
+                  return True
+
+              def contains(self, key):
+                  return self.slots[self._find(key)] == key
+
+
+          if __name__ == "__main__":
+              s = OpenSet()
+              print(s.add(7), s.add(15), s.add(7))
+              print(s.slots)
+              print(s.contains(15), s.contains(23))
+        slow: |
+          class OpenSet:
+              def __init__(self):
+                  self.slots = [None] * 4
+                  self.count = 0
+
+              def add(self, key):
+                  if key in self.slots:
+                      return False
+                  i = hash(key) % len(self.slots)
+                  while self.slots[i] is not None:
+                      i = (i + 1) % len(self.slots)
+                  self.slots[i] = key
+                  self.count += 1
+                  if self.count * 3 > len(self.slots) * 2:
+                      old = self.slots
+                      self.slots = [None] * (len(old) * 2)
+                      for k in old:
+                          if k is not None:
+                              j = hash(k) % len(self.slots)
+                              while self.slots[j] is not None:
+                                  j = (j + 1) % len(self.slots)
+                              self.slots[j] = k
+                  return True
+
+              def contains(self, key):
+                  return key in self.slots
+
+
+          if __name__ == "__main__":
+              s = OpenSet()
+              print(s.add(7), s.add(15), s.add(7))
+              print(s.slots)
+              print(s.contains(15), s.contains(23))
+        hints:
+          - "Write a helper `_find(key)` that returns the slot holding the key, or the empty slot where the search stopped: start at `hash(key) % len(self.slots)`, and while that slot isn't `None` and isn't the key, move on with `i = (i + 1) % len(self.slots)`."
+          - "`add`: if the slot `_find` returns holds the key, return `False`. Otherwise store the key there and add one to `self.count`. `contains`: the slot `_find` returns holds either the key or `None`."
+          - "When `self.count * 3 > len(self.slots) * 2`, keep the old slots in a variable, make `[None] * (len(old) * 2)`, and store each old key that isn't `None` in the slot `_find` gives it in the new list."
+        forbid:
+          - pattern: "[{}]|\\bset\\s*\\(|\\bdict\\s*\\("
+            message: Keep the keys in your own slots, without Python's `set` or `dict`.
+        tests:
+          - call: |
+              s = OpenSet()
+              print(s.add(7), s.add(15), s.add(7))
+              print(s.slots)
+              print(s.contains(15), s.contains(23))
+          - call: |
+              s = OpenSet()
+              print(s.add(-5), s.add(3), s.add(-5), s.contains(3), s.contains(7))
+              print(s.slots)
+            hidden: true
+          - call: |
+              s = OpenSet()
+              print(s.add(7), s.add(15), s.add(15), s.count)
+              print(s.slots)
+              print(s.contains(15), s.contains(23))
+            hidden: true
+          - call: |
+              s = OpenSet()
+              for key in [0, 4, 1]:
+                  s.add(key)
+              print(s.slots)
+              print(s.contains(4), s.contains(8), s.count)
+            hidden: true
+          - call: |
+              s = OpenSet()
+              sizes = []
+              for key in range(12):
+                  s.add(key * 5)
+                  sizes.append(len(s.slots))
+              print(sizes)
+              print(all(s.contains(key * 5) for key in range(12)), s.contains(7))
+            hidden: true
+          - call: |
+              s = OpenSet()
+              for word in ["oak", "elm", "oak", "ash", "fir", "yew", "elm"]:
+                  s.add(word)
+              print(s.count, s.contains("ash"), s.contains("pine"), s.add("yew"))
+            hidden: true
+          - call: |
+              s = OpenSet()
+              added = sum(1 for i in range(100_000) if s.add(i * 7))
+              print(added, sum(1 for i in range(100_000) if s.contains(i * 3)), len(s.slots))
+            hidden: true
+            big: true
+
+  - id: dsa-hash-like-a-dict
+    slug: like-a-dict
+    title: A map that works like dict
+    text: |
+      `HashMap` works, but it doesn't read like a dict: you write `table.put(key, value)` where a dict takes `table[key] = value`. The course showed how a class decides what `<` and `==` mean for its objects (`__lt__` and `__eq__`), and how a `for` loop goes through it (`__iter__`). The rest of a dict's syntax works the same way: each piece calls a method with a special name.
+
+      | You write | Python calls |
+      | --- | --- |
+      | `m[key]` | `m.__getitem__(key)` |
+      | `m[key] = value` | `m.__setitem__(key, value)` |
+      | `del m[key]` | `m.__delitem__(key)` |
+      | `key in m` | `m.__contains__(key)` |
+      | `len(m)` | `m.__len__()` |
+      | `for key in m:` | `m.__iter__()` |
+
+      Here is the map with square brackets for reading and storing, and with `len` (the growing of the last step is left out to keep it short):
+
+      ```python run crash
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def __setitem__(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+
+          def __getitem__(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              raise KeyError(key)
+
+          def __len__(self):
+              return self.count
+
+
+      stock = HashMap()
+      stock["apple"] = 12
+      stock["pear"] = 5
+      stock["apple"] += 3
+      print(stock["apple"], len(stock))
+      print(stock["plum"])
+      ```
+
+      ```output
+      15 2
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 33, in <module>
+          print(stock["plum"])
+                ~~~~~^^^^^^^^
+        File "main.py", line 22, in __getitem__
+          raise KeyError(key)
+      KeyError: 'plum'
+      ```
+
+      `stock["apple"] += 3` calls both: `__getitem__` reads 12, and `__setitem__` stores 15.
+
+      ### A missing key is an error
+
+      A missing key raises **`KeyError`**, as it does in a dict, instead of returning `None`. `None` could be a real value in the map, and a `None` that travels on through a program is harder to track down than an error at the line that asked for the key. `raise KeyError(key)` puts the key in the message. When a missing key is normal, a dict has `get(key, default)`, and a map of your own can have one too.
+
+      `__len__` returns the count that `__setitem__` keeps up to date, so `len(stock)` is O(1), as it is for a dict. Adding up the lengths of all the buckets would give the same number, but in O(m), a step for every bucket.
+
+      ### Going through the keys
+
+      `__iter__` can be a generator that yields each key, bucket after bucket:
+
+      ```python fragment
+      def __iter__(self):
+          for bucket in self.buckets:
+              for pair in bucket:
+                  yield pair[0]
+      ```
+
+      Then `for`, `list`, `sorted` and `max` all work on the map. The keys come out in the order of their buckets; a dict gives them in the order they were added (more on that in the last step).
+
+      One more thing about `__iter__`: without a `__contains__`, `in` still works, by going through `__iter__` until it meets the key. That's right, and it's O(n):
+
+      ```python run
+      class Shelf:
+          def __iter__(self):
+              for book in ["Dune", "Emma", "Ulysses", "Walden"]:
+                  print("checking", book)
+                  yield book
+
+
+      print("Ulysses" in Shelf())
+      ```
+
+      ```output
+      checking Dune
+      checking Emma
+      checking Ulysses
+      True
+      ```
+
+      A `__contains__` that looks only in the key's bucket is O(1) on average.
+
+      ### Changing a dict while you loop over it
+
+      A loop over a dict walks through its table. Adding or removing keys during the loop could change the table under it (adding can even rebuild it, as the last step showed), so Python stops the loop with an error:
+
+      ```python run crash
+      stock = {"apple": 0, "pear": 3, "plum": 0}
+      for item in stock:
+          if stock[item] == 0:
+              del stock[item]
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          for item in stock:
+                      ^^^^^
+      RuntimeError: dictionary changed size during iteration
+      ```
+
+      Loop over a copy of the keys instead: `for item in list(stock):` makes the list before anything changes. Giving a key that's already there a new value is fine, since the dict keeps the same keys.
+
+      **Your turn:** add `__contains__` and `__delitem__` to the map. `key in m` must look only in the key's bucket: the hidden test asks about 40,000 keys in a map of 40,000 pairs. `del m[key]` removes the key's pair, makes `self.count` one smaller, and raises `KeyError` for a key that isn't in the map. This program:
+
+      ```python fragment
+      m = HashMap()
+      m["ada"] = 36
+      m["ben"] = 41
+      print("ada" in m, "eve" in m)
+      del m["ada"]
+      print("ada" in m, len(m))
+      try:
+          del m["eve"]
+      except KeyError:
+          print("no eve")
+      ```
+
+      prints:
+
+      ```
+      True False
+      False 1
+      no eve
+      ```
+    seed: |
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def _grow(self):
+              old = self.buckets
+              self.buckets = [[] for i in range(len(old) * 2)]
+              for bucket in old:
+                  for pair in bucket:
+                      self.buckets[self._index(pair[0])].append(pair)
+
+          def __setitem__(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+              if self.count / len(self.buckets) > 0.75:
+                  self._grow()
+
+          def __getitem__(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              raise KeyError(key)
+
+          def __len__(self):
+              return self.count
+
+          def __contains__(self, key):
+              pass
+
+          def __delitem__(self, key):
+              pass
+
+
+      if __name__ == "__main__":
+          m = HashMap()
+          m["ada"] = 36
+          m["ben"] = 41
+          print("ada" in m, "eve" in m)
+          del m["ada"]
+          print("ada" in m, len(m))
+          try:
+              del m["eve"]
+          except KeyError:
+              print("no eve")
+    solution: |
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def _grow(self):
+              old = self.buckets
+              self.buckets = [[] for i in range(len(old) * 2)]
+              for bucket in old:
+                  for pair in bucket:
+                      self.buckets[self._index(pair[0])].append(pair)
+
+          def __setitem__(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+              if self.count / len(self.buckets) > 0.75:
+                  self._grow()
+
+          def __getitem__(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              raise KeyError(key)
+
+          def __len__(self):
+              return self.count
+
+          def __contains__(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return True
+              return False
+
+          def __delitem__(self, key):
+              bucket = self.buckets[self._index(key)]
+              for i in range(len(bucket)):
+                  if bucket[i][0] == key:
+                      del bucket[i]
+                      self.count -= 1
+                      return
+              raise KeyError(key)
+
+
+      if __name__ == "__main__":
+          m = HashMap()
+          m["ada"] = 36
+          m["ben"] = 41
+          print("ada" in m, "eve" in m)
+          del m["ada"]
+          print("ada" in m, len(m))
+          try:
+              del m["eve"]
+          except KeyError:
+              print("no eve")
+    slow: |
+      class HashMap:
+          def __init__(self):
+              self.buckets = [[] for i in range(8)]
+              self.count = 0
+
+          def _index(self, key):
+              return hash(key) % len(self.buckets)
+
+          def _grow(self):
+              old = self.buckets
+              self.buckets = [[] for i in range(len(old) * 2)]
+              for bucket in old:
+                  for pair in bucket:
+                      self.buckets[self._index(pair[0])].append(pair)
+
+          def __setitem__(self, key, value):
+              bucket = self.buckets[self._index(key)]
+              for pair in bucket:
+                  if pair[0] == key:
+                      pair[1] = value
+                      return
+              bucket.append([key, value])
+              self.count += 1
+              if self.count / len(self.buckets) > 0.75:
+                  self._grow()
+
+          def __getitem__(self, key):
+              for pair in self.buckets[self._index(key)]:
+                  if pair[0] == key:
+                      return pair[1]
+              raise KeyError(key)
+
+          def __len__(self):
+              return self.count
+
+          def __contains__(self, key):
+              for bucket in self.buckets:
+                  for pair in bucket:
+                      if pair[0] == key:
+                          return True
+              return False
+
+          def __delitem__(self, key):
+              bucket = self.buckets[self._index(key)]
+              for i in range(len(bucket)):
+                  if bucket[i][0] == key:
+                      del bucket[i]
+                      self.count -= 1
+                      return
+              raise KeyError(key)
+
+
+      if __name__ == "__main__":
+          m = HashMap()
+          m["ada"] = 36
+          m["ben"] = 41
+          print("ada" in m, "eve" in m)
+          del m["ada"]
+          print("ada" in m, len(m))
+          try:
+              del m["eve"]
+          except KeyError:
+              print("no eve")
+    hints:
+      - "`__contains__` works like `__getitem__`: go through the pairs of the key's bucket only, and return `True` when one of them has the key. After the loop, return `False`."
+      - "`__delitem__`: find the position of the pair in its bucket with `for i in range(len(bucket))`. When it matches, `del bucket[i]`, make `self.count` one smaller and return."
+      - "When the loop ends without finding the key, `raise KeyError(key)`. A `__contains__` that looks through every bucket gives the right answers too, but in O(n): too slow for the big test."
+    forbid:
+      - pattern: "[{}]|\\bset\\s*\\(|\\bdict\\s*\\("
+        message: Work with your own buckets, without Python's `set` or `dict`.
+    tests:
+      - call: |
+          m = HashMap()
+          m["ada"] = 36
+          m["ben"] = 41
+          print("ada" in m, "eve" in m)
+          del m["ada"]
+          print("ada" in m, len(m))
+          try:
+              del m["eve"]
+          except KeyError:
+              print("no eve")
+      - call: |
+          m = HashMap()
+          m[1] = "one"
+          m[9] = "nine"
+          m[17] = "seventeen"
+          del m[9]
+          print(1 in m, 9 in m, 17 in m, m[17], len(m))
+        hidden: true
+      - call: |
+          m = HashMap()
+          m["x"] = None
+          print("x" in m, "y" in m)
+          del m["x"]
+          m["x"] = 5
+          print(m["x"], len(m))
+        hidden: true
+      - call: |
+          m = HashMap()
+          try:
+              del m[3]
+          except KeyError:
+              print("KeyError")
+          print(len(m), 3 in m)
+        hidden: true
+      - call: |
+          m = HashMap()
+          for i in range(20):
+              m[i] = i
+          for i in range(0, 20, 2):
+              del m[i]
+          print(len(m), [k for k in range(20) if k in m])
+        hidden: true
+      - call: |
+          m = HashMap()
+          for i in range(40_000):
+              m[i * 3] = i
+          print(sum(1 for i in range(40_000) if i * 2 in m), len(m))
+        hidden: true
+        big: true
+    more:
+      - task: |
+          Add two generators to the map: `__iter__`, which yields every key, and `items()`, which yields every pair as a tuple `(key, value)`. With `__iter__`, the map works with `for`, `list`, `sorted` and `max` like a dict. The order of the keys doesn't matter: the tests sort them.
+
+          For example, this program:
+
+          ```python fragment
+          m = HashMap()
+          m["fig"] = 3
+          m["apple"] = 7
+          m["kiwi"] = 5
+          print(sorted(m))
+          print(sorted(m.items()))
+          print(max(m, key=lambda k: m[k]))
+          ```
+
+          prints:
+
+          ```
+          ['apple', 'fig', 'kiwi']
+          [('apple', 7), ('fig', 3), ('kiwi', 5)]
+          apple
+          ```
+        seed: |
+          class HashMap:
+              def __init__(self):
+                  self.buckets = [[] for i in range(8)]
+                  self.count = 0
+
+              def _index(self, key):
+                  return hash(key) % len(self.buckets)
+
+              def _grow(self):
+                  old = self.buckets
+                  self.buckets = [[] for i in range(len(old) * 2)]
+                  for bucket in old:
+                      for pair in bucket:
+                          self.buckets[self._index(pair[0])].append(pair)
+
+              def __setitem__(self, key, value):
+                  bucket = self.buckets[self._index(key)]
+                  for pair in bucket:
+                      if pair[0] == key:
+                          pair[1] = value
+                          return
+                  bucket.append([key, value])
+                  self.count += 1
+                  if self.count / len(self.buckets) > 0.75:
+                      self._grow()
+
+              def __getitem__(self, key):
+                  for pair in self.buckets[self._index(key)]:
+                      if pair[0] == key:
+                          return pair[1]
+                  raise KeyError(key)
+
+              def __len__(self):
+                  return self.count
+
+              def __iter__(self):
+                  pass
+
+              def items(self):
+                  pass
+
+
+          if __name__ == "__main__":
+              m = HashMap()
+              m["fig"] = 3
+              m["apple"] = 7
+              m["kiwi"] = 5
+              print(sorted(m))
+              print(sorted(m.items()))
+              print(max(m, key=lambda k: m[k]))
+        solution: |
+          class HashMap:
+              def __init__(self):
+                  self.buckets = [[] for i in range(8)]
+                  self.count = 0
+
+              def _index(self, key):
+                  return hash(key) % len(self.buckets)
+
+              def _grow(self):
+                  old = self.buckets
+                  self.buckets = [[] for i in range(len(old) * 2)]
+                  for bucket in old:
+                      for pair in bucket:
+                          self.buckets[self._index(pair[0])].append(pair)
+
+              def __setitem__(self, key, value):
+                  bucket = self.buckets[self._index(key)]
+                  for pair in bucket:
+                      if pair[0] == key:
+                          pair[1] = value
+                          return
+                  bucket.append([key, value])
+                  self.count += 1
+                  if self.count / len(self.buckets) > 0.75:
+                      self._grow()
+
+              def __getitem__(self, key):
+                  for pair in self.buckets[self._index(key)]:
+                      if pair[0] == key:
+                          return pair[1]
+                  raise KeyError(key)
+
+              def __len__(self):
+                  return self.count
+
+              def __iter__(self):
+                  for bucket in self.buckets:
+                      for pair in bucket:
+                          yield pair[0]
+
+              def items(self):
+                  for bucket in self.buckets:
+                      for pair in bucket:
+                          yield (pair[0], pair[1])
+
+
+          if __name__ == "__main__":
+              m = HashMap()
+              m["fig"] = 3
+              m["apple"] = 7
+              m["kiwi"] = 5
+              print(sorted(m))
+              print(sorted(m.items()))
+              print(max(m, key=lambda k: m[k]))
+        hints:
+          - "A method with `yield` in it is a generator: each `yield` gives the loop one more item. Go through every bucket, and every pair in each bucket."
+          - "`__iter__` yields `pair[0]`, and `items` yields `(pair[0], pair[1])`."
+          - "Yield a new tuple in `items`, not the pair list itself: a caller who changed that list would change the map."
+        forbid:
+          - pattern: "[{}]|\\bset\\s*\\(|\\bdict\\s*\\("
+            message: Work with your own buckets, without Python's `set` or `dict`.
+        tests:
+          - call: |
+              m = HashMap()
+              m["fig"] = 3
+              m["apple"] = 7
+              m["kiwi"] = 5
+              print(sorted(m))
+              print(sorted(m.items()))
+              print(max(m, key=lambda k: m[k]))
+          - call: |
+              m = HashMap()
+              print(list(m), list(m.items()))
+            hidden: true
+          - call: |
+              m = HashMap()
+              for i in range(20):
+                  m[i] = i * i
+              print(sorted(m) == list(range(20)), sum(value for key, value in m.items()))
+            hidden: true
+          - call: |
+              m = HashMap()
+              m[2] = "b"
+              m[1] = "a"
+              total = ""
+              for key in sorted(m):
+                  total += m[key]
+              print(total, sorted(m), len(list(m)))
+            hidden: true
+          - call: |
+              m = HashMap()
+              m["tea"] = 4
+              for key, value in m.items():
+                  print(type(key).__name__, type(value).__name__, (key, value) == ("tea", 4))
+            hidden: true
+      - task: |
+          `remove_sold_out(stock)` should delete every item whose count is 0 from the dict it gets, so that the caller's dict changes. It stops with `RuntimeError: dictionary changed size during iteration`. Fix it.
+
+          For example, this program:
+
+          ```python fragment
+          stock = {"apple": 0, "pear": 3, "plum": 0, "fig": 8}
+          remove_sold_out(stock)
+          print(stock)
+          ```
+
+          should print:
+
+          ```
+          {'pear': 3, 'fig': 8}
+          ```
+        seed: |
+          def remove_sold_out(stock):
+              for item in stock:
+                  if stock[item] == 0:
+                      del stock[item]
+
+
+          if __name__ == "__main__":
+              stock = {"apple": 0, "pear": 3, "plum": 0, "fig": 8}
+              remove_sold_out(stock)
+              print(stock)
+        solution: |
+          def remove_sold_out(stock):
+              for item in list(stock):
+                  if stock[item] == 0:
+                      del stock[item]
+
+
+          if __name__ == "__main__":
+              stock = {"apple": 0, "pear": 3, "plum": 0, "fig": 8}
+              remove_sold_out(stock)
+              print(stock)
+        hints:
+          - "The loop goes through the dict while `del` changes it. Loop over a list of the keys made before the loop starts instead."
+          - "`for item in list(stock):` copies the keys first, so deleting from `stock` inside the loop is safe."
+          - "A new dict made with a comprehension, `stock = {...}`, would only give the local name `stock` a new dict: the caller's dict wouldn't change."
+        tests:
+          - call: |
+              stock = {"apple": 0, "pear": 3, "plum": 0, "fig": 8}
+              remove_sold_out(stock)
+              print(stock)
+          - call: |
+              stock = {"tea": 2, "jam": 5}
+              remove_sold_out(stock)
+              print(stock)
+            hidden: true
+          - call: |
+              stock = {"egg": 0, "oat": 0}
+              remove_sold_out(stock)
+              print(stock)
+            hidden: true
+          - call: |
+              stock = {}
+              remove_sold_out(stock)
+              print(stock)
+            hidden: true
+          - call: |
+              stock = {"rice": 4, "salt": 0}
+              same = stock
+              remove_sold_out(stock)
+              print(same)
+            hidden: true
+
+  - id: dsa-hash-own-keys
+    slug: own-keys
+    title: Hashing your own keys
+    text: |
+      Numbers, strings and tuples work as dict keys and set items. Lists don't:
+
+      ```python run crash
+      places = {}
+      places[[2, 3]] = "home"
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 2, in <module>
+          places[[2, 3]] = "home"
+          ~~~~~~^^^^^^^^
+      TypeError: cannot use 'list' as a dict key (unhashable type: 'list')
+      ```
+
+      ### Why a list can't be a key
+
+      A table finds a key by its hash, worked out when the key goes in. A list can change after that: append to it, and its hash, if it had one, would change too. Its pair would then sit in the bucket of the old hash, where no lookup ever looks again. So among Python's own types, only those whose values can't change, the **immutable** ones, are **hashable**: numbers, strings and tuples. A tuple can't change, so `(2, 3)` works as a key, and the usual way to use a list as a key is to make a tuple of it first: `places[tuple(position)] = "home"`. A tuple is hashable only if everything in it is: `([2], 3)` isn't.
+
+      ### Keys of your own
+
+      Objects of your own classes can be keys, but by default both `==` and the hash go by identity: two `Point(1, 2)` objects are two different keys. Once a class has `__eq__`, Python takes its default hash away, and putting a point in a set stops with `TypeError: cannot use 'Point' as a set element (unhashable type: 'Point')`. You write **`__hash__`** too, and the two methods must agree:
+
+      **Objects that are equal must have equal hashes.** A table looks for a key only in the bucket of its hash, so if two equal points had different hashes, a lookup for one would never find the other. Objects that aren't equal may share a hash; that's just a collision.
+
+      The easy way to keep the rule is to hash a tuple of exactly the fields that `__eq__` compares. `__hash__` returns a whole number, and the table works out the bucket from it:
+
+      ```python run
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __eq__(self, other):
+              return isinstance(other, Point) and self.x == other.x and self.y == other.y
+
+          def __hash__(self):
+              return hash((self.x, self.y))
+
+          def __repr__(self):
+              return f"Point({self.x}, {self.y})"
+
+
+      p = Point(1, 2)
+      visited = {p}
+      visited.add(Point(1, 2))
+      print(len(visited), Point(1, 2) in visited, Point(2, 1) in visited)
+
+      p.x = 5
+      print(visited)
+      print(p in visited, Point(1, 2) in visited)
+      ```
+
+      ```output
+      1 True False
+      {Point(5, 2)}
+      False False
+      ```
+
+      The second `Point(1, 2)` is equal to the first and has the same hash, so the set keeps one point. Then the program changes the point while it's in the set. The set still holds it, as the print shows, but nothing finds it any more: `p in visited` looks in the bucket of the new hash, and `Point(1, 2)` finds the right bucket but no equal point in it. So **a key must not change while it's in a table**: hash only fields that never change after `__init__`, or use tuples.
+
+      ### A legal hash that's terrible
+
+      `return 0` keeps the rule too: equal objects get equal hashes. But then every object collides with every other, and the table is one long chain. This class counts how often the set calls its `__eq__`:
+
+      ```python run
+      class Ticket:
+          comparisons = 0
+
+          def __init__(self, number):
+              self.number = number
+
+          def __eq__(self, other):
+              Ticket.comparisons += 1
+              return self.number == other.number
+
+          def __hash__(self):
+              return 0
+
+
+      tickets = set()
+      for i in range(1000):
+          tickets.add(Ticket(i))
+      print(len(tickets), Ticket.comparisons)
+      ```
+
+      ```output
+      1000 613645
+      ```
+
+      Each new ticket is compared with the tickets already there, so building a set of n tickets is O(n²), and each lookup O(n). With `return hash(self.number)` instead, the program prints 0 comparisons: the set calls `__eq__` only for keys whose hashes are equal, and these numbers all have different hashes.
+
+      **Your turn:** `Version` is the version number of a program, such as 3.14: a major number and a minor number. Give it `__eq__` and `__hash__`, so that versions work in sets and as dict keys. Two versions are equal when both the major and the minor numbers are equal, and a version is never equal to something that isn't a version. The hidden test puts 50,000 different versions in a set: a hash that's the same for every version makes that O(n²). This program:
+
+      ```python fragment
+      versions = {Version(3, 14), Version(2, 7), Version(3, 14)}
+      print(len(versions), Version(2, 7) in versions, Version(3, 13) in versions)
+      print(Version(3, 14) == Version(3, 14), Version(3, 14) == (3, 14))
+      ```
+
+      prints:
+
+      ```
+      2 True False
+      True False
+      ```
+    seed: |
+      class Version:
+          def __init__(self, major, minor):
+              self.major = major
+              self.minor = minor
+
+
+      if __name__ == "__main__":
+          versions = {Version(3, 14), Version(2, 7), Version(3, 14)}
+          print(len(versions), Version(2, 7) in versions, Version(3, 13) in versions)
+          print(Version(3, 14) == Version(3, 14), Version(3, 14) == (3, 14))
+    solution: |
+      class Version:
+          def __init__(self, major, minor):
+              self.major = major
+              self.minor = minor
+
+          def __eq__(self, other):
+              return isinstance(other, Version) and self.major == other.major and self.minor == other.minor
+
+          def __hash__(self):
+              return hash((self.major, self.minor))
+
+
+      if __name__ == "__main__":
+          versions = {Version(3, 14), Version(2, 7), Version(3, 14)}
+          print(len(versions), Version(2, 7) in versions, Version(3, 13) in versions)
+          print(Version(3, 14) == Version(3, 14), Version(3, 14) == (3, 14))
+    slow: |
+      class Version:
+          def __init__(self, major, minor):
+              self.major = major
+              self.minor = minor
+
+          def __eq__(self, other):
+              return isinstance(other, Version) and self.major == other.major and self.minor == other.minor
+
+          def __hash__(self):
+              return 0
+
+
+      if __name__ == "__main__":
+          versions = {Version(3, 14), Version(2, 7), Version(3, 14)}
+          print(len(versions), Version(2, 7) in versions, Version(3, 13) in versions)
+          print(Version(3, 14) == Version(3, 14), Version(3, 14) == (3, 14))
+    hints:
+      - "`__eq__` returns `True` when `other` is a `Version` with the same major and the same minor number. Check `isinstance(other, Version)` first, so that comparing with a tuple gives `False` instead of an error."
+      - "`__hash__` must give equal versions equal hashes: hash a tuple of exactly the fields `__eq__` compares, `hash((self.major, self.minor))`."
+      - "A hash that's the same for every version, such as `return 0`, keeps the rule, but every version collides, and the big set takes O(n²)."
+    tests:
+      - call: |
+          versions = {Version(3, 14), Version(2, 7), Version(3, 14)}
+          print(len(versions), Version(2, 7) in versions, Version(3, 13) in versions)
+          print(Version(3, 14) == Version(3, 14), Version(3, 14) == (3, 14))
+      - call: |
+          notes = {Version(3, 12): "old", Version(3, 13): "stable"}
+          notes[Version(3, 12)] = "security fixes"
+          print(len(notes), notes[Version(3, 12)], notes[Version(3, 13)])
+        hidden: true
+      - call: |
+          print(Version(4, 5) != Version(5, 4), Version(4, 5) != Version(4, 5), Version(3, 14) == "3.14")
+          print(hash(Version(2, 7)) == hash(Version(2, 7)))
+        hidden: true
+      - call: |
+          installs = [Version(1, 0), Version(1, 1), Version(2, 0), Version(1, 1), Version(1, 0)]
+          print(len(set(installs)), installs.count(Version(1, 1)))
+        hidden: true
+      - call: |
+          versions = {Version(i // 400, i % 400) for i in range(50_000)}
+          print(len(versions), Version(124, 399) in versions, Version(125, 0) in versions)
+        hidden: true
+        big: true
+    more:
+      - task: |
+          Write `group_anagrams(words)`. Two words are **anagrams** when they have the same letters in another order, such as "listen" and "silent". Uppercase and lowercase letters are different letters: "Night" and "thing" aren't anagrams, but "night" and "thing" are. Return a list of groups, each a list of words that are anagrams of each other. Keep the order of `words`: the group whose first word comes earliest in `words` comes first, and inside each group the words stay in the order they had.
+
+          Use a dict: the sorted letters of a word make a good key, but `sorted` gives a list, which can't be a key. The hidden test groups 60,000 strings of digits into about 28,000 groups, so comparing each word with every group so far is too slow.
+
+          For example, this call:
+
+          ```python fragment
+          print(group_anagrams(["stop", "melon", "pots", "lemon", "tops", "kiwi"]))
+          ```
+
+          prints:
+
+          ```
+          [['stop', 'pots', 'tops'], ['melon', 'lemon'], ['kiwi']]
+          ```
+        seed: |
+          def group_anagrams(words):
+              pass
+
+
+          if __name__ == "__main__":
+              print(group_anagrams(["stop", "melon", "pots", "lemon", "tops", "kiwi"]))
+        solution: |
+          def group_anagrams(words):
+              groups = {}
+              for word in words:
+                  key = tuple(sorted(word))
+                  if key not in groups:
+                      groups[key] = []
+                  groups[key].append(word)
+              return list(groups.values())
+
+
+          if __name__ == "__main__":
+              print(group_anagrams(["stop", "melon", "pots", "lemon", "tops", "kiwi"]))
+        slow: |
+          def group_anagrams(words):
+              groups = []
+              for word in words:
+                  for group in groups:
+                      if sorted(group[0]) == sorted(word):
+                          group.append(word)
+                          break
+                  else:
+                      groups.append([word])
+              return groups
+
+
+          if __name__ == "__main__":
+              print(group_anagrams(["stop", "melon", "pots", "lemon", "tops", "kiwi"]))
+        hints:
+          - "Anagrams have the same letters, so sorting their letters gives the same result: `sorted(\"pots\")` and `sorted(\"stop\")` are both `['o', 'p', 's', 't']`."
+          - "That list can't be a dict key, but a tuple can: `key = tuple(sorted(word))`. (`\"\".join(sorted(word))`, a string, works too.)"
+          - "Keep a dict from each key to its list of words. A dict remembers the order its keys were added in, so `list(groups.values())` gives the groups in the order of their first words."
+        tests:
+          - call: print(group_anagrams(["stop", "melon", "pots", "lemon", "tops", "kiwi"]))
+          - call: print(group_anagrams([]), group_anagrams(["solo"]))
+            hidden: true
+          - call: group_anagrams(["rat", "tar", "rat", "art"])
+            hidden: true
+          - call: group_anagrams(["abc", "abd", "cab", "dab", "bad"])
+            hidden: true
+          - call: group_anagrams(["aab", "abb", "bab", "aba"])
+            hidden: true
+          - call: group_anagrams(["Night", "thing", "night", "a", "a"])
+            hidden: true
+          - call: |
+              groups = group_anagrams([str(i * i) for i in range(60_000)])
+              print(len(groups), max(len(group) for group in groups), groups[1], groups[-1])
+            hidden: true
+            big: true
+      - task: |
+          Two `Student` objects are the same student when their ids are equal, even when the name was typed in another way. `__eq__` says so, but a set of students still counts the same student twice. Find the problem and fix it.
+
+          For example, this program:
+
+          ```python fragment
+          signups = [Student(1001, "Ada Lovelace"), Student(1002, "Ben Ng"), Student(1001, "ada lovelace")]
+          print(len(set(signups)))
+          ```
+
+          should print:
+
+          ```
+          2
+          ```
+        seed: |
+          class Student:
+              def __init__(self, student_id, name):
+                  self.student_id = student_id
+                  self.name = name
+
+              def __eq__(self, other):
+                  return isinstance(other, Student) and self.student_id == other.student_id
+
+              def __hash__(self):
+                  return hash((self.student_id, self.name))
+
+
+          if __name__ == "__main__":
+              signups = [Student(1001, "Ada Lovelace"), Student(1002, "Ben Ng"), Student(1001, "ada lovelace")]
+              print(len(set(signups)))
+        solution: |
+          class Student:
+              def __init__(self, student_id, name):
+                  self.student_id = student_id
+                  self.name = name
+
+              def __eq__(self, other):
+                  return isinstance(other, Student) and self.student_id == other.student_id
+
+              def __hash__(self):
+                  return hash(self.student_id)
+
+
+          if __name__ == "__main__":
+              signups = [Student(1001, "Ada Lovelace"), Student(1002, "Ben Ng"), Student(1001, "ada lovelace")]
+              print(len(set(signups)))
+        hints:
+          - "`__eq__` compares only the ids. What does `__hash__` look at?"
+          - "Two equal students with differently typed names get different hashes, so the set never even compares them with `==`: equal objects must have equal hashes."
+          - "Hash only what `__eq__` compares: `return hash(self.student_id)`."
+        tests:
+          - call: |
+              signups = [Student(1001, "Ada Lovelace"), Student(1002, "Ben Ng"), Student(1001, "ada lovelace")]
+              print(len(set(signups)))
+          - call: |
+              print(Student(5, "Kai") in {Student(5, "kai")}, Student(6, "Kai") in {Student(5, "Kai")})
+            hidden: true
+          - call: |
+              grades = {Student(7, "Mia"): 9}
+              grades[Student(7, "Mia K.")] = 10
+              print(len(grades), grades[Student(7, "M")])
+            hidden: true
+          - call: |
+              names = ["Eve", "eve", "EVE", "Eve L."]
+              print(len({Student(42, name) for name in names}))
+            hidden: true
+
+  - id: dsa-hash-lru-cache
+    slug: lru-cache
+    title: "Challenge: an LRU cache"
+    text: |
+      A **cache** keeps answers that were slow to get, so that asking again is fast: pages a browser downloaded, rows a program read from a database. A cache can't keep everything, so when it's full, something has to go. A **least recently used (LRU)** cache throws out the item that was used longest ago, betting that what you used lately you'll use again soon. It's a favorite interview question because it needs two things in O(1) at once: finding an item by its key, and finding the oldest one.
+
+      ### A dict remembers its order
+
+      A dict keeps its keys in the order they were added. (Its table holds only positions, and the pairs themselves sit in a list in the order they came.) Giving a key that's already there a new value keeps its place; removing the key and adding it again moves it to the end:
+
+      ```python repl
+      >>> weather = {"Oslo": 4, "Lima": 19, "Rome": 15}
+      >>> weather["Oslo"] = 6
+      >>> list(weather)
+      ['Oslo', 'Lima', 'Rome']
+      >>> temp = weather.pop("Oslo")
+      >>> weather["Oslo"] = temp
+      >>> list(weather)
+      ['Lima', 'Rome', 'Oslo']
+      ```
+
+      So the order of a dict can be the order of use: the most recent key at the end, the oldest at the front.
+
+      ### OrderedDict
+
+      `collections.OrderedDict` is a dict made for exactly this. `move_to_end(key)` moves a key to the end, and `popitem(last=False)` removes the first pair, the oldest, and returns it. Both are O(1) on average: `move_to_end` finds the key by its hash, as a dict does, and `popitem(last=False)` takes the first key in the order and deletes it from the table, like `del`.
+
+      ```python run
+      from collections import OrderedDict
+
+      weather = OrderedDict()
+      for city, temp in [("Oslo", 4), ("Lima", 19), ("Rome", 15)]:
+          weather[city] = temp
+      weather.move_to_end("Oslo")
+      print(list(weather))
+      print(weather.popitem(last=False))
+      print(list(weather))
+      ```
+
+      ```output
+      ['Lima', 'Rome', 'Oslo']
+      ('Lima', 19)
+      ['Rome', 'Oslo']
+      ```
+
+      Beside its hash table, an OrderedDict keeps its keys in a chain where each key knows the one before it and the one after it, so it can take a key out of the middle and put it at the end without moving anything else. Such a chain is called a **doubly linked list**. An interviewer may ask you to build the cache without OrderedDict, from a plain dict and a doubly linked list of your own, which is what OrderedDict does inside: the dict finds a key's link in the chain, and the link comes out and goes to the end in O(1). The module on trees builds a linked list. A plain dict's oldest key is `next(iter(d))`, but each key removed from the front leaves an empty place that iteration has to skip until the dict is rebuilt, so taking the oldest out again and again can get slow. For a cache, use OrderedDict.
+
+      ### The cache
+
+      With the most recently used key at the end:
+
+      - `get(key)`: if the key is in the cache, move it to the end, since it was just used, and return its value. Otherwise return `None`.
+      - `put(key, value)`: store the value and move the key to the end. If the cache now holds more than `capacity` keys, remove the oldest one, at the front.
+
+      Each step is an O(1) dict operation, so both methods are O(1) on average, and the cache needs O(capacity) memory. The slow way keeps the order in a list, where `order.remove(key)` searches the list: O(capacity) for every `get`.
+
+      ### functools.lru_cache
+
+      Python has an LRU cache for functions. `@lru_cache(maxsize=...)` above a function wraps it, the way `@property` wraps a method: a call with arguments seen before returns the stored result without running the function, and once `maxsize` results are stored, a new one pushes out the least recently used. `cache_info()` counts the **hits** (answers from the cache) and the **misses**:
+
+      ```python run
+      from functools import lru_cache
+
+
+      @lru_cache(maxsize=2)
+      def slow_square(n):
+          print("working out", n)
+          return n * n
+
+
+      for n in [3, 4, 3, 5, 4]:
+          slow_square(n)
+      print(slow_square.cache_info())
+      ```
+
+      ```output
+      working out 3
+      working out 4
+      working out 5
+      working out 4
+      CacheInfo(hits=1, misses=4, maxsize=2, currsize=2)
+      ```
+
+      The second 3 is a hit and makes 3 the most recent, so 5 pushes out 4, and the last call has to work 4 out again. With `maxsize=None` the cache never forgets (`functools.cache` is the same), which is **memoization**: a recursive function such as Fibonacci then works out each number only once. The arguments become keys of a dict inside, so they must be hashable: a list argument stops with `TypeError: unhashable type: 'list'`.
+
+      **Your turn:** write the class `LRUCache`. `LRUCache(capacity)` makes an empty cache for at most `capacity` keys (at least 1), and `get(key)` and `put(key, value)` work as described above. Both must be O(1): the hidden test makes 650,000 calls on a cache of 100,000 keys, reading keys from every part of the order and pushing out 350,000 of them. This program:
+
+      ```python fragment
+      cache = LRUCache(2)
+      cache.put("a", 1)
+      cache.put("b", 2)
+      print(cache.get("a"))
+      cache.put("c", 3)
+      print(cache.get("b"), cache.get("a"), cache.get("c"))
+      ```
+
+      prints (reading `"a"` made `"b"` the least recently used, so `"c"` pushed `"b"` out):
+
+      ```
+      1
+      None 1 3
+      ```
+    seed: |
+      from collections import OrderedDict
+
+
+      class LRUCache:
+          def __init__(self, capacity):
+              self.capacity = capacity
+
+          def get(self, key):
+              pass
+
+          def put(self, key, value):
+              pass
+
+
+      if __name__ == "__main__":
+          cache = LRUCache(2)
+          cache.put("a", 1)
+          cache.put("b", 2)
+          print(cache.get("a"))
+          cache.put("c", 3)
+          print(cache.get("b"), cache.get("a"), cache.get("c"))
+    solution: |
+      from collections import OrderedDict
+
+
+      class LRUCache:
+          def __init__(self, capacity):
+              self.capacity = capacity
+              self.items = OrderedDict()
+
+          def get(self, key):
+              if key not in self.items:
+                  return None
+              self.items.move_to_end(key)
+              return self.items[key]
+
+          def put(self, key, value):
+              self.items[key] = value
+              self.items.move_to_end(key)
+              if len(self.items) > self.capacity:
+                  self.items.popitem(last=False)
+
+
+      if __name__ == "__main__":
+          cache = LRUCache(2)
+          cache.put("a", 1)
+          cache.put("b", 2)
+          print(cache.get("a"))
+          cache.put("c", 3)
+          print(cache.get("b"), cache.get("a"), cache.get("c"))
+    slow: |
+      from collections import OrderedDict
+
+
+      class LRUCache:
+          def __init__(self, capacity):
+              self.capacity = capacity
+              self.values = {}
+              self.order = []
+
+          def get(self, key):
+              if key not in self.values:
+                  return None
+              self.order.remove(key)
+              self.order.append(key)
+              return self.values[key]
+
+          def put(self, key, value):
+              if key in self.values:
+                  self.order.remove(key)
+              self.order.append(key)
+              self.values[key] = value
+              if len(self.order) > self.capacity:
+                  oldest = self.order.pop(0)
+                  del self.values[oldest]
+
+
+      if __name__ == "__main__":
+          cache = LRUCache(2)
+          cache.put("a", 1)
+          cache.put("b", 2)
+          print(cache.get("a"))
+          cache.put("c", 3)
+          print(cache.get("b"), cache.get("a"), cache.get("c"))
+    hints:
+      - "Keep the pairs in an `OrderedDict`, oldest first. `get` returns `None` for a key that isn't there; otherwise it calls `move_to_end(key)` and returns the value."
+      - "`put` stores the value and calls `move_to_end(key)`: a key that was already there keeps its old place otherwise. If there are now more than `capacity` keys, `popitem(last=False)` removes the oldest."
+      - "Keeping the order in a list and calling `remove` on it costs O(capacity) for each call, whichever end holds the newest key, and so does finding the oldest key with `list(self.items)[0]`. A plain dict whose oldest key is `next(iter(...))` gets slow too, as it has to skip every key already removed from the front. All of these are too slow for the big test."
+    tests:
+      - call: |
+          cache = LRUCache(2)
+          cache.put("a", 1)
+          cache.put("b", 2)
+          print(cache.get("a"))
+          cache.put("c", 3)
+          print(cache.get("b"), cache.get("a"), cache.get("c"))
+      - call: |
+          cache = LRUCache(2)
+          cache.put("a", 1)
+          cache.put("b", 2)
+          cache.put("a", 10)
+          cache.put("c", 3)
+          print(cache.get("a"), cache.get("b"), cache.get("c"))
+        hidden: true
+      - call: |
+          cache = LRUCache(2)
+          cache.put("a", 1)
+          cache.put("b", 2)
+          cache.put("b", 20)
+          print(cache.get("a"), cache.get("b"))
+          cache.put("c", 3)
+          print(cache.get("a"), cache.get("b"), cache.get("c"))
+        hidden: true
+      - call: |
+          cache = LRUCache(1)
+          cache.put("x", 1)
+          cache.put("y", 2)
+          print(cache.get("x"), cache.get("y"))
+        hidden: true
+      - call: |
+          cache = LRUCache(2)
+          cache.put(1, "one")
+          cache.put(2, "two")
+          print(cache.get(3))
+          cache.put(4, "four")
+          print(cache.get(1), cache.get(2), cache.get(4))
+        hidden: true
+      - call: |
+          cache = LRUCache(3)
+          for key in [1, 2, 3]:
+              cache.put(key, key * 10)
+          cache.get(1)
+          cache.get(2)
+          cache.put(4, 40)
+          cache.put(5, 50)
+          print([cache.get(key) for key in [1, 2, 3, 4, 5]])
+        hidden: true
+      - call: |
+          cache = LRUCache(100_000)
+          for i in range(100_000):
+              cache.put(i, i)
+          total = 0
+          for i in range(100_000):
+              total += cache.get(i * 7 % 100_000) + cache.get((i - 5) * 7 % 100_000)
+          for i in range(100_000, 450_000):
+              cache.put(i, 0)
+          print(total, cache.get(99_999), cache.get(449_999))
+        hidden: true
+        big: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          from functools import lru_cache
+
+
+          @lru_cache(maxsize=3)
+          def lookup(word):
+              print("miss", word)
+              return len(word)
+
+
+          for word in ["red", "blue", "red", "green", "pink", "blue", "red"]:
+              lookup(word)
+          print(lookup.cache_info().hits)
+        hints:
+          - "The cache keeps the results for the 3 most recently used words. A word in the cache is a hit: nothing is printed, and it becomes the most recent."
+          - "Write down the cache after each call, oldest first. After `green` it holds `blue`, `red`, `green`. Which word does `pink` push out?"
+          - "After `pink`, the cache holds `red`, `green`, `pink`, so the next `blue` is a miss, and it pushes out `red`."
+      - task: |
+          A computer's memory holds `capacity` pages, and a program asks for pages one after another. When the page it asks for is in memory, that's a hit, and the page becomes the most recently used. When it isn't, that's a **miss**: the page is loaded, and if the memory is already full, the least recently used page is dropped to make room.
+
+          Write `count_misses(requests, capacity)` that returns the number of misses, for a memory that starts empty. The hidden test has 300,000 requests and a capacity of 40,000.
+
+          For example, `count_misses([1, 2, 1, 3, 2, 4, 1, 2], 3)` returns (1, 2 and 3 load, 4 pushes out 1, and the next 1 pushes out 3):
+
+          ```
+          5
+          ```
+        seed: |
+          from collections import OrderedDict
+
+
+          def count_misses(requests, capacity):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_misses([1, 2, 1, 3, 2, 4, 1, 2], 3))
+        solution: |
+          from collections import OrderedDict
+
+
+          def count_misses(requests, capacity):
+              memory = OrderedDict()
+              misses = 0
+              for page in requests:
+                  if page in memory:
+                      memory.move_to_end(page)
+                  else:
+                      misses += 1
+                      memory[page] = True
+                      if len(memory) > capacity:
+                          memory.popitem(last=False)
+              return misses
+
+
+          if __name__ == "__main__":
+              print(count_misses([1, 2, 1, 3, 2, 4, 1, 2], 3))
+        slow: |
+          from collections import OrderedDict
+
+
+          def count_misses(requests, capacity):
+              memory = []
+              misses = 0
+              for page in requests:
+                  if page in memory:
+                      memory.remove(page)
+                  else:
+                      misses += 1
+                      if len(memory) == capacity:
+                          memory.pop(0)
+                  memory.append(page)
+              return misses
+
+
+          if __name__ == "__main__":
+              print(count_misses([1, 2, 1, 3, 2, 4, 1, 2], 3))
+        hints:
+          - "Use an `OrderedDict` as the memory, with the least recently used page first. The values don't matter: store `True`."
+          - "A hit: `move_to_end(page)`. A miss: add one to the count, add the page, and if the memory now holds more than `capacity` pages, drop the oldest with `popitem(last=False)`."
+          - "A list with `in` and `remove` costs O(capacity) for every request: too slow for 300,000 requests."
+        tests:
+          - call: count_misses([1, 2, 1, 3, 2, 4, 1, 2], 3)
+          - call: count_misses([], 4)
+            hidden: true
+          - call: count_misses([7, 7, 8, 7], 1)
+            hidden: true
+          - call: count_misses([1, 2, 3, 1, 2, 3], 5)
+            hidden: true
+          - call: count_misses([1, 2, 3, 4] * 3, 3)
+            hidden: true
+          - call: count_misses(["home", "news", "home", "mail", "news", "shop", "home"], 2)
+            hidden: true
+          - call: count_misses([i * i % 100_003 for i in range(300_000)], 40_000)
+            hidden: true
+            big: true

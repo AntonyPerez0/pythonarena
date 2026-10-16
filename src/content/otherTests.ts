@@ -25,3 +25,15 @@ export function otherTestsUse(shown: TestCase | undefined, others: TestCase[]): 
   ].filter((p): p is string => !!p);
   return parts.length ? parts.join(" or ") : plain;
 }
+
+/**
+ * The task card's words about the big tests among the ones it doesn't show (`others`): sized so that a
+ * correct but slow way runs out of time. Empty when there are none; otherwise a sentence that starts with
+ * a space, to follow the note about the tests.
+ */
+export function bigTestsNote(others: TestCase[]): string {
+  const big = others.filter((t) => t.big).length;
+  if (!big) return "";
+  if (big === others.length) return big === 1 ? " It is a big test: a way that is too slow runs out of time on it." : " They are big tests: a way that is too slow runs out of time on them.";
+  return ` ${big === 1 ? "One of them is a big test" : `${big} of them are big tests`}: a way that is too slow runs out of time.`;
+}

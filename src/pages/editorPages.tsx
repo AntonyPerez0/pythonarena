@@ -44,6 +44,9 @@ export const loadProProject = proProjectPage.preload;
 // The topics reference has the whole list (src/generated/topics.json), so it loads separately too.
 export const topicsPage = editorPage(() => import("./Topics"));
 export const loadTopics = topicsPage.preload;
+// The interview prep page has its own text (src/generated/interview.json), so it loads separately too.
+export const interviewPage = editorPage(() => import("./Interview"));
+export const loadInterview = interviewPage.preload;
 export const loadProjectPage = projectPage.preload;
 export const loadStepPage = stepPage.preload;
 export const loadPlayground = playgroundPage.preload;
