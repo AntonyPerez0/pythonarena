@@ -35,10 +35,8 @@ drills:
     after: bfs
     code: |
       from collections import deque
-
       graph = {0: [1, 2], 1: [3], 2: [4], 3: [], 4: [3]}
-      dist = {0: 0}
-      queue = deque([0])
+      dist, queue = {0: 0}, deque([0])
       while queue:
           v = queue.pop()  # BUG
           for w in graph[v]:
@@ -143,57 +141,45 @@ drills:
     after: dfs
     code: |
       graph = {1: [2, 3], 2: [4], 3: [4], 4: []}
-      seen = {1}
-      stack = [1]
-      order = []
+      seen, stack = {1}, [1]
       while stack:
           v = stack.pop()
-          order.append(v)
+          print(v)
           for w in graph[v]:
               if w not in seen:
                   seen.add(w)
                   stack.append(w)
-      print(order)
     why: "1 pushes 2 and then 3, and `pop` takes the one pushed last: 3. It pushes 4, which comes next. 4 is already seen when 2 is finally taken, so it isn't pushed again."
 
   - type: fill
     after: dfs
     code: |
       graph = {1: [2], 2: [1], 3: [], 4: [5], 5: [4]}
-      seen = set()
-      groups = 0
+      seen, groups = set(), 0
       for start in graph:
           if start not in seen:
               [[groups += 1‖groups = groups + 1]]
-              seen.add(start)
-              stack = [start]
-              while stack:
-                  v = stack.pop()
-                  for w in graph[v]:
-                      if w not in seen:
-                          seen.add(w)
-                          stack.append(w)
+              layer = {start}
+              while layer:
+                  seen.update(layer)
+                  layer = {w for v in layer for w in graph[v]} - seen
       print(groups)
-    why: "A start that hasn't been seen belongs to no group found so far, so it starts a new one, and the search marks the whole group as seen. The groups are 1 and 2, 3 alone, and 4 and 5."
+    why: "A start that hasn't been seen belongs to no group found so far, so it starts a new one, and the search marks the whole group as seen, one layer of neighbors at a time. The groups are 1 and 2, 3 alone, and 4 and 5."
 
   - type: predict
     after: topological-sort
     code: |
       from collections import deque
-
-      after = {0: [3], 1: [3, 2], 2: [4], 3: [4], 4: []}
-      indegree = {0: 0, 1: 0, 2: 1, 3: 2, 4: 2}
-      queue = deque([0, 1])
-      order = []
+      after = [[2, 3], [2], [], []]
+      indegree, queue = [0, 0, 2, 1], deque([0, 1])
       while queue:
           v = queue.popleft()
-          order.append(v)
+          print(v)
           for w in after[v]:
               indegree[w] -= 1
               if indegree[w] == 0:
                   queue.append(w)
-      print(order)
-    why: "0 leaves 3 waiting for one more edge. 1 then frees both 3 and 2, in the order of its list. 3 lowers 4 to 1, and 2 frees it."
+    why: "0 lowers 2 to 1, so 2 still waits for 1, and it frees 3, which joins the queue behind 1. Only when 1 is taken does 2 reach 0 and join the queue, behind 3. A vertex joins when its last wait ends, not in the order of the lists."
 
   - type: bug
     after: topological-sort
@@ -286,20 +272,16 @@ drills:
     after: dijkstra
     code: |
       import heapq
-
-      graph = {"a": [("b", 5), ("c", 1)], "b": [("d", 1)], "c": [("b", 2), ("d", 7)], "d": []}
-      dist = {"a": 0}
-      heap = [(0, "a")]
+      graph = [[(1, 5), (2, 1)], [], [(1, 2)]]
+      dist, heap = {0: 0}, [(0, 0)]
       while heap:
           d, v = heapq.heappop(heap)
-          if d > dist[v]:
-              continue
+          print(v, d)
           for w, cost in graph[v]:
               if w not in dist or d + cost < dist[w]:
                   dist[w] = d + cost
                   heapq.heappush(heap, (d + cost, w))
-      print(dist["b"], dist["d"])
-    why: "From a, b costs 5 and c 1. c comes out first and finds b for 1 + 2 = 3, cheaper than 5. Then b, at 3, finds d for 4, cheaper than the 8 through c. The old pairs for b at 5 and d at 8 are stale and skipped."
+    why: "From 0, vertex 1 costs 5 and 2 costs 1, so 2 comes out first and finds 1 for 1 + 2 = 3, cheaper than 5. 1 then comes out at 3. Nothing here skips stale pairs, so the old pair for 1, at 5, comes out too, last. The lesson's `if d > dist[v]: continue` would skip it."
 
   - type: choice
     after: dijkstra

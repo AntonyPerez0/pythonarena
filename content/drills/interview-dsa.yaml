@@ -179,7 +179,7 @@ drills:
       print(heapq.heappop(heap), heapq.heappop(heap))
       heapq.heappush(heap, 2)
       print([heapq.heappop(heap) for _ in range(3)])
-    why: "A heap keeps each item no bigger than the two just below it (`heap[k] <= heap[2*k + 1]` and `heap[k] <= heap[2*k + 2]`), so the smallest is at index 0, but the list itself isn't sorted: `[1, 3, 8, 5]`, where the 5 sits below the 3 and comes after the bigger 8. Each `heappop` takes the smallest item left and repairs the heap in O(log n), so the pops come out in sorted order, the 2 pushed later included."
+    why: "A heap keeps each item no bigger than the two just below it (`heap[k] <= heap[2*k + 1]` and `heap[k] <= heap[2*k + 2]`), so the smallest is at index 0, but the list itself isn't sorted. `heappush` adds the new item at the end and swaps it with the item just above it while it's smaller: the 1 swaps past the 5 to the top, the 8 stays where it lands, and the 3 lands below the 5 and swaps with it, so the 5 ends up last, after the bigger 8: `[1, 3, 8, 5]`. Each `heappop` takes the smallest item left and repairs the heap in O(log n), so the pops come out in sorted order, the 2 pushed later included."
 
   - type: predict
     code: |
@@ -401,7 +401,7 @@ drills:
     prompt: |
       Write `two_sum(numbers, target)`. It returns a tuple `(i, j)`, with `i < j`, of the positions of two numbers that add up to `target`, or `None` when no two numbers do. At most one pair adds up to `target`. A number can't pair with itself, but two equal numbers at different positions can. It must be fast for 200,000 numbers: a loop inside a loop is O(n²), too slow for the hidden test. With a dict of the numbers seen so far, one pass is enough: O(n).
 
-      For example, `two_sum([4, 9, 4, 2], 8)` returns (4 + 4):
+      For example, `two_sum([4, 9, 4, 2], 8)` returns the positions of the two 4s:
 
       ```
       (0, 2)

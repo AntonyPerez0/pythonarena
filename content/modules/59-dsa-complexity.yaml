@@ -358,6 +358,17 @@ steps:
 
       When you need *where* the partner is, not just whether it exists, use a dict instead of a set: map each value seen to its index, `positions[x] = i`, and `positions[target - x]` gives the partner's index. That's the classic interview question "two sum".
 
+      To have each index together with its value, loop with **`enumerate`**, in place of `for i in range(len(values))` and `values[i]`:
+
+      ```python repl
+      >>> for i, x in enumerate([8, 3, 11]):
+      ...     print(i, x)
+      ...
+      0 8
+      1 3
+      2 11
+      ```
+
       **Your turn:** a shop sent out some orders, and `missing` lists the ones that never arrived, in the order they were sent. Fill in the blank so that each `not in` check is O(1): the hidden test has 200,000 orders. The call `print(missing([101, 102, 103, 104, 105], [104, 101, 105]))` should print:
 
       ```
@@ -440,7 +451,7 @@ steps:
               print(two_sum([7, 2, 13, 11], 24))
         hints:
           - "Use a dict that maps each value seen so far to its index. For each value `x` at index `j`, its partner is `target - x`."
-          - "If `target - x` is a key of the dict, its index comes first: return `(positions[target - x], j)`. Otherwise add `x` to the dict."
+          - "`for j, x in enumerate(numbers):` gives each index with its value. If `target - x` is a key of the dict, its index comes first: return `(positions[target - x], j)`. Otherwise add `x` to the dict."
           - "Check before you add `x`, so a value doesn't pair with itself: `two_sum([5, 1, 4], 10)` must give `None`."
         tests:
           - call: two_sum([7, 2, 13, 11], 24)
@@ -568,7 +579,7 @@ steps:
 
       - With `while lo < hi`, the loop stops when one item is left, without looking at it. `find(values, 77)` would return -1.
       - With `lo = mid` instead of `mid + 1`, once `lo` and `hi` are neighbors, `mid` is `lo`. If the target is greater, `lo = mid` changes nothing, and the loop never ends.
-      - With `hi = len(values)`, the range starts one place past the end, and a search for a big value looks there:
+      - With `hi = len(values)`, the range reaches one place past the end of the list, and a search for a big value looks there:
 
       ```python run crash
       def find(values, target):
@@ -616,7 +627,7 @@ steps:
           return lo
       ```
 
-      Both styles work; mixing them causes the bugs above.
+      Both styles work. Mixing them causes the first and the last bug above. The middle one is a bug in both styles: `hi` may stay at `mid`, but `lo` must always move past it, `lo = mid + 1`.
 
       ### The `bisect` module
 
@@ -883,7 +894,17 @@ steps:
 
       The loop goes by position. Each `remove` shifts the later items one place to the left, so the item that moves into the current place is never looked at. It's also O(n²), since `count` and `remove` each go through the list.
 
-      For a sorted list, two pointers do it in place: `read` looks at every value, and `write` is where the next value to keep goes. A value is new exactly when it differs from the last value kept, `values[write - 1]`:
+      In everyday Python, you don't remove repeats from the list itself: you make a new list. `sorted(set(values))` gives each different value once, in order, in O(n log n). `dict.fromkeys(values)` makes a dict whose keys are the values, each once, in the order they first appear, so `list(dict.fromkeys(values))` drops the repeats and keeps the order, in O(n):
+
+      ```python repl
+      >>> values = [5, 2, 5, 8, 2, 9]
+      >>> sorted(set(values))
+      [2, 5, 8, 9]
+      >>> list(dict.fromkeys(values))
+      [5, 2, 8, 9]
+      ```
+
+      Interviews ask for the version by hand, when the list itself must change, with O(1) extra memory. For a sorted list, two pointers do it in place: `read` looks at every value, and `write` is where the next value to keep goes. A value is new exactly when it differs from the last value kept, `values[write - 1]`:
 
       ```python run
       def remove_duplicates(values):
@@ -1127,8 +1148,11 @@ steps:
           count = 0
           for value in values:
               total += value
-              count += seen.get(total - k, 0)
-              seen[total] = seen.get(total, 0) + 1
+              if total - k in seen:
+                  count += seen[total - k]
+              if total not in seen:
+                  seen[total] = 0
+              seen[total] += 1
           return count
 
 
@@ -1139,7 +1163,7 @@ steps:
       3
       ```
 
-      The three stretches are 3, 4, then 4, -2, 5, and then 3, 4, -2, 5, 1, -4. The dict starts as `{0: 1}`: that's the empty prefix before the first value, so stretches that start at index 0 are counted too. Each value costs O(1) on average, so the function is O(n) time and O(n) memory. It works with negative values as well, which the sliding windows of the next step can't handle.
+      The three stretches are 3, 4, then 4, -2, 5, and then 3, 4, -2, 5, 1, -4. `seen` maps each prefix sum to how many times it has come up so far, and it starts as `{0: 1}`: that's the empty prefix before the first value, so stretches that start at index 0 are counted too. Each value costs O(1) on average, so the function is O(n) time and O(n) memory. It works with negative values as well, which the sliding windows of the next step can't handle.
 
       **Your turn:** `minutes` holds how many minutes you practiced the piano each day, and `practiced(first_day, last_day)` should give the minutes from `first_day` to `last_day`, both days included. Fill in the blank with the right index of `prefix`. The program should print:
 
@@ -1279,7 +1303,7 @@ steps:
             hidden: true
           - call: longest_stretch([2, 3, -3, 4, 1], 4)
             hidden: true
-          - call: longest_stretch([(i * 37) % 11 - 5 for i in range(200_000)], 3)
+          - call: longest_stretch([i % 7 - 2 for i in range(200_000)], 1_000)
             hidden: true
             big: true
 
@@ -1404,7 +1428,7 @@ steps:
         big: true
     more:
       - task: |
-          Write `longest_unique(text)`: the length of the longest stretch of `text` in which no character appears twice. An empty text gives 0. The hidden test has a text of 200,000 characters whose answer is 20,000, so starting over at every position is too slow: slide a window, and remember where each character was last seen.
+          Write `longest_unique(text)`: the length of the longest stretch of `text` in which no character appears twice. An empty text gives 0. The hidden test has a text of 200,000 characters whose answer is 20,000, so starting over at every position is too slow: slide a window instead. A dict of where each character was last seen tells you in O(1) where the window must start, for O(n) in all.
 
           For example, `longest_unique("abcabcbb")` returns (`"abc"`):
 

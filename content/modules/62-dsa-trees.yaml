@@ -1,5 +1,5 @@
 id: dsa-trees
-summary: Trees and the recursion that walks them. Binary trees measured recursively, what that costs and where deep trees break it, a one-walk balance check, binary search trees and why sorted inserts turn them into a chain, the three traversals and checking a BST with bounds, level order with a deque, binary heaps by hand and with heapq, and tries for prefix search and autocomplete, with big tests where a heap or a balanced tree is the fast way.
+summary: Trees and the recursion that walks them. Binary trees and binary search trees, the three traversals and level order with a deque, with what each costs and where a deep tree breaks recursion. Then binary heaps, by hand and with heapq, and tries for prefix search. Big tests show where a heap, a balanced tree or a trie is the fast way.
 steps:
   - id: dsa-trees-binary-trees
     slug: binary-trees
@@ -267,6 +267,8 @@ steps:
           - call: same_tree(None, Node(5))
             hidden: true
           - call: same_tree(Node(1, Node(2)), Node(1, None, Node(2)))
+            hidden: true
+          - call: same_tree(Node(2, Node(1)), Node(1, None, Node(2)))
             hidden: true
           - call: same_tree(Node(7, Node(3, Node(1), Node(5)), Node(9)), Node(7, Node(3, Node(1), Node(5)), Node(9)))
             hidden: true
@@ -1234,7 +1236,7 @@ steps:
 
       Each node goes into the queue once and comes out once, O(1) each with a deque: O(n) time. The memory is the queue, which never holds more than about two levels: O(w), for the widest level w. In a full tree the last level holds half of the nodes, so that can be O(n), while a depth-first traversal needs O(h). With a list and `pop(0)` you get the same answers, but each pop costs O(n), so a wide tree takes O(n²). And level order uses no recursion at all: a tree 100,000 levels deep is no problem.
 
-      **Your turn:** this program takes each node from the queue, puts its children at the back, and then prints the node followed by what is waiting in the queue. What does it print? Type each line it prints.
+      **Your turn:** this program takes each node from the queue, puts its children at the back, and then prints a line with the node, a colon and the nodes waiting in the queue, from front to back: `A: B C` would mean that it took A, and B and C are waiting. What does it print? Type each line it prints.
     predict: |
       from collections import deque
 
@@ -1261,11 +1263,14 @@ steps:
               queue.append(node.left)
           if node.right is not None:
               queue.append(node.right)
-          print(node.value, [waiting.value for waiting in queue])
+          line = node.value + ":"
+          for waiting in queue:
+              line += " " + waiting.value
+          print(line)
     hints:
-      - "Each round takes the node at the front, adds its children at the back, and only then prints. So the first line is K, with K's children D and P waiting."
+      - "Each round takes the node at the front, adds its children at the back, and only then prints. So the first line is `K: D P`, with K's children D and P waiting."
       - "Next, D leaves and B and H join behind P. Children always join at the back of the line."
-      - "F is the child of H, so it joins when H leaves, behind T. The last line is F with nothing left in the queue."
+      - "F is the child of H, so it joins when H leaves, behind T. The last line is `F:`, with nothing left in the queue."
     more:
       - task: |
           Write `widest(root)` that returns the number of nodes on the widest level of a tree, the level with the most nodes. An empty tree has no levels, so it gives 0. The tests include a tree 3,000 levels deep, so go level by level with a queue rather than with recursion.
@@ -1456,7 +1461,7 @@ steps:
     slug: heaps
     title: Heaps and heapq
     text: |
-      Some programs need the smallest item again and again while new items keep arriving: a printer that prints the shortest job next, a game that runs the next event in time order, an emergency room that treats the most urgent patient first. A collection like that is a **priority queue**. With a plain list, `min` finds the smallest in O(n) every time. A list kept sorted does no better: each new item costs O(n), whether `bisect.insort` puts it in its place (every item after it moves) or you append it and sort again (Timsort sees that the list is almost in order, but still looks at every item). A **heap** adds an item in O(log n), removes the smallest in O(log n), and shows the smallest in O(1).
+      Some programs need the smallest item again and again while new items keep arriving: a printer that prints the shortest job next, a game that runs the next event in time order, an emergency room that treats the most urgent patient first. A collection like that is a **priority queue**. With a plain list, `min` finds the smallest in O(n) every time. A list kept sorted does no better in Big-O terms: each new item costs O(n), whether `bisect.insort` puts it in its place (every item after it moves, which is quick work in C but still O(n)) or you append it and sort again (Timsort sees that the list is almost in order, but still looks at every item). A **heap** adds an item in O(log n), removes the smallest in O(log n), and shows the smallest in O(1).
 
       ### A tree in a list
 
@@ -1479,6 +1484,8 @@ steps:
       ```
 
       To **push** a value, append it (the next free place on the last level) and **sift it up**: while it's smaller than its parent, swap the two. To **pop** the smallest, take the root, move the last item into its place and **sift it down**: while it's greater than the smaller of its children, swap it with that child. Each walks one path between the root and the bottom: O(log n).
+
+      Why the smaller child? After the swap, that child is the parent of its old sibling, and it is no greater than that sibling, so the order rule holds there. In the heap above, popping 1 moves 4 to the root, above 3 and 8. Swapping 4 with 3 gives `[3, 4, 8, 5]`, a heap again. Swapping it with 8, the larger child, would give `[8, 3, 4, 5]`, with 8 above 3. Nothing stops with an error, but the next pop returns 8 instead of 3. Always swapping with the left child goes wrong in the same way whenever the right child is the smaller one. Sifting up keeps the rule for a similar reason: the value that moves up is smaller than its old parent, which was no greater than its other child.
 
       ```python run
       def push(heap, value):
@@ -1607,7 +1614,7 @@ steps:
           12
     more:
       - task: |
-          A printer always prints the shortest job waiting. `jobs` lists what happens, in order: a positive number is a new job of that many pages, and 0 means the printer is free and prints the shortest job waiting. Write `print_order(jobs)` that returns the page counts of the jobs in the order they are printed. A 0 never comes when no job is waiting, and jobs still waiting at the end aren't printed. The hidden test has 300,000 events, so finding the shortest job with `min` each time is too slow: use `heapq`.
+          A printer always prints the shortest job waiting. `jobs` lists what happens, in order: a positive number is a new job of that many pages, and 0 means the printer is free and prints the shortest job waiting. Write `print_order(jobs)` that returns the page counts of the jobs in the order they are printed. A 0 never comes when no job is waiting, and jobs still waiting at the end aren't printed. The hidden tests have up to 800,000 events, so finding the shortest job with `min` each time is too slow, and so is keeping the waiting jobs in a sorted list: use `heapq`.
 
           For example, this call:
 
@@ -1669,7 +1676,7 @@ steps:
         hints:
           - "Keep the waiting jobs in a list that is a heap: `heapq.heappush(waiting, pages)` adds a job in O(log n)."
           - "For a 0, `heapq.heappop(waiting)` removes and returns the shortest job in O(log n). Append it to the list of printed jobs."
-          - "`min(waiting)` plus `waiting.remove(...)` gives the same answers, but each is O(n): with 75,000 printouts from a line of up to 150,000 jobs, that's billions of steps."
+          - "`min(waiting)` plus `waiting.remove(...)` gives the same answers, but each is O(n): with 75,000 printouts from a line of up to 150,000 jobs, that's billions of steps. A list kept sorted with `bisect.insort` is O(n) per job too, and the biggest test makes it move hundreds of thousands of items again and again."
         tests:
           - call: print(print_order([5, 2, 8, 0, 1, 0, 0, 3]))
           - call: print_order([])
@@ -1682,6 +1689,11 @@ steps:
             hidden: true
           - call: |
               result = print_order([0 if i % 4 == 3 else i * 7919 % 100_003 + 1 for i in range(300_000)])
+              print(len(result), sum(result))
+            hidden: true
+            big: true
+          - call: |
+              result = print_order([0 if i % 8 == 7 else 2_000_000 + i if i % 2 == 0 else 2_000_000 - i for i in range(800_000)])
               print(len(result), sum(result))
             hidden: true
             big: true
@@ -1906,7 +1918,7 @@ steps:
 
       `insert`, `find` and `contains` take one dict step per letter: O(m) for a word or a prefix of m letters, whether the trie holds ten words or a million. `complete` costs O(m) to find the node, then a visit to each node below it. Each visit builds its node's text with `text + letter`, which copies every letter so far. So with k nodes below the prefix and words of at most L letters, `collect` costs O(k·L): close to O(k) for short words, but in a trie of one word of 500 letters, `complete("")` copies over 125,000 letters. A version that keeps one list of letters, appends a letter on the way down, pops it on the way back up and calls `"".join` only where a word ends, costs O(k) plus the letters of the words it returns. The memory is one node per different prefix: at most the total number of letters in all the words, and less where words share their beginnings.
 
-      A trie can count, too. If every node keeps a `count` of the words that pass through it (`insert` adds 1 to each node on its way down), the number of words that start with a prefix is the `count` of the prefix's node: one walk of m letters instead of a scan of every word.
+      A trie can count, too. If every node keeps a `count` of the words that pass through it (`insert` adds 1 to the root and to each node on its way down), the number of words that start with a prefix is the `count` of the prefix's node: one walk of m letters instead of a scan of every word. The root is the node of the empty prefix `""`, which every word starts with, so its `count` is the number of words.
 
       **Your turn:** a search engine shortens each word to the shortest **stem** it knows that the word starts with, so that "raining" and "rainbows" both become "rain". The stems are in a trie. Fill in the blanks of `shortest_stem`: it walks down the word one letter at a time, and at the first node where a stem ends, it returns the part of the word read so far, `word[0]` to `word[i]`. A word that starts with no stem stays as it is. The program should print:
 
@@ -1960,7 +1972,7 @@ steps:
           ca rain
     more:
       - task: |
-          Write `count_with_prefix(words, prefixes)` that returns a list with, for each prefix, the number of words that start with it. A word that is in the list twice counts twice. The hidden test has 60,000 words and 60,000 prefixes, so a scan of all the words for each prefix is too slow: build a trie whose nodes count the words that pass through them.
+          Write `count_with_prefix(words, prefixes)` that returns a list with, for each prefix, the number of words that start with it. A word that is in the list twice counts twice, and every word starts with the empty prefix `""`. The hidden test has 60,000 words and 60,000 prefixes, so a scan of all the words for each prefix is too slow: build a trie whose nodes count the words that pass through them.
 
           For example, this program:
 
@@ -1993,6 +2005,7 @@ steps:
               root = TrieNode()
               for word in words:
                   node = root
+                  node.count += 1
                   for letter in word:
                       if letter not in node.children:
                           node.children[letter] = TrieNode()
@@ -2032,8 +2045,8 @@ steps:
               words = ["car", "card", "care", "cat", "dog", "car"]
               print(count_with_prefix(words, ["car", "ca", "d", "cart", "x"]))
         hints:
-          - "Make a node class with a `children` dict and a `count`. Insert every word as the lesson's `insert` does, and add 1 to the `count` of each node you step into."
-          - "Then the count of a prefix's node is the number of words that pass through it, which are the words that start with the prefix."
+          - "Make a node class with a `children` dict and a `count`. Insert every word as the lesson's `insert` does, and add 1 to the `count` of the root and of each node you step into."
+          - "Then the count of a prefix's node is the number of words that pass through it, which are the words that start with the prefix. The root's count is the answer for the empty prefix `\"\"`: every word starts with it."
           - "For each prefix, walk down from the root letter by letter. If a letter is missing, no word starts with the prefix: its answer is 0. Otherwise, the answer is the count of the node where the walk ends."
         tests:
           - call: |
@@ -2047,9 +2060,11 @@ steps:
             hidden: true
           - call: count_with_prefix(["a", "ab", "abc"], ["abc", "abcd", "b"])
             hidden: true
+          - call: count_with_prefix(["car", "card", "dog"], ["", "ca"])
+            hidden: true
           - call: |
               words = [str(i * 7919 % 10_007) for i in range(60_000)]
-              counts = count_with_prefix(words, [str(i * 37 % 1009) for i in range(60_000)])
+              counts = count_with_prefix(words, [str(i * 37 % 100_003) for i in range(60_000)])
               print(len(counts), max(counts), sum(counts))
             hidden: true
             big: true

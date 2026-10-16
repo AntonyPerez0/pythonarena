@@ -15,22 +15,7 @@ drills:
 
 
       print(best(Node(3, Node(8, Node(1)), Node(5, Node(2), Node(9)))))
-    why: "`best` adds each node's value to the larger answer of its two subtrees, so it finds the root-to-leaf path with the greatest sum: 3 + 5 + 9 = 17, more than 3 + 8 + 1 = 12."
-
-  - type: runs
-    after: binary-trees
-    code: |
-      class Node:
-          def __init__(self, value, left=None, right=None):
-              self.value, self.left, self.right = value, left, right
-
-
-      def height(node):
-          return 1 + max(height(node.left), height(node.right))
-
-
-      print(height(Node(1, Node(2))))
-    why: "`height` has no base case. The call for a missing child gets `None`, and `None.left` stops the program with an `AttributeError`. The fix starts with `if node is None: return 0`."
+    why: "`best` adds each node's value to the larger answer of its two subtrees. With only positive values, that finds the root-to-leaf path with the greatest sum: 3 + 5 + 9 = 17, more than 3 + 8 + 1 = 12. With negative values, the 0 for a missing child is a trap: `best(Node(3, Node(-1)))` gives 3, as if a path could end at the root, which isn't a leaf."
 
   - type: bug
     after: binary-trees
@@ -389,6 +374,26 @@ drills:
               node = node[letter]
       print(len(root), len(root["t"]), len(root["t"]["e"]), len(root["t"]["e"]["a"]))
     why: "Words share the nodes of their common beginning. Below the root there are only `t` and `i`. After `t` come `e`, `o` and `a`; after `te` come `a` and `n`; and after `tea` only the `m` of team."
+
+  - type: bug
+    after: tries
+    code: |
+      # "$" marks where a word ends: this trie holds only "card"
+      root = {"c": {"a": {"r": {"d": {"$": True}}}}}
+
+
+      def contains(word):
+          node = root
+          for letter in word:
+              if letter not in node:
+                  return False
+              node = node[letter]
+          return True  # BUG
+
+
+      print(contains("car"), contains("card"))
+    fix: return "$" in node
+    why: "Getting to the end of a word's path only shows that some word starts with it. \"car\" is a prefix of \"card\", but no word ends at its node, so `contains` must check for the end mark there: `\"$\" in node` gives False True."
 
   - type: choice
     after: tries

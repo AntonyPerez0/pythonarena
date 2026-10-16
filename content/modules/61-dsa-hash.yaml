@@ -379,7 +379,7 @@ steps:
         hints:
           - "Find the key's bucket as `get` does, then the position of the key's pair in it."
           - "`for i in range(len(bucket))` gives the positions. When `bucket[i][0] == key`, keep the value in a variable, remove the pair with `del bucket[i]` (or `bucket.pop(i)`), and return the value."
-          - "Return as soon as the pair is gone: a `for` loop that goes on through a list after an item was removed from it skips the next item. When the loop ends without finding the key, return `None`."
+          - "Return as soon as the pair is gone: `range(len(bucket))` was worked out before the bucket got shorter, so going on would look past its end and stop with an `IndexError`. When the loop ends without finding the key, return `None`."
         tests:
           - call: |
               rooms = HashMap(4)
@@ -1722,6 +1722,8 @@ steps:
             hidden: true
           - call: group_anagrams(["abc", "abd", "cab", "dab", "bad"])
             hidden: true
+          - call: group_anagrams(["aab", "abb", "bab", "aba"])
+            hidden: true
           - call: group_anagrams(["Night", "thing", "night", "a", "a"])
             hidden: true
           - call: |
@@ -1882,7 +1884,7 @@ steps:
 
       The second 3 is a hit and makes 3 the most recent, so 5 pushes out 4, and the last call has to work 4 out again. With `maxsize=None` the cache never forgets (`functools.cache` is the same), which is **memoization**: a recursive function such as Fibonacci then works out each number only once. The arguments become keys of a dict inside, so they must be hashable: a list argument stops with `TypeError: unhashable type: 'list'`.
 
-      **Your turn:** write the class `LRUCache`. `LRUCache(capacity)` makes an empty cache for at most `capacity` keys (at least 1), and `get(key)` and `put(key, value)` work as described above. Both must be O(1): the hidden test makes 240,000 calls on a cache of 40,000 keys, reading keys from every part of the order and pushing out 40,000 of them. This program:
+      **Your turn:** write the class `LRUCache`. `LRUCache(capacity)` makes an empty cache for at most `capacity` keys (at least 1), and `get(key)` and `put(key, value)` work as described above. Both must be O(1): the hidden test makes 650,000 calls on a cache of 100,000 keys, reading keys from every part of the order and pushing out 350,000 of them. This program:
 
       ```python fragment
       cache = LRUCache(2)
@@ -1987,7 +1989,7 @@ steps:
     hints:
       - "Keep the pairs in an `OrderedDict`, oldest first. `get` returns `None` for a key that isn't there; otherwise it calls `move_to_end(key)` and returns the value."
       - "`put` stores the value and calls `move_to_end(key)`: a key that was already there keeps its old place otherwise. If there are now more than `capacity` keys, `popitem(last=False)` removes the oldest."
-      - "Keeping the order in a list or a deque and calling `remove` on it costs O(capacity) for each call, whichever end holds the newest key, and so does finding the oldest key with `list(self.items)[0]`: too slow for the big test."
+      - "Keeping the order in a list or a deque and calling `remove` on it costs O(capacity) for each call, whichever end holds the newest key, and so does finding the oldest key with `list(self.items)[0]`. A plain dict whose oldest key is `next(iter(...))` gets slow too, as it has to skip every key already removed from the front. All of these are too slow for the big test."
     tests:
       - call: |
           cache = LRUCache(2)
@@ -2038,15 +2040,15 @@ steps:
           print([cache.get(key) for key in [1, 2, 3, 4, 5]])
         hidden: true
       - call: |
-          cache = LRUCache(40_000)
-          for i in range(40_000):
+          cache = LRUCache(100_000)
+          for i in range(100_000):
               cache.put(i, i)
           total = 0
-          for i in range(80_000):
-              total += cache.get(i * 7 % 40_000) + cache.get((i - 5) * 7 % 40_000)
-          for i in range(40_000, 80_000):
+          for i in range(100_000):
+              total += cache.get(i * 7 % 100_000) + cache.get((i - 5) * 7 % 100_000)
+          for i in range(100_000, 450_000):
               cache.put(i, 0)
-          print(total, cache.get(39_999), cache.get(79_999))
+          print(total, cache.get(99_999), cache.get(449_999))
         hidden: true
         big: true
     more:

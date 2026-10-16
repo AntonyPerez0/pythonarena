@@ -11,7 +11,7 @@ drills:
 
 
       print([f() for f in make_callbacks()])
-    why: "A closure remembers the variable, not the value it had when the function was made. All three lambdas share the one `i` of `make_callbacks` and look it up when they are called, after the loop has ended, and by then `i` is 2."
+    why: "A function made inside another function, using that function's variables, is a **closure**. It remembers the variable, not the value it had when the function was made. All three lambdas share the one `i` of `make_callbacks` and look it up when they are called, after the loop has ended, and by then `i` is 2."
 
   - type: fill
     prompt: Fill the blank so that each function returns the value `i` had when the function was made.
@@ -141,7 +141,7 @@ drills:
           result = 1 / 0
           print("after the error")
       print("done")
-    why: "`__enter__` runs when the `with` block starts, and `__exit__` always runs when it ends, error or not. Here the error ends the block early and `__exit__` gets its type, value and traceback. Returning `True` swallows the error, so the program goes on after the `with`. Returning `None` or `False`, the usual, lets the error carry on."
+    why: "An object with `__enter__` and `__exit__` methods, such as the file that `open` gives, is a **context manager**: the kind of object a `with` statement works with. `__enter__` runs when the `with` block starts, and `__exit__` always runs when it ends, error or not. Here the error ends the block early and `__exit__` gets its type, value and traceback. Returning `True` swallows the error, so the program goes on after the `with`. Returning `None` or `False`, the usual, lets the error carry on."
 
   - type: predict
     code: |
@@ -321,7 +321,7 @@ drills:
 
   - type: boss
     prompt: |
-      Write a decorator `memoize(func)` that remembers results. The first call with some arguments runs `func` and stores what it returns. A later call with the same arguments gives back the stored value without running `func` again. The functions it decorates take only positional arguments, and every argument can be a dictionary key. Use `functools.wraps`, so that the decorated function keeps its name and docstring. Each decorated function has results of its own.
+      Write a decorator `memoize(func)` that remembers results. A decorator takes a function and returns the function to use in its place: `@memoize` above `def square` runs `square = memoize(square)`, so every later call of `square` runs the function that `memoize` returns. The first call with some arguments runs `func` and stores what it returns. A later call with the same arguments gives back the stored value without running `func` again. The functions it decorates take only positional arguments, and every argument can be a dictionary key. Use `functools.wraps`, so that the decorated function keeps its name and docstring. Each decorated function has results of its own. Python has this built in as `functools.cache`, but here you write it yourself, with a dictionary.
 
       The check runs:
 
@@ -363,8 +363,12 @@ drills:
 
           return wrapper
     hints:
+      - "`@memoize` runs `memoize` once for each function it decorates, and the function it returns runs on every later call. Where can the results be kept so that they last from one call to the next, but belong to one decorated function only?"
       - "Inside `memoize`, make a dictionary `cache = {}` and define a function `wrapper(*args)` that `memoize` returns. `args` is a tuple, so it can be a dictionary key."
-      - "In `wrapper`, call `func(*args)` only when `args not in cache`, and store its result there. Test with `in` rather than `cache.get(args)`, since a stored result can be 0. Put `@functools.wraps(func)` on the line above `def wrapper`."
+      - "In `wrapper`, call `func(*args)` only when `args not in cache`, and store its result there. Test with `in` rather than `cache.get(args)`, since a stored result can be 0 or `None`. Put `@functools.wraps(func)` on the line above `def wrapper`."
+    forbid:
+      - pattern: functools\s*\.\s*(lru_)?cache\b|\bimport\b[^\n]*\b(lru_)?cache\b
+        message: Write the cache yourself, with a dictionary, instead of using `functools.cache` or `lru_cache`.
     tests:
       - call: |
           @memoize
@@ -410,6 +414,16 @@ drills:
 
 
           print(double(5), triple(5), double(0), double(0))
+        hidden: true
+      - call: |
+          @memoize
+          def greet(name):
+              print("hello", name)
+
+
+          greet("ada")
+          greet("ada")
+          greet("ben")
         hidden: true
 
   - type: boss

@@ -320,6 +320,8 @@ drills:
         hidden: true
       - call: most_vowels("abciiidef", 3)
         hidden: true
+      - call: most_vowels("bcdaei", 3)
+        hidden: true
       - call: most_vowels("".join("a" if i % 7 < 3 or i % 1000 < 50 else "b" for i in range(400_000)), 150_000)
         hidden: true
         big: true

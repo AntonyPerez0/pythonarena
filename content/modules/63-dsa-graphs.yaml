@@ -561,6 +561,8 @@ steps:
       - task: |
           A subway map is a dict: each station maps to a list of the stations one stop away. Write `route(graph, start, goal)` that returns the list of stations on a shortest route, from `start` to `goal`, both included, or `None` when there's no route. In the tests, there is only one shortest route each time.
 
+          One hidden test is a line of 3,000 stations, so walk back from the goal with a loop: a function that calls itself once for each station would go 3,000 calls deep, and Python stops at about 1000.
+
           For example, this program:
 
           ```python fragment
@@ -641,6 +643,9 @@ steps:
           - "Run a BFS from `start` with a dict `came_from` in place of `dist`: `came_from[start] = None`, and `came_from[nxt] = station` when `nxt` joins the queue. Its keys are the stations seen so far."
           - "When the station that leaves the queue is the goal, walk back: append the station, move to `came_from[station]`, and stop after the start, whose entry is `None`."
           - "The walk back collects the stations from the goal to the start, so reverse the list before returning it. If the queue runs empty, return `None`."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Walk back with a loop instead."
         tests:
           - call: |
               subway = {
@@ -931,6 +936,9 @@ steps:
           - "`count_islands` can stay as it is. Only `explore` needs to change: it gets a land cell that hasn't been seen, and must mark its whole island as seen."
           - "Mark the first cell as seen and push it on a list `stack`. While the stack isn't empty, pop a cell and look at its four neighbors."
           - "A neighbor goes on the stack (and into `seen`) when it's inside the grid, is land and isn't in `seen` yet. That's the lesson's flood fill, with `seen` as the paint."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Rewrite `explore` with a stack of your own instead."
         tests:
           - call: |
               print(count_islands([".#..##", ".#...#", "...#..", "##.#.."]))
@@ -1032,6 +1040,9 @@ steps:
           - "Build the adjacency list first, with each friendship in both students' lists. Then do what the lesson's `groups` does, but count each group's students instead of listing them."
           - "Loop over every student. One who has been seen belongs to a circle you've already counted: skip it. Any other starts a new search, with a stack, that counts the students it pops."
           - "Keep one `seen` list for all the searches, so every student is counted once in the whole run, and keep the largest count."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Search with a stack of your own instead."
         tests:
           - call: |
               print(largest_circle(7, [(0, 1), (2, 3), (1, 4), (5, 3), (4, 0)]))
@@ -1599,7 +1610,7 @@ steps:
       - task: |
           A country has n towns, numbered 0 to n - 1, and `roads` lists its roads as `(a, b, minutes)`: a two-way road between towns a and b that takes that many minutes. Write `cheapest(n, roads, start, goal)` that returns the fewest minutes it takes to drive from `start` to `goal`, or -1 when there's no way. No road takes a negative number of minutes.
 
-          Use Dijkstra's algorithm, and stop as soon as the goal comes out of the heap. Trying every route is hopeless: one hidden test is a ladder of 60 rungs, with 2⁵⁹ routes between its corners, and another has 20,000 towns.
+          Use Dijkstra's algorithm, and stop as soon as the goal comes out of the heap. Trying every route is hopeless: one hidden test is a ladder of 60 rungs, with 2⁵⁹ routes between its corners, and another has 20,000 towns. A BFS that puts a town back in the queue each time its minutes go down gets the right answers too, but it can take O(V·E) steps, and a third hidden test, with 30,001 towns, is built to make it run out of time.
 
           For example, from 0 to 4 the best way is 0, 1, 3, 2, 4: 2 + 4 + 1 + 6 = 13 minutes, though it takes four roads and 0, 3, 4 takes only two (9 + 10 = 19 minutes). So this program:
 
@@ -1717,6 +1728,12 @@ steps:
               n = 20_000
               roads = [(i, i + 1, i % 9 + 1) for i in range(n - 1)] + [(i, i * 37 % n, i % 50 + 5) for i in range(n)]
               print(cheapest(n, roads, 0, n - 1), cheapest(n + 1, roads, 0, n))
+            hidden: true
+            big: true
+          - call: |
+              k = 30_000
+              roads = [(0, j, 2 * (k - j) + 5) for j in range(1, k + 1)] + [(j, j + 1, 1) for j in range(1, k)]
+              print(cheapest(k + 1, roads, 0, 1))
             hidden: true
             big: true
       - task: |
@@ -1939,55 +1956,54 @@ steps:
       - **Path compression:** once `find` has found the root, it walks the path again and points every vertex on it straight at the root. The next `find` from any of them takes one step.
 
       ```python run
-      class UnionFind:
-          def __init__(self, n):
-              self.parent = list(range(n))
-              self.size = [1] * n
-              self.groups = n
-
-          def find(self, x):
-              root = x
-              while self.parent[root] != root:
-                  root = self.parent[root]
-              while self.parent[x] != root:
-                  next_x = self.parent[x]
-                  self.parent[x] = root
-                  x = next_x
-              return root
-
-          def union(self, a, b):
-              root_a, root_b = self.find(a), self.find(b)
-              if root_a == root_b:
-                  return False
-              if self.size[root_a] < self.size[root_b]:
-                  root_a, root_b = root_b, root_a
-              self.parent[root_b] = root_a
-              self.size[root_a] += self.size[root_b]
-              self.groups -= 1
-              return True
+      def find(parent, x):
+          root = x
+          while parent[root] != root:
+              root = parent[root]
+          while parent[x] != root:
+              next_x = parent[x]
+              parent[x] = root
+              x = next_x
+          return root
 
 
-      network = UnionFind(6)
+      def union(parent, size, a, b):
+          root_a, root_b = find(parent, a), find(parent, b)
+          if root_a == root_b:
+              return False
+          if size[root_a] < size[root_b]:
+              root_a, root_b = root_b, root_a
+          parent[root_b] = root_a
+          size[root_a] += size[root_b]
+          return True
+
+
+      parent = list(range(6))
+      size = [1] * 6
+      groups = 6
       for a, b in [(0, 1), (3, 4), (1, 2), (2, 0), (1, 4)]:
-          if not network.union(a, b):
+          if union(parent, size, a, b):
+              groups -= 1
+          else:
               print("redundant:", a, b)
-      print(network.groups, "groups")
-      print(network.size[network.find(3)], network.find(0) == network.find(4))
+      print(groups, "groups")
+      print(size[find(parent, 3)], find(parent, 0) == find(parent, 4))
 
-      people = UnionFind(1000)
+      parent = list(range(1000))
+      size = [1] * 1000
       for i in range(1, 1000):
-          people.union(0, i)
-      print(people.groups, max(people.parent))
+          union(parent, size, 0, i)
+      print(max(parent))
       ```
 
       ```output
       redundant: 2 0
       2 groups
       5 True
-      1 0
+      0
       ```
 
-      `groups` starts at n and goes down by one with every union that joins two groups. In `people`, the big group's root 0 stays on top, and every other person hangs right under it: the largest parent is 0.
+      `size[x]` only counts while x is a root, so the size of a group is `size[find(parent, x)]`. `union` returns `True` only when it joins two groups, so the number of groups starts at n and goes down by one with every `True`. In the second part, where 999 people join person 0's group one at a time, the big group's root 0 stays on top, and every other person hangs right under it: the largest parent is 0.
 
       With both fixes, m operations on n vertices take O(m·α(n)) time, where α is a function that grows so slowly that it's at most 4 for any n that fits in a computer. In practice that's O(1) for each operation, with O(n) memory. Write `find` with loops, as here: a recursive `find` is shorter, but on a tall tree it hits Python's recursion limit before it has compressed anything.
 
@@ -2140,9 +2156,12 @@ steps:
               print(sets.union(1, 5), sets.union(7, 5), sets.union(5, 1), sets.union(3, 0))
               print(sets.groups, sets.size_of(7), sets.find(1) == sets.find(7), sets.find(0) == sets.find(5))
         hints:
-          - "`__init__` makes three attributes: `parent = list(range(n))`, `size = [1] * n` and `groups = n`. `find` and `union` are the lesson's, as methods."
+          - "`__init__` makes three attributes: `self.parent = list(range(n))`, `self.size = [1] * n` and `self.groups = n`. `find` and `union` are the lesson's functions turned into methods, which use `self.parent` and `self.size` in place of the parameters."
           - "`union` swaps the two roots when a's group is the smaller one, hangs `root_b` under `root_a`, adds the sizes at the new root and takes 1 off `groups`. It returns `False` early when the roots are the same."
           - "The size of a group is kept at its root, so `size_of(x)` is `self.size[self.find(x)]`. Write `find` with two loops: one up to the root, one that points the path at it."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Write `find` with loops instead."
         tests:
           - call: |
               sets = UnionFind(8)
@@ -2259,6 +2278,9 @@ steps:
           - "Start with `parent = list(range(n))` and `size = [1] * n`, and go through the cables in order."
           - "For each cable, find the roots of a and b. The same root means a and b are already connected: return the cable as a tuple."
           - "Otherwise join the two groups by size, the smaller root under the bigger one. If no cable was redundant, return `None`."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Write `find` with loops instead."
         tests:
           - call: |
               print(first_redundant(5, [(0, 1), (1, 2), (3, 4), (2, 0), (1, 3)]))

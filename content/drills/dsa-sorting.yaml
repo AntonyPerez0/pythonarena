@@ -220,8 +220,8 @@ drills:
       if __name__ == "__main__":
           print(kth_largest([5, 9, 9, 3], 2))
     hints:
-      - "`heapq.nlargest(k, values)` gives the k largest values, the largest first."
-      - "The last of those k values is the k-th largest: `heapq.nlargest(k, values)[-1]`."
+      - "You need only the k largest values, not the whole list in order: which function of `heapq` gives them?"
+      - "`heapq.nlargest(k, values)` is a list of the k largest values, the largest first. Which of its items is the k-th largest, and what index reaches it?"
     forbid:
       - pattern: \bsorted\s*\(|\.sort\s*\(
         message: Don't sort the whole list; `heapq` gives the k largest.

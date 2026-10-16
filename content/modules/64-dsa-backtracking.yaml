@@ -804,7 +804,7 @@ steps:
           - call: pack_combinations([12, 8, 3], 24)
             hidden: true
           - call: |
-              ways = pack_combinations([20, 12, 8, 5, 2], 60)
+              ways = pack_combinations([20, 12, 8, 5, 2], 50)
               print(len(ways), ways[-3:])
             hidden: true
 
@@ -822,9 +822,9 @@ steps:
 
       ```python run
       for row in range(4):
-          left = "".join(f"{row - col:3}" for col in range(4))
-          right = "".join(f"{row + col:3}" for col in range(4))
-          print(left, "   ", right)
+          diag_keys = "".join(f"{row - col:3}" for col in range(4))
+          anti_keys = "".join(f"{row + col:3}" for col in range(4))
+          print(diag_keys, "   ", anti_keys)
       ```
 
       ```output
@@ -1627,6 +1627,11 @@ steps:
               puzzle = "980000001 020708040 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
               print(count_solutions([[int(ch) for ch in line] for line in puzzle.split()], 10))
               print(count_solutions([[int(ch) for ch in line] for line in puzzle.split()], 3))
+            hidden: true
+          - call: |
+              puzzle = "980000001 020708040 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(count_solutions(grid, 3), count_solutions(grid, 10), sum(line.count(0) for line in grid))
             hidden: true
           - call: count_solutions([[0] * 9 for i in range(9)], 4)
             hidden: true
