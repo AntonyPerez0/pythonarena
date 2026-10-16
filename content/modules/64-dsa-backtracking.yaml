@@ -1,0 +1,1782 @@
+id: dsa-backtracking
+summary: "Recursion that tries every option: take a choice, follow it to the end, take it back and try the next. You build subsets with a decision tree, orderings with used flags, swaps and letter counts, combinations that skip the branches that can't work, the N queens with sets of columns and diagonals, paths and words in a grid, and a sudoku solver, with big tests where pruning is what makes a search fast."
+steps:
+  - id: dsa-backtracking-subsets
+    slug: subsets
+    title: "Subsets: take it or leave it"
+    text: |
+      Which toppings could go on a pizza? Which of your songs fit on a 60-minute playlist? In what order could five friends sit at a table? Questions like these have no clever formula: a program has to go through the options one by one. For two toppings, two nested loops would do, and for three toppings, three loops. But how many toppings there are is only known when the program runs, and you can't write a loop for each one. A recursive function can do it: one call settles **one** decision, and a call one level deeper settles the next.
+
+      When a call has seen everything that can follow from its decision, it takes the decision back and tries its next option. That is **backtracking**, and every function in this module is made of the same three moves: **choose** an option, **explore** what follows from it with a recursive call, **un-choose** it.
+
+      ### Take it or leave it
+
+      A **subset** of a list is some of its items, anything from none of them to all of them. Each item is either in or out, so three items give 2 × 2 × 2 = 8 subsets. Drawn as a tree, each level settles one item (the question on the right): taking the item goes left, leaving it out goes right. The bottom row has the 8 subsets:
+
+      ```text
+                          []                      a?
+                    /            \
+                 [a]              []              b?
+               /     \          /     \
+           [a, b]    [a]      [b]      []         c?
+           /   \     /  \     /  \     /  \
+         abc   ab   ac   a   bc   b   c   (none)
+      ```
+
+      A recursive function walks this tree from left to right:
+
+      ```python run
+      def explore(items, i, path):
+          if i == len(items):
+              print(path)
+              return
+          path.append(items[i])         # choose: take items[i]
+          explore(items, i + 1, path)   # explore every subset with it
+          path.pop()                    # un-choose
+          explore(items, i + 1, path)   # explore every subset without it
+
+
+      explore(["a", "b", "c"], 0, [])
+      ```
+
+      ```output
+      ['a', 'b', 'c']
+      ['a', 'b']
+      ['a', 'c']
+      ['a']
+      ['b', 'c']
+      ['b']
+      ['c']
+      []
+      ```
+
+      ### How it works
+
+      - The parameter `i` is the position of the item this call settles. Once `i` reaches `len(items)`, nothing is left to settle and `path` is one finished subset, so the call prints it: that's the base case.
+      - There is only **one** list, `path`, shared by all the calls. Taking an item appends it, and `path.pop()` takes it off again, so the "leave it out" call starts from exactly the path this call was given. That undo is the heart of backtracking: without it, `a` would still be in the path while the search explores the subsets without `a`.
+      - The first four lines all hold `a`: the search finishes everything below "take `a`" before it starts on "leave `a`". The output is the bottom row of the tree, read from left to right.
+
+      ### Saving the subsets: copy the path
+
+      To return the subsets instead of printing them, append each complete one to a result list. The obvious line has a trap:
+
+      ```python run
+      def collect(items, i, path, result):
+          if i == len(items):
+              result.append(path)
+              return
+          path.append(items[i])
+          collect(items, i + 1, path, result)
+          path.pop()
+          collect(items, i + 1, path, result)
+
+
+      result = []
+      collect([1, 2, 3], 0, [], result)
+      print(result)
+      ```
+
+      ```output
+      [[], [], [], [], [], [], [], []]
+      ```
+
+      Eight empty lists. `result.append(path)` doesn't store the numbers the path holds right now: it stores a reference to the list `path` itself, the same list eight times. Every `append` on `path` was undone by a `pop`, so at the end `path` is empty, and so is every "subset" in the result. Store a copy instead, `result.append(path[:])` (or `list(path)`), and the result is `[[1, 2, 3], [1, 2], [1, 3], [1], [2, 3], [2], [3], []]`.
+
+      ### What it costs
+
+      Every item you add doubles the number of subsets: n items have 2ⁿ of them. The playlist question over 15 songs means 32,768 subsets, over 25 songs about 33 million, and over 40 songs about a trillion. The tree has 2ⁿ⁺¹ - 1 calls in all, and copying a subset takes up to n steps, so collecting every subset is O(n · 2ⁿ) time, and the result needs as much memory. The search itself only keeps the calls on the current path: n + 1 calls deep, O(n) extra memory, far from Python's limit of about 1000 calls. Going through every option like this is called **exhaustive search**. It's fine for 20 items and hopeless for 50, unless whole branches of the tree can be skipped, as step 3 shows.
+
+      **Your turn:** this version leaves each item out before it takes it, so it starts from the empty subset. Fill in the choose and the un-choose so that it prints all 8 subsets of `[1, 2, 3]`:
+
+      ```
+      []
+      [3]
+      [2]
+      [2, 3]
+      [1]
+      [1, 3]
+      [1, 2]
+      [1, 2, 3]
+      ```
+    fill: |
+      def show(items, i, path):
+          if i == len(items):
+              print(path)
+              return
+          show(items, i + 1, path)
+          [[path.append(items[i])]]
+          show(items, i + 1, path)
+          [[path.pop()‖del path[-1]‖path.pop(-1)]]
+
+
+      show([1, 2, 3], 0, [])
+    hints:
+      - "The first call leaves `items[i]` out. Before the second call, take it: put it on the end of the path."
+      - "After the second call, undo the take so the caller gets its path back as it was: the first blank is `path.append(items[i])`, and the second takes the last item off again."
+    tests:
+      - expect: |
+          []
+          [3]
+          [2]
+          [2, 3]
+          [1]
+          [1, 3]
+          [1, 2]
+          [1, 2, 3]
+    more:
+      - task: |
+          `subsets_with_sum(numbers, target)` should return every subset of `numbers` whose numbers add up to `target`, as lists, in the order the search finds them. It finds the right number of subsets, but every one of them comes back empty. Fix it.
+
+          For example, `subsets_with_sum([3, 1, 4, 2], 5)` should return:
+
+          ```
+          [[3, 2], [1, 4]]
+          ```
+        seed: |
+          def search(numbers, i, path, target, found):
+              if i == len(numbers):
+                  if sum(path) == target:
+                      found.append(path)
+                  return
+              path.append(numbers[i])
+              search(numbers, i + 1, path, target, found)
+              path.pop()
+              search(numbers, i + 1, path, target, found)
+
+
+          def subsets_with_sum(numbers, target):
+              found = []
+              search(numbers, 0, [], target, found)
+              return found
+
+
+          if __name__ == "__main__":
+              print(subsets_with_sum([3, 1, 4, 2], 5))
+        solution: |
+          def search(numbers, i, path, target, found):
+              if i == len(numbers):
+                  if sum(path) == target:
+                      found.append(path[:])
+                  return
+              path.append(numbers[i])
+              search(numbers, i + 1, path, target, found)
+              path.pop()
+              search(numbers, i + 1, path, target, found)
+
+
+          def subsets_with_sum(numbers, target):
+              found = []
+              search(numbers, 0, [], target, found)
+              return found
+
+
+          if __name__ == "__main__":
+              print(subsets_with_sum([3, 1, 4, 2], 5))
+        hints:
+          - "Add `print(found)` right after the `append` in the base case. It shows the right subset when it's found. What has happened to it by the end?"
+          - "`found.append(path)` puts the list `path` itself into `found`, not the numbers it holds at that moment. The `pop` calls later empty that one list, and every entry of `found` is that list."
+          - "Append a copy of the path instead: `path[:]` or `list(path)`."
+        tests:
+          - call: subsets_with_sum([3, 1, 4, 2], 5)
+          - call: subsets_with_sum([1, 2, 3], 3)
+            hidden: true
+          - call: subsets_with_sum([5, 5], 5)
+            hidden: true
+          - call: subsets_with_sum([2, 4], 7)
+            hidden: true
+          - call: subsets_with_sum([], 0)
+            hidden: true
+          - call: subsets_with_sum([-1, 1, 2, 0], 1)
+            hidden: true
+          - call: |
+              found = subsets_with_sum([1] * 10, 5)
+              print(len(found), found[0], found[-1])
+            hidden: true
+      - task: |
+          Write `count_with_sum(numbers, target)`, which returns how many subsets of `numbers` add up to exactly `target`. The numbers can be negative or zero, and the empty subset adds up to 0. You don't need the subsets themselves: pass down how much of the target is still missing, and add up the counts of the two branches.
+
+          For example, `count_with_sum([7, 2, 5, 4, 9], 11)` returns 3, for 7 + 4, 2 + 9 and 2 + 5 + 4:
+
+          ```
+          3
+          ```
+        seed: |
+          def count_with_sum(numbers, target):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_with_sum([7, 2, 5, 4, 9], 11))
+        solution: |
+          def count_from(numbers, i, remaining):
+              if i == len(numbers):
+                  return 1 if remaining == 0 else 0
+              take = count_from(numbers, i + 1, remaining - numbers[i])
+              leave = count_from(numbers, i + 1, remaining)
+              return take + leave
+
+
+          def count_with_sum(numbers, target):
+              return count_from(numbers, 0, target)
+
+
+          if __name__ == "__main__":
+              print(count_with_sum([7, 2, 5, 4, 9], 11))
+        hints:
+          - "Write a helper, `count_from(numbers, i, remaining)`: in how many ways can the items from `numbers[i]` on make up `remaining`?"
+          - "The base case is `i == len(numbers)`: every item is decided. That subset counts 1 when `remaining == 0`, and 0 otherwise."
+          - "Otherwise add two counts: taking `numbers[i]` (pass `remaining - numbers[i]`) and leaving it (pass `remaining`). Don't stop early when `remaining` reaches 0: a 0 or a -1 and a 1 later on can still make more subsets."
+        tests:
+          - call: count_with_sum([7, 2, 5, 4, 9], 11)
+          - call: count_with_sum([6, 2], 0)
+            hidden: true
+          - call: count_with_sum([6, 2], 5)
+            hidden: true
+          - call: count_with_sum([-2, 3, 1, 2], 1)
+            hidden: true
+          - call: count_with_sum([4, -4, 6], 0)
+            hidden: true
+          - call: count_with_sum([0, 0, 5], 5)
+            hidden: true
+          - call: count_with_sum([], 0)
+            hidden: true
+          - call: count_with_sum([7, -3, 4, 2, -6, 5, 1], 3)
+            hidden: true
+          - call: count_with_sum([1] * 16, 8)
+            hidden: true
+
+  - id: dsa-backtracking-permutations
+    slug: permutations
+    title: Permutations
+    text: |
+      A **permutation** is an ordering of items: `abc`, `acb`, `bac`, `bca`, `cab` and `cba` are the six orderings of three letters. Here each level of the decision tree answers another question: which item goes in the next place? Any item that isn't placed yet can go there, so the search keeps a list of **used** flags, one per item:
+
+      ```python run
+      def permute(letters, used, path):
+          if len(path) == len(letters):
+              print("".join(path))
+              return
+          for i in range(len(letters)):
+              if used[i]:
+                  continue
+              used[i] = True                  # choose
+              path.append(letters[i])
+              permute(letters, used, path)    # explore
+              path.pop()                      # un-choose
+              used[i] = False
+
+
+      permute("abc", [False, False, False], [])
+      ```
+
+      ```output
+      abc
+      acb
+      bac
+      bca
+      cab
+      cba
+      ```
+
+      ### How it works
+
+      - Any letter whose flag is still `False` may take the next place. So the first place has n candidates, the second n - 1, and the last only one: n × (n - 1) × ... × 1 = **n!** orderings. That's 6 for 3 letters, 40,320 for 8 and over 6 billion for 13.
+      - The un-choose undoes both changes the choose made: the letter comes off `path`, and its flag goes back to `False`. The next turn of the loop then sees exactly the state the call started with.
+      - The letters are tried from left to right, so `"abc"` gives its orderings in alphabetical order. A word whose letters aren't in order, such as `"cab"`, doesn't.
+      - Each ordering is n items long, so listing them all takes O(n · n!) time. The calls are only n + 1 deep.
+
+      Leave out the last line, `used[i] = False`, and the same program prints just one line, `abc`. The first path marks a, b and c as used, and nothing ever marks them free again, so every later loop finds all three used and skips them. When a backtracking search finds too few answers, check that every change made before the recursive call is undone after it.
+
+      ### Swapping instead of flags
+
+      Another classic way needs no flags: it moves the items around in the list itself. To fill place `i`, swap each of the items from place `i` on into place `i`, permute the rest from `i + 1`, then swap back:
+
+      ```python run
+      def permute_swap(items, i):
+          if i == len(items):
+              print("".join(items))
+              return
+          for j in range(i, len(items)):
+              items[i], items[j] = items[j], items[i]    # choose: items[j] goes to place i
+              permute_swap(items, i + 1)
+              items[i], items[j] = items[j], items[i]    # un-choose: swap back
+
+
+      permute_swap(list("abc"), 0)
+      ```
+
+      ```output
+      abc
+      acb
+      bac
+      bca
+      cba
+      cab
+      ```
+
+      The same six orderings, in a slightly different order: `cba` comes before `cab`, because the swap that moved `c` to the front put `a` at the back.
+
+      ### `itertools.permutations`
+
+      In real code, use the standard library. `permutations` gives tuples, in the same order as the flag version, and a second argument asks for orderings of only some of the items:
+
+      ```python repl
+      >>> from itertools import permutations
+      >>> list(permutations("abc", 2))
+      [('a', 'b'), ('a', 'c'), ('b', 'a'), ('b', 'c'), ('c', 'a'), ('c', 'b')]
+      >>> len(list(permutations(range(8))))
+      40320
+      >>> ["".join(p) for p in permutations("pop")]
+      ['pop', 'ppo', 'opp', 'opp', 'ppo', 'pop']
+      ```
+
+      Interviews still ask you to write the search yourself, and your own search can do what `permutations` can't: skip choices.
+
+      ### Repeated letters
+
+      `permutations("pop")` gives 6 orderings but only 3 different strings: to it, the two p's are different items. `set()` removes the repeats, but only after making all n! orderings. For `"aaaaaaabbbbbbb"`, 14 letters, that's over 87 billion orderings (hours of work) for 3,432 different strings.
+
+      A better search never makes the repeats at all. Instead of asking "which position of the word goes next?", it asks "which letter goes next?", and it keeps a count of each letter that's left: `{"o": 1, "p": 2}` for `"pop"`. The next place may take any letter whose count is above 0. Taking a letter lowers its count, the recursive call fills the places after it, and putting the letter back raises the count again. Both p's are now one option, `"p"`, so each different string comes out exactly once, and no time goes into strings that would be thrown away.
+
+      **Your turn:** fill in the blanks so that `arrange` prints every ordering of `k` of the letters, here 2 of the letters of `abcd`, in the order `permutations("abcd", 2)` gives them: the condition that a path is complete, and the un-choose that frees the letter again. The program should print:
+
+      ```
+      ab
+      ac
+      ad
+      ba
+      bc
+      bd
+      ca
+      cb
+      cd
+      da
+      db
+      dc
+      ```
+    fill: |
+      def arrange(letters, k, used, path):
+          if [[len(path) == k‖k == len(path)]]:
+              print("".join(path))
+              return
+          for i in range(len(letters)):
+              if used[i]:
+                  continue
+              used[i] = True
+              path.append(letters[i])
+              arrange(letters, k, used, path)
+              path.pop()
+              [[used[i] = False]]
+
+
+      arrange("abcd", 2, [False] * 4, [])
+    hints:
+      - "An arrangement of 2 letters is complete when the path holds `k` letters, not all of them."
+      - "The un-choose undoes `used[i] = True`, so that letter can be used again in the next branches."
+    tests:
+      - expect: |
+          ab
+          ac
+          ad
+          ba
+          bc
+          bd
+          ca
+          cb
+          cd
+          da
+          db
+          dc
+    more:
+      - task: |
+          This version of `permute_swap` forgot to swap back. What does it print? Type each line it prints.
+        predict: |
+          def permute_swap(items, i):
+              if i == len(items):
+                  print("".join(items))
+                  return
+              for j in range(i, len(items)):
+                  items[i], items[j] = items[j], items[i]
+                  permute_swap(items, i + 1)
+
+
+          permute_swap(list("abc"), 0)
+        hints:
+          - "The first two lines are the same as before: `abc` and `acb`. But now the list stays `acb` when those calls return."
+          - "Back in the first call, `j = 1` swaps places 0 and 1 of `acb`, which gives `cab`. The calls below print `cab`, then swap its last two letters and print `cba`."
+          - "The list is now `cba`, and `j = 2` swaps places 0 and 2. Repeats and missing orderings are what a missing un-choose looks like."
+      - task: |
+          Write `unique_permutations(word)`, which returns a list of every different ordering of the letters of `word`, each exactly once, in alphabetical order. It must be fast for 14 letters that have only 3,432 different orderings, so don't make all n! orderings and remove the repeats: choose among the different letters, with a count for each.
+
+          For example, `unique_permutations("pop")` returns:
+
+          ```
+          ['opp', 'pop', 'ppo']
+          ```
+        seed: |
+          def unique_permutations(word):
+              pass
+
+
+          if __name__ == "__main__":
+              print(unique_permutations("pop"))
+        solution: |
+          def build(counts, length, path, result):
+              if len(path) == length:
+                  result.append("".join(path))
+                  return
+              for letter in counts:
+                  if counts[letter] > 0:
+                      counts[letter] -= 1           # choose one of this letter
+                      path.append(letter)
+                      build(counts, length, path, result)
+                      path.pop()                    # un-choose: give it back
+                      counts[letter] += 1
+
+
+          def unique_permutations(word):
+              counts = {}
+              for letter in sorted(word):
+                  counts[letter] = counts.get(letter, 0) + 1
+              result = []
+              build(counts, len(word), [], result)
+              return result
+
+
+          if __name__ == "__main__":
+              print(unique_permutations("pop"))
+        slow: |
+          def build(letters, used, path, found):
+              if len(path) == len(letters):
+                  found.add("".join(path))
+                  return
+              for i in range(len(letters)):
+                  if not used[i]:
+                      used[i] = True
+                      path.append(letters[i])
+                      build(letters, used, path, found)
+                      path.pop()
+                      used[i] = False
+
+
+          def unique_permutations(word):
+              found = set()
+              build(word, [False] * len(word), [], found)
+              return sorted(found)
+
+
+          if __name__ == "__main__":
+              print(unique_permutations("pop"))
+        hints:
+          - "Count the letters first, in a dict. Build it from `sorted(word)`: a dict keeps the order its keys were added in, so looping over it tries the letters in alphabetical order, and the results come out sorted."
+          - "Recurse with the counts and the path built so far. When the path is as long as the word, join it into a string and append it to the result."
+          - "Loop over the letters in the dict and skip those whose count is 0. Otherwise lower the count, append the letter, recurse, pop the letter and raise the count again."
+          - "Making every ordering with used flags and keeping a set of them is correct too, but for 14 letters that's 14!, about 87 billion orderings: far too slow."
+        tests:
+          - call: unique_permutations("pop")
+          - call: unique_permutations("tea")
+            hidden: true
+          - call: unique_permutations("yo")
+            hidden: true
+          - call: unique_permutations("mmmm")
+            hidden: true
+          - call: unique_permutations("")
+            hidden: true
+          - call: |
+              result = unique_permutations("banana")
+              print(len(result), result[:3], result[-1])
+            hidden: true
+          - call: |
+              result = unique_permutations("ab" * 7)
+              print(len(result), result[0], result[-1])
+            hidden: true
+            big: true
+          - call: |
+              result = unique_permutations("a" * 15 + "b")
+              print(len(result), result[:2])
+            hidden: true
+            big: true
+
+  - id: dsa-backtracking-pruning
+    slug: pruning
+    title: Combinations and pruning
+    text: |
+      A **combination** is a choice of k items in which the order doesn't matter: from 1, 2, 3 and 4 you can choose two numbers in 6 ways, and choosing 2 and 1 is the same as choosing 1 and 2. To build each combination only once, pick the numbers in increasing order: after choosing `x`, the next number starts from `x + 1`.
+
+      ```python run
+      def combos(n, k, start, path):
+          if len(path) == k:
+              print(path)
+              return
+          for x in range(start, n + 1):
+              path.append(x)
+              combos(n, k, x + 1, path)
+              path.pop()
+
+
+      combos(4, 2, 1, [])
+      ```
+
+      ```output
+      [1, 2]
+      [1, 3]
+      [1, 4]
+      [2, 3]
+      [2, 4]
+      [3, 4]
+      ```
+
+      `itertools.combinations(range(1, 5), 2)` gives the same six, as tuples and in the same order, and `math.comb(n, k)` counts them without making them: n! / (k! (n - k)!).
+
+      ### Pruning: stop where a branch can't work
+
+      Often a branch is hopeless long before it reaches the bottom of the tree. Say you're choosing 5 numbers from 1 to 9, you have chosen 2 so far, and the loop is about to try 8 as the third. After 8 only 9 is left, a single number, but the combination would still need two more: whatever the call for 8 does, it can't finish. Not making that call at all is called **pruning**: one check cuts a whole subtree off the tree. With `need` numbers still to pick (this one included), the numbers from `x` to `n` must hold at least `need` of them, so `x` can go up to `n - need + 1` and no further. This program counts the calls the search makes with and without that bound, choosing 12 numbers from 1 to 15:
+
+      ```python run
+      calls = 0
+
+
+      def combos(n, k, start, path, prune):
+          global calls
+          calls += 1
+          if len(path) == k:
+              return 1
+          need = k - len(path)
+          last = n - need + 1 if prune else n
+          found = 0
+          for x in range(start, last + 1):
+              path.append(x)
+              found += combos(n, k, x + 1, path, prune)
+              path.pop()
+          return found
+
+
+      for prune in [False, True]:
+          calls = 0
+          found = combos(15, 12, 1, [], prune)
+          print("prune:", prune, found, "combinations,", calls, "calls")
+      ```
+
+      ```output
+      prune: False 455 combinations, 32647 calls
+      prune: True 455 combinations, 1820 calls
+      ```
+
+      Both searches find all 455 combinations, but the pruned one makes 18 times fewer calls. The other spends almost all its time in branches that run out of numbers before they hold 12.
+
+      ### Pruning on a running total
+
+      Numbers that add up give even better chances to prune. Say you have a gift card worth 10 and a list of prices, and you want to know how many sets of items cost exactly 10. Each call picks one more price, always from further right in the list than the last one it picked (another way to build every subset exactly once), and passes down what's still left on the card. If the prices are sorted, the first price that doesn't fit tells you that none of the later ones fit either, so `break` leaves the whole loop at once. (`continue` would give the same count, but it would go on trying prices that are bigger still.)
+
+      ```python run
+      calls = 0
+
+
+      def ways(prices, start, remaining):
+          global calls
+          calls += 1
+          if remaining == 0:
+              return 1
+          total = 0
+          for i in range(start, len(prices)):
+              if prices[i] > remaining:
+                  break                   # sorted: the rest are bigger still
+              total += ways(prices, i + 1, remaining - prices[i])
+          return total
+
+
+      prices = sorted([9, 3, 7, 1, 8, 2, 6, 4, 5, 10, 12, 11])
+      print(ways(prices, 0, 10), "ways,", calls, "calls")
+      ```
+
+      ```output
+      10 ways, 43 calls
+      ```
+
+      The take-or-leave search of the first step makes 8,191 calls for 12 prices, whatever the target.
+
+      ### Forgetting to sort
+
+      The `break` is only right because the prices are sorted. Run the same search on the prices in the order they came:
+
+      ```python run
+      def ways(prices, start, remaining):
+          if remaining == 0:
+              return 1
+          total = 0
+          for i in range(start, len(prices)):
+              if prices[i] > remaining:
+                  break
+              total += ways(prices, i + 1, remaining - prices[i])
+          return total
+
+
+      prices = [9, 3, 7, 1, 8, 2, 6, 4, 5, 10, 12, 11]
+      print(ways(prices, 0, 10), "ways without sorting")
+      print(ways(sorted(prices), 0, 10), "ways after sorting")
+      ```
+
+      ```output
+      5 ways without sorting
+      10 ways after sorting
+      ```
+
+      Half the ways are gone, with no error. After taking 9, only 1 is left on the card, and the next price, 3, is too big: `break` ends the loop before it reaches the 1 further along, so 9 + 1 is never counted. In an unsorted list, a price that doesn't fit says nothing about the prices after it. When a pruned search finds too few answers, check that the order the `break` relies on is really there.
+
+      ### What pruning buys
+
+      Pruning doesn't change the worst case: when nothing can be cut (many small numbers and a big target), the search is still exponential. But it often turns an impossible search into an instant one. For the numbers 1 to 40 and a target of 30, take-or-leave walks through all 2⁴⁰ subsets, about a trillion, while the pruned search finds the 296 ways in 2,035 calls. Sorting costs O(n log n), nothing next to the search, and it is what lets `break` cut the rest of the loop. The recursion goes only as deep as the numbers in one subset, so it stays shallow.
+
+      **Your turn:** fill in the blanks: the end of the `range`, so that the loop stops at the last useful start (remember that `range` stops one before its end), and the start for the next call, so that each combination is built once. The program should print:
+
+      ```
+      [1, 2, 3]
+      [1, 2, 4]
+      [1, 2, 5]
+      [1, 3, 4]
+      [1, 3, 5]
+      [1, 4, 5]
+      [2, 3, 4]
+      [2, 3, 5]
+      [2, 4, 5]
+      [3, 4, 5]
+      20 calls
+      ```
+    fill: |
+      calls = 0
+
+
+      def combos(n, k, start, path):
+          global calls
+          calls += 1
+          if len(path) == k:
+              print(path)
+              return
+          need = k - len(path)
+          for x in range(start, [[n - need + 2‖n + 2 - need‖n - (k - len(path)) + 2]]):
+              path.append(x)
+              combos(n, k, [[x + 1]], path)
+              path.pop()
+
+
+      combos(5, 3, 1, [])
+      print(calls, "calls")
+    hints:
+      - "The last useful start is `n - need + 1`. A `range` stops one before its end, so the end must be one more than that."
+      - "The end of the range is `n - need + 2`. The next call must start after `x`, so that the numbers in a combination keep increasing."
+    tests:
+      - expect: |
+          [1, 2, 3]
+          [1, 2, 4]
+          [1, 2, 5]
+          [1, 3, 4]
+          [1, 3, 5]
+          [1, 4, 5]
+          [2, 3, 4]
+          [2, 3, 5]
+          [2, 4, 5]
+          [3, 4, 5]
+          20 calls
+    more:
+      - task: |
+          Write `count_ways(numbers, target)`: how many subsets of `numbers` add up to exactly `target`? All the numbers are positive whole numbers, and equal numbers at different places count as different choices. It must be fast for 60 numbers and a small target, so sort first and prune with `break`.
+
+          For example, `count_ways([5, 3, 2, 8, 1], 8)` returns 3, for 8, 5 + 3 and 5 + 2 + 1:
+
+          ```
+          3
+          ```
+        seed: |
+          def count_ways(numbers, target):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_ways([5, 3, 2, 8, 1], 8))
+        solution: |
+          def count_from(numbers, start, remaining):
+              if remaining == 0:
+                  return 1
+              total = 0
+              for i in range(start, len(numbers)):
+                  if numbers[i] > remaining:
+                      break
+                  total += count_from(numbers, i + 1, remaining - numbers[i])
+              return total
+
+
+          def count_ways(numbers, target):
+              return count_from(sorted(numbers), 0, target)
+
+
+          if __name__ == "__main__":
+              print(count_ways([5, 3, 2, 8, 1], 8))
+        slow: |
+          def count_from(numbers, i, remaining):
+              if i == len(numbers):
+                  return 1 if remaining == 0 else 0
+              take = count_from(numbers, i + 1, remaining - numbers[i])
+              leave = count_from(numbers, i + 1, remaining)
+              return take + leave
+
+
+          def count_ways(numbers, target):
+              return count_from(numbers, 0, target)
+
+
+          if __name__ == "__main__":
+              print(count_ways([5, 3, 2, 8, 1], 8))
+        hints:
+          - "Write a helper, `count_from(numbers, start, remaining)`, and call it with the sorted numbers. When `remaining` is 0, the numbers taken so far are one way: return 1 (all the numbers are positive, so taking more can't help)."
+          - "Otherwise loop `i` from `start`, and for each number that fits, add the ways for `count_from(numbers, i + 1, remaining - numbers[i])`."
+          - "When `numbers[i] > remaining`, `break`: the list is sorted, so every number after it is too big as well."
+          - "Taking or leaving every number and checking the sum at the end is right too, but for 60 numbers that's 2⁶⁰ subsets: far too slow."
+        tests:
+          - call: count_ways([5, 3, 2, 8, 1], 8)
+          - call: count_ways([2, 2, 2], 4)
+            hidden: true
+          - call: count_ways([4, 6], 5)
+            hidden: true
+          - call: count_ways([4, 2], 0)
+            hidden: true
+          - call: count_ways([30, 20, 10], 60)
+            hidden: true
+          - call: count_ways(list(range(1, 13)), 10)
+            hidden: true
+          - call: count_ways(list(range(1, 41)), 30)
+            hidden: true
+            big: true
+          - call: count_ways(list(range(60, 0, -1)), 40)
+            hidden: true
+            big: true
+      - task: |
+          A shop sells packs of several sizes, and you can buy as many packs of each size as you like. Write `pack_combinations(sizes, amount)`, which returns every way to buy exactly `amount` items. Each way is a list of pack sizes from the smallest to the largest, and the ways come in sorted order. The sizes are different positive numbers, in any order.
+
+          This time a size can be picked more than once. So after picking `sizes[i]`, the deeper call starts its loop at `i` again, not at `i + 1`, and it never goes back to the left of `i`. That builds each way with its sizes in increasing order, `[4, 6, 6]` and never `[6, 4, 6]`, so no way comes out twice.
+
+          For example, `pack_combinations([10, 4, 6], 16)` returns:
+
+          ```
+          [[4, 4, 4, 4], [4, 6, 6], [6, 10]]
+          ```
+        seed: |
+          def pack_combinations(sizes, amount):
+              pass
+
+
+          if __name__ == "__main__":
+              print(pack_combinations([10, 4, 6], 16))
+        solution: |
+          def search(sizes, start, remaining, path, result):
+              if remaining == 0:
+                  result.append(path[:])
+                  return
+              for i in range(start, len(sizes)):
+                  if sizes[i] > remaining:
+                      break
+                  path.append(sizes[i])
+                  search(sizes, i, remaining - sizes[i], path, result)
+                  path.pop()
+
+
+          def pack_combinations(sizes, amount):
+              result = []
+              search(sorted(sizes), 0, amount, [], result)
+              return result
+
+
+          if __name__ == "__main__":
+              print(pack_combinations([10, 4, 6], 16))
+        hints:
+          - "Sort the sizes, then write a helper with `(sizes, start, remaining, path, result)`. When `remaining == 0`, append a copy of the path to the result."
+          - "Loop `i` from `start`. When `sizes[i] > remaining`, `break`. Otherwise append the size, call the helper with start `i` (the same size may come again) and `remaining - sizes[i]`, then pop."
+          - "Trying the sizes from the smallest one builds the ways in sorted order, so the result needs no sorting at the end."
+        tests:
+          - call: pack_combinations([10, 4, 6], 16)
+          - call: pack_combinations([9, 4, 2], 13)
+            hidden: true
+          - call: pack_combinations([10, 4], 7)
+            hidden: true
+          - call: pack_combinations([3, 8], 0)
+            hidden: true
+          - call: pack_combinations([7], 21)
+            hidden: true
+          - call: pack_combinations([12, 8, 3], 24)
+            hidden: true
+          - call: |
+              ways = pack_combinations([20, 12, 8, 5, 2], 60)
+              print(len(ways), ways[-3:])
+            hidden: true
+
+  - id: dsa-backtracking-n-queens
+    slug: n-queens
+    title: The N queens
+    text: |
+      A chess queen can move any number of squares along its row, its column or either of its two diagonals, and it attacks every square it could move to. The **N queens** puzzle asks you to place n queens on an n × n board so that none of them attacks another. On a real 8 × 8 chessboard there are 92 ways to do it, and the puzzle is a favorite of interviewers who want to see backtracking.
+
+      Making whole boards and then testing them wastes almost all its time. Eight queens can stand on 64 squares in about 4.4 billion ways. No two queens can share a row, so give each row exactly one: that still leaves 8⁸ = 16,777,216 boards, a column for each of the 8 queens. Ask for different columns too, and you're down to the 8! = 40,320 orderings that `itertools.permutations(range(8))` makes, but n! climbs quickly as well: over 3.6 million boards for n = 10 and almost 40 million for n = 11. Backtracking does better. It fills the board from the top row down, and a queen goes on a square only if no queen placed so far attacks it. A row where every square is attacked means the rows above it can't be part of a solution, so the search goes back up a row and moves that queen along. For n = 8 the whole search takes 2,057 calls.
+
+      ### Diagonals in O(1)
+
+      To check a square quickly, keep three sets: the columns that have a queen, and the two kinds of diagonals. Along a diagonal that goes down to the right, `row - col` stays the same. Along one that goes down to the left, `row + col` does:
+
+      ```python run
+      for row in range(4):
+          left = "".join(f"{row - col:3}" for col in range(4))
+          right = "".join(f"{row + col:3}" for col in range(4))
+          print(left, "   ", right)
+      ```
+
+      ```output
+        0 -1 -2 -3       0  1  2  3
+        1  0 -1 -2       1  2  3  4
+        2  1  0 -1       2  3  4  5
+        3  2  1  0       3  4  5  6
+      ```
+
+      So the square `(row, col)` is attacked when `col in cols`, `row - col in diag` or `row + col in anti`: three O(1) lookups in sets, instead of a loop over every queen placed so far.
+
+      ### The search
+
+      ```python run
+      def place(row, n, queens, cols, diag, anti):
+          if row == n:                       # a queen in every row: a solution
+              for col in queens:
+                  print("." * col + "Q" + "." * (n - col - 1))
+              print()
+              return 1
+          found = 0
+          for col in range(n):
+              if col in cols or row - col in diag or row + col in anti:
+                  continue                   # attacked: prune this branch
+              queens.append(col)             # choose
+              cols.add(col)
+              diag.add(row - col)
+              anti.add(row + col)
+              found += place(row + 1, n, queens, cols, diag, anti)   # explore
+              queens.pop()                   # un-choose
+              cols.remove(col)
+              diag.remove(row - col)
+              anti.remove(row + col)
+          return found
+
+
+      print(place(0, 4, [], set(), set(), set()), "solutions")
+      ```
+
+      ```output
+      .Q..
+      ...Q
+      Q...
+      ..Q.
+
+      ..Q.
+      Q...
+      ...Q
+      .Q..
+
+      2 solutions
+      ```
+
+      ### How it works
+
+      - When `place` is called for a row, every row above it already holds a queen that nothing attacks. So `row == n` means the board is full: one more solution.
+      - Follow n = 4 from a queen in the top-left corner. The second row's queen can go in column 2 or 3. After column 2, every square of the third row is attacked. After column 3, the third row's queen fits in column 1, and then every square of the fourth row is attacked. Both ways are dead, so the search takes the first queen back and moves it to column 1, where it finds the first solution. Going back up like this, to change a choice made earlier, is what the word **backtracking** describes.
+      - The choose changes four things, the list and the three sets, and the un-choose must undo every one of them. Forget one, say `diag.remove`, and that diagonal stays blocked for the rest of the search: the count comes out too small, with no error to warn you.
+
+      ### What it costs
+
+      Solutions multiply as the board grows: 352 for n = 9, 724 for n = 10, 2,680 for n = 11 and 14,200 for n = 12. The search is still exponential, but pruning cuts the tree down to a sliver: for n = 10 it makes 35,539 calls instead of checking 10¹⁰ boards. Each call does O(n) work, one O(1) check per column, and the recursion is only n + 1 calls deep, so the extra memory is O(n): the sets and the list of queens. Checking a new queen against every queen placed so far, with a loop, also works; it's O(n) per check instead of O(1), a few times slower. What makes the search fast is checking **before** placing, so that dead boards are never finished.
+
+      **Your turn:** a 4 × 4 board has queens at (0, 1) and (1, 3). What does this check of the third row print? Type each line it prints.
+    predict: |
+      cols = {1, 3}
+      diag = {0 - 1, 1 - 3}
+      anti = {0 + 1, 1 + 3}
+      row = 2
+      for col in range(4):
+          if col in cols or row - col in diag or row + col in anti:
+              print(col, "attacked")
+          else:
+              print(col, "free")
+    hints:
+      - "`diag` holds -1 and -2, and `anti` holds 1 and 4. For each column, work out `row - col` and `row + col` with `row = 2`."
+      - "Columns 1 and 3 already have a queen. Column 2 gives `row + col` = 4, which is in `anti`: the queen at (1, 3) attacks it along a diagonal."
+      - "Column 0 gives 2 for both sums, and 2 is in neither set."
+    more:
+      - task: |
+          Write `count_queens(n)`, which returns the number of ways to put n queens on an n × n board so that no two attack each other. Don't print the boards. It must be fast for n = 11, so build the board row by row and skip attacked squares with the three sets.
+
+          For example, `print(count_queens(4), count_queens(6))` prints:
+
+          ```
+          2 4
+          ```
+        seed: |
+          def count_queens(n):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_queens(4), count_queens(6))
+        solution: |
+          def place(row, n, cols, diag, anti):
+              if row == n:
+                  return 1
+              found = 0
+              for col in range(n):
+                  if col in cols or row - col in diag or row + col in anti:
+                      continue
+                  cols.add(col)
+                  diag.add(row - col)
+                  anti.add(row + col)
+                  found += place(row + 1, n, cols, diag, anti)
+                  cols.remove(col)
+                  diag.remove(row - col)
+                  anti.remove(row + col)
+              return found
+
+
+          def count_queens(n):
+              return place(0, n, set(), set(), set())
+
+
+          if __name__ == "__main__":
+              print(count_queens(4), count_queens(6))
+        slow: |
+          def attack_free(queens):
+              for a in range(len(queens)):
+                  for b in range(a + 1, len(queens)):
+                      if queens[a] == queens[b] or abs(queens[a] - queens[b]) == b - a:
+                          return False
+              return True
+
+
+          def fill(row, n, queens):
+              if row == n:
+                  return 1 if attack_free(queens) else 0
+              found = 0
+              for col in range(n):
+                  queens.append(col)
+                  found += fill(row + 1, n, queens)
+                  queens.pop()
+              return found
+
+
+          def count_queens(n):
+              return fill(0, n, [])
+
+
+          if __name__ == "__main__":
+              print(count_queens(4), count_queens(6))
+        hints:
+          - "Write a helper `place(row, n, cols, diag, anti)` that returns the number of solutions for the rows from `row` on. When `row == n`, every row has a queen: return 1."
+          - "Loop over the columns. Skip a column when `col in cols or row - col in diag or row + col in anti`. Otherwise add the three keys, add the count from `row + 1`, and remove the three keys again."
+          - "`count_queens(n)` calls the helper with row 0 and three empty sets. Filling every row first and checking the board only at the end gives the right count too, but for n = 11 that's 11¹¹ boards, about 285 billion."
+        tests:
+          - call: print(count_queens(4), count_queens(6))
+          - call: count_queens(1)
+            hidden: true
+          - call: count_queens(2)
+            hidden: true
+          - call: count_queens(3)
+            hidden: true
+          - call: count_queens(5)
+            hidden: true
+          - call: count_queens(11)
+            hidden: true
+            big: true
+      - task: |
+          Often one solution is enough. Write `first_solution(n)`: the first solution the search finds when it tries the columns from left to right, as a list of the queens' columns, row by row, or `None` when there's no solution. Stop as soon as you have one: make the search return `True` when the last row is placed, and return at once all the way up, without undoing anything. It must be fast for n = 21, which has hundreds of billions of solutions.
+
+          For example, `first_solution(4)` returns:
+
+          ```
+          [1, 3, 0, 2]
+          ```
+        seed: |
+          def first_solution(n):
+              pass
+
+
+          if __name__ == "__main__":
+              print(first_solution(4))
+        solution: |
+          def search(row, n, queens, cols, diag, anti):
+              if row == n:
+                  return True
+              for col in range(n):
+                  if col in cols or row - col in diag or row + col in anti:
+                      continue
+                  queens.append(col)
+                  cols.add(col)
+                  diag.add(row - col)
+                  anti.add(row + col)
+                  if search(row + 1, n, queens, cols, diag, anti):
+                      return True           # found: keep the queens as they are
+                  queens.pop()
+                  cols.remove(col)
+                  diag.remove(row - col)
+                  anti.remove(row + col)
+              return False
+
+
+          def first_solution(n):
+              queens = []
+              if search(0, n, queens, set(), set(), set()):
+                  return queens
+              return None
+
+
+          if __name__ == "__main__":
+              print(first_solution(4))
+        slow: |
+          def search(row, n, queens, cols, diag, anti, first):
+              if row == n:
+                  if not first:
+                      first.append(queens[:])
+                  return
+              for col in range(n):
+                  if col in cols or row - col in diag or row + col in anti:
+                      continue
+                  queens.append(col)
+                  cols.add(col)
+                  diag.add(row - col)
+                  anti.add(row + col)
+                  search(row + 1, n, queens, cols, diag, anti, first)
+                  queens.pop()
+                  cols.remove(col)
+                  diag.remove(row - col)
+                  anti.remove(row + col)
+
+
+          def first_solution(n):
+              first = []
+              search(0, n, [], set(), set(), set(), first)
+              if first:
+                  return first[0]
+              return None
+
+
+          if __name__ == "__main__":
+              print(first_solution(4))
+        hints:
+          - "Start from the lesson's `place`, with a list `queens` of the columns. Make the helper return `True` when `row == n`, and `False` after its loop has tried every column."
+          - "After placing a queen, write `if search(row + 1, ...): return True`. When the rest of the board worked, return straight away: the queens stay in the list, which is the answer."
+          - "Only when the call below returns `False` do you undo the queen and try the next column. A search that goes on after the first solution and keeps it gives the right answer too, but for n = 21 it never ends."
+        tests:
+          - call: first_solution(4)
+          - call: first_solution(1)
+            hidden: true
+          - call: print(first_solution(3))
+            hidden: true
+          - call: first_solution(6)
+            hidden: true
+          - call: first_solution(8)
+            hidden: true
+          - call: first_solution(16)
+            hidden: true
+            big: true
+          - call: first_solution(21)
+            hidden: true
+            big: true
+
+  - id: dsa-backtracking-grid-paths
+    slug: grid-paths
+    title: Paths and words in a grid
+    text: |
+      A list of strings, one per row, can hold a maze, a word search or the plan of a garden, with `#` for a wall and `.` for an open cell. A search for paths through it starts at one cell and keeps stepping to a neighbor (down, up, right or left), one cell per call: each step is a choice, and the neighbors are the options. The search must remember which cells the current path already covers and never step onto one of them again. Otherwise two open cells side by side would send it back and forth forever.
+
+      That memory is a set of `(row, col)` tuples, `on_path`, and it works differently from the `dist` dict of breadth-first search in the graphs module. Breadth-first search wants one shortest way to each cell, so the first visit settles a cell for good. A search for **every** path can't do that: a cell one path has left behind may be just what another path needs. So a cell goes into `on_path` when the path steps onto it (choose) and comes out again when the search returns from it (un-choose). This program counts every path from the top-left cell to the bottom-right one that never visits a cell twice:
+
+      ```python run
+      def count_paths(grid, row, col, on_path):
+          if row < 0 or row >= len(grid) or col < 0 or col >= len(grid[0]):
+              return 0                                  # off the grid
+          if grid[row][col] == "#" or (row, col) in on_path:
+              return 0                                  # a wall, or already on this path
+          if (row, col) == (len(grid) - 1, len(grid[0]) - 1):
+              return 1                                  # reached the exit
+          on_path.add((row, col))                       # mark: the path is here
+          total = (count_paths(grid, row + 1, col, on_path)
+                   + count_paths(grid, row - 1, col, on_path)
+                   + count_paths(grid, row, col + 1, on_path)
+                   + count_paths(grid, row, col - 1, on_path))
+          on_path.remove((row, col))                    # unmark on the way back
+          return total
+
+
+      maze = ["....",
+              ".#..",
+              "...."]
+      print(count_paths(maze, 0, 0, set()))
+      print(count_paths([".....", ".....", "....."], 0, 0, set()))
+      ```
+
+      ```output
+      7
+      125
+      ```
+
+      ### How it works
+
+      - Each call first looks at its own cell: off the grid, a wall or a cell already on the path ends the call with 0. That's why the four recursive calls need no checks in front of them: a step to a bad neighbor simply comes back with 0.
+      - `on_path` is a set, so adding a cell, asking whether a cell is in it and removing it are all O(1).
+      - The small maze has 7 paths. Take its wall away and add a fifth column, and there are 125, most of them long and winding: the search follows every one of them to the end.
+
+      ### Forgetting to unmark
+
+      Leave out the unmark, and the set works like the visited check of breadth-first search:
+
+      ```python run
+      def count_paths(grid, row, col, seen):
+          if row < 0 or row >= len(grid) or col < 0 or col >= len(grid[0]):
+              return 0
+          if grid[row][col] == "#" or (row, col) in seen:
+              return 0
+          if (row, col) == (len(grid) - 1, len(grid[0]) - 1):
+              return 1
+          seen.add((row, col))                          # marked for good
+          return (count_paths(grid, row + 1, col, seen)
+                  + count_paths(grid, row - 1, col, seen)
+                  + count_paths(grid, row, col + 1, seen)
+                  + count_paths(grid, row, col - 1, seen))
+
+
+      maze = ["....",
+              ".#..",
+              "...."]
+      print(count_paths(maze, 0, 0, set()))
+      ```
+
+      ```output
+      2
+      ```
+
+      The maze has 7 paths, not 2. The first paths that reach the exit leave their cells marked, and every later path that would cross them is blocked, even though it's a different path. There's no error, just a wrong number, so look for the unmark whenever a grid search finds too few paths.
+
+      ### What it costs
+
+      The number of paths grows exponentially with the grid: 2 for a 2 × 2 grid, 12 for 3 × 3, 184 for 4 × 4, 8,512 for 5 × 5 and over a million for 6 × 6, and the search visits every one of them. A path can be as long as the grid has cells, and so can the recursion: fine for these small grids, but a path on a 40 × 40 grid could go 1,600 calls deep, past Python's limit of about 1000.
+
+      ### Word search
+
+      Word search games hide words in a grid of letters. Each letter of a word sits on a cell next to the one before it (up, down, left or right), and no cell may be used twice in one word. The same kind of search finds them. Any cell could hold the first letter, so start a search from each one in turn. From a cell, matching the word from its letter `k` on goes like this:
+
+      1. If `k == len(word)`, every letter has matched: `True`.
+      2. If the cell is off the grid, already on the path, or its letter isn't `word[k]`: `False`.
+      3. Otherwise mark the cell, try the four neighbors with `k + 1`, unmark the cell, and return whether any neighbor worked.
+
+      Two kinds of pruning keep it quick. A cell with the wrong letter ends its branch at once, so the search only follows paths that spell the start of the word. And `or` stops at the first neighbor that works, so the search ends as soon as one path spells the whole word.
+
+      **Your turn:** some puzzles want a path that walks over **every** open cell exactly once. Fill in the blanks: a path counts only when it reaches the exit having covered every open cell, and the cell must be unmarked on the way back. The program should print:
+
+      ```
+      2
+      8
+      1
+      0
+      ```
+    fill: |
+      def tours(grid, row, col, on_path, open_cells):
+          if row < 0 or row >= len(grid) or col < 0 or col >= len(grid[0]):
+              return 0
+          if grid[row][col] == "#" or (row, col) in on_path:
+              return 0
+          on_path.add((row, col))
+          if (row, col) == (len(grid) - 1, len(grid[0]) - 1):
+              total = 1 if [[len(on_path) == open_cells‖open_cells == len(on_path)]] else 0
+          else:
+              total = (tours(grid, row + 1, col, on_path, open_cells)
+                       + tours(grid, row - 1, col, on_path, open_cells)
+                       + tours(grid, row, col + 1, on_path, open_cells)
+                       + tours(grid, row, col - 1, on_path, open_cells))
+          [[on_path.remove((row, col))‖on_path.discard((row, col))]]
+          return total
+
+
+      def count_tours(grid):
+          open_cells = sum(line.count(".") for line in grid)
+          return tours(grid, 0, 0, set(), open_cells)
+
+
+      print(count_tours(["...", "...", "..."]))
+      print(count_tours([".....", ".....", "....."]))
+      print(count_tours([".#..", "....", "..#."]))
+      print(count_tours(["....", ".#..", "...."]))
+    hints:
+      - "At the exit, the exit cell is already in `on_path`. The path covered every open cell when the set holds as many cells as there are open cells."
+      - "The first blank compares `len(on_path)` with `open_cells`. The second blank undoes `on_path.add((row, col))`."
+    tests:
+      - expect: |
+          2
+          8
+          1
+          0
+    more:
+      - task: |
+          Write `exists(grid, word)`: `True` when the grid hides `word` by the rules of the lesson (each letter on a cell up, down, left or right of the one before, and no cell used twice in the word), and `False` otherwise. `grid` is a list of strings, one per row.
+
+          For example, this program:
+
+          ```python fragment
+          grid = ["CATS",
+                  "OHEN",
+                  "DOGE"]
+          print(exists(grid, "CATS"), exists(grid, "COD"))
+          print(exists(grid, "NET"), exists(grid, "TACT"))
+          ```
+
+          prints:
+
+          ```
+          True True
+          True False
+          ```
+        seed: |
+          def exists(grid, word):
+              pass
+
+
+          if __name__ == "__main__":
+              grid = ["CATS",
+                      "OHEN",
+                      "DOGE"]
+              print(exists(grid, "CATS"), exists(grid, "COD"))
+              print(exists(grid, "NET"), exists(grid, "TACT"))
+        solution: |
+          def found_from(grid, word, k, row, col, on_path):
+              if k == len(word):
+                  return True
+              if row < 0 or row >= len(grid) or col < 0 or col >= len(grid[0]):
+                  return False
+              if (row, col) in on_path or grid[row][col] != word[k]:
+                  return False
+              on_path.add((row, col))
+              found = (found_from(grid, word, k + 1, row + 1, col, on_path)
+                       or found_from(grid, word, k + 1, row - 1, col, on_path)
+                       or found_from(grid, word, k + 1, row, col + 1, on_path)
+                       or found_from(grid, word, k + 1, row, col - 1, on_path))
+              on_path.remove((row, col))
+              return found
+
+
+          def exists(grid, word):
+              for row in range(len(grid)):
+                  for col in range(len(grid[0])):
+                      if found_from(grid, word, 0, row, col, set()):
+                          return True
+              return False
+
+
+          if __name__ == "__main__":
+              grid = ["CATS",
+                      "OHEN",
+                      "DOGE"]
+              print(exists(grid, "CATS"), exists(grid, "COD"))
+              print(exists(grid, "NET"), exists(grid, "TACT"))
+        hints:
+          - "Write a helper `found_from(grid, word, k, row, col, on_path)`: can the letters from `word[k]` on be traced starting at `(row, col)`? Follow the three steps of the lesson."
+          - "In the helper, return `False` for a cell off the grid, a cell in `on_path` or a cell whose letter isn't `word[k]`. Then add the cell to `on_path`, try the four neighbors with `k + 1`, joined with `or`, remove the cell, and return the result."
+          - "`exists` calls the helper from every cell, with `k = 0` and an empty set, and returns `True` as soon as one start works."
+        tests:
+          - call: |
+              grid = ["CATS",
+                      "OHEN",
+                      "DOGE"]
+              print(exists(grid, "CATS"), exists(grid, "COD"))
+              print(exists(grid, "NET"), exists(grid, "TACT"))
+          - call: |
+              grid = ["CATS",
+                      "OHEN",
+                      "DOGE"]
+              print(exists(grid, "HOG"), exists(grid, "GOOD"), exists(grid, "TEN"))
+              print(exists(grid, "GENE"), exists(grid, "GEE"), exists(grid, "EGE"))
+              print(exists(grid, "GEG"), exists(grid, "HOH"), exists(grid, "CHAT"))
+            hidden: true
+          - call: print(exists(["DOG"], "D"), exists(["DOG"], "Z"))
+            hidden: true
+          - call: print(exists(["AB"], "ABA"), exists(["AB"], "BA"))
+            hidden: true
+          - call: print(exists(["AB", "CD"], "ABDC"), exists(["AB", "CD"], "ABCD"))
+            hidden: true
+          - call: exists(["AAA", "AAA", "AAA"], "AAAAAAAAAB")
+            hidden: true
+          - call: print(exists(["AA", "BA", "BB"], "AABAB"), exists(["ABB", "ABB"], "ABBBBA"))
+            hidden: true
+      - task: |
+          Breadth-first search finds the **shortest** way through a maze. The **longest** way that never visits a cell twice is a harder question: no quick method is known, and backtracking has to try every path. Write `longest_path(grid)`: the number of cells on the longest path from the top-left cell to the bottom-right one, moving up, down, left or right through `.` cells and never visiting a cell twice. Return 0 when there is no path at all.
+
+          For example, `print(longest_path(["....", ".#..", "...."]), longest_path(["..", ".#", ".."]))` prints this (the longest way through the first maze misses just one of its 11 open cells, and the second has only one way, down the left side):
+
+          ```
+          10 4
+          ```
+        seed: |
+          def longest_path(grid):
+              pass
+
+
+          if __name__ == "__main__":
+              print(longest_path(["....", ".#..", "...."]), longest_path(["..", ".#", ".."]))
+        solution: |
+          def longest_from(grid, row, col, on_path):
+              if row < 0 or row >= len(grid) or col < 0 or col >= len(grid[0]):
+                  return 0
+              if grid[row][col] == "#" or (row, col) in on_path:
+                  return 0
+              if (row, col) == (len(grid) - 1, len(grid[0]) - 1):
+                  return len(on_path) + 1
+              on_path.add((row, col))
+              best = max(longest_from(grid, row + 1, col, on_path),
+                         longest_from(grid, row - 1, col, on_path),
+                         longest_from(grid, row, col + 1, on_path),
+                         longest_from(grid, row, col - 1, on_path))
+              on_path.remove((row, col))
+              return best
+
+
+          def longest_path(grid):
+              return longest_from(grid, 0, 0, set())
+
+
+          if __name__ == "__main__":
+              print(longest_path(["....", ".#..", "...."]), longest_path(["..", ".#", ".."]))
+        hints:
+          - "Start from the lesson's `count_paths`. Instead of adding the counts of the four neighbors, take the `max` of what they return."
+          - "At the exit, the path's length is the number of cells on it so far plus the exit itself: `len(on_path) + 1`. A dead end returns 0, so it never wins the `max` against a real path."
+          - "Mark the cell before the four calls and unmark it after them. Without the unmark, the cells of the first paths stay blocked and the longest way may never be tried."
+        tests:
+          - call: print(longest_path(["....", ".#..", "...."]), longest_path(["..", ".#", ".."]))
+          - call: longest_path(["..", ".."])
+            hidden: true
+          - call: longest_path(["."])
+            hidden: true
+          - call: print(longest_path(["#."]), longest_path(["..#", "##."]))
+            hidden: true
+          - call: longest_path(["...", "...", "..."])
+            hidden: true
+          - call: longest_path(["....", "....", "...."])
+            hidden: true
+          - call: longest_path(["....", ".##.", "...."])
+            hidden: true
+          - call: longest_path(["....", ".#..", "...#", "#..."])
+            hidden: true
+
+  - id: dsa-backtracking-sudoku
+    slug: sudoku
+    title: A sudoku solver
+    text: |
+      In a **sudoku**, some cells of a 9 × 9 grid hold digits from the start, and you fill in the rest. Each row, each column and each of the nine 3 × 3 boxes must end up with all the digits from 1 to 9, none of them twice. A person looks for a cell where only one digit can go. A program can get away with far less thought: it guesses, and takes the guess back when it leads nowhere. One call of the solver does this:
+
+      1. Look for an empty cell. When there's none left, every cell holds a digit, and the puzzle is solved.
+      2. Collect the digits that are **allowed** in that cell: the ones its row, its column and its box don't have yet.
+      3. For each of them in turn, write it in the cell (choose) and call the solver on the grid as it is now (explore). If that call solves the puzzle, stop and report success.
+      4. Otherwise rub the digit out (un-choose) before trying the next one. If none of the digits leads to a solution, report failure (`False`) at once: some digit written earlier, in another cell, was wrong, and the call that wrote it goes on to its next digit.
+
+      Here is the whole recipe on a 4 × 4 sudoku, with the digits 1 to 4 and 2 × 2 boxes. The grid is a list of lists, with 0 for an empty cell:
+
+      ```python run
+      def allowed(grid, row, col):
+          used = set(grid[row])                          # the row
+          used.update(grid[r][col] for r in range(4))    # the column
+          top = row // 2 * 2
+          left = col // 2 * 2
+          for r in range(top, top + 2):                  # the box
+              used.update(grid[r][left:left + 2])
+          return [d for d in range(1, 5) if d not in used]
+
+
+      def solve(grid):
+          for row in range(4):
+              for col in range(4):
+                  if grid[row][col] == 0:
+                      for digit in allowed(grid, row, col):
+                          grid[row][col] = digit         # choose
+                          if solve(grid):                # explore
+                              return True
+                          grid[row][col] = 0             # un-choose
+                      return False                       # nothing fits here
+          return True                                    # no empty cell: solved
+
+
+      grid = [[0, 0, 0, 0],
+              [0, 1, 4, 0],
+              [3, 0, 0, 2],
+              [0, 0, 0, 0]]
+      print(solve(grid))
+      for line in grid:
+          print(*line)
+      ```
+
+      ```output
+      True
+      4 3 2 1
+      2 1 4 3
+      3 4 1 2
+      1 2 3 4
+      ```
+
+      Only 4 digits are given, so the solver guesses a lot: it writes a digit 26 times and hits a dead end 14 times before every cell fits.
+
+      ### How it works
+
+      `allowed` collects the digits in the cell's row, column and box in a set. The 0s of the empty cells go in too, which does no harm: 0 is never a digit to try. The box of a cell starts at row `row // 2 * 2` and column `col // 2 * 2`: `//` rounds down, so the rows 0 and 1 give 0, and the rows 2 and 3 give 2. On a 9 × 9 board the boxes are 3 × 3, so it's `// 3 * 3`, and cell (7, 4), in the eighth row and the fifth column, is in the box that starts at (6, 3):
+
+      ```python repl
+      >>> [row // 3 * 3 for row in range(9)]
+      [0, 0, 0, 3, 3, 3, 6, 6, 6]
+      >>> row, col = 7, 4
+      >>> row // 3 * 3, col // 3 * 3
+      (6, 3)
+      ```
+
+      Two lines of `solve` are easy to get wrong:
+
+      - `return False` stands right after the loop over the digits, **inside** the `if`. Leave it out, and when nothing fits a cell, the loops go on to the next empty cell, and the `return True` at the end reports a grid with holes in it as solved.
+      - `grid[row][col] = 0` is the un-choose. Leave it out, and a failed digit stays in its cell, so the search treats that cell as filled from then on.
+
+      ### Which empty cell first?
+
+      The recipe fills the empty cells in reading order, which can be a very bad order. A smarter solver first looks at **every** empty cell and takes the one with the **fewest** allowed digits. A cell with one allowed digit is a forced move, with no guessing. A cell with none means this branch is already dead, and the solver backs up at once, where the reading order might find out only millions of placements later. On a typical 9 × 9 puzzle with 56 empty cells, the reading order writes a digit 6,649 times; fewest-first writes 56, one per cell, with no wrong guess at all. On some puzzles the reading order needs tens of millions of placements, minutes of Python, and fewest-first still needs about 60.
+
+      ### What it costs
+
+      Checking a digit looks at the 27 cells of a row, a column and a box: on a 9 × 9 board that's O(1). What can explode is the number of placements: in the worst case, the search tries every digit in every empty cell, exponential in the number of empty cells. The givens and good choices prune nearly all of it. The recursion goes one call deeper per filled cell, at most 81, far from Python's limit.
+
+      **Your turn:** write `solve(grid)` for a 9 × 9 sudoku: a list of 9 lists of 9 numbers, with 0 for an empty cell. Fill the grid in place, and return `True`, or `False` when the puzzle has no solution. Try the empty cells in reading order and the digits from 1 to 9. The tests write a puzzle as a string of its 9 rows and turn it into a grid. For example, this program:
+
+      ```python fragment
+      puzzle = "000654001 103000050 000020000 200871000 540200170 000009000 305000090 010008060 008000007"
+      grid = [[int(ch) for ch in line] for line in puzzle.split()]
+      print(solve(grid))
+      for line in grid:
+          print("".join(str(d) for d in line))
+      ```
+
+      prints:
+
+      ```
+      True
+      987654321
+      123987456
+      654123789
+      236871945
+      549236178
+      871549632
+      365712894
+      712498563
+      498365217
+      ```
+    seed: |
+      def solve(grid):
+          pass
+
+
+      if __name__ == "__main__":
+          puzzle = "000654001 103000050 000020000 200871000 540200170 000009000 305000090 010008060 008000007"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve(grid))
+          for line in grid:
+              print("".join(str(d) for d in line))
+    solution: |
+      def allowed(grid, row, col):
+          used = set(grid[row])
+          used.update(grid[r][col] for r in range(9))
+          top = row // 3 * 3
+          left = col // 3 * 3
+          for r in range(top, top + 3):
+              used.update(grid[r][left:left + 3])
+          return [d for d in range(1, 10) if d not in used]
+
+
+      def solve(grid):
+          for row in range(9):
+              for col in range(9):
+                  if grid[row][col] == 0:
+                      for digit in allowed(grid, row, col):
+                          grid[row][col] = digit
+                          if solve(grid):
+                              return True
+                          grid[row][col] = 0
+                      return False
+          return True
+
+
+      if __name__ == "__main__":
+          puzzle = "000654001 103000050 000020000 200871000 540200170 000009000 305000090 010008060 008000007"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve(grid))
+          for line in grid:
+              print("".join(str(d) for d in line))
+    hints:
+      - "Start with `allowed(grid, row, col)` from the lesson, with 9 for 4 and 3 for 2: the box starts at `row // 3 * 3` and `col // 3 * 3`."
+      - "`solve` loops over the rows and columns to the first cell that holds 0. If the loops finish without finding one, the grid is full: return `True`."
+      - "For that cell, try each allowed digit: write it, `if solve(grid): return True`, otherwise write 0 back. After the loop over the digits, return `False` at once: don't go on to the next empty cell."
+    tests:
+      - call: |
+          puzzle = "000654001 103000050 000020000 200871000 540200170 000009000 305000090 010008060 008000007"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve(grid))
+          for line in grid:
+              print("".join(str(d) for d in line))
+      - call: |
+          puzzle = "980000001 020708540 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve(grid))
+          for line in grid:
+              print("".join(str(d) for d in line))
+        hidden: true
+      - call: |
+          puzzle = "907050020 400200000 310080400 500001002 029400006 100900000 040002000 008500600 005000083"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve(grid))
+          print("".join(str(d) for d in grid[0]), "".join(str(d) for d in grid[8]))
+        hidden: true
+      - call: |
+          grid = [[0] * 9 for i in range(9)]
+          print(solve(grid))
+          rows_ok = all(sorted(line) == list(range(1, 10)) for line in grid)
+          cols_ok = all(sorted(grid[r][c] for r in range(9)) == list(range(1, 10)) for c in range(9))
+          boxes_ok = all(sorted(grid[r][c] for r in range(t, t + 3) for c in range(l, l + 3)) == list(range(1, 10)) for t in (0, 3, 6) for l in (0, 3, 6))
+          print(rows_ok, cols_ok, boxes_ok)
+        hidden: true
+      - call: |
+          puzzle = "001234567 008000000 000000000 000000000 000000000 000000000 000000000 000000000 000000000"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve(grid))
+        hidden: true
+    more:
+      - task: |
+          Whoever makes a new sudoku has to check that it has exactly one solution: with two, a player couldn't tell which one is meant. Counting every solution could take forever (an empty grid has about 6.7 × 10²¹ of them), but the puzzle maker only needs to know whether there are none, one or more. Write `count_solutions(grid, limit)`: the number of solutions of the puzzle, or `limit` when it has `limit` or more. It never returns more than `limit`, and it stops searching as soon as it has found that many.
+
+          Search like the solver, but when the grid is full, count 1 and go on with the next digit instead of stopping. A deeper call should look for only as many solutions as this call still wants, and the loop over the digits stops once the count reaches `limit`. Write 0 back after each digit, so the grid ends up as it was.
+
+          For example, this program (the second grid is empty, so it has far more than 3 solutions):
+
+          ```python fragment
+          puzzle = "980000001 020708540 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(count_solutions(grid, 2))
+          print(count_solutions([[0] * 9 for i in range(9)], 3))
+          ```
+
+          prints:
+
+          ```
+          1
+          3
+          ```
+        seed: |
+          def count_solutions(grid, limit):
+              pass
+
+
+          if __name__ == "__main__":
+              puzzle = "980000001 020708540 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(count_solutions(grid, 2))
+              print(count_solutions([[0] * 9 for i in range(9)], 3))
+        solution: |
+          def allowed(grid, row, col):
+              used = set(grid[row])
+              used.update(grid[r][col] for r in range(9))
+              top = row // 3 * 3
+              left = col // 3 * 3
+              for r in range(top, top + 3):
+                  used.update(grid[r][left:left + 3])
+              return [d for d in range(1, 10) if d not in used]
+
+
+          def count_solutions(grid, limit):
+              for row in range(9):
+                  for col in range(9):
+                      if grid[row][col] == 0:
+                          found = 0
+                          for digit in allowed(grid, row, col):
+                              grid[row][col] = digit
+                              found += count_solutions(grid, limit - found)
+                              grid[row][col] = 0
+                              if found >= limit:
+                                  break
+                          return found
+              return 1
+
+
+          if __name__ == "__main__":
+              puzzle = "980000001 020708540 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(count_solutions(grid, 2))
+              print(count_solutions([[0] * 9 for i in range(9)], 3))
+        hints:
+          - "Keep the shape of `solve`: find the first empty cell, and return 1 when there's none, since a full grid is one solution."
+          - "For the empty cell, add up the counts of the digits you try, and write 0 back after each one, so that the next digit starts from the same grid."
+          - "Pass the deeper call how many solutions are still wanted, `limit - found`, and `break` out of the loop over the digits once `found` reaches `limit`."
+        tests:
+          - call: |
+              puzzle = "980000001 020708540 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(count_solutions(grid, 2))
+              print(count_solutions([[0] * 9 for i in range(9)], 3))
+          - call: |
+              puzzle = "980000001 020708540 000000900 015020000 860500073 000000000 650410700 100009000 000800000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(count_solutions(grid, 10))
+            hidden: true
+          - call: |
+              puzzle = "980000001 020708040 000000900 015020000 860500073 000000000 658410700 100009000 000800000"
+              print(count_solutions([[int(ch) for ch in line] for line in puzzle.split()], 10))
+              print(count_solutions([[int(ch) for ch in line] for line in puzzle.split()], 3))
+            hidden: true
+          - call: count_solutions([[0] * 9 for i in range(9)], 4)
+            hidden: true
+          - call: |
+              puzzle = "001234567 008000000 000000000 000000000 000000000 000000000 000000000 000000000 000000000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(count_solutions(grid, 5))
+            hidden: true
+      - task: |
+          Write `solve_fast(grid)`: a solver that fills first the empty cell with the **fewest** allowed digits, as the lesson describes. It takes and returns the same as `solve`. Before each choice, look at every empty cell, keep the one with the shortest list of allowed digits, and try its digits. If that list is empty, return `False` at once. Two of the hidden tests are puzzles on which the reading order needs tens of millions of placements.
+
+          For example, this program:
+
+          ```python fragment
+          puzzle = "080604021 000000780 000000054 018090000 340007006 600200007 509060000 000108000 030000000"
+          grid = [[int(ch) for ch in line] for line in puzzle.split()]
+          print(solve_fast(grid))
+          for line in grid:
+              print("".join(str(d) for d in line))
+          ```
+
+          prints:
+
+          ```
+          True
+          987654321
+          456321789
+          123789654
+          718596243
+          342817596
+          695243817
+          579462138
+          264138975
+          831975462
+          ```
+        seed: |
+          def solve_fast(grid):
+              pass
+
+
+          if __name__ == "__main__":
+              puzzle = "080604021 000000780 000000054 018090000 340007006 600200007 509060000 000108000 030000000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              for line in grid:
+                  print("".join(str(d) for d in line))
+        solution: |
+          def allowed(grid, row, col):
+              used = set(grid[row])
+              used.update(grid[r][col] for r in range(9))
+              top = row // 3 * 3
+              left = col // 3 * 3
+              for r in range(top, top + 3):
+                  used.update(grid[r][left:left + 3])
+              return [d for d in range(1, 10) if d not in used]
+
+
+          def solve_fast(grid):
+              best = None
+              best_digits = None
+              for row in range(9):
+                  for col in range(9):
+                      if grid[row][col] == 0:
+                          digits = allowed(grid, row, col)
+                          if best is None or len(digits) < len(best_digits):
+                              best = (row, col)
+                              best_digits = digits
+              if best is None:
+                  return True                   # no empty cell: solved
+              row, col = best
+              for digit in best_digits:         # none allowed: the loop is skipped
+                  grid[row][col] = digit
+                  if solve_fast(grid):
+                      return True
+                  grid[row][col] = 0
+              return False
+
+
+          if __name__ == "__main__":
+              puzzle = "080604021 000000780 000000054 018090000 340007006 600200007 509060000 000108000 030000000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              for line in grid:
+                  print("".join(str(d) for d in line))
+        slow: |
+          def allowed(grid, row, col):
+              used = set(grid[row])
+              used.update(grid[r][col] for r in range(9))
+              top = row // 3 * 3
+              left = col // 3 * 3
+              for r in range(top, top + 3):
+                  used.update(grid[r][left:left + 3])
+              return [d for d in range(1, 10) if d not in used]
+
+
+          def solve_fast(grid):
+              for row in range(9):
+                  for col in range(9):
+                      if grid[row][col] == 0:
+                          for digit in allowed(grid, row, col):
+                              grid[row][col] = digit
+                              if solve_fast(grid):
+                                  return True
+                              grid[row][col] = 0
+                          return False
+              return True
+
+
+          if __name__ == "__main__":
+              puzzle = "080604021 000000780 000000054 018090000 340007006 600200007 509060000 000108000 030000000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              for line in grid:
+                  print("".join(str(d) for d in line))
+        hints:
+          - "Use `allowed` from your solver. In `solve_fast`, loop over every cell, and for each empty one compare the length of its list of allowed digits with the best so far."
+          - "Keep the best cell's position and its list. If no cell was empty, the grid is solved: return `True`."
+          - "Then try the best cell's digits exactly as `solve` does: write, recurse, write 0 back, and return `False` after the loop. An empty list skips the loop, so a dead cell returns `False` straight away."
+          - "Filling the cells in reading order solves every puzzle too, but on the two big tests it writes a digit about 27 million and 59 million times."
+        tests:
+          - call: |
+              puzzle = "080604021 000000780 000000054 018090000 340007006 600200007 509060000 000108000 030000000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              for line in grid:
+                  print("".join(str(d) for d in line))
+          - call: |
+              puzzle = "000654001 103000050 000020000 200871000 540200170 000009000 305000090 010008060 008000007"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              print("".join(str(d) for d in grid[4]), "".join(str(d) for d in grid[8]))
+            hidden: true
+          - call: |
+              puzzle = "001234567 008000000 000000000 000000000 000000000 000000000 000000000 000000000 000000000"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+            hidden: true
+          - call: |
+              puzzle = "907000020 000000000 000080406 000000000 018000003 000700590 000000108 040000005 800579040"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              for line in grid:
+                  print("".join(str(d) for d in line))
+            hidden: true
+            big: true
+          - call: |
+              puzzle = "900600000 000100000 000900004 030008000 040000090 000400010 600030008 070046002 100800050"
+              grid = [[int(ch) for ch in line] for line in puzzle.split()]
+              print(solve_fast(grid))
+              for line in grid:
+                  print("".join(str(d) for d in line))
+            hidden: true
+            big: true

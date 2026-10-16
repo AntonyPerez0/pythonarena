@@ -1,0 +1,320 @@
+topic: dsa-hash
+drills:
+  - type: predict
+    after: buckets
+    code: |
+      buckets = [[]] * 3
+      buckets[0].append("a")
+      buckets[2].append("b")
+      print(buckets[1])
+    why: "`[[]] * 3` makes three references to one and the same list, so every \"bucket\" holds both keys. `[[] for i in range(3)]` makes three separate lists."
+
+  - type: bug
+    after: buckets
+    code: |
+      bucket = [["red", 1], ["blue", 2]]
+      key, value = "red", 5
+      for pair in bucket:
+          if pair[0] == key:
+              pair = [key, value]  # BUG
+      print(bucket)
+    fix: pair[1] = value
+    why: "`pair = [key, value]` only makes the loop variable name a new list; the list inside the bucket doesn't change. `pair[1] = value` changes the pair itself."
+
+  - type: choice
+    after: buckets
+    prompt: "A hash table has 10 buckets that never grow, and it holds 1,000,000 keys spread evenly. About how many keys does a search for a key that isn't there compare with?"
+    choices:
+      - "About 1"
+      - "About 20"
+      - "About 100,000"
+    answer: 3
+    why: "Each chain holds 1,000,000 / 10 = 100,000 keys, and a missing key is compared with every key of its chain. Lookups are O(1) only while the number of buckets keeps up with the number of keys."
+
+  - type: predict
+    after: rehashing
+    code: |
+      for key in [6, 14, 22]:
+          print(key % 8, key % 16)
+    why: "With 8 buckets all three keys share bucket 6. With 16, 14 moves to bucket 14: that's why growing a table moves every key to the bucket worked out with the new size."
+
+  - type: choice
+    after: rehashing
+    prompt: "This table grows by 10 buckets whenever it's more than 75% full, and each time it moves every pair. How does the total number of moves grow with the number of keys n?"
+    code: |
+      buckets = 8
+      moves = 0
+      for count in range(1, 10_001):
+          if count / buckets > 0.75:
+              moves += count
+              buckets += 10
+      print(moves)
+    choices:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "It rebuilds every few keys, and each rebuild moves all the keys so far: about n²/15 moves in all. Doubling instead makes each rebuild rarer as the table grows, so the moves add up to about 2n: O(1) amortized per key."
+
+  - type: predict
+    after: rehashing
+    code: |
+      slots = [None] * 5
+      for key in [7, 2, 12]:
+          i = key % 5
+          while slots[i] is not None:
+              i = (i + 1) % 5
+          slots[i] = key
+      print(slots)
+    why: "All three keys start at slot 2. Linear probing moves 2 on to slot 3, and 12 past both to slot 4."
+
+  - type: runs
+    after: like-a-dict
+    code: |
+      ages = {"ada": 36, "ben": 41}
+      for name in ages:
+          ages[name.upper()] = ages[name]
+      print(ages)
+    why: "Adding keys to a dict while a loop goes through it stops the loop with `RuntimeError: dictionary changed size during iteration`. Loop over `list(ages)` instead."
+
+  - type: fill
+    after: like-a-dict
+    code: |
+      stock = {"tea": 0, "jam": 2, "egg": 0}
+      for item in [[list(stock)‖list(stock.keys())‖stock.copy()‖tuple(stock)‖[*stock]‖tuple(stock.keys())‖dict(stock)‖sorted(stock)]]:
+          if stock[item] == 0:
+              del stock[item]
+      print(stock)
+    why: "The loop must go through a copy made before it starts, such as `list(stock)`, `tuple(stock)` or `stock.copy()`: then deleting from the dict inside the loop is safe. Looping over `stock` itself stops with `RuntimeError: dictionary changed size during iteration`."
+
+  - type: predict
+    after: like-a-dict
+    code: |
+      class Box:
+          def __iter__(self):
+              for item in [3, 8, 5]:
+                  print("at", item)
+                  yield item
+
+
+      print(8 in Box())
+    why: "`Box` has no `__contains__`, so `in` goes through `__iter__` until it meets 8. It never gets to 5. That's O(n), where a hash table's `__contains__` is O(1)."
+
+  - type: bug
+    after: like-a-dict
+    code: |
+      class WordSet:
+          def __init__(self, words):
+              self.buckets = [[] for i in range(4)]
+              for word in words:
+                  self.buckets[len(word) % 4].append(word)
+
+          def __contains__(self, word):
+              return word in self.buckets  # BUG
+
+
+      s = WordSet(["fig", "kiwi", "plum"])
+      print("kiwi" in s, "pear" in s)
+    fix: return word in self.buckets[len(word) % 4]
+    why: "`self.buckets` is a list of lists, and no bucket is equal to a word. Look in the word's own bucket, worked out with the same hash (here the length) that put it there."
+
+  - type: runs
+    after: own-keys
+    code: |
+      seen = set()
+      seen.add((1, 2))
+      seen.add([3, 4])
+      print(len(seen))
+    why: "A tuple is hashable, a list isn't: `TypeError: cannot use 'list' as a set element (unhashable type: 'list')`. A list can change after it goes in, which would leave it in the wrong bucket. `tuple([3, 4])` works."
+
+  - type: runs
+    after: own-keys
+    code: |
+      class Card:
+          def __init__(self, rank):
+              self.rank = rank
+
+          def __eq__(self, other):
+              return self.rank == other.rank
+
+
+      hand = {Card(5), Card(5)}
+      print(len(hand))
+    why: "A class that writes `__eq__` loses the default hash, so its objects can't go in a set: `TypeError: cannot use 'Card' as a set element (unhashable type: 'Card')`. It needs a `__hash__` that agrees with `__eq__`, such as `hash(self.rank)`."
+
+  - type: choice
+    after: own-keys
+    prompt: "`__eq__` says two tags are equal when `self.name.lower() == other.name.lower()`. Which `__hash__` breaks the rule that equal objects have equal hashes?"
+    choices:
+      - "`return hash(self.name)`"
+      - "`return hash(self.name.lower())`"
+      - "`return 0`"
+    answer: 1
+    why: "`Tag(\"Red\")` and `Tag(\"red\")` are equal, but `hash(\"Red\")` and `hash(\"red\")` differ, so a set keeps both. `return 0` keeps the rule, though every tag collides and lookups become O(n)."
+
+  - type: predict
+    after: own-keys
+    code: |
+      class Seat:
+          def __init__(self, number):
+              self.number = number
+
+          def __eq__(self, other):
+              return self.number == other.number
+
+          def __hash__(self):
+              return hash(self.number)
+
+
+      s = Seat(3)
+      taken = {s}
+      s.number = 4
+      print(s in taken, Seat(3) in taken, len(taken))
+    why: "The seat is still in the set, but its hash changed. `s in taken` looks in the bucket for 4, and `Seat(3)` finds the bucket for 3 but no seat equal to it there. Keys must not change while they are in a table."
+
+  - type: fill
+    after: lru-cache
+    code: |
+      from collections import OrderedDict
+
+      recent = OrderedDict()
+      for name in ["a", "b", "c"]:
+          recent[name] = name.upper()
+      recent.move_to_end("a")
+      print(recent.popitem(last=[[False]]))
+    why: "`popitem(last=False)` removes the first pair, the least recently used one. After `move_to_end(\"a\")` the order is b, c, a, so it's `('b', 'B')`. `last=True`, the default, would remove the newest."
+
+  - type: predict
+    after: lru-cache
+    code: |
+      from functools import lru_cache
+
+
+      @lru_cache(maxsize=None)
+      def fib(n):
+          if n < 2:
+              return n
+          return fib(n - 1) + fib(n - 2)
+
+
+      print(fib(30), fib.cache_info().misses)
+    why: "Each of fib(0) to fib(30) is worked out once, a miss each: 31. Every other call is a hit. Without the cache, fib(30) makes more than a million calls."
+
+  - type: boss
+    after: own-keys
+    prompt: |
+      Write `count_dominoes(tiles)`. Each tile is a list of two numbers, such as `[2, 5]`, and a tile turned around is the same domino: `[5, 2]` is `[2, 5]`. Return how many different dominoes `tiles` holds. A set is the tool, but a list can't go in one.
+
+      For example, `count_dominoes([[2, 5], [6, 6], [5, 2], [0, 3]])` returns (`[2, 5]` and `[5, 2]` are one domino):
+
+      ```
+      3
+      ```
+    seed: |
+      def count_dominoes(tiles):
+          pass
+
+
+      if __name__ == "__main__":
+          print(count_dominoes([[2, 5], [6, 6], [5, 2], [0, 3]]))
+    solution: |
+      def count_dominoes(tiles):
+          seen = set()
+          for a, b in tiles:
+              seen.add((min(a, b), max(a, b)))
+          return len(seen)
+
+
+      if __name__ == "__main__":
+          print(count_dominoes([[2, 5], [6, 6], [5, 2], [0, 3]]))
+    hints:
+      - "A set can't hold the lists, but it can hold tuples. For `[2, 5]` and `[5, 2]` to give the same key, turn every tile the same way first."
+      - "Put the smaller number first: `(min(a, b), max(a, b))` is `(2, 5)` for both tiles. Add that tuple to a set, and return the size of the set."
+    tests:
+      - call: count_dominoes([[2, 5], [6, 6], [5, 2], [0, 3]])
+      - call: count_dominoes([])
+        hidden: true
+      - call: count_dominoes([[4, 4], [4, 4], [4, 4]])
+        hidden: true
+      - call: count_dominoes([[1, 0], [0, 1], [0, 2], [2, 1], [1, 2]])
+        hidden: true
+      - call: count_dominoes([[i % 7, i % 5] for i in range(1000)])
+        hidden: true
+
+  - type: boss
+    after: like-a-dict
+    prompt: |
+      Write a class `Tally` that counts things, with an ordinary dict inside:
+
+      - `add(item)` adds one to the item's count.
+      - `t[item]` gives the item's count, and 0 for an item that was never added (no `KeyError`, and the item isn't added).
+      - `item in t` says whether the item was added.
+      - `len(t)` gives the number of different items.
+
+      For example, this program:
+
+      ```python fragment
+      t = Tally()
+      for word in ["to", "be", "or", "not", "to", "be"]:
+          t.add(word)
+      print(t["to"], t["xyz"], "or" in t, "xyz" in t, len(t))
+      ```
+
+      prints:
+
+      ```
+      2 0 True False 4
+      ```
+    seed: |
+      class Tally:
+          def __init__(self):
+              self.counts = {}
+
+
+      if __name__ == "__main__":
+          t = Tally()
+          for word in ["to", "be", "or", "not", "to", "be"]:
+              t.add(word)
+          print(t["to"], t["xyz"], "or" in t, "xyz" in t, len(t))
+    solution: |
+      class Tally:
+          def __init__(self):
+              self.counts = {}
+
+          def add(self, item):
+              self.counts[item] = self.counts.get(item, 0) + 1
+
+          def __getitem__(self, item):
+              return self.counts.get(item, 0)
+
+          def __contains__(self, item):
+              return item in self.counts
+
+          def __len__(self):
+              return len(self.counts)
+
+
+      if __name__ == "__main__":
+          t = Tally()
+          for word in ["to", "be", "or", "not", "to", "be"]:
+              t.add(word)
+          print(t["to"], t["xyz"], "or" in t, "xyz" in t, len(t))
+    hints:
+      - "`t[item]` calls `__getitem__`, `item in t` calls `__contains__`, and `len(t)` calls `__len__`."
+      - "`self.counts.get(item, 0)` gives 0 for a missing item without adding it, both in `add` and in `__getitem__`."
+    tests:
+      - call: |
+          t = Tally()
+          for word in ["to", "be", "or", "not", "to", "be"]:
+              t.add(word)
+          print(t["to"], t["xyz"], "or" in t, "xyz" in t, len(t))
+      - call: |
+          t = Tally()
+          print(t["a"], "a" in t, len(t))
+        hidden: true
+      - call: |
+          t = Tally()
+          for n in [3, 1, 3, 3, 2]:
+              t.add(n)
+          print(t[3], t[2], t[7], len(t), 7 in t)
+        hidden: true

@@ -1,0 +1,322 @@
+topic: dsa-backtracking
+drills:
+  - type: predict
+    after: subsets
+    code: |
+      def explore(items, i, path):
+          if i == len(items):
+              print(path)
+              return
+          explore(items, i + 1, path)
+          path.append(items[i])
+          explore(items, i + 1, path)
+          path.pop()
+
+
+      explore(["x", "y"], 0, [])
+    why: "Each call leaves its item out first, so the empty subset comes first. `y` is decided by the deeper calls, so it changes fastest: `[]`, then `['y']`, and only then is `x` taken."
+
+  - type: bug
+    after: subsets
+    code: |
+      def collect(items, i, path, result):
+          if i == len(items):
+              result.append(path)  # BUG
+              return
+          path.append(items[i])
+          collect(items, i + 1, path, result)
+          path.pop()
+          collect(items, i + 1, path, result)
+
+
+      result = []
+      collect([1, 2], 0, [], result)
+      print(result)
+    fix: result.append(path[:])
+    why: "`result.append(path)` stores the one list `path` four times, and the pops empty it, so the result is four empty lists. A copy, `path[:]`, keeps each subset as it was when it was found."
+
+  - type: choice
+    after: subsets
+    prompt: A list has 20 different items. How many subsets does it have, counting the empty one and the whole list?
+    choices:
+      - "40"
+      - "400"
+      - "1,048,576"
+      - "2,432,902,008,176,640,000"
+    answer: 3
+    why: "Each item is taken or left out: 2 choices, 20 times, so 2²⁰ = 1,048,576 subsets. The last number is 20!, the number of orderings of the 20 items."
+
+  - type: predict
+    after: subsets
+    code: |
+      calls = 0
+
+
+      def explore(n, i):
+          global calls
+          calls += 1
+          if i < n:
+              explore(n, i + 1)
+              explore(n, i + 1)
+
+
+      explore(3, 0)
+      print(calls)
+    why: "Every call above the last level makes two more: 1 + 2 + 4 + 8 = 15 calls. The decision tree for n items has 2ⁿ⁺¹ - 1 calls, so each extra item doubles the work."
+
+  - type: bug
+    after: permutations
+    code: |
+      def permute(letters, used, path):
+          if len(path) == len(letters):
+              print("".join(path))
+              return
+          for i in range(len(letters)):
+              if not used[i]:
+                  used[i] = True
+                  path.append(letters[i])
+                  permute(letters, used, path)
+                  path.pop()
+                  used[i] = True  # BUG
+
+
+      permute("xyz", [False] * 3, [])
+    fix: used[i] = False
+    why: "The un-choose must undo the choose. Setting the flag to `True` again leaves every letter used once the first path is done, so only `xyz` is printed instead of all six orderings."
+
+  - type: predict
+    after: permutations
+    code: |
+      from itertools import permutations
+
+      words = ["".join(p) for p in permutations("deed")]
+      print(len(words), len(set(words)))
+    why: "`permutations` treats the two d's as different items, and the two e's too, so it makes 4! = 24 orderings, and each of the 6 different strings comes 2 × 2 = 4 times. A set removes the repeats, but only after all n! orderings were made."
+
+  - type: runs
+    after: permutations
+    code: |
+      def permute_swap(items, i):
+          if i == len(items):
+              print("".join(items))
+              return
+          for j in range(i, len(items)):
+              items[i], items[j] = items[j], items[i]
+              permute_swap(items, i + 1)
+              items[i], items[j] = items[j], items[i]
+
+
+      permute_swap("abc", 0)
+    why: "A string can't be changed in place, so the swap `items[i], items[j] = ...` stops with a `TypeError`. The swap version needs a list: `permute_swap(list(\"abc\"), 0)`."
+
+  - type: fill
+    after: pruning
+    code: |
+      def combos(n, k, start, path):
+          if len(path) == k:
+              print(path)
+              return
+          for x in range(start, n + 1):
+              path.append(x)
+              combos(n, k, [[x + 1]], path)
+              path.pop()
+
+
+      combos(3, 2, 1, [])
+    why: "Starting the next call after `x` keeps the numbers in each combination increasing, so each combination is built once: `[2, 1]` never comes after `[1, 2]`, and no number is used twice."
+
+  - type: choice
+    after: pruning
+    prompt: "The numbers are sorted, and in the loop over the next number to take, `numbers[i]` is already bigger than what's still missing of the target. What's the best thing to do?"
+    choices:
+      - "`break`: every later number is bigger too, so none of them can fit"
+      - "`continue`: skip this number and try the next one"
+      - "`return 0`: no subset can be found from here"
+    answer: 1
+    why: "In a sorted list, every number after `numbers[i]` is at least as big, so the rest of the loop can't find anything: `break` cuts it all. `continue` gives the same answer but tries every bigger number for nothing, and `return 0` would throw away the ways already counted in this loop."
+
+  - type: predict
+    after: n-queens
+    code: |
+      r1, c1 = 0, 1
+      r2, c2 = 2, 3
+      print(r1 - c1 == r2 - c2, r1 + c1 == r2 + c2)
+    why: "Along a diagonal that goes down to the right, `row - col` stays the same: 0 - 1 and 2 - 3 are both -1, so these two queens attack each other. Their `row + col`, 1 and 5, differ."
+
+  - type: runs
+    after: n-queens
+    code: |
+      diag = set()
+      row, col = 1, 3
+      diag.add(row - col)
+      diag.remove(col - row)
+      print(diag)
+    why: "The choose added -2, but the un-choose removes 2, which isn't in the set: `KeyError`. Un-choosing must use exactly the key the choose added. (`discard` would hide the mistake: no error, but -2 would stay and block that diagonal for the rest of the search.)"
+
+  - type: choice
+    after: n-queens
+    prompt: What makes the row-by-row N queens search so much faster than trying every board?
+    choices:
+      - "It checks each queen before placing it, so a board that's already dead is never finished"
+      - "It keeps the queens in a list instead of a grid"
+      - "It places the queens from the last row up"
+    answer: 1
+    why: "Pruning a dead board in an early row cuts off every board that would grow from it. For n = 8 that's 2,057 calls instead of 16,777,216 complete boards. The sets only make each check O(1)."
+
+  - type: bug
+    after: grid-paths
+    code: |
+      def paths(n, row, col, on_path):
+          if not (0 <= row < n and 0 <= col < n) or (row, col) in on_path:
+              return 0
+          if row == col == n - 1:
+              return 1
+          on_path.add((row, col))
+          total = 0
+          for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+              total += paths(n, row + dr, col + dc, on_path)
+          on_path.add((row, col))  # BUG
+          return total
+
+
+      print(paths(3, 0, 0, set()))
+    fix: on_path.remove((row, col))
+    why: "A cell must leave the path when the search backs out of it. Left marked, the cells of the first paths block every later path that would cross them, and the count for a 3 × 3 grid comes out 2 instead of 12."
+
+  - type: choice
+    after: grid-paths
+    prompt: Breadth-first search marks a cell as seen for good. Why does a search for every path through a grid unmark a cell when it backs out of it?
+    choices:
+      - "Another path may go through that cell later"
+      - "To keep the set of marked cells small"
+      - "A set can hold the cells of only one path"
+    answer: 1
+    why: "A cell is off limits only while it's on the current path. Breadth-first search wants only the shortest way to each cell, so the first visit is enough; a search for every path, or the longest one, must let other paths use the cell."
+
+  - type: predict
+    after: sudoku
+    code: |
+      for row, col in [(5, 1), (2, 8), (6, 6)]:
+          print(row // 3 * 3, col // 3 * 3)
+    why: "`// 3 * 3` rounds down to a multiple of 3, the first row or column of the box: 5 gives 3, 1 and 2 give 0, 8 gives 6, and 6 is already a multiple of 3, so it stays 6."
+
+  - type: choice
+    after: sudoku
+    prompt: A sudoku solver may fill any empty cell next. Which one is the best choice?
+    choices:
+      - "The one with the fewest allowed digits"
+      - "The first one in reading order"
+      - "The one with the most allowed digits"
+    answer: 1
+    why: "A cell with one allowed digit is a forced move, and one with none shows at once that an earlier guess was wrong. Reading order may only find out millions of placements later."
+
+  - type: boss
+    after: pruning
+    prompt: |
+      A palindrome reads the same forward and backward, like `noon` or `eve`. Write `palindrome_splits(text)`: every way to cut `text` into pieces that are all palindromes, each way as a list of its pieces. Choose the first piece, then cut the rest of the text the same way, and prune while you build: a piece that isn't a palindrome ends that branch at once. Try the shortest first piece first, so the ways come in the order the search finds them, starting with the one where every letter is a piece of its own.
+
+      For example, `palindrome_splits("noon")` returns:
+
+      ```
+      [['n', 'o', 'o', 'n'], ['n', 'oo', 'n'], ['noon']]
+      ```
+    seed: |
+      def palindrome_splits(text):
+          pass
+
+
+      if __name__ == "__main__":
+          print(palindrome_splits("noon"))
+    solution: |
+      def cut(text, start, path, result):
+          if start == len(text):
+              result.append(path[:])
+              return
+          for end in range(start + 1, len(text) + 1):
+              piece = text[start:end]
+              if piece == piece[::-1]:
+                  path.append(piece)
+                  cut(text, end, path, result)
+                  path.pop()
+
+
+      def palindrome_splits(text):
+          result = []
+          cut(text, 0, [], result)
+          return result
+
+
+      if __name__ == "__main__":
+          print(palindrome_splits("noon"))
+    hints:
+      - "Write a helper with `(text, start, path, result)`: `start` is where the uncut rest of the text begins. When `start == len(text)`, the whole text is cut: append a copy of the path to the result."
+      - "Otherwise loop `end` from `start + 1` to `len(text)`, and take the piece `text[start:end]`. A piece is a palindrome when `piece == piece[::-1]`."
+      - "For a palindrome piece, append it, recurse from `end`, then pop it. Skip the other pieces: no way that starts with them can work."
+    tests:
+      - call: palindrome_splits("noon")
+      - call: palindrome_splits("abc")
+        hidden: true
+      - call: palindrome_splits("")
+        hidden: true
+      - call: palindrome_splits("aaa")
+        hidden: true
+      - call: palindrome_splits("racecar")
+        hidden: true
+      - call: |
+          ways = palindrome_splits("abacabadabacaba")
+          print(len(ways), ways[-1], len(palindrome_splits("a" * 14)))
+        hidden: true
+
+  - type: boss
+    after: n-queens
+    prompt: |
+      A balance scale has two pans, and you have a box of weights. Write `can_balance(weights)`: `True` when every weight can go on one of the two pans so that both pans hold the same total, and `False` otherwise. The weights are positive whole numbers. Backtrack over the weights one at a time, putting each on the left pan or leaving it for the right one, and prune: an odd total can never be halved, only the left pan needs a running total (the right gets the rest), and a branch ends as soon as the left pan holds more than half the total.
+
+      For example, `print(can_balance([3, 8, 4, 7]), can_balance([6, 1, 3]))` prints this (3 + 8 = 4 + 7, but no group of 6, 1 and 3 weighs 5, half of their total):
+
+      ```
+      True False
+      ```
+    seed: |
+      def can_balance(weights):
+          pass
+
+
+      if __name__ == "__main__":
+          print(can_balance([3, 8, 4, 7]), can_balance([6, 1, 3]))
+    solution: |
+      def fill(weights, i, left, half):
+          if left == half:
+              return True
+          if left > half or i == len(weights):
+              return False
+          return fill(weights, i + 1, left + weights[i], half) or fill(weights, i + 1, left, half)
+
+
+      def can_balance(weights):
+          total = sum(weights)
+          if total % 2 != 0:
+              return False
+          return fill(sorted(weights, reverse=True), 0, 0, total // 2)
+
+
+      if __name__ == "__main__":
+          print(can_balance([3, 8, 4, 7]), can_balance([6, 1, 3]))
+    hints:
+      - "Add up the weights first. If the total is odd, return `False` at once. Otherwise the left pan must hold exactly `total // 2`."
+      - "Write a helper with `(weights, i, left, half)`: `True` when `left == half`, `False` when `left > half` or every weight has been placed."
+      - "Otherwise put `weights[i]` on the left pan or leave it for the right one: two calls joined with `or`. Trying the heavy weights first, by sorting in reverse, makes the left pan go over half sooner, so more branches are cut."
+    tests:
+      - call: print(can_balance([3, 8, 4, 7]), can_balance([6, 1, 3]))
+      - call: can_balance([9])
+        hidden: true
+      - call: can_balance([12, 12])
+        hidden: true
+      - call: print(can_balance([5, 2, 4, 1]), can_balance([2, 4, 8]))
+        hidden: true
+      - call: can_balance([2 * i + 1 for i in range(16)])
+        hidden: true
+      - call: can_balance([5 ** i for i in range(9)] + [1])
+        hidden: true
+      - call: can_balance([100 * i + 3 for i in range(1, 19)])
+        hidden: true

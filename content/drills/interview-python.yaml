@@ -1,0 +1,463 @@
+topic: interview
+title: "Python itself: closures, decorators, iterators, context managers and the GIL"
+drills:
+  - type: predict
+    code: |
+      def make_callbacks():
+          callbacks = []
+          for i in range(3):
+              callbacks.append(lambda: i)
+          return callbacks
+
+
+      print([f() for f in make_callbacks()])
+    why: "A closure remembers the variable, not the value it had when the function was made. All three lambdas share the one `i` of `make_callbacks` and look it up when they are called, after the loop has ended, and by then `i` is 2."
+
+  - type: fill
+    prompt: Fill the blank so that each function returns the value `i` had when the function was made.
+    code: |
+      def make_callbacks():
+          callbacks = []
+          for i in range(3):
+              callbacks.append(lambda [[i=i]]: i)
+          return callbacks
+
+
+      print([f() for f in make_callbacks()])
+    why: "A default value is worked out once, when the `lambda` is made. So `i=i` stores the current value of the loop's `i` in each function's own parameter, and the loop moving on doesn't change it."
+
+  - type: fill
+    code: |
+      def make_counter():
+          count = 0
+
+          def increment():
+              [[nonlocal]] count
+              count += 1
+              return count
+
+          return increment
+
+
+      tick = make_counter()
+      tock = make_counter()
+      print(tick(), tick(), tock())
+    why: "`nonlocal count` lets the inner function assign to the `count` of the function around it, which lives on between calls. Each call of `make_counter` makes a new `count`, so `tock` starts again at 1. `global count` would look for a `count` at the top level of the program and find none."
+
+  - type: predict
+    code: |
+      def log(func):
+          print("decorating", func.__name__)
+
+          def wrapper(x):
+              print("calling", func.__name__)
+              return func(x)
+
+          return wrapper
+
+
+      @log
+      def double(x):
+          return x * 2
+
+
+      print(double(4))
+    why: "`@log` above `def double` means `double = log(double)`, and that runs once, when the `def` runs. `log` returns `wrapper`, so every later call of `double` runs `wrapper`, which calls the original function."
+
+  - type: bug
+    code: |
+      def shout(func):
+          def wrapper(*args, **kwargs):
+              func(*args, **kwargs).upper()  # BUG
+          return wrapper
+
+
+      @shout
+      def greet(name):
+          return "hi " + name
+
+
+      print(greet("ada"))
+    fix: return func(*args, **kwargs).upper()
+    why: "The caller gets whatever `wrapper` returns. A wrapper that calls the function but doesn't return the result turns every result into `None`. `*args, **kwargs` lets the wrapper take any arguments and pass them all on."
+
+  - type: predict
+    code: |
+      def stars(func):
+          return lambda: "*" + func() + "*"
+
+
+      def brackets(func):
+          return lambda: "[" + func() + "]"
+
+
+      @stars
+      @brackets
+      def greet():
+          return "hi"
+
+
+      print(greet())
+    why: "Stacked decorators apply from the bottom up: this is `greet = stars(brackets(greet))`. The decorator nearest the `def` wraps the function first, so its brackets end up inside the stars."
+
+  - type: choice
+    prompt: What does this print?
+    code: |
+      def log(func):
+          def wrapper(*args, **kwargs):
+              return func(*args, **kwargs)
+          return wrapper
+
+
+      @log
+      def double(x):
+          """Return x times two."""
+          return x * 2
+
+
+      print(double.__name__)
+    choices:
+      - double
+      - wrapper
+      - log
+    answer: 2
+    verify: output
+    why: "After decorating, the name `double` refers to the function `wrapper`, so its name and docstring are the wrapper's, which confuses `help()`, logs and debuggers. Putting `@functools.wraps(func)` on the line above `def wrapper` copies the original function's name, docstring and other details onto the wrapper."
+
+  - type: predict
+    code: |
+      class Guard:
+          def __enter__(self):
+              print("enter")
+              return self
+
+          def __exit__(self, exc_type, exc, tb):
+              print("exit", exc_type.__name__)
+              return True
+
+
+      with Guard():
+          print("body")
+          result = 1 / 0
+          print("after the error")
+      print("done")
+    why: "`__enter__` runs when the `with` block starts, and `__exit__` always runs when it ends, error or not. Here the error ends the block early and `__exit__` gets its type, value and traceback. Returning `True` swallows the error, so the program goes on after the `with`. Returning `None` or `False`, the usual, lets the error carry on."
+
+  - type: predict
+    code: |
+      def to_number(text):
+          try:
+              return int(text)
+          except ValueError:
+              return -1
+          finally:
+              print("checked", text)
+
+
+      print(to_number("7"))
+      print(to_number("x"))
+    why: "`finally` runs on the way out of the `try` statement, even when the `try` or `except` block returns. The return value waits while `finally` runs, so its line prints before the caller's `print`. A `return` inside `finally` would replace that value, which is why Python 3.14 warns about one."
+
+  - type: runs
+    code: |
+      class Point:
+          def __init__(self, x, y):
+              self.x = x
+              self.y = y
+
+          def __eq__(self, other):
+              return (self.x, self.y) == (other.x, other.y)
+
+
+      points = {Point(1, 2), Point(1, 2)}
+      print(len(points))
+    why: "Equal objects must have equal hashes, or sets and dictionaries would break. So a class that defines `__eq__` without `__hash__` gets `__hash__ = None`, and its objects can't be set items or dictionary keys. A `__hash__` method that returns `hash((self.x, self.y))`, a hash of the same fields `__eq__` compares, fixes it, and then the set holds one point."
+
+  - type: predict
+    code: |
+      class Anything:
+          def __eq__(self, other):
+              return True
+
+
+      value = Anything()
+      print(value == None)
+      print(value is None)
+    why: "`==` asks the object, through its `__eq__` method, and a class can answer anything. `is` checks whether both sides are the very same object, which no class can change, and there is only one `None`. That's why the test for `None` is `x is None`."
+
+  - type: predict
+    code: |
+      names = ["Ada", "Ben", "Cy"]
+      scores = [90, 85]
+      for name, score in zip(names, scores):
+          print(name, score)
+    why: "`zip` stops as soon as its shortest input runs out, without an error, so Cy is quietly left out. `zip(names, scores, strict=True)` raises a `ValueError` instead, and `itertools.zip_longest` fills the gaps."
+
+  - type: runs
+    code: |
+      stock = {"pens": 0, "ink": 3, "pads": 0}
+      for item in stock:
+          if stock[item] == 0:
+              del stock[item]
+      print(stock)
+    why: "A dictionary can't change size while a loop goes through it: after `del` removes a key, the loop's next step raises a `RuntimeError`. Loop over a copy of the keys, `for item in list(stock):`, or build a new dictionary with the items to keep: `{k: v for k, v in stock.items() if v != 0}`."
+
+  - type: predict
+    code: |
+      numbers = iter([1, 2, 3, 4, 5, 6])
+      print(list(zip(numbers, numbers)))
+    why: "Both arguments are the same iterator, and an iterator keeps its place. `zip` takes the next item from its first argument, then the next from its second, which is the item after it. With the list itself in both places, `zip` would get two separate iterators and give `(1, 1)`, `(2, 2)` and so on."
+
+  - type: predict
+    code: |
+      squares = (n * n for n in range(6))
+      print(9 in squares)
+      print(next(squares))
+      print(9 in squares)
+    why: "`in` on a generator takes values from it until it finds a match, and the values it took are gone. After 9 comes 16, and the second `in` uses up 25 without finding a 9. A list could be searched again and again."
+
+  - type: choice
+    prompt: Which one of these is an iterator, not just an iterable?
+    choices:
+      - "`[1, 2, 3]`"
+      - "`range(3)`"
+      - "`iter([1, 2, 3])`"
+      - "`\"abc\"`"
+    answer: 3
+    why: "A list, a `range` or a string hands out a fresh iterator each time `iter()` is called on it, so you can loop over it again and again. An iterator has a `__next__` method, keeps its place and gets used up: its `__iter__` returns the iterator itself. A `range` is iterable but not an iterator: `next(range(3))` is a `TypeError`."
+
+  - type: predict
+    code: |
+      def is_big(n):
+          print("checking", n)
+          return n > 1
+
+
+      print(any(is_big(n) for n in [1, 2, 3]))
+      print(all([]))
+    why: "`any` stops at the first true value, and a generator works out each value only when `any` asks for it, so 3 is never checked. With a list comprehension, `any([is_big(n) for n in [1, 2, 3]])`, all three would be checked before `any` starts. `all` of nothing is `True`, since no item is false."
+
+  - type: fill
+    prompt: Fill the blank with a dictionary method so the program prints the output shown.
+    code: |
+      groups = {}
+      for word in ["apple", "bean", "avocado"]:
+          groups.[[setdefault]](word[0], []).append(word)
+      print(groups)
+    why: "`setdefault(key, default)` returns the value stored for the key, and when there is none, it stores the default first. So each letter's list is stored once and then added to. The `[]` is still built on every call and thrown away when the letter is already there. `get(key, default)` returns the default without storing it, so the words would go into lists that are thrown away."
+
+  - type: bug
+    code: |
+      counts = {}
+      for word in ["red", "blue", "red"]:
+          counts[word] += 1  # BUG
+      print(counts)
+    fix: counts[word] = counts.get(word, 0) + 1
+    why: "Reading a missing key with square brackets raises a `KeyError`, and `counts[word] += 1` reads the old value before it writes. `counts.get(word, 0)` gives 0 for a word not seen yet. `collections.Counter` does this counting for you."
+
+  - type: choice
+    prompt: What does this print?
+    code: |
+      from collections import defaultdict
+
+      stock = defaultdict(int)
+      stock["pens"] += 2
+      print(stock["ink"], len(stock), "glue" in stock)
+    choices:
+      - "`0 1 False`"
+      - "`0 2 False`"
+      - "A `KeyError`, since `ink` was never stored"
+    answer: 2
+    verify: output
+    why: "For a missing key, `defaultdict(int)` calls `int()`, which gives 0, and stores the result before handing it back. That's what lets `stock[\"pens\"] += 2` work on a new key, but it also means that just reading `stock[\"ink\"]` adds `ink`. `in` and `get` look without adding. Unlike `setdefault`, which builds its default on every call, a `defaultdict` makes one only when a key is missing."
+
+  - type: choice
+    prompt: A program does heavy number crunching in pure Python. On the standard CPython build, what is the usual way to make it use several CPU cores?
+    choices:
+      - "Run the work in several threads with `threading`"
+      - "Run the work in several processes with `multiprocessing` or `ProcessPoolExecutor`"
+      - "Make the functions `async` and run them with `asyncio`"
+    answer: 2
+    why: "Standard CPython has a global interpreter lock (GIL): only one thread at a time runs Python bytecode, so threads don't speed up pure-Python work that keeps the CPU busy. Threads still help a program that mostly waits for the network or for files, since a thread lets go of the GIL while it waits. Each process has its own interpreter and its own GIL, so processes can run on several cores at once. An `asyncio` event loop runs its tasks in one thread, taking turns. CPython 3.13 and later also come in a separate free-threaded build without the GIL, but it isn't the default."
+
+  - type: runs
+    code: |
+      def connect(host, *, port=80):
+          print("connecting to", host, "on port", port)
+
+
+      connect("example.com", port=8080)
+      connect("example.com", 8080)
+    why: "Parameters after a bare `*` are keyword-only: a caller must name them, as in `port=8080`. The second call passes 8080 by position, which is a `TypeError`. Keyword-only parameters keep calls readable, and their order can change later without breaking any caller."
+
+  - type: predict
+    code: |
+      first, *middle, last = [1, 2, 3, 4, 5]
+      print(first, middle, last)
+      head, *tail = "hi"
+      print(head, tail)
+      *rest, end = (7,)
+      print(rest, end)
+    why: "The starred name takes every item the other names don't. It is always a list, even when the values come from a string or a tuple, and it can be empty."
+
+  - type: predict
+    code: |
+      from contextlib import contextmanager
+
+
+      @contextmanager
+      def opened(name):
+          print("open", name)
+          yield
+          print("close", name)
+
+
+      try:
+          with opened("log"):
+              1 / 0
+      except ZeroDivisionError:
+          print("error")
+    why: "`@contextmanager` turns a generator into a context manager: the code before `yield` runs as the `with` block starts, and the code after it as the block ends. But an error in the block is raised inside the generator, at the `yield`, so the lines after a bare `yield` never run and nothing prints `close`. Put the `yield` in a `try` and the clean-up in its `finally`, and the clean-up runs whether there was an error or not."
+
+  - type: boss
+    prompt: |
+      Write a decorator `memoize(func)` that remembers results. The first call with some arguments runs `func` and stores what it returns. A later call with the same arguments gives back the stored value without running `func` again. The functions it decorates take only positional arguments, and every argument can be a dictionary key. Use `functools.wraps`, so that the decorated function keeps its name and docstring. Each decorated function has results of its own.
+
+      The check runs:
+
+      ```python fragment
+      @memoize
+      def square(n):
+          print("computing", n)
+          return n * n
+
+
+      print(square(4), square(4), square(5))
+      ```
+
+      and expects:
+
+      ```
+      computing 4
+      computing 5
+      16 16 25
+      ```
+    seed: |
+      import functools
+
+
+      def memoize(func):
+          return func
+    solution: |
+      import functools
+
+
+      def memoize(func):
+          cache = {}
+
+          @functools.wraps(func)
+          def wrapper(*args):
+              if args not in cache:
+                  cache[args] = func(*args)
+              return cache[args]
+
+          return wrapper
+    hints:
+      - "Inside `memoize`, make a dictionary `cache = {}` and define a function `wrapper(*args)` that `memoize` returns. `args` is a tuple, so it can be a dictionary key."
+      - "In `wrapper`, call `func(*args)` only when `args not in cache`, and store its result there. Test with `in` rather than `cache.get(args)`, since a stored result can be 0. Put `@functools.wraps(func)` on the line above `def wrapper`."
+    tests:
+      - call: |
+          @memoize
+          def square(n):
+              print("computing", n)
+              return n * n
+
+
+          print(square(4), square(4), square(5))
+      - call: |
+          calls = []
+
+
+          @memoize
+          def fib(n):
+              calls.append(n)
+              if n < 2:
+                  return n
+              return fib(n - 1) + fib(n - 2)
+
+
+          print(fib(25), len(calls))
+        hidden: true
+      - call: |
+          @memoize
+          def power(base, exp):
+              """Base to the power exp."""
+              return base ** exp
+
+
+          print(power(2, 3), power(3, 2), power(2, 5), power.__name__, power.__doc__)
+        hidden: true
+      - call: |
+          @memoize
+          def double(n):
+              print("doubling", n)
+              return n * 2
+
+
+          @memoize
+          def triple(n):
+              return n * 3
+
+
+          print(double(5), triple(5), double(0), double(0))
+        hidden: true
+
+  - type: boss
+    prompt: |
+      Write a class `Countdown`, where `Countdown(3)` counts down 3, 2, 1 and a countdown from 0 has no numbers. Make it an **iterable** that isn't its own iterator: two loops over the same countdown each keep a place of their own, even when they run at the same time (one inside the other, or `zip(launch, launch)`), as two loops over one list do. An `__iter__` that sets a counter back to the start and returns `self`, as in the iterators lesson, restarts a loop that comes after another one, but not a loop that runs at the same time.
+
+      The check runs:
+
+      ```python fragment
+      launch = Countdown(3)
+      print(list(zip(launch, launch)))
+      ```
+
+      and expects:
+
+      ```
+      [(3, 3), (2, 2), (1, 1)]
+      ```
+    seed: |
+      class Countdown:
+          def __init__(self, start):
+              self.start = start
+    solution: |
+      class Countdown:
+          def __init__(self, start):
+              self.start = start
+
+          def __iter__(self):
+              n = self.start
+              while n > 0:
+                  yield n
+                  n -= 1
+    hints:
+      - "A loop calls `__iter__` once, at its start, to get an iterator. If `__iter__` returns `self`, every loop shares the object's one place in the countdown. Setting that place back to the start in `__iter__` is enough when the loops come one after another, but a loop inside a loop sets back and uses up the outer loop's place too."
+      - "Write `__iter__` as a generator: start a local variable at `self.start`, and while it is above 0, `yield` it and take 1 off. Each call of `__iter__` then makes a new generator with a place of its own."
+    tests:
+      - call: |
+          launch = Countdown(3)
+          print(list(zip(launch, launch)))
+      - call: |
+          launch = Countdown(4)
+          print(list(launch), list(launch))
+        hidden: true
+      - call: |
+          launch = Countdown(2)
+          for a in launch:
+              for b in launch:
+                  print(a, b)
+        hidden: true
+      - call: print(list(Countdown(0)), sum(Countdown(4)))
+        hidden: true

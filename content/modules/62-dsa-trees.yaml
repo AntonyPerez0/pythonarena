@@ -1,0 +1,2176 @@
+id: dsa-trees
+summary: Trees and the recursion that walks them. Binary trees measured recursively, what that costs and where deep trees break it, a one-walk balance check, binary search trees and why sorted inserts turn them into a chain, the three traversals and checking a BST with bounds, level order with a deque, binary heaps by hand and with heapq, and tries for prefix search and autocomplete, with big tests where a heap or a balanced tree is the fast way.
+steps:
+  - id: dsa-trees-binary-trees
+    slug: binary-trees
+    title: Binary trees and recursion
+    text: |
+      You built binary trees in the recursion module: a `Node` class with a `value` and two children, `left` and `right`, where `None` means "no child here", and recursive functions that counted the nodes, added up the values and measured the depth of a tree. This module takes trees on to what interviews ask about them. This step asks what those functions cost and where they break. The next ones add the order of a search tree, other ways to walk a tree, heaps and tries.
+
+      Here are the three functions again, with the names interview questions usually give them: `size` is the recursion module's `count_nodes`, and `height` is its `depth`.
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def size(node):
+          if node is None:
+              return 0
+          return 1 + size(node.left) + size(node.right)
+
+
+      def tree_sum(node):
+          if node is None:
+              return 0
+          return node.value + tree_sum(node.left) + tree_sum(node.right)
+
+
+      def height(node):
+          if node is None:
+              return 0
+          return 1 + max(height(node.left), height(node.right))
+
+
+      #        4
+      #       / \
+      #      9   2
+      #         / \
+      #        7   5
+      root = Node(4, Node(9), Node(2, Node(7), Node(5)))
+      print(size(root), tree_sum(root), height(root))
+      ```
+
+      ```output
+      5 27 3
+      ```
+
+      Read `None` as the **empty tree**. Then a tree is either empty or a node with two smaller trees, its subtrees, and that hands you the shape of almost every tree function:
+
+      1. **The base case:** the empty tree, `None`. Its answer is usually 0, `True` or an empty list.
+      2. Ask the same question of the left subtree and of the right subtree.
+      3. Combine the two answers with the node itself.
+
+      Trust the recursion. You don't need to follow every call to know that `size` is right: if it gives the right answers for the two subtrees, then 1 plus those answers is right for the whole tree. And the calls do end, because each one goes a level down, and the levels run out at `None`.
+
+      Here the **height** is the number of nodes on the longest path from the root down to a leaf: 3, for the path 4, 2, 7. (Some books count the links between the nodes instead, which gives one less. Interview questions often call this height the "maximum depth".)
+
+      ### A leaf is not enough of a base case
+
+      The recursion stops at the leaves, so it's tempting to make the leaf the base case:
+
+      ```python run crash
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def height(node):
+          if node.left is None and node.right is None:
+              return 1
+          return 1 + max(height(node.left), height(node.right))
+
+
+      print(height(Node(4, Node(9), Node(2, Node(7), Node(5)))))
+      print(height(Node(4, Node(9, Node(1)))))
+      ```
+
+      ```output
+      3
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 15, in <module>
+          print(height(Node(4, Node(9, Node(1)))))
+                ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File "main.py", line 11, in height
+          return 1 + max(height(node.left), height(node.right))
+                         ~~~~~~^^^^^^^^^^^
+        File "main.py", line 11, in height
+          return 1 + max(height(node.left), height(node.right))
+                                            ~~~~~~^^^^^^^^^^^^
+        File "main.py", line 9, in height
+          if node.left is None and node.right is None:
+             ^^^^^^^^^
+      AttributeError: 'NoneType' object has no attribute 'left'
+      ```
+
+      The first tree works, because every node in it has two children or none. In the second, 4 and 9 each have a left child only. Neither is a leaf, so `height` calls itself for both children of each, and the call for the missing right child of 9 gets `None`, which has no `left`. Interview tests like a node with one child for exactly this reason. Checking each child before its call (`if node.left is not None:`) works, but it needs a check in front of every call and still fails on an empty tree. Handle `None` once, at the top, and the function works for leaves, for nodes with one child and for the empty tree alike.
+
+      ### What it costs
+
+      Each function makes one call for every node and one for every `None` below a node, and does O(1) work in each: O(n) time for n nodes. The memory goes to the calls that are waiting for an answer, which are the nodes on the path from the root to the current node: O(h) extra memory, where h is the height. A **balanced** tree, in which the two subtrees of every node have about the same height, has a height of about log₂ n: 20 levels hold a million nodes. A tree in which every node has one child is a **chain** with h = n, and there the waiting calls run into a limit:
+
+      ```python run crash
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def height(node):
+          if node is None:
+              return 0
+          return 1 + max(height(node.left), height(node.right))
+
+
+      chain = None
+      for value in range(2000):
+          chain = Node(value, chain)
+      print(height(chain))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 17, in <module>
+          print(height(chain))
+                ~~~~~~^^^^^^^
+        File "main.py", line 11, in height
+          return 1 + max(height(node.left), height(node.right))
+                         ~~~~~~^^^^^^^^^^^
+        File "main.py", line 11, in height
+          return 1 + max(height(node.left), height(node.right))
+                         ~~~~~~^^^^^^^^^^^
+        File "main.py", line 11, in height
+          return 1 + max(height(node.left), height(node.right))
+                         ~~~~~~^^^^^^^^^^^
+        [Previous line repeated 996 more times]
+      RecursionError: maximum recursion depth exceeded
+      ```
+
+      The loop builds the chain from the bottom up, each new node taking the chain so far as its left child: 2,000 levels, and no recursion. But `height` keeps a call waiting for every level, and Python stops at about 1000 waiting calls with a `RecursionError`. So recursion is safe on balanced trees, which are never deep, and on small trees. Interviewers like to ask about this, and the next steps show how to walk a deep tree with a loop and a stack or a queue of your own.
+
+      **Your turn:** a tree is **height-balanced** when, at every node, the heights of the two subtrees differ by at most 1. Calling `height` for the two subtrees of every node works, but it walks the nodes below each node again for every node above them: O(n log n) on a balanced tree. `checked_height` does it all in one walk, O(n). It returns the height of the tree, or -1 when some node in it isn't balanced, and a -1 from either subtree passes straight up. Fill in the blanks: when a node isn't balanced, and the height of a node that is. The program should print:
+
+      ```
+      True 3
+      False False
+      False False
+      True 3
+      ```
+    fill: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def checked_height(node):
+          if node is None:
+              return 0
+          left = checked_height(node.left)
+          right = checked_height(node.right)
+          if left == -1 or right == -1 or [[abs(left - right) > 1‖abs(right - left) > 1‖abs(left - right) >= 2]]:
+              return -1
+          return 1 + [[max(left, right)‖max(right, left)]]
+
+
+      def is_balanced(root):
+          return checked_height(root) != -1
+
+
+      root = Node(4, Node(9), Node(2, Node(7), Node(5)))
+      print(is_balanced(root), checked_height(root))
+      print(is_balanced(Node(4, Node(9, Node(1)))), is_balanced(Node(4, None, Node(2, None, Node(5)))))
+      deep_inside = Node(1, Node(2, Node(3), Node(4)), Node(5, None, Node(6, Node(7))))
+      left_heavy = Node(1, Node(2, Node(3, Node(4)), Node(5)))
+      print(is_balanced(deep_inside), is_balanced(left_heavy))
+      print(is_balanced(None), checked_height(Node(1, Node(2, Node(3)), Node(4))))
+    hints:
+      - "A node is unbalanced when its two heights are more than 1 apart, whichever side is taller. `abs` gives the difference without its sign."
+      - "The first blank is `abs(left - right) > 1`. A balanced node is one level above the taller of its two subtrees: `max(left, right)`."
+    tests:
+      - expect: |
+          True 3
+          False False
+          False False
+          True 3
+    more:
+      - task: |
+          Two trees are **the same** when they have the same shape and the same values in the same places. Write `same_tree(a, b)` that returns `True` when the trees `a` and `b` are the same, and `False` otherwise. Either tree can be empty (`None`).
+
+          For example, this program:
+
+          ```python fragment
+          first = Node(1, Node(2), Node(3))
+          second = Node(1, Node(2), Node(3))
+          print(same_tree(first, second))
+          print(same_tree(first, Node(1, Node(3), Node(2))))
+          ```
+
+          prints:
+
+          ```
+          True
+          False
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def same_tree(a, b):
+              pass
+
+
+          if __name__ == "__main__":
+              first = Node(1, Node(2), Node(3))
+              second = Node(1, Node(2), Node(3))
+              print(same_tree(first, second))
+              print(same_tree(first, Node(1, Node(3), Node(2))))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def same_tree(a, b):
+              if a is None and b is None:
+                  return True
+              if a is None or b is None:
+                  return False
+              return a.value == b.value and same_tree(a.left, b.left) and same_tree(a.right, b.right)
+
+
+          if __name__ == "__main__":
+              first = Node(1, Node(2), Node(3))
+              second = Node(1, Node(2), Node(3))
+              print(same_tree(first, second))
+              print(same_tree(first, Node(1, Node(3), Node(2))))
+        hints:
+          - "Start with the empty trees: two empty trees are the same, but an empty tree and a node are not."
+          - "When both are nodes, they're the same when their values are equal, their left subtrees are the same and their right subtrees are the same: two recursive calls, joined with `and`."
+          - "Check `a is None and b is None` first, then `a is None or b is None`. After those two checks, both are nodes, and `a.value` is safe."
+        tests:
+          - call: |
+              first = Node(1, Node(2), Node(3))
+              second = Node(1, Node(2), Node(3))
+              print(same_tree(first, second))
+              print(same_tree(first, Node(1, Node(3), Node(2))))
+          - call: same_tree(None, None)
+            hidden: true
+          - call: same_tree(Node(5), None)
+            hidden: true
+          - call: same_tree(None, Node(5))
+            hidden: true
+          - call: same_tree(Node(1, Node(2)), Node(1, None, Node(2)))
+            hidden: true
+          - call: same_tree(Node(7, Node(3, Node(1), Node(5)), Node(9)), Node(7, Node(3, Node(1), Node(5)), Node(9)))
+            hidden: true
+          - call: same_tree(Node(7, Node(3, Node(1), Node(5)), Node(9)), Node(7, Node(3, Node(1), Node(6)), Node(9)))
+            hidden: true
+          - call: same_tree(Node(7, Node(3), Node(9)), Node(7, Node(3), Node(9, None, Node(10))))
+            hidden: true
+      - task: |
+          A **root-to-leaf path** starts at the root and goes down until it ends at a leaf. Write `has_path_sum(node, target)` that returns `True` when the values on some root-to-leaf path add up to `target`, and `False` otherwise. An empty tree has no paths at all.
+
+          For example, in this tree the root-to-leaf paths add up to 6 + 3 + 1 = 10, 6 + 3 + 4 = 13 and 6 + 9 + 2 = 17. 6 + 3 = 9 doesn't count, since the path stops at 3, which isn't a leaf. So this program:
+
+          ```python fragment
+          #        6
+          #       / \
+          #      3   9
+          #     / \   \
+          #    1   4   2
+          root = Node(6, Node(3, Node(1), Node(4)), Node(9, None, Node(2)))
+          print(has_path_sum(root, 13))
+          print(has_path_sum(root, 9), has_path_sum(root, 15))
+          ```
+
+          prints:
+
+          ```
+          True
+          False False
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def has_path_sum(node, target):
+              pass
+
+
+          if __name__ == "__main__":
+              root = Node(6, Node(3, Node(1), Node(4)), Node(9, None, Node(2)))
+              print(has_path_sum(root, 13))
+              print(has_path_sum(root, 9), has_path_sum(root, 15))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def has_path_sum(node, target):
+              if node is None:
+                  return False
+              rest = target - node.value
+              if node.left is None and node.right is None:
+                  return rest == 0
+              return has_path_sum(node.left, rest) or has_path_sum(node.right, rest)
+
+
+          if __name__ == "__main__":
+              root = Node(6, Node(3, Node(1), Node(4)), Node(9, None, Node(2)))
+              print(has_path_sum(root, 13))
+              print(has_path_sum(root, 9), has_path_sum(root, 15))
+        hints:
+          - "Pass what's left of the target down the tree: below the root, a path must add up to `target - node.value`."
+          - "At a leaf (both children `None`), the path ends. It's a match when what's left of the target is exactly 0 after taking the leaf's value."
+          - "An empty tree gives `False`. Any other node that isn't a leaf has a matching path when its left or its right subtree has one for `target - node.value`. Don't treat a missing child as the end of a path: that's how 6 + 9 = 15 would wrongly count."
+        tests:
+          - call: |
+              root = Node(6, Node(3, Node(1), Node(4)), Node(9, None, Node(2)))
+              print(has_path_sum(root, 13))
+              print(has_path_sum(root, 9), has_path_sum(root, 15))
+          - call: |
+              root = Node(6, Node(3, Node(1), Node(4)), Node(9, None, Node(2)))
+              print(has_path_sum(root, 10), has_path_sum(root, 17), has_path_sum(root, 16))
+            hidden: true
+          - call: has_path_sum(None, 0)
+            hidden: true
+          - call: has_path_sum(Node(5), 5)
+            hidden: true
+          - call: has_path_sum(Node(5, Node(3)), 5)
+            hidden: true
+          - call: has_path_sum(Node(-2, None, Node(-3)), -5)
+            hidden: true
+          - call: has_path_sum(Node(1, Node(2, Node(3, Node(4)))), 10)
+            hidden: true
+
+  - id: dsa-trees-search-trees
+    slug: search-trees
+    title: Binary search trees
+    text: |
+      To find a value in the trees of the last step, you may have to look at every node: O(n). The recursion module's **sorted binary tree**, which interviews call a **binary search tree** (BST), keeps its values in an order that lets a search skip most of them. At every node:
+
+      - every value in the left subtree is smaller than the node's value;
+      - every value in the right subtree is greater.
+
+      (In these lessons, a BST holds each value once.) In the recursion module you searched one, added values to one and printed one in order. This step adds what those operations cost, why the order of the inserts decides the shape of the tree, and how to build a tree that stays balanced.
+
+      ```text
+              8
+            /   \
+           3     12
+          / \      \
+         1   6      15
+      ```
+
+      To look for 6, start at the root. 6 is smaller than 8, so it can only be on the left: the whole right subtree is out of the game. 6 is greater than 3, so go right, and there it is. Each comparison moves one level down and drops a whole subtree, as binary search drops half of a sorted list.
+
+      ### Search and insert
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def contains(node, value):
+          while node is not None:
+              if value == node.value:
+                  return True
+              if value < node.value:
+                  node = node.left
+              else:
+                  node = node.right
+          return False
+
+
+      def insert(node, value):
+          if node is None:
+              return Node(value)
+          if value < node.value:
+              node.left = insert(node.left, value)
+          elif value > node.value:
+              node.right = insert(node.right, value)
+          return node
+
+
+      def smallest(node):
+          while node.left is not None:
+              node = node.left
+          return node.value
+
+
+      root = None
+      for value in [8, 3, 12, 1, 6, 15]:
+          root = insert(root, value)
+      print(contains(root, 6), contains(root, 7))
+      print(smallest(root), root.left.right.value)
+      ```
+
+      ```output
+      True False
+      1 6
+      ```
+
+      `contains` needs no recursion: a loop walks down until it finds the value or falls off the tree at `None`. `insert` walks down in the same way and puts a new node where the search fell off. Unlike the recursion module's `add`, it returns the root of the tree it was given, so that its caller can store it, and so it works on an empty tree too: for `None`, the root is the new node itself. A value that's already in the tree isn't added again. The smallest value is as far left as you can go, and the largest as far right.
+
+      The classic mistake is to call `insert(node.left, value)` without the `node.left =` in front, or `insert(root, value)` without `root =`. The new node is made, returned and thrown away, and the tree never grows.
+
+      ### The shape depends on the order
+
+      Search, insert, smallest and largest each follow one path down: O(h) for a tree of height h. A balanced tree has a height of about log₂ n, so even a million values need only about 20 steps. But nothing keeps this tree balanced: its shape comes from the order of the inserts. This program builds a tree from the same seven values in two orders, then inserts 2,000 values in sorted order:
+
+      ```python run crash
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def insert(node, value):
+          if node is None:
+              return Node(value)
+          if value < node.value:
+              node.left = insert(node.left, value)
+          elif value > node.value:
+              node.right = insert(node.right, value)
+          return node
+
+
+      def height(node):
+          if node is None:
+              return 0
+          return 1 + max(height(node.left), height(node.right))
+
+
+      for order in [[4, 2, 6, 1, 3, 5, 7], [1, 2, 3, 4, 5, 6, 7]]:
+          root = None
+          for value in order:
+              root = insert(root, value)
+          print(order, "height", height(root))
+
+      root = None
+      for value in range(1, 2001):
+          root = insert(root, value)
+      ```
+
+      ```output
+      [4, 2, 6, 1, 3, 5, 7] height 3
+      [1, 2, 3, 4, 5, 6, 7] height 7
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 32, in <module>
+          root = insert(root, value)
+        File "main.py", line 14, in insert
+          node.right = insert(node.right, value)
+                       ~~~~~~^^^^^^^^^^^^^^^^^^^
+        File "main.py", line 14, in insert
+          node.right = insert(node.right, value)
+                       ~~~~~~^^^^^^^^^^^^^^^^^^^
+        File "main.py", line 14, in insert
+          node.right = insert(node.right, value)
+                       ~~~~~~^^^^^^^^^^^^^^^^^^^
+        [Previous line repeated 996 more times]
+      RecursionError: maximum recursion depth exceeded
+      ```
+
+      In sorted order, each new value is the greatest so far and goes to the right of everything: the tree becomes a **chain**, a list in disguise, with h = n. Every search is then O(n), and building the tree costs 1 + 2 + ... + n steps, O(n²). The recursive `insert` also goes one call deeper for each node, and Python gives up at about 1000 nested calls. A loop version of `insert` gets rid of the error, but not of the slowness: the chain is still 2,000 levels deep.
+
+      ### Keeping it balanced
+
+      When the values come sorted, you can choose the order of the tree yourself. Make the middle value the root: half of the values are smaller and go to its left, half are greater and go to its right. Then build each half in the same way, around its own middle value. The height is about log₂ n, so the recursion stays shallow too. Pass the indexes `low` and `high` of the part to build instead of slices, and nothing gets copied: each value becomes one node, O(n) in all.
+
+      Java's `TreeMap` and C++'s `std::map` are **self-balancing** trees (red-black trees, usually): they reshape themselves after every insert, so they stay O(log n) whatever the order. Python's standard library has no such tree. For "is it there?" questions, use a set or a dict, and for sorted data, a sorted list with `bisect`.
+
+      **Your turn:** what does this program print? Draw the tree first, inserting the values in order. Type each line it prints.
+    predict: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def insert(node, value):
+          if node is None:
+              return Node(value)
+          if value < node.value:
+              node.left = insert(node.left, value)
+          elif value > node.value:
+              node.right = insert(node.right, value)
+          return node
+
+
+      def search(node, value):
+          while node is not None:
+              print("visit", node.value)
+              if value == node.value:
+                  return True
+              if value < node.value:
+                  node = node.left
+              else:
+                  node = node.right
+          return False
+
+
+      root = None
+      for value in [50, 30, 70, 20, 40, 60, 35]:
+          root = insert(root, value)
+      print(search(root, 38))
+    hints:
+      - "Each value goes down from the root, left when it's smaller and right when it's greater, until it finds an empty place."
+      - "50 is the root, with 30 and 70 as its children. 40 is the right child of 30, and 35 goes left of 40."
+      - "The search prints every node it visits on its way down. 38 isn't in the tree, so the search falls off below 35 and returns `False`."
+    more:
+      - task: |
+          A shop keeps its prices in a binary search tree. Write `best_under(node, budget)` that returns the highest price that is at most `budget`, or `None` when every price is above it or the tree is empty. Walk one path down, as a search does: when a price is too high, the answer can only be on its left; when a price fits, it's the best so far, and a better one can only be on its right.
+
+          For example, this program:
+
+          ```python fragment
+          #        40
+          #       /  \
+          #     20    60
+          #    /  \     \
+          #   10   30    80
+          prices = Node(40, Node(20, Node(10), Node(30)), Node(60, None, Node(80)))
+          print(best_under(prices, 35))
+          print(best_under(prices, 60), best_under(prices, 5))
+          ```
+
+          prints:
+
+          ```
+          30
+          60 None
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def best_under(node, budget):
+              pass
+
+
+          if __name__ == "__main__":
+              prices = Node(40, Node(20, Node(10), Node(30)), Node(60, None, Node(80)))
+              print(best_under(prices, 35))
+              print(best_under(prices, 60), best_under(prices, 5))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def best_under(node, budget):
+              best = None
+              while node is not None:
+                  if node.value <= budget:
+                      best = node.value
+                      node = node.right
+                  else:
+                      node = node.left
+              return best
+
+
+          if __name__ == "__main__":
+              prices = Node(40, Node(20, Node(10), Node(30)), Node(60, None, Node(80)))
+              print(best_under(prices, 35))
+              print(best_under(prices, 60), best_under(prices, 5))
+        hints:
+          - "Keep a variable `best`, starting at `None`, and walk down from the root with a `while node is not None:` loop, as `contains` does."
+          - "When `node.value` is at most the budget, it's the best price so far: store it, then go right to look for a higher one that still fits."
+          - "When `node.value` is over the budget, everything on its right is even higher, so go left. When the loop falls off the tree, `best` is the answer."
+        tests:
+          - call: |
+              prices = Node(40, Node(20, Node(10), Node(30)), Node(60, None, Node(80)))
+              print(best_under(prices, 35))
+              print(best_under(prices, 60), best_under(prices, 5))
+          - call: |
+              prices = Node(40, Node(20, Node(10), Node(30)), Node(60, None, Node(80)))
+              print(best_under(prices, 100), best_under(prices, 79), best_under(prices, 10))
+            hidden: true
+          - call: |
+              prices = Node(40, Node(20, Node(10), Node(30)), Node(60, None, Node(80)))
+              print(best_under(prices, 25), best_under(prices, 59), best_under(prices, 40))
+            hidden: true
+          - call: print(best_under(None, 50))
+            hidden: true
+          - call: print(best_under(Node(7), 6), best_under(Node(7), 7))
+            hidden: true
+      - task: |
+          A warehouse's item codes arrive sorted, and `build_tree(codes)` puts them into a binary search tree that `contains` then searches. It gives the right answers, but inserting sorted codes one by one makes the tree a chain, so building it is O(n²), and the hidden test has 80,000 codes and searches for codes all over that range. Rewrite `build_tree` so that it builds a balanced tree in O(n): the middle code is the root, the codes before it build the left subtree and the codes after it the right subtree, each in the same way. Keep `insert` and `contains` as they are.
+
+          For example, this program:
+
+          ```python fragment
+          root = build_tree([3, 8, 15, 21, 40, 42, 57])
+          print(contains(root, 21), contains(root, 22), contains(root, 57))
+          ```
+
+          prints:
+
+          ```
+          True False True
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def insert(root, value):
+              new = Node(value)
+              if root is None:
+                  return new
+              node = root
+              while True:
+                  if value < node.value:
+                      if node.left is None:
+                          node.left = new
+                          return root
+                      node = node.left
+                  else:
+                      if node.right is None:
+                          node.right = new
+                          return root
+                      node = node.right
+
+
+          def contains(node, value):
+              while node is not None:
+                  if value == node.value:
+                      return True
+                  if value < node.value:
+                      node = node.left
+                  else:
+                      node = node.right
+              return False
+
+
+          def build_tree(codes):
+              root = None
+              for code in codes:
+                  root = insert(root, code)
+              return root
+
+
+          if __name__ == "__main__":
+              root = build_tree([3, 8, 15, 21, 40, 42, 57])
+              print(contains(root, 21), contains(root, 22), contains(root, 57))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def insert(root, value):
+              new = Node(value)
+              if root is None:
+                  return new
+              node = root
+              while True:
+                  if value < node.value:
+                      if node.left is None:
+                          node.left = new
+                          return root
+                      node = node.left
+                  else:
+                      if node.right is None:
+                          node.right = new
+                          return root
+                      node = node.right
+
+
+          def contains(node, value):
+              while node is not None:
+                  if value == node.value:
+                      return True
+                  if value < node.value:
+                      node = node.left
+                  else:
+                      node = node.right
+              return False
+
+
+          def build(codes, low, high):
+              if low > high:
+                  return None
+              middle = (low + high) // 2
+              return Node(codes[middle], build(codes, low, middle - 1), build(codes, middle + 1, high))
+
+
+          def build_tree(codes):
+              return build(codes, 0, len(codes) - 1)
+
+
+          if __name__ == "__main__":
+              root = build_tree([3, 8, 15, 21, 40, 42, 57])
+              print(contains(root, 21), contains(root, 22), contains(root, 57))
+        slow: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def insert(root, value):
+              new = Node(value)
+              if root is None:
+                  return new
+              node = root
+              while True:
+                  if value < node.value:
+                      if node.left is None:
+                          node.left = new
+                          return root
+                      node = node.left
+                  else:
+                      if node.right is None:
+                          node.right = new
+                          return root
+                      node = node.right
+
+
+          def contains(node, value):
+              while node is not None:
+                  if value == node.value:
+                      return True
+                  if value < node.value:
+                      node = node.left
+                  else:
+                      node = node.right
+              return False
+
+
+          def build_tree(codes):
+              root = None
+              for code in codes:
+                  root = insert(root, code)
+              return root
+
+
+          if __name__ == "__main__":
+              root = build_tree([3, 8, 15, 21, 40, 42, 57])
+              print(contains(root, 21), contains(root, 22), contains(root, 57))
+        hints:
+          - "Write a helper `build(codes, low, high)` that builds a tree from the codes at the indexes `low` to `high` and returns its root. `build_tree` calls it for the whole list, from 0 to `len(codes) - 1`."
+          - "In the helper, an empty part (`low > high`) is the empty tree, `None`. Otherwise, the middle index is `(low + high) // 2`."
+          - "The node for the middle code gets as its left child the tree built from `low` to `middle - 1`, and as its right child the tree built from `middle + 1` to `high`. The recursion is only about 17 levels deep for 80,000 codes."
+        tests:
+          - call: |
+              root = build_tree([3, 8, 15, 21, 40, 42, 57])
+              print(contains(root, 21), contains(root, 22), contains(root, 57))
+          - call: print(build_tree([]))
+            hidden: true
+          - call: |
+              root = build_tree([5])
+              print(contains(root, 5), contains(root, 4))
+            hidden: true
+          - call: |
+              root = build_tree([1, 2])
+              print(contains(root, 1), contains(root, 2), contains(root, 3), contains(root, 0))
+            hidden: true
+          - call: |
+              root = build_tree(list(range(10, 200, 10)))
+              print(sum(contains(root, v) for v in range(0, 300, 5)), contains(root, 190), contains(root, 15))
+            hidden: true
+          - call: |
+              root = build_tree(list(range(0, 160_000, 2)))
+              print(sum(contains(root, v) for v in range(0, 160_000, 7)), contains(root, 159_998), contains(root, 159_999))
+            hidden: true
+            big: true
+
+  - id: dsa-trees-traversals
+    slug: traversals
+    title: Traversals and validation
+    text: |
+      A **traversal** visits every node of a tree once. Done recursively, it comes in three classic orders, named after when the node itself comes compared with its two subtrees:
+
+      - **pre-order:** the node, then its left subtree, then its right subtree;
+      - **in-order:** the left subtree, then the node, then the right subtree;
+      - **post-order:** the left subtree, then the right subtree, then the node.
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def preorder(node, out):
+          if node is not None:
+              out.append(node.value)
+              preorder(node.left, out)
+              preorder(node.right, out)
+
+
+      def inorder(node, out):
+          if node is not None:
+              inorder(node.left, out)
+              out.append(node.value)
+              inorder(node.right, out)
+
+
+      def postorder(node, out):
+          if node is not None:
+              postorder(node.left, out)
+              postorder(node.right, out)
+              out.append(node.value)
+
+
+      #        8
+      #       / \
+      #      3   12
+      #     / \    \
+      #    1   6    15
+      root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+      for visit in [preorder, inorder, postorder]:
+          out = []
+          visit(root, out)
+          print(out)
+      ```
+
+      ```output
+      [8, 3, 1, 6, 12, 15]
+      [1, 3, 6, 8, 12, 15]
+      [1, 6, 3, 15, 12, 8]
+      ```
+
+      The tree is a BST, and its **in-order is sorted**. That's no accident: at every node, the smaller values of its left subtree all come out before it, and the greater values of its right subtree all come out after it.
+
+      Each order has its jobs. Pre-order meets every parent before its children, so it's the order for copying or saving a tree: inserting the values into an empty BST in pre-order builds the same tree again. Post-order finishes both children before their parent, which is what `size` and `height` did in the first step: they needed the answers of the subtrees first. In-order gives a BST's values in sorted order.
+
+      All three are O(n) time: every node is visited once and appended once, to the one list that every call shares. The tempting one-liner `return inorder(node.left) + [node.value] + inorder(node.right)` gives the same list, but `+` copies both lists it joins, so a value is copied again at every level above it: O(n·h) time, which is O(n²) for a chain.
+
+      ### Is it a valid BST?
+
+      A tempting check compares each node with its own children only:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def looks_valid(node):
+          if node is None:
+              return True
+          if node.left is not None and node.left.value >= node.value:
+              return False
+          if node.right is not None and node.right.value <= node.value:
+              return False
+          return looks_valid(node.left) and looks_valid(node.right)
+
+
+      #      8
+      #     /
+      #    3
+      #     \
+      #      10
+      print(looks_valid(Node(8, Node(3, None, Node(10)))))
+      ```
+
+      ```output
+      True
+      ```
+
+      That's wrong. 10 is greater than its parent 3, but it's in the left subtree of 8, where every value must be smaller than 8: a search for 10 goes right at 8 and never finds it. The rule is about whole subtrees, not just children.
+
+      The fix is to pass **bounds** down the tree: every value must lie strictly between a `low` and a `high`, and the root has no bounds (`None` for both). Going left, the node's value becomes the new `high`, because everything down there must be smaller than it. Going right, it becomes the new `low`. Above, 3 gets the bounds `None` and 8, and 10 gets 3 and 8: 10 isn't below 8, so the tree isn't valid. Each node is still checked once, O(n) time. (Another correct check: the in-order must be strictly increasing.)
+
+      ### Deep trees: a stack of your own
+
+      A recursive traversal of a chain of 5,000 nodes stops with a `RecursionError`. The calls that wait on Python's call stack can just as well wait in a list of your own, which can hold millions of items. For in-order: go as far left as you can, putting each node on the stack. Then pop the top node, visit it, and go on with its right subtree in the same way:
+
+      ```python run
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def inorder_loop(root):
+          out = []
+          stack = []
+          node = root
+          while stack or node is not None:
+              while node is not None:
+                  stack.append(node)
+                  node = node.left
+              node = stack.pop()
+              out.append(node.value)
+              node = node.right
+          return out
+
+
+      chain = None
+      for value in range(5000, 0, -1):
+          chain = Node(value, None, chain)
+      values = inorder_loop(chain)
+      print(len(values), values[:3], values[-1])
+      ```
+
+      ```output
+      5000 [1, 2, 3] 5000
+      ```
+
+      `chain` has 1 at the root, 2 as its right child, 3 below that and so on: a valid BST, 5,000 levels deep. `append` and `pop` at the end of a list are O(1), so the loop is O(n) time and O(h) memory, like the recursion, but without its limit.
+
+      **Your turn:** fill in the blanks of the bounds check: the bound that each recursive call gets from the node. The program should print:
+
+      ```
+      True
+      False
+      False
+      ```
+    fill: |
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def is_valid(node, low=None, high=None):
+          if node is None:
+              return True
+          if low is not None and node.value <= low:
+              return False
+          if high is not None and node.value >= high:
+              return False
+          return is_valid(node.left, low, [[node.value]]) and is_valid(node.right, [[node.value]], high)
+
+
+      print(is_valid(Node(8, Node(3, Node(1), Node(6)), Node(12))))
+      print(is_valid(Node(8, Node(3, None, Node(10)))))
+      print(is_valid(Node(8, None, Node(12, Node(7)))))
+    hints:
+      - "Everything in the left subtree must be smaller than the node, so the node's value is the new upper bound there. The lower bound stays what it was."
+      - "Both blanks are `node.value`: as `high` for the left subtree and as `low` for the right subtree."
+    tests:
+      - expect: |
+          True
+          False
+          False
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def first(node):
+              if node is None:
+                  return ""
+              return node.value + first(node.left) + first(node.right)
+
+
+          def last(node):
+              if node is None:
+                  return ""
+              return last(node.left) + last(node.right) + node.value
+
+
+          tree = Node("A", Node("B", Node("D"), Node("E")), Node("C", None, Node("F")))
+          print(first(tree))
+          print(last(tree))
+        hints:
+          - "Draw the tree: A at the root, B and C its children, D and E the children of B, and F the right child of C."
+          - "`first` puts the node's own letter before its subtrees: that's pre-order, which starts A, B, D."
+          - "`last` puts the node's letter after both subtrees: that's post-order, which starts with the leaf D and ends with the root A."
+      - task: |
+          Write `kth_smallest(root, k)` that returns the k-th smallest value of a binary search tree (`k` 1 gives the smallest), or `None` when the tree has fewer than `k` values. Walk the tree in order with a stack of your own, and stop as soon as you've taken `k` values. The tests include trees that are chains 3,000 levels deep, where a recursive traversal stops with a `RecursionError`.
+
+          For example, this program:
+
+          ```python fragment
+          root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+          print(kth_smallest(root, 1), kth_smallest(root, 4), kth_smallest(root, 6))
+          print(kth_smallest(root, 7))
+          ```
+
+          prints:
+
+          ```
+          1 8 15
+          None
+          ```
+        seed: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def kth_smallest(root, k):
+              pass
+
+
+          if __name__ == "__main__":
+              root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+              print(kth_smallest(root, 1), kth_smallest(root, 4), kth_smallest(root, 6))
+              print(kth_smallest(root, 7))
+        solution: |
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def kth_smallest(root, k):
+              stack = []
+              node = root
+              count = 0
+              while stack or node is not None:
+                  while node is not None:
+                      stack.append(node)
+                      node = node.left
+                  node = stack.pop()
+                  count += 1
+                  if count == k:
+                      return node.value
+                  node = node.right
+              return None
+
+
+          if __name__ == "__main__":
+              root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+              print(kth_smallest(root, 1), kth_smallest(root, 4), kth_smallest(root, 6))
+              print(kth_smallest(root, 7))
+        hints:
+          - "Start from the lesson's `inorder_loop`. Instead of appending each value to a list, count the values you take off the stack."
+          - "When the count reaches `k`, return that node's value right away: the rest of the tree is never visited."
+          - "If the loop ends, the tree had fewer than `k` values: return `None`."
+        tests:
+          - call: |
+              root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+              print(kth_smallest(root, 1), kth_smallest(root, 4), kth_smallest(root, 6))
+              print(kth_smallest(root, 7))
+          - call: print(kth_smallest(None, 1))
+            hidden: true
+          - call: kth_smallest(Node(5), 1)
+            hidden: true
+          - call: |
+              root = Node(20, Node(10, Node(5), Node(15)), Node(30, Node(25), Node(35)))
+              print(kth_smallest(root, 3), kth_smallest(root, 5), kth_smallest(root, 2))
+            hidden: true
+          - call: |
+              root = None
+              for value in range(1, 3001):
+                  root = Node(value, root)
+              print(kth_smallest(root, 1), kth_smallest(root, 2999))
+            hidden: true
+          - call: |
+              root = None
+              for value in range(3000, 0, -1):
+                  root = Node(value * 2, None, root)
+              print(kth_smallest(root, 2500), kth_smallest(root, 3001))
+            hidden: true
+
+  - id: dsa-trees-level-order
+    slug: level-order
+    title: Level order with a deque
+    text: |
+      The traversals of the last step go deep first: down the left side before anything on the right. Sometimes you want a tree **level by level** instead: the root, then its children, then their children, each level from left to right. That's **level order**, also called **breadth-first search** (BFS).
+
+      It needs a **queue**: first in, first out, like a line at a ticket counter. Put the root in the queue. Then, again and again, take the node at the front, visit it, and put its children at the back. A node's children wait behind every node that is already in line, so the whole level above them goes first.
+
+      ### collections.deque
+
+      A list makes a poor queue. `queue.pop(0)` removes the first item, and every other item moves one place to close the gap: O(n). The **`collections.deque`** (said "deck", short for double-ended queue) adds and removes at both of its ends in O(1):
+
+      ```python repl
+      >>> from collections import deque
+      >>> queue = deque([10, 20])
+      >>> queue.append(30)
+      >>> queue.popleft()
+      10
+      >>> queue
+      deque([20, 30])
+      >>> len(queue)
+      2
+      ```
+
+      ### Level by level
+
+      Here is level order, and a version that keeps the levels apart. Many questions need to know where one level ends: the widest level, the average of each level, the last node of each level. The trick: at the start of each round of the `while` loop, the queue holds exactly one whole level. So take `len(queue)` nodes in a `for` loop. Those are the level, and the children they add make up the next one:
+
+      ```python run
+      from collections import deque
+
+
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      def level_order(root):
+          order = []
+          queue = deque()
+          if root is not None:
+              queue.append(root)
+          while queue:
+              node = queue.popleft()
+              order.append(node.value)
+              if node.left is not None:
+                  queue.append(node.left)
+              if node.right is not None:
+                  queue.append(node.right)
+          return order
+
+
+      def levels(root):
+          result = []
+          queue = deque()
+          if root is not None:
+              queue.append(root)
+          while queue:
+              level = []
+              for _ in range(len(queue)):
+                  node = queue.popleft()
+                  level.append(node.value)
+                  if node.left is not None:
+                      queue.append(node.left)
+                  if node.right is not None:
+                      queue.append(node.right)
+              result.append(level)
+          return result
+
+
+      #        8
+      #       / \
+      #      3   12
+      #     / \    \
+      #    1   6    15
+      root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+      print(level_order(root))
+      print(levels(root))
+      ```
+
+      ```output
+      [8, 3, 12, 1, 6, 15]
+      [[8], [3, 12], [1, 6, 15]]
+      ```
+
+      `range(len(queue))` is worked out once, when the `for` loop starts, so the children appended during the round wait for the next round. The last value of each level is what you'd see looking at the tree from its right side: 8, 12 and 15 here.
+
+      Only real children go into the queue. Appending a `None` child would put it in line too, and `node.value` on it would stop the program with an `AttributeError`:
+
+      ```python run crash
+      from collections import deque
+
+
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      queue = deque([Node(8, Node(3))])
+      while queue:
+          node = queue.popleft()
+          print(node.value)
+          queue.append(node.left)
+          queue.append(node.right)
+      ```
+
+      ```output
+      8
+      3
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 14, in <module>
+          print(node.value)
+                ^^^^^^^^^^
+      AttributeError: 'NoneType' object has no attribute 'value'
+      ```
+
+      ### What it costs
+
+      Each node goes into the queue once and comes out once, O(1) each with a deque: O(n) time. The memory is the queue, which never holds more than about two levels: O(w), for the widest level w. In a full tree the last level holds half of the nodes, so that can be O(n), while a depth-first traversal needs O(h). With a list and `pop(0)` you get the same answers, but each pop costs O(n), so a wide tree takes O(n²). And level order uses no recursion at all: a tree 100,000 levels deep is no problem.
+
+      **Your turn:** this program takes each node from the queue, puts its children at the back, and then prints the node followed by what is waiting in the queue. What does it print? Type each line it prints.
+    predict: |
+      from collections import deque
+
+
+      class Node:
+          def __init__(self, value, left=None, right=None):
+              self.value = value
+              self.left = left
+              self.right = right
+
+
+      #        K
+      #       / \
+      #      D   P
+      #     / \   \
+      #    B   H   T
+      #       /
+      #      F
+      tree = Node("K", Node("D", Node("B"), Node("H", Node("F"))), Node("P", None, Node("T")))
+      queue = deque([tree])
+      while queue:
+          node = queue.popleft()
+          if node.left is not None:
+              queue.append(node.left)
+          if node.right is not None:
+              queue.append(node.right)
+          print(node.value, [waiting.value for waiting in queue])
+    hints:
+      - "Each round takes the node at the front, adds its children at the back, and only then prints. So the first line is K, with K's children D and P waiting."
+      - "Next, D leaves and B and H join behind P. Children always join at the back of the line."
+      - "F is the child of H, so it joins when H leaves, behind T. The last line is F with nothing left in the queue."
+    more:
+      - task: |
+          Write `widest(root)` that returns the number of nodes on the widest level of a tree, the level with the most nodes. An empty tree has no levels, so it gives 0. The tests include a tree 3,000 levels deep, so go level by level with a queue rather than with recursion.
+
+          For example, this program:
+
+          ```python fragment
+          root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+          print(widest(root))
+          print(widest(Node(5, Node(4, Node(3)))))
+          ```
+
+          prints:
+
+          ```
+          3
+          1
+          ```
+        seed: |
+          from collections import deque
+
+
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def widest(root):
+              pass
+
+
+          if __name__ == "__main__":
+              root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+              print(widest(root))
+              print(widest(Node(5, Node(4, Node(3)))))
+        solution: |
+          from collections import deque
+
+
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def widest(root):
+              best = 0
+              queue = deque()
+              if root is not None:
+                  queue.append(root)
+              while queue:
+                  best = max(best, len(queue))
+                  for _ in range(len(queue)):
+                      node = queue.popleft()
+                      if node.left is not None:
+                          queue.append(node.left)
+                      if node.right is not None:
+                          queue.append(node.right)
+              return best
+
+
+          if __name__ == "__main__":
+              root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+              print(widest(root))
+              print(widest(Node(5, Node(4, Node(3)))))
+        hints:
+          - "Go level by level, as the lesson's `levels` does: at the start of each round of the `while` loop, the queue holds one whole level."
+          - "So `len(queue)` at the start of a round is the number of nodes on that level. Keep the greatest one you see."
+          - "Start `best` at 0 and put the root in the queue only when it isn't `None`, so the empty tree gives 0."
+        tests:
+          - call: |
+              root = Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15)))
+              print(widest(root))
+              print(widest(Node(5, Node(4, Node(3)))))
+          - call: widest(None)
+            hidden: true
+          - call: widest(Node(1))
+            hidden: true
+          - call: widest(Node(1, Node(2, Node(4), Node(5)), Node(3, Node(6), Node(7, Node(8)))))
+            hidden: true
+          - call: widest(Node(1, Node(2, Node(4, Node(8), Node(9))), Node(3, None, Node(7, Node(10), Node(11)))))
+            hidden: true
+          - call: |
+              root = None
+              for value in range(3000):
+                  root = Node(value, root)
+              print(widest(root))
+            hidden: true
+      - task: |
+          Looking at a tree from its right side, you see one node on each level: the last one, the rightmost. Write `right_view(root)` that returns the values you'd see, from the top level down, as a list. A node on the left can be seen when nothing on its level is to its right. The tests include a tree 3,000 levels deep, so go level by level with a queue rather than with recursion.
+
+          For example, this program:
+
+          ```python fragment
+          #        1
+          #       / \
+          #      2   3
+          #       \
+          #        5
+          root = Node(1, Node(2, None, Node(5)), Node(3))
+          print(right_view(root))
+          ```
+
+          prints:
+
+          ```
+          [1, 3, 5]
+          ```
+        seed: |
+          from collections import deque
+
+
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def right_view(root):
+              pass
+
+
+          if __name__ == "__main__":
+              root = Node(1, Node(2, None, Node(5)), Node(3))
+              print(right_view(root))
+        solution: |
+          from collections import deque
+
+
+          class Node:
+              def __init__(self, value, left=None, right=None):
+                  self.value = value
+                  self.left = left
+                  self.right = right
+
+
+          def right_view(root):
+              view = []
+              queue = deque()
+              if root is not None:
+                  queue.append(root)
+              while queue:
+                  view.append(queue[-1].value)
+                  for _ in range(len(queue)):
+                      node = queue.popleft()
+                      if node.left is not None:
+                          queue.append(node.left)
+                      if node.right is not None:
+                          queue.append(node.right)
+              return view
+
+
+          if __name__ == "__main__":
+              root = Node(1, Node(2, None, Node(5)), Node(3))
+              print(right_view(root))
+        hints:
+          - "Go level by level, as the lesson's `levels` does. The value you want from each level is its last one."
+          - "At the start of a round, the queue holds one whole level from left to right, so its last node, `queue[-1]`, is the rightmost one. Or keep the last node you pop in the `for` loop."
+          - "An empty tree gives an empty list: put the root in the queue only when it isn't `None`."
+        tests:
+          - call: |
+              root = Node(1, Node(2, None, Node(5)), Node(3))
+              print(right_view(root))
+          - call: right_view(None)
+            hidden: true
+          - call: right_view(Node(8, Node(3, Node(1), Node(6)), Node(12, None, Node(15))))
+            hidden: true
+          - call: right_view(Node(1, Node(2, Node(4))))
+            hidden: true
+          - call: right_view(Node(1, Node(2, Node(4, Node(7))), Node(3, Node(5), Node(6))))
+            hidden: true
+          - call: |
+              root = None
+              for value in range(3000):
+                  if value % 2 == 0:
+                      root = Node(value, root)
+                  else:
+                      root = Node(value, None, root)
+              view = right_view(root)
+              print(len(view), view[:3], view[-1])
+            hidden: true
+
+  - id: dsa-trees-heaps
+    slug: heaps
+    title: Heaps and heapq
+    text: |
+      Some programs need the smallest item again and again while new items keep arriving: a printer that prints the shortest job next, a game that runs the next event in time order, an emergency room that treats the most urgent patient first. A collection like that is a **priority queue**. With a plain list, `min` finds the smallest in O(n) every time. A list kept sorted does no better: each new item costs O(n), whether `bisect.insort` puts it in its place (every item after it moves) or you append it and sort again (Timsort sees that the list is almost in order, but still looks at every item). A **heap** adds an item in O(log n), removes the smallest in O(log n), and shows the smallest in O(1).
+
+      ### A tree in a list
+
+      A **binary heap** is a binary tree with two rules:
+
+      - **Shape:** every level is full, except maybe the last, which fills from the left. So the height is about log₂ n.
+      - **Order:** every parent is smaller than or equal to its children. So the smallest value is at the root. (Unlike in a BST, nothing orders the left side against the right.)
+
+      With no gaps in the tree, it fits in a plain list, level by level, without any `Node` objects: the root at index 0, the children of index `i` at `2 * i + 1` and `2 * i + 2`, and its parent at `(i - 1) // 2`.
+
+      ```text
+      index:  0  1  2  3  4
+             [1, 3, 8, 5, 4]
+
+                 1
+               /   \
+              3     8
+             / \
+            5   4
+      ```
+
+      To **push** a value, append it (the next free place on the last level) and **sift it up**: while it's smaller than its parent, swap the two. To **pop** the smallest, take the root, move the last item into its place and **sift it down**: while it's greater than the smaller of its children, swap it with that child. Each walks one path between the root and the bottom: O(log n).
+
+      ```python run
+      def push(heap, value):
+          heap.append(value)
+          i = len(heap) - 1
+          while i > 0:
+              parent = (i - 1) // 2
+              if heap[i] >= heap[parent]:
+                  break
+              heap[i], heap[parent] = heap[parent], heap[i]
+              i = parent
+
+
+      def pop(heap):
+          smallest = heap[0]
+          last = heap.pop()
+          if heap:
+              heap[0] = last
+              i = 0
+              while 2 * i + 1 < len(heap):
+                  child = 2 * i + 1
+                  if child + 1 < len(heap) and heap[child + 1] < heap[child]:
+                      child += 1
+                  if heap[i] <= heap[child]:
+                      break
+                  heap[i], heap[child] = heap[child], heap[i]
+                  i = child
+          return smallest
+
+
+      heap = []
+      for value in [5, 3, 8, 1, 4]:
+          push(heap, value)
+      print(heap)
+      print([pop(heap) for _ in range(5)])
+      ```
+
+      ```output
+      [1, 3, 8, 5, 4]
+      [1, 3, 4, 5, 8]
+      ```
+
+      The list isn't sorted, and it doesn't need to be: a heap only keeps the smallest in front, which is far less work than keeping everything in order.
+
+      ### heapq
+
+      Python's **`heapq`** module does the same in C, on a plain list:
+
+      ```python repl
+      >>> import heapq
+      >>> heap = [5, 3, 8, 1, 4]
+      >>> heapq.heapify(heap)
+      >>> heap
+      [1, 3, 8, 5, 4]
+      >>> heapq.heappush(heap, 2)
+      >>> heap[0]
+      1
+      >>> heapq.heappop(heap)
+      1
+      >>> heapq.heappop(heap)
+      2
+      ```
+
+      `heapify` turns a list into a heap in place in O(n), cheaper than n pushes, which cost O(n log n). `heappush` and `heappop` are O(log n), and `heap[0]` is the smallest, O(1). Mind two things. Only `heap[0]` has a known place: `heap[-1]` isn't the largest, and `heap[1]` isn't always the second smallest. And `heappop` trusts that the list is a heap: on a list you never heapified, it takes whatever is at index 0.
+
+      `heappush`, `heappop` and `heapify` keep the smallest in front. For the largest first, push `-x` and negate what you pop, which works in every version of Python. Python 3.14 also has max-heap versions, such as `heapq.heappush_max` and `heapq.heappop_max`. Tuples compare item by item, so `(priority, name)` pairs come out by priority, with the name deciding ties.
+
+      ### The k largest, as they come
+
+      To keep the k largest values of a stream, keep a heap of at most k values. Its root is the smallest of the k largest so far: the **k-th largest**. When a value comes, push it, and if the heap now has k + 1 values, pop the smallest, which can't be among the k largest any more:
+
+      ```python run
+      import heapq
+
+
+      def kth_largest(values, k):
+          heap = []
+          for value in values:
+              heapq.heappush(heap, value)
+              if len(heap) > k:
+                  heapq.heappop(heap)
+          return heap[0]
+
+
+      scores = [40, 95, 12, 78, 66, 88, 51]
+      print(kth_largest(scores, 3), sorted(scores)[-3])
+      ```
+
+      ```output
+      78 78
+      ```
+
+      Each value costs O(log k), so a stream of n values costs O(n log k) time and O(k) memory, however long it is. And at every moment, `heap[0]` is the answer for the values seen so far, while a sorted list of all the values seen would cost O(n) for each new value, O(n²) in all. Once the heap is full, you can save more work: a value that isn't greater than `heap[0]` can't get in, so skip it, and for one that can, `heapq.heapreplace(heap, value)` pops the smallest and pushes the value in one sift.
+
+      The same idea merges k sorted lists: keep the next item of each list in a heap, as `(value, list number, index)`, pop the smallest and push the next item of its list. That's O(N log k) for N items in all, and `heapq.merge` does it for you.
+
+      **Your turn:** this `push` should build a **max-heap**, a heap with the largest value at the root, where every parent is greater than or equal to its children. Fill in the blanks: the parent's index, and the comparison that stops the sifting. The program should print:
+
+      ```
+      [12, 9, 4, 3, 7]
+      12
+      ```
+    fill: |
+      def push(heap, value):
+          heap.append(value)
+          i = len(heap) - 1
+          while i > 0:
+              parent = [[(i - 1) // 2]]
+              if heap[i] [[<=‖<]] heap[parent]:
+                  break
+              heap[i], heap[parent] = heap[parent], heap[i]
+              i = parent
+
+
+      heap = []
+      for value in [3, 9, 4, 12, 7]:
+          push(heap, value)
+      print(heap)
+      print(heap[0])
+    hints:
+      - "The parent of index `i` is the same in a max-heap as in a min-heap: `(i - 1) // 2`."
+      - "In a max-heap, sifting up stops when the new value is no greater than its parent: `heap[i] <= heap[parent]`."
+    tests:
+      - expect: |
+          [12, 9, 4, 3, 7]
+          12
+    more:
+      - task: |
+          A printer always prints the shortest job waiting. `jobs` lists what happens, in order: a positive number is a new job of that many pages, and 0 means the printer is free and prints the shortest job waiting. Write `print_order(jobs)` that returns the page counts of the jobs in the order they are printed. A 0 never comes when no job is waiting, and jobs still waiting at the end aren't printed. The hidden test has 300,000 events, so finding the shortest job with `min` each time is too slow: use `heapq`.
+
+          For example, this call:
+
+          ```python fragment
+          print(print_order([5, 2, 8, 0, 1, 0, 0, 3]))
+          ```
+
+          prints (the 2 goes first, then the 1 that came after it, then the 5):
+
+          ```
+          [2, 1, 5]
+          ```
+        seed: |
+          import heapq
+
+
+          def print_order(jobs):
+              pass
+
+
+          if __name__ == "__main__":
+              print(print_order([5, 2, 8, 0, 1, 0, 0, 3]))
+        solution: |
+          import heapq
+
+
+          def print_order(jobs):
+              waiting = []
+              printed = []
+              for pages in jobs:
+                  if pages == 0:
+                      printed.append(heapq.heappop(waiting))
+                  else:
+                      heapq.heappush(waiting, pages)
+              return printed
+
+
+          if __name__ == "__main__":
+              print(print_order([5, 2, 8, 0, 1, 0, 0, 3]))
+        slow: |
+          import heapq
+
+
+          def print_order(jobs):
+              waiting = []
+              printed = []
+              for pages in jobs:
+                  if pages == 0:
+                      shortest = min(waiting)
+                      waiting.remove(shortest)
+                      printed.append(shortest)
+                  else:
+                      waiting.append(pages)
+              return printed
+
+
+          if __name__ == "__main__":
+              print(print_order([5, 2, 8, 0, 1, 0, 0, 3]))
+        hints:
+          - "Keep the waiting jobs in a list that is a heap: `heapq.heappush(waiting, pages)` adds a job in O(log n)."
+          - "For a 0, `heapq.heappop(waiting)` removes and returns the shortest job in O(log n). Append it to the list of printed jobs."
+          - "`min(waiting)` plus `waiting.remove(...)` gives the same answers, but each is O(n): with 75,000 printouts from a line of up to 150,000 jobs, that's billions of steps."
+        tests:
+          - call: print(print_order([5, 2, 8, 0, 1, 0, 0, 3]))
+          - call: print_order([])
+            hidden: true
+          - call: print_order([4, 4, 0, 0])
+            hidden: true
+          - call: print_order([9, 0, 7, 0, 3, 6, 0])
+            hidden: true
+          - call: print_order([10, 20, 30])
+            hidden: true
+          - call: |
+              result = print_order([0 if i % 4 == 3 else i * 7919 % 100_003 + 1 for i in range(300_000)])
+              print(len(result), sum(result))
+            hidden: true
+            big: true
+      - task: |
+          A game's leaderboard shows the bar for the top k: after each new score, the k-th highest score so far. Write `bars(scores, k)` that returns a list of those bars, one for each score from the k-th score on (before that, there aren't k scores yet). The hidden tests have up to 500,000 scores, so sorting the scores again after each one is too slow, and so is keeping all of them in a sorted list: keep a heap of the k highest instead.
+
+          For example, with k = 3, after 50, 80 and 20 the bar is 20, the lowest of the three. 90 pushes it up to 50, 70 to 70, and 60 doesn't get into the top 3. So this call:
+
+          ```python fragment
+          print(bars([50, 80, 20, 90, 70, 60], 3))
+          ```
+
+          prints:
+
+          ```
+          [20, 50, 70, 70]
+          ```
+        seed: |
+          import heapq
+
+
+          def bars(scores, k):
+              pass
+
+
+          if __name__ == "__main__":
+              print(bars([50, 80, 20, 90, 70, 60], 3))
+        solution: |
+          import heapq
+
+
+          def bars(scores, k):
+              heap = []
+              result = []
+              for score in scores:
+                  if len(heap) < k:
+                      heapq.heappush(heap, score)
+                  elif score > heap[0]:
+                      heapq.heapreplace(heap, score)
+                  if len(heap) == k:
+                      result.append(heap[0])
+              return result
+
+
+          if __name__ == "__main__":
+              print(bars([50, 80, 20, 90, 70, 60], 3))
+        slow: |
+          import heapq
+
+
+          def bars(scores, k):
+              seen = []
+              result = []
+              for score in scores:
+                  seen.append(score)
+                  if len(seen) >= k:
+                      result.append(sorted(seen, reverse=True)[k - 1])
+              return result
+
+
+          if __name__ == "__main__":
+              print(bars([50, 80, 20, 90, 70, 60], 3))
+        hints:
+          - "Keep a heap of the k highest scores so far. Its smallest, `heap[0]`, is the k-th highest: the bar."
+          - "For each score, push it. If the heap now has more than k scores, pop the smallest, which has dropped out of the top k."
+          - "Once the heap holds exactly k scores, append `heap[0]` to the result after each score. Each score costs O(log k). (A full heap can skip a score that isn't greater than `heap[0]`, and take one that is with `heapq.heapreplace`.)"
+        tests:
+          - call: print(bars([50, 80, 20, 90, 70, 60], 3))
+          - call: bars([5, 1, 9], 1)
+            hidden: true
+          - call: bars([3, 3, 3, 1], 2)
+            hidden: true
+          - call: bars([4, 7], 3)
+            hidden: true
+          - call: bars([10, 40, 30, 20, 50], 5)
+            hidden: true
+          - call: bars([8, 2, 6, 9, 1, 7, 9], 2)
+            hidden: true
+          - call: |
+              result = bars([i * 7919 % 200_003 for i in range(200_000)], 100)
+              print(len(result), result[-1], sum(result))
+            hidden: true
+            big: true
+          - call: |
+              result = bars([500_000 - i for i in range(500_000)], 50)
+              print(len(result), result[-1], sum(result))
+            hidden: true
+            big: true
+          - call: |
+              result = bars(list(range(500_000)), 50)
+              print(len(result), result[-1], sum(result))
+            hidden: true
+            big: true
+
+  - id: dsa-trees-tries
+    slug: tries
+    title: "Challenge: tries"
+    text: |
+      A search box suggests words as you type: after "ca", it offers "cab", "cake", "car" and "card". With the words in a list, every question scans all of them with `startswith`: O(n·m) for n words and a prefix of m letters, again for each letter typed. A **trie** (from re*trie*val, said "try") stores the words letter by letter in a tree, so that words with the same beginning share it. Each node stands for a prefix. Its children are a dict from a letter to the next node, and a flag marks the nodes where a whole word ends. Here are "cab", "cake", "car", "card" and "dog", with a `*` where a word ends:
+
+      ```text
+      (root)
+       +-- c
+       |   +-- a
+       |       +-- b *
+       |       +-- k
+       |       |   +-- e *
+       |       +-- r *
+       |           +-- d *
+       +-- d
+           +-- o
+               +-- g *
+      ```
+
+      ```python run
+      class TrieNode:
+          def __init__(self):
+              self.children = {}
+              self.is_word = False
+
+
+      class Trie:
+          def __init__(self):
+              self.root = TrieNode()
+
+          def insert(self, word):
+              node = self.root
+              for letter in word:
+                  if letter not in node.children:
+                      node.children[letter] = TrieNode()
+                  node = node.children[letter]
+              node.is_word = True
+
+          def find(self, prefix):
+              node = self.root
+              for letter in prefix:
+                  if letter not in node.children:
+                      return None
+                  node = node.children[letter]
+              return node
+
+          def contains(self, word):
+              node = self.find(word)
+              return node is not None and node.is_word
+
+          def complete(self, prefix):
+              words = []
+              node = self.find(prefix)
+              if node is not None:
+                  self.collect(node, prefix, words)
+              return words
+
+          def collect(self, node, text, words):
+              if node.is_word:
+                  words.append(text)
+              for letter in sorted(node.children):
+                  self.collect(node.children[letter], text + letter, words)
+
+
+      trie = Trie()
+      for word in ["car", "dog", "card", "cake", "cab"]:
+          trie.insert(word)
+      print(trie.contains("car"), trie.contains("ca"), trie.contains("cart"))
+      print(trie.complete("ca"))
+      print(trie.complete("do"), trie.complete("x"))
+      ```
+
+      ```output
+      True False False
+      ['cab', 'cake', 'car', 'card']
+      ['dog'] []
+      ```
+
+      `insert` walks down the word, making the nodes that are missing, and marks the last one. `find` walks down a prefix one letter at a time and returns its node, or `None` when the path breaks off. "ca" is in the trie as a prefix, but no word ends there, which is why `contains` checks the flag.
+
+      ### Autocomplete in sorted order
+
+      Every word that starts with a prefix lies below the prefix's node. So `complete` finds that node, and `collect` visits everything under it in pre-order: a node's own word first, then its children. Two things make the words come out sorted, with no sorting of the words at the end. A word comes before the longer words that start with it ("car" before "card"), and the children are visited in alphabetical order.
+
+      That `sorted` matters. A dict keeps its keys in the order they were added, so a `collect` that loops over `node.children` as it is gives the words in an order that depends on the inserts:
+
+      ```python run
+      class TrieNode:
+          def __init__(self):
+              self.children = {}
+              self.is_word = False
+
+
+      def insert(root, word):
+          node = root
+          for letter in word:
+              if letter not in node.children:
+                  node.children[letter] = TrieNode()
+              node = node.children[letter]
+          node.is_word = True
+
+
+      def collect(node, text, words):
+          if node.is_word:
+              words.append(text)
+          for letter in node.children:
+              collect(node.children[letter], text + letter, words)
+
+
+      root = TrieNode()
+      for word in ["car", "dog", "card", "cake", "cab"]:
+          insert(root, word)
+      words = []
+      collect(root, "", words)
+      print(words)
+      ```
+
+      ```output
+      ['car', 'card', 'cake', 'cab', 'dog']
+      ```
+
+      Below "ca", the letters were added in the order r, k, b, because "car" came before "cake" and "cab", so "car" and "card" come out first. The same five words inserted in another order would come out in another order again. A test with words inserted in alphabetical order hides this mistake, which is why good tests mix them up.
+
+      The recursion in `collect` goes one level deeper per letter, so its depth is the length of the longest word: no danger of a `RecursionError`.
+
+      ### What it costs
+
+      `insert`, `find` and `contains` take one dict step per letter: O(m) for a word or a prefix of m letters, whether the trie holds ten words or a million. `complete` costs O(m) to find the node, then a visit to each node below it. Each visit builds its node's text with `text + letter`, which copies every letter so far. So with k nodes below the prefix and words of at most L letters, `collect` costs O(k·L): close to O(k) for short words, but in a trie of one word of 500 letters, `complete("")` copies over 125,000 letters. A version that keeps one list of letters, appends a letter on the way down, pops it on the way back up and calls `"".join` only where a word ends, costs O(k) plus the letters of the words it returns. The memory is one node per different prefix: at most the total number of letters in all the words, and less where words share their beginnings.
+
+      A trie can count, too. If every node keeps a `count` of the words that pass through it (`insert` adds 1 to each node on its way down), the number of words that start with a prefix is the `count` of the prefix's node: one walk of m letters instead of a scan of every word.
+
+      **Your turn:** a search engine shortens each word to the shortest **stem** it knows that the word starts with, so that "raining" and "rainbows" both become "rain". The stems are in a trie. Fill in the blanks of `shortest_stem`: it walks down the word one letter at a time, and at the first node where a stem ends, it returns the part of the word read so far, `word[0]` to `word[i]`. A word that starts with no stem stays as it is. The program should print:
+
+      ```
+      ['play', 'cat', 'saw', 'rain', 'in', 'the', 'rain']
+      ca rain
+      ```
+    fill: |
+      class TrieNode:
+          def __init__(self):
+              self.children = {}
+              self.is_word = False
+
+
+      class Trie:
+          def __init__(self):
+              self.root = TrieNode()
+
+          def insert(self, word):
+              node = self.root
+              for letter in word:
+                  if letter not in node.children:
+                      node.children[letter] = TrieNode()
+                  node = node.children[letter]
+              node.is_word = True
+
+          def shortest_stem(self, word):
+              node = self.root
+              for i in range(len(word)):
+                  letter = word[i]
+                  if letter not in node.children:
+                      return word
+                  node = node.children[letter]
+                  if [[node.is_word‖node.is_word == True‖node.is_word is True]]:
+                      return word[:[[i + 1‖1 + i]]]
+              return word
+
+
+      trie = Trie()
+      for stem in ["rainbow", "play", "rain", "cat"]:
+          trie.insert(stem)
+      words = "playful cats saw rainbows in the rain".split()
+      print([trie.shortest_stem(word) for word in words])
+      print(trie.shortest_stem("ca"), trie.shortest_stem("raindrop"))
+    hints:
+      - "A stem ends at a node whose `is_word` flag is set. Check it right after stepping into the node for `letter`: the first such node is the shortest stem, so \"rainbows\" stops at \"rain\", not at \"rainbow\"."
+      - "The first blank is `node.is_word`. The letters read so far are those at the indexes 0 to `i`, and a slice stops just before its end index: `word[:i + 1]`."
+    tests:
+      - expect: |
+          ['play', 'cat', 'saw', 'rain', 'in', 'the', 'rain']
+          ca rain
+    more:
+      - task: |
+          Write `count_with_prefix(words, prefixes)` that returns a list with, for each prefix, the number of words that start with it. A word that is in the list twice counts twice. The hidden test has 60,000 words and 60,000 prefixes, so a scan of all the words for each prefix is too slow: build a trie whose nodes count the words that pass through them.
+
+          For example, this program:
+
+          ```python fragment
+          words = ["car", "card", "care", "cat", "dog", "car"]
+          print(count_with_prefix(words, ["car", "ca", "d", "cart", "x"]))
+          ```
+
+          prints:
+
+          ```
+          [4, 5, 1, 0, 0]
+          ```
+        seed: |
+          def count_with_prefix(words, prefixes):
+              pass
+
+
+          if __name__ == "__main__":
+              words = ["car", "card", "care", "cat", "dog", "car"]
+              print(count_with_prefix(words, ["car", "ca", "d", "cart", "x"]))
+        solution: |
+          class TrieNode:
+              def __init__(self):
+                  self.children = {}
+                  self.count = 0
+
+
+          def count_with_prefix(words, prefixes):
+              root = TrieNode()
+              for word in words:
+                  node = root
+                  for letter in word:
+                      if letter not in node.children:
+                          node.children[letter] = TrieNode()
+                      node = node.children[letter]
+                      node.count += 1
+              result = []
+              for prefix in prefixes:
+                  node = root
+                  for letter in prefix:
+                      if letter not in node.children:
+                          node = None
+                          break
+                      node = node.children[letter]
+                  if node is None:
+                      result.append(0)
+                  else:
+                      result.append(node.count)
+              return result
+
+
+          if __name__ == "__main__":
+              words = ["car", "card", "care", "cat", "dog", "car"]
+              print(count_with_prefix(words, ["car", "ca", "d", "cart", "x"]))
+        slow: |
+          def count_with_prefix(words, prefixes):
+              result = []
+              for prefix in prefixes:
+                  count = 0
+                  for word in words:
+                      if word.startswith(prefix):
+                          count += 1
+                  result.append(count)
+              return result
+
+
+          if __name__ == "__main__":
+              words = ["car", "card", "care", "cat", "dog", "car"]
+              print(count_with_prefix(words, ["car", "ca", "d", "cart", "x"]))
+        hints:
+          - "Make a node class with a `children` dict and a `count`. Insert every word as the lesson's `insert` does, and add 1 to the `count` of each node you step into."
+          - "Then the count of a prefix's node is the number of words that pass through it, which are the words that start with the prefix."
+          - "For each prefix, walk down from the root letter by letter. If a letter is missing, no word starts with the prefix: its answer is 0. Otherwise, the answer is the count of the node where the walk ends."
+        tests:
+          - call: |
+              words = ["car", "card", "care", "cat", "dog", "car"]
+              print(count_with_prefix(words, ["car", "ca", "d", "cart", "x"]))
+          - call: count_with_prefix([], ["a", "b"])
+            hidden: true
+          - call: count_with_prefix(["apple", "app", "apply", "ape"], ["app", "apple", "apples", "a", "p"])
+            hidden: true
+          - call: count_with_prefix(["sun", "sun", "sunny"], ["sun", "sunn", "s"])
+            hidden: true
+          - call: count_with_prefix(["a", "ab", "abc"], ["abc", "abcd", "b"])
+            hidden: true
+          - call: |
+              words = [str(i * 7919 % 10_007) for i in range(60_000)]
+              counts = count_with_prefix(words, [str(i * 37 % 1009) for i in range(60_000)])
+              print(len(counts), max(counts), sum(counts))
+            hidden: true
+            big: true
+      - task: |
+          A word game lets players search with a dot for any one letter: "c.t" matches "cat", "cot" and "cut", but not "cart" (a dot is exactly one letter). Add a method `matches(self, pattern)` to the `Trie` class that returns the words of the trie that match `pattern`, in alphabetical order.
+
+          Walk down the trie along the pattern. A letter follows its one child, if there is one. A dot follows every child, in alphabetical order. When the whole pattern is used up, the node you're at is a match if a word ends there. A helper method that does this recursively, given the node, the pattern and the text so far, keeps it short.
+
+          For example, this program:
+
+          ```python fragment
+          trie = Trie()
+          for word in ["cat", "cot", "cut", "cart", "dog", "dot", "cab"]:
+              trie.insert(word)
+          print(trie.matches("c.t"))
+          print(trie.matches("do."), trie.matches("x.."))
+          ```
+
+          prints:
+
+          ```
+          ['cat', 'cot', 'cut']
+          ['dog', 'dot'] []
+          ```
+        seed: |
+          class TrieNode:
+              def __init__(self):
+                  self.children = {}
+                  self.is_word = False
+
+
+          class Trie:
+              def __init__(self):
+                  self.root = TrieNode()
+
+              def insert(self, word):
+                  node = self.root
+                  for letter in word:
+                      if letter not in node.children:
+                          node.children[letter] = TrieNode()
+                      node = node.children[letter]
+                  node.is_word = True
+
+              def matches(self, pattern):
+                  pass
+
+
+          if __name__ == "__main__":
+              trie = Trie()
+              for word in ["cat", "cot", "cut", "cart", "dog", "dot", "cab"]:
+                  trie.insert(word)
+              print(trie.matches("c.t"))
+              print(trie.matches("do."), trie.matches("x.."))
+        solution: |
+          class TrieNode:
+              def __init__(self):
+                  self.children = {}
+                  self.is_word = False
+
+
+          class Trie:
+              def __init__(self):
+                  self.root = TrieNode()
+
+              def insert(self, word):
+                  node = self.root
+                  for letter in word:
+                      if letter not in node.children:
+                          node.children[letter] = TrieNode()
+                      node = node.children[letter]
+                  node.is_word = True
+
+              def matches(self, pattern):
+                  found = []
+                  self.match(self.root, pattern, "", found)
+                  return found
+
+              def match(self, node, pattern, text, found):
+                  if len(text) == len(pattern):
+                      if node.is_word:
+                          found.append(text)
+                      return
+                  letter = pattern[len(text)]
+                  if letter == ".":
+                      for child in sorted(node.children):
+                          self.match(node.children[child], pattern, text + child, found)
+                  elif letter in node.children:
+                      self.match(node.children[letter], pattern, text + letter, found)
+
+
+          if __name__ == "__main__":
+              trie = Trie()
+              for word in ["cat", "cot", "cut", "cart", "dog", "dot", "cab"]:
+                  trie.insert(word)
+              print(trie.matches("c.t"))
+              print(trie.matches("do."), trie.matches("x.."))
+        hints:
+          - "Write a helper method `match(self, node, pattern, text, found)`: `text` is the part of the pattern matched so far, so `len(text)` tells which letter of the pattern comes next. `matches` calls it with the root, an empty text and an empty list."
+          - "The base case: when `len(text) == len(pattern)`, append `text` to `found` if `node.is_word`, and return."
+          - "Otherwise, look at `letter = pattern[len(text)]`. For a dot, call the helper for every child in `sorted(node.children)`, with that child's letter added to `text`. For any other letter, call it only for that letter's child, if there is one."
+        tests:
+          - call: |
+              trie = Trie()
+              for word in ["cat", "cot", "cut", "cart", "dog", "dot", "cab"]:
+                  trie.insert(word)
+              print(trie.matches("c.t"))
+              print(trie.matches("do."), trie.matches("x.."))
+          - call: |
+              trie = Trie()
+              for word in ["cat", "cot", "cut", "cart", "dog", "dot", "cab"]:
+                  trie.insert(word)
+              print(trie.matches("..."))
+              print(trie.matches("c..t"), trie.matches(".a."), trie.matches("ca"))
+            hidden: true
+          - call: |
+              trie = Trie()
+              for word in ["moon", "mood", "moan", "mean", "men"]:
+                  trie.insert(word)
+              print(trie.matches("m..n"), trie.matches("mo.d"), trie.matches("m.n"), trie.matches("...."))
+            hidden: true
+          - call: |
+              trie = Trie()
+              print(trie.matches("a."))
+            hidden: true

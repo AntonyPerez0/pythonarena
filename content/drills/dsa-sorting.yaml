@@ -1,0 +1,237 @@
+topic: dsa-sorting
+drills:
+  - type: choice
+    after: insertion-sort
+    prompt: What does insertion sort, with a `while` loop that stops at the first item that isn't bigger, cost on a list that is already sorted?
+    choices:
+      - "O(n): each round compares once and stops"
+      - "O(n log n), like every good sort"
+      - "O(n²): it compares every pair"
+    answer: 1
+    why: "A sorted list has no item that needs to move, so each round makes one comparison and stops: n - 1 comparisons in all. That's why insertion sort is quick on nearly sorted data."
+
+  - type: bug
+    after: insertion-sort
+    code: |
+      values = [3, 1, 2]
+      for i in range(1, len(values)):
+          item = values[i]
+          j = i
+          while j >= 0 and values[j - 1] > item:  # BUG
+              values[j] = values[j - 1]
+              j -= 1
+          values[j] = item
+      print(values)
+    fix: "while j > 0 and values[j - 1] > item:"
+    why: "With `j >= 0`, the loop goes on at `j = 0` and reads `values[-1]`, the last item of the list. Python's negative indexes make this a quiet bug instead of an `IndexError`: the list comes out scrambled."
+
+  - type: predict
+    after: insertion-sort
+    code: |
+      values = [4, 2, 3, 1]
+      moves = 0
+      for i in range(1, len(values)):
+          for j in range(i):
+              if values[j] > values[i]:
+                  moves += 1
+      print(moves)
+    why: "The program counts the pairs in the wrong order, the inversions: 4 and 2, 4 and 3, 4 and 1, 2 and 1, 3 and 1. That's 5, the number of moves insertion sort would make on this list."
+
+  - type: choice
+    after: merge-sort
+    prompt: Merge sort splits a list of 1,000,000 values in halves, again and again, down to single items. About how many levels of splitting is that?
+    choices:
+      - "20"
+      - "1,000"
+      - "500,000"
+    answer: 1
+    why: "Each level halves the parts, and 1,000,000 can be halved about 20 times before single items are left: log n levels, each costing O(n), O(n log n) in all."
+
+  - type: bug
+    after: merge-sort
+    code: |
+      left = [1, 5, 9]
+      right = [2, 3]
+      merged = []
+      i = 0
+      j = 0
+      while i < len(left) and j < len(right):
+          if left[i] <= right[j]:
+              merged.append(left[i])
+              i += 1
+          else:
+              merged.append(right[j])
+              j += 1
+      merged += left[j:]  # BUG
+      print(merged + right[j:])
+    fix: merged += left[i:]
+    why: "The left list's own index is `i`. With `left[j:]`, the leftovers start at the wrong place: here the 5 is lost and only the 9 is added."
+
+  - type: predict
+    after: quicksort
+    code: |
+      values = [5, 8, 2, 9, 4]
+      pivot = values[-1]
+      i = 0
+      for j in range(len(values) - 1):
+          if values[j] < pivot:
+              values[i], values[j] = values[j], values[i]
+              i += 1
+      values[i], values[-1] = values[-1], values[i]
+      print(i, values)
+    why: "Only 2 is smaller than the pivot 4, so it swaps to index 0 and `i` becomes 1. Then the pivot swaps into index 1, between the smaller part and the rest."
+
+  - type: runs
+    after: quicksort
+    code: |
+      def quicksort(values):
+          if len(values) <= 1:
+              return values
+          pivot = values[0]
+          smaller = [x for x in values[1:] if x < pivot]
+          bigger = [x for x in values[1:] if x >= pivot]
+          return quicksort(smaller) + [pivot] + quicksort(bigger)
+
+
+      print(quicksort(list(range(2000)))[:3])
+    why: "On a sorted list the first item is the smallest, so `smaller` is always empty and `bigger` holds everything else. That's 2,000 nested calls, more than Python's limit of about 1,000, so it stops with a `RecursionError`."
+
+  - type: choice
+    after: quicksort
+    prompt: Which pivot keeps quicksort fast on a list that is already sorted?
+    choices:
+      - The last item
+      - The first item
+      - The middle item
+    answer: 3
+    why: "On a sorted list the first and the last items are the smallest and the biggest, so every partition leaves everything on one side: O(n²). The middle item splits the list in halves."
+
+  - type: fill
+    after: counting-sort
+    code: |
+      ages = [19, 18, 21, 19]
+      counts = [0] * 4
+      for age in ages:
+          counts[[[age - 18]]] += 1
+      print(counts)
+    why: "The ages go from 18 to 21, so counter 0 is for 18 and the age `a` has the counter `a - 18`."
+
+  - type: choice
+    after: counting-sort
+    prompt: What does counting sort cost for n whole numbers from 0 to k?
+    choices:
+      - "O(n + k) time and O(k) memory for the counters"
+      - "O(n log n) time, like every sort"
+      - "O(n·k) time"
+    answer: 1
+    why: "One pass counts the n values, and one pass over the k + 1 counters writes them out. It doesn't compare items, so it isn't held to O(n log n), but a huge k makes it slow and hungry for memory."
+
+  - type: predict
+    after: counting-sort
+    code: |
+      buckets = [[]] * 3
+      buckets[0].append("a")
+      print(buckets)
+    why: "`[[]] * 3` is a list of three references to one and the same list, so appending to `buckets[0]` shows up in all three. `[[] for _ in range(3)]` makes three separate lists."
+
+  - type: runs
+    after: python-sort
+    code: |
+      def ranked(scores):
+          return scores.sort(reverse=True)
+
+
+      best = ranked([70, 95, 82])
+      print(len(best))
+    why: "`sort` sorts the list in place and returns `None`, so `ranked` returns `None` too, and `len(None)` is a `TypeError`. Write `scores.sort(reverse=True)` on its own line and then `return scores`, or `return sorted(scores, reverse=True)`."
+
+  - type: predict
+    after: python-sort
+    code: |
+      words = ["banana", "Cherry", "apple"]
+      print(sorted(words))
+      print(sorted(words, key=str.lower))
+    why: "In Python's string order every capital letter comes before every small letter, so `Cherry` comes first. `key=str.lower` compares the words as small letters."
+
+  - type: predict
+    after: python-sort
+    code: |
+      pets = [("Rex", 3), ("Tom", 1), ("Max", 3), ("Bo", 1)]
+      pets.sort(key=lambda pet: pet[1], reverse=True)
+      print([name for name, age in pets])
+    why: "`reverse=True` puts the 3s first, and the sort stays stable: Rex comes before Max and Tom before Bo, as in the list."
+
+  - type: choice
+    after: k-smallest
+    prompt: What does `heapq.nsmallest(k, values)` cost for n values?
+    choices:
+      - "O(n log k): one pass, keeping the k best in a heap"
+      - "O(n log n): it sorts all the values"
+      - "O(n·k): it finds the smallest value k times"
+    answer: 1
+    why: "It goes through the values once and keeps only the k best seen so far, and each value costs at most O(log k). For a small k, that's close to O(n)."
+
+  - type: predict
+    after: k-smallest
+    code: |
+      import heapq
+
+      words = ["fig", "plum", "kiwi", "apple", "pear"]
+      print(heapq.nlargest(2, words, key=len))
+      print(heapq.nsmallest(2, words, key=len))
+    why: "`plum`, `kiwi` and `pear` all have 4 letters, and items with equal keys come in their original order, so `plum` is the one picked both times."
+
+  - type: bug
+    after: k-smallest
+    code: |
+      values = [8, 3, 5, 1]
+      ordered = sorted(values)
+      n = len(ordered)
+      median = (ordered[n // 2] + ordered[n // 2 + 1]) / 2  # BUG
+      print(median)
+    fix: median = (ordered[n // 2 - 1] + ordered[n // 2]) / 2
+    why: "With 4 values the two in the middle are at indexes 1 and 2, that's `n // 2 - 1` and `n // 2`. The buggy line averages indexes 2 and 3, the upper half."
+
+  - type: boss
+    after: k-smallest
+    prompt: |
+      Write `kth_largest(values, k)`, which returns the k-th largest value of a list, counting repeated values: `k = 1` gives the largest. `k` is from 1 to the length of the list. Don't sort the whole list.
+
+      For example, `kth_largest([5, 9, 9, 3], 2)` returns:
+
+      ```
+      9
+      ```
+    seed: |
+      def kth_largest(values, k):
+          pass
+
+
+      if __name__ == "__main__":
+          print(kth_largest([5, 9, 9, 3], 2))
+    solution: |
+      import heapq
+
+
+      def kth_largest(values, k):
+          return heapq.nlargest(k, values)[-1]
+
+
+      if __name__ == "__main__":
+          print(kth_largest([5, 9, 9, 3], 2))
+    hints:
+      - "`heapq.nlargest(k, values)` gives the k largest values, the largest first."
+      - "The last of those k values is the k-th largest: `heapq.nlargest(k, values)[-1]`."
+    forbid:
+      - pattern: \bsorted\s*\(|\.sort\s*\(
+        message: Don't sort the whole list; `heapq` gives the k largest.
+    tests:
+      - call: kth_largest([5, 9, 9, 3], 2)
+      - call: kth_largest([5, 9, 9, 3], 1)
+        hidden: true
+      - call: kth_largest([5, 9, 9, 3], 4)
+        hidden: true
+      - call: kth_largest([-2, -7, 0], 2)
+        hidden: true
+      - call: kth_largest([42], 1)
+        hidden: true

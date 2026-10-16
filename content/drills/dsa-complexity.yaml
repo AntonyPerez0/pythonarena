@@ -1,0 +1,325 @@
+topic: dsa-complexity
+drills:
+  - type: predict
+    after: big-o
+    code: |
+      steps = 0
+      for i in range(5):
+          for j in range(i, 5):
+              steps += 1
+      print(steps)
+    why: "The inner loop runs 5, 4, 3, 2 and 1 times: 15 in all. For n values that's about n²/2 steps, which is O(n²)."
+
+  - type: choice
+    after: big-o
+    prompt: "`a` and `b` are lists of n values each. What is the Big-O of `count_common`?"
+    code: |
+      def count_common(a, b):
+          count = 0
+          for x in a:
+              if x in b:
+                  count += 1
+          return count
+
+
+      print(count_common([1, 2, 3], [2, 3, 4]))
+    choices:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "`x in b` looks through the list `b` item by item, O(n), and it runs once for each of the n values of `a`. With `b` turned into a set first, it would be O(n)."
+
+  - type: choice
+    after: big-o
+    prompt: "What is the Big-O of emptying a list of n items like this?"
+    code: |
+      queue = list(range(1000))
+      while queue:
+          item = queue.pop(0)
+      print(len(queue))
+    choices:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "`pop(0)` takes the first item, and every item after it moves one place to the left: O(n) for each pop. `queue.pop()` from the end is O(1), and `collections.deque` has `popleft()` in O(1)."
+
+  - type: predict
+    after: sets-and-dicts
+    code: |
+      seen = set()
+      for x in [4, 7, 4, 2, 7, 9]:
+          if x in seen:
+              print(x)
+          seen.add(x)
+    why: "Each value is checked before it's added. The second 4 and the second 7 find their first copies in `seen`."
+
+  - type: runs
+    after: sets-and-dicts
+    code: |
+      seen = set()
+      for word in ["red", "blue", "red"]:
+          seen.append(word)
+      print(len(seen))
+    why: "A set has no order and no `append`. Its method for adding a value is `add`: `seen.add(word)`."
+
+  - type: bug
+    after: sets-and-dicts
+    code: |
+      def two_sum(numbers, target):
+          positions = {}
+          for i, x in enumerate(numbers):
+              if target - x in positions:
+                  return (positions[target - x], i)
+              positions[i] = x  # BUG
+          return None
+
+
+      print(two_sum([3, 8, 5], 13))
+    fix: positions[x] = i
+    why: "The lookup `target - x in positions` asks about values, so the keys must be the values and the dict's values their indexes."
+
+  - type: predict
+    after: binary-search
+    code: |
+      from bisect import bisect_left, bisect_right
+
+      scores = [10, 20, 20, 20, 30]
+      print(bisect_left(scores, 20), bisect_right(scores, 20))
+      print(bisect_left(scores, 25))
+    why: "`bisect_left` gives the first index whose value is at least 20, and `bisect_right` the first whose value is greater than 20. 25 would go before 30, at index 4."
+
+  - type: runs
+    after: binary-search
+    code: |
+      values = [2, 4, 6]
+      lo = 0
+      hi = len(values)
+      while lo <= hi:
+          mid = (lo + hi) // 2
+          if values[mid] < 7:
+              lo = mid + 1
+          else:
+              hi = mid - 1
+      print(lo)
+    why: "`hi` starts one past the end, and `lo <= hi` lets `mid` reach 3. `values[3]` doesn't exist, so it stops with an `IndexError`. With `hi = len(values) - 1` it would print 3."
+
+  - type: fill
+    after: binary-search
+    code: |
+      values = [3, 5, 8, 8, 20]
+      lo = 0
+      hi = len(values)
+      while lo < hi:
+          mid = (lo + hi) // 2
+          if values[mid] < 8:
+              lo = mid + 1
+          else:
+              hi = [[mid]]
+      print(lo)
+    why: "This search finds the first index whose value is at least 8. When `values[mid]` is big enough, `mid` may be the answer, so it stays in the range: `hi = mid`, and it prints 2. With `hi = mid - 1`, the first round drops index 2, the answer itself, and it prints 1."
+
+  - type: predict
+    after: two-pointers
+    code: |
+      values = [3, 3, 3, 3]
+      for value in values:
+          if values.count(value) > 1:
+              values.remove(value)
+      print(values)
+    why: "The loop goes by position. After each `remove`, the items shift left, and the loop's next position skips one of them. It stops after two removals, with two 3s left."
+
+  - type: choice
+    after: two-pointers
+    prompt: "In a sorted list, `values[left] + values[right]` is smaller than the target. Why is it safe to move `left` on?"
+    choices:
+      - "`values[left]` is too small even with the largest value still in play, so it can't be in any pair"
+      - "`values[right]` is too big to be in any pair"
+      - "Moving `left` on makes the sum smaller"
+    answer: 1
+    why: "Every other partner of `values[left]` is at most `values[right]`, so no pair with it reaches the target. Dropping it loses nothing, and moving `left` on makes the sum bigger, not smaller."
+
+  - type: fill
+    after: two-pointers
+    code: |
+      values = [1, 1, 2, 4, 4, 4, 7]
+      write = 1
+      for read in range(1, len(values)):
+          if values[read] != values[write - 1]:
+              values[write] = values[read]
+              write += 1
+      print(values[:[[write]]])
+    why: "`write` is how many values were kept: they are at the front of the list, `values[:write]`. The rest of the list is left over from before."
+
+  - type: predict
+    after: prefix-sums
+    code: |
+      from itertools import accumulate
+
+      prefix = list(accumulate([4, 1, 3, 2], initial=0))
+      print(prefix)
+      print(prefix[3] - prefix[1])
+    why: "`initial=0` puts 0 in front of the running totals. `prefix[3] - prefix[1]` is the sum of the values at indexes 1 and 2: 1 + 3."
+
+  - type: bug
+    after: prefix-sums
+    code: |
+      values = [6, 2, 9, 4]
+      prefix = [0]
+      for value in values:
+          prefix.append(prefix[-1] + value)
+      start, end = 1, 3
+      print(prefix[end] - prefix[start - 1])  # BUG
+    fix: print(prefix[end] - prefix[start])
+    why: "`prefix[i]` already holds the values before index `i`, so the sum of `values[start:end]` is `prefix[end] - prefix[start]`, here 2 + 9. With `start - 1` the 6 sneaks in."
+
+  - type: bug
+    after: sliding-window
+    code: |
+      values = [4, 2, 12, 3, 8]
+      k = 2
+      total = sum(values[:k])
+      best = total
+      for i in range(k, len(values)):
+          total += values[i] - values[i - k + 1]  # BUG
+          best = max(best, total)
+      print(best)
+    fix: total += values[i] - values[i - k]
+    why: "The window that ends at `i` starts at `i - k + 1`, so the value that just left is `values[i - k]`. Subtracting `values[i - k + 1]` takes out a value that is still inside."
+
+  - type: choice
+    after: sliding-window
+    prompt: "A window that grows with `right` and shrinks with `left` has a `while` loop inside a `for` loop. Why is it still O(n)?"
+    choices:
+      - "`left` only moves forward, so the inner loop runs at most n times in all, not n times per value"
+      - "The inner loop always runs at most once per value"
+      - "It isn't: a loop inside a loop is always O(n²)"
+    answer: 1
+    why: "Each value enters the window once and leaves it at most once. The inner loop may run many times for one value and none for others, but its rounds add up to at most n."
+
+  - type: boss
+    after: sets-and-dicts
+    prompt: |
+      Write `close_repeat(values, k)`: `True` when some value appears twice at positions at most `k` apart, and `False` otherwise. It must be O(n): the hidden test has 200,000 values. Remember where you last saw each value, in a dict.
+
+      For example, `close_repeat([1, 2, 3, 1, 5], 3)` returns (the 1s at positions 0 and 3):
+
+      ```
+      True
+      ```
+    seed: |
+      def close_repeat(values, k):
+          pass
+
+
+      if __name__ == "__main__":
+          print(close_repeat([1, 2, 3, 1, 5], 3))
+    solution: |
+      def close_repeat(values, k):
+          last = {}
+          for i, value in enumerate(values):
+              if value in last and i - last[value] <= k:
+                  return True
+              last[value] = i
+          return False
+
+
+      if __name__ == "__main__":
+          print(close_repeat([1, 2, 3, 1, 5], 3))
+    slow: |
+      def close_repeat(values, k):
+          for i in range(len(values)):
+              if values[i] in values[i + 1:i + k + 1]:
+                  return True
+          return False
+
+
+      if __name__ == "__main__":
+          print(close_repeat([1, 2, 3, 1, 5], 3))
+    hints:
+      - "Keep a dict `last` that maps each value to the position where you saw it last."
+      - "At position `i`, if the value is in `last` and `i - last[value] <= k`, you've found a close repeat. Either way, store `i` as the value's last position."
+    tests:
+      - call: close_repeat([1, 2, 3, 1, 5], 3)
+      - call: close_repeat([1, 2, 3, 1, 5], 2)
+        hidden: true
+      - call: close_repeat([7, 7], 1)
+        hidden: true
+      - call: close_repeat([], 4)
+        hidden: true
+      - call: close_repeat([5, 0, 5, 0, 5], 1)
+        hidden: true
+      - call: close_repeat([4, 1, 4, 9, 9], 1)
+        hidden: true
+      - call: close_repeat([3, 9, 6, 3, 8, 3], 2)
+        hidden: true
+      - call: close_repeat([1, 2, 3, 1, 1], 1)
+        hidden: true
+      - call: close_repeat([i % 100_000 for i in range(200_000)], 99_999)
+        hidden: true
+        big: true
+
+  - type: boss
+    after: sliding-window
+    prompt: |
+      Write `most_vowels(text, k)`: the largest number of vowels (a, e, i, o and u) in any `k` characters in a row of `text`. The text has at least `k` characters. The hidden test has 400,000 characters and k = 150,000, so counting each window from scratch is too slow: slide the window.
+
+      For example, `most_vowels("programming", 4)` returns (`"ogra"`):
+
+      ```
+      2
+      ```
+    seed: |
+      def most_vowels(text, k):
+          pass
+
+
+      if __name__ == "__main__":
+          print(most_vowels("programming", 4))
+    solution: |
+      def most_vowels(text, k):
+          count = 0
+          for char in text[:k]:
+              if char in "aeiou":
+                  count += 1
+          best = count
+          for i in range(k, len(text)):
+              if text[i] in "aeiou":
+                  count += 1
+              if text[i - k] in "aeiou":
+                  count -= 1
+              best = max(best, count)
+          return best
+
+
+      if __name__ == "__main__":
+          print(most_vowels("programming", 4))
+    slow: |
+      def most_vowels(text, k):
+          best = 0
+          for i in range(len(text) - k + 1):
+              count = 0
+              for char in text[i:i + k]:
+                  if char in "aeiou":
+                      count += 1
+              best = max(best, count)
+          return best
+
+
+      if __name__ == "__main__":
+          print(most_vowels("programming", 4))
+    hints:
+      - "Count the vowels in the first `k` characters. That's the first window."
+      - "Moving the window one place, `text[i]` enters and `text[i - k]` leaves: add 1 if the one entering is a vowel, and take 1 away if the one leaving is."
+    tests:
+      - call: most_vowels("programming", 4)
+      - call: most_vowels("aeiou", 5)
+        hidden: true
+      - call: most_vowels("rhythm", 2)
+        hidden: true
+      - call: most_vowels("abciiidef", 3)
+        hidden: true
+      - call: most_vowels("".join("a" if i % 7 < 3 or i % 1000 < 50 else "b" for i in range(400_000)), 150_000)
+        hidden: true
+        big: true

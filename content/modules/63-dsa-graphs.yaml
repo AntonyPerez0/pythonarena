@@ -1,0 +1,2279 @@
+id: dsa-graphs
+summary: Graphs, for anything made of connections. Adjacency lists built from a list of edges, breadth-first search for the fewest steps on a grid, depth-first search with a stack of your own for flood fill and groups, topological sort for an order to build things in, Dijkstra's algorithm with heapq for weighted routes, and union-find for groups that merge, with big tests where the right algorithm is the fast way.
+steps:
+  - id: dsa-graphs-adjacency-lists
+    slug: adjacency-lists
+    title: Graphs and adjacency lists
+    text: |
+      Which of your friends' friends haven't you met yet? Can you fly from Lisbon to Osaka with one change of plane? Which of a program's files must Python load before `main.py` can run? Each question is about some things and the links between pairs of them. Put that way, it is a **graph**: a set of **vertices** (the things, also called nodes) and a set of **edges**, each joining two vertices. You have met one kind of graph already, the tree, where every node but the root hangs from exactly one parent. A graph in general has no such rules: it can have loops, several routes between the same two vertices, and pieces with no link between them at all. Interview questions about mazes, flights, schedules and groups of people are very often graph questions in disguise.
+
+      Links come in kinds. A flight has a price and a road a driving time: a number on an edge is its **weight**. The fifth step of this module uses weights; until then, every edge counts as one step. And a link may or may not work both ways. If Ana is Ben's cousin, Ben is Ana's cousin too, so the edge is **undirected**. But Ana can follow Ben online without Ben following back, and a file can import another without being imported by it: those edges are **directed**, from a to b.
+
+      ### From a list of edges to an adjacency list
+
+      A graph often arrives as a list of edges, each a pair of vertices. But the question that graph algorithms ask over and over is "where can I go from v in one step?": the **neighbors** of v. Scanning the whole list of edges for every such question costs O(E) each time, for E edges. An **adjacency list** answers at once. It is a dict that maps each vertex to the list of its neighbors:
+
+      ```python run
+      roads = [("Rome", "Naples"), ("Florence", "Rome"), ("Naples", "Bari"), ("Bologna", "Florence"), ("Rome", "Bari"), ("Cagliari", "Sassari")]
+
+      graph = {}
+      for a, b in roads:
+          if a not in graph:
+              graph[a] = []
+          if b not in graph:
+              graph[b] = []
+          graph[a].append(b)
+          graph[b].append(a)
+
+      for city in graph:
+          print(city, len(graph[city]), graph[city])
+      ```
+
+      ```output
+      Rome 3 ['Naples', 'Florence', 'Bari']
+      Naples 2 ['Rome', 'Bari']
+      Florence 2 ['Rome', 'Bologna']
+      Bari 2 ['Naples', 'Rome']
+      Bologna 1 ['Florence']
+      Cagliari 1 ['Sassari']
+      Sassari 1 ['Cagliari']
+      ```
+
+      A road is an undirected edge, so it goes into two lists: Naples is in Rome's list, and Rome is in Naples's. The number of neighbors of a vertex is its **degree**: Rome's is 3. Each edge adds 1 to the degree of both its ends, so the degrees add up to 2E, here 12 for 6 roads. Cagliari and Sassari are on the island of Sardinia, with a road only to each other: a graph can come in separate pieces, and no road leads from Rome to Cagliari.
+
+      The two `if` lines give every vertex a list of its own the first time it shows up, as `a` or as `b`. Without them, the first road to a new city stops with a `KeyError`. (`collections.defaultdict(list)` does the same for you: a missing key gets an empty list the first time it's used.) When the vertices are numbered 0 to n - 1, a list of lists works just as well: `graph[v]` is the list of v's neighbors.
+
+      ### Directed graphs: out and in
+
+      A directed edge goes into one list only, the list of the vertex it leaves from. That list's length is the vertex's **out-degree**. The **in-degree**, the number of edges coming in, needs a count of its own, made in the same single pass over the edges:
+
+      ```python run
+      follows = [(0, 1), (0, 2), (1, 2), (2, 0), (3, 2)]
+      n = 4
+
+      following = [[] for _ in range(n)]
+      followers = [0] * n
+      for a, b in follows:
+          following[a].append(b)
+          followers[b] += 1
+
+      print(following)
+      print([len(people) for people in following])
+      print(followers)
+      ```
+
+      ```output
+      [[1, 2], [2], [0], [2]]
+      [2, 1, 1, 1]
+      [1, 1, 3, 0]
+      ```
+
+      Person 2 has three followers and follows one person, and nobody follows 3. Counting each person's followers with a scan of all the edges *per person* gives the same numbers, but costs O(V·E) instead of O(V + E).
+
+      ### A Python trap: `[[]] * n`
+
+      To make n empty lists, `[[]] * n` looks right. But `*` repeats a reference to *one* list n times, so every vertex shares the same list:
+
+      ```python repl
+      >>> graph = [[]] * 3
+      >>> graph[0].append(1)
+      >>> graph
+      [[1], [1], [1]]
+      ```
+
+      Make each list separately: `[[] for _ in range(n)]`.
+
+      ### What it costs
+
+      An adjacency list takes O(V + E) memory: a list for each vertex, plus an entry for each directed edge (two for an undirected one). Going through the neighbors of v takes O(deg v), and through the neighbors of every vertex O(V + E). That's what the searches of the next steps do.
+
+      "Is there an edge from a to b?" is `b in graph[a]`: O(deg a) with a list. With a **set** of neighbors instead, it's O(1) on average, the trade you saw in the module on hash tables. (Sets of strings have no fixed order, so sort them before you print them.) The other classic layout, an **adjacency matrix**, is a V by V table of `True` and `False`, a list of V lists in Python. It answers in O(1) too, but takes O(V²) memory, whatever the number of edges. Take a city's street map: 50,000 crossings, each joined to about 4 others. Its adjacency lists hold about 200,000 entries. Its matrix has 2.5 billion cells, and since every item of a Python list is an 8-byte reference, that's 20 GB, almost all of it `False`. Graphs like this one, with far fewer than V² edges, are called **sparse**, and most real graphs are, so adjacency lists are the usual choice.
+
+      **Your turn:** `build` makes the adjacency list of an undirected graph whose vertices are numbered 0 to n - 1. Fill in the blanks: the edge's way back, and each vertex's degree. The program should print:
+
+      ```
+      [[1, 2], [0, 2], [0, 1, 3], [2], []]
+      [2, 2, 3, 1, 0]
+      ```
+    fill: |
+      def build(n, edges):
+          graph = [[] for _ in range(n)]
+          for a, b in edges:
+              graph[a].append(b)
+              [[graph[b].append(a)]]
+          return graph
+
+
+      graph = build(5, [(0, 1), (0, 2), (1, 2), (2, 3)])
+      print(graph)
+      degrees = []
+      for neighbors in graph:
+          degrees.append([[len(neighbors)]])
+      print(degrees)
+    hints:
+      - "An undirected edge goes both ways, so b must get a as a neighbor too."
+      - "The first blank is `graph[b].append(a)`. A vertex's degree is the number of its neighbors: `len(neighbors)`."
+    tests:
+      - expect: |
+          [[1, 2], [0, 2], [0, 1, 3], [2], []]
+          [2, 2, 3, 1, 0]
+    more:
+      - task: |
+          At a party of n people, numbered 0 to n - 1, `knows` lists pairs `(a, b)`: person a knows person b. A **celebrity** is known by everyone else and knows nobody. Write `find_celebrity(n, knows)` that returns the celebrity's number, or `None` when there is none. No pair appears twice, and nobody is paired with themselves.
+
+          In graph words, `knows` is a directed graph, and the celebrity has an in-degree of n - 1 and an out-degree of 0. Count both in one pass over the pairs: the hidden tests have 100,000 people and over 130,000 pairs, and counting each person's pairs with a scan of the whole list is O(n·E), billions of steps.
+
+          For example, this program:
+
+          ```python fragment
+          print(find_celebrity(4, [(0, 2), (1, 2), (3, 2), (0, 1), (3, 0)]))
+          print(find_celebrity(3, [(0, 1), (1, 0), (2, 1)]))
+          ```
+
+          prints:
+
+          ```
+          2
+          None
+          ```
+        seed: |
+          def find_celebrity(n, knows):
+              pass
+
+
+          if __name__ == "__main__":
+              print(find_celebrity(4, [(0, 2), (1, 2), (3, 2), (0, 1), (3, 0)]))
+              print(find_celebrity(3, [(0, 1), (1, 0), (2, 1)]))
+        solution: |
+          def find_celebrity(n, knows):
+              known_by = [0] * n
+              knows_someone = [False] * n
+              for a, b in knows:
+                  known_by[b] += 1
+                  knows_someone[a] = True
+              for person in range(n):
+                  if known_by[person] == n - 1 and not knows_someone[person]:
+                      return person
+              return None
+
+
+          if __name__ == "__main__":
+              print(find_celebrity(4, [(0, 2), (1, 2), (3, 2), (0, 1), (3, 0)]))
+              print(find_celebrity(3, [(0, 1), (1, 0), (2, 1)]))
+        slow: |
+          def find_celebrity(n, knows):
+              for person in range(n):
+                  known_by = 0
+                  knows_someone = False
+                  for a, b in knows:
+                      if b == person:
+                          known_by += 1
+                      if a == person:
+                          knows_someone = True
+                  if known_by == n - 1 and not knows_someone:
+                      return person
+              return None
+
+
+          if __name__ == "__main__":
+              print(find_celebrity(4, [(0, 2), (1, 2), (3, 2), (0, 1), (3, 0)]))
+              print(find_celebrity(3, [(0, 1), (1, 0), (2, 1)]))
+        hints:
+          - "Make two lists of n items before the loop: how many people know each person (the in-degree), and whether each person knows someone (the out-degree, or just whether it's above 0)."
+          - "One loop over the pairs fills both: for `(a, b)`, b is known by one more person, and a knows someone."
+          - "Then look for the person whose count is `n - 1` and who knows nobody. If no one fits, return `None`."
+        tests:
+          - call: |
+              print(find_celebrity(4, [(0, 2), (1, 2), (3, 2), (0, 1), (3, 0)]))
+              print(find_celebrity(3, [(0, 1), (1, 0), (2, 1)]))
+          - call: print(find_celebrity(3, [(0, 2), (1, 2), (2, 0)]))
+            hidden: true
+          - call: find_celebrity(3, [(1, 0), (2, 0)])
+            hidden: true
+          - call: print(find_celebrity(4, [(0, 3), (1, 3)]))
+            hidden: true
+          - call: find_celebrity(5, [(i, 4) for i in range(4)] + [(0, 1), (2, 3), (3, 1)])
+            hidden: true
+          - call: find_celebrity(100_000, [(i, 77_777) for i in range(100_000) if i != 77_777] + [(i, i + 1) for i in range(0, 99_999, 3)])
+            hidden: true
+            big: true
+          - call: print(find_celebrity(100_000, [(i, 0) for i in range(1, 100_000)] + [(0, 99_999)]))
+            hidden: true
+            big: true
+      - task: |
+          On a social network, `follows` lists pairs `(a, b)`: person a follows person b. Write `mutual_pairs(follows)` that returns how many pairs of people follow each other. Each such pair counts once. The people are numbers, no pair appears twice in the list, and nobody follows themselves.
+
+          `(b, a) in follows` would answer "does b follow a back?", but on a list it's a scan, O(E) for each of the E follows: the hidden test has 80,000 follows. Put each person's follows in a set first, so the check is O(1) on average.
+
+          For example, here 1 and 2 follow each other, and so do 3 and 4. So this call:
+
+          ```python fragment
+          print(mutual_pairs([(1, 2), (2, 1), (1, 3), (3, 4), (4, 3), (2, 3)]))
+          ```
+
+          prints:
+
+          ```
+          2
+          ```
+        seed: |
+          def mutual_pairs(follows):
+              pass
+
+
+          if __name__ == "__main__":
+              print(mutual_pairs([(1, 2), (2, 1), (1, 3), (3, 4), (4, 3), (2, 3)]))
+        solution: |
+          def mutual_pairs(follows):
+              following = {}
+              for a, b in follows:
+                  if a not in following:
+                      following[a] = set()
+                  following[a].add(b)
+              count = 0
+              for a, b in follows:
+                  if b in following and a in following[b]:
+                      count += 1
+              return count // 2
+
+
+          if __name__ == "__main__":
+              print(mutual_pairs([(1, 2), (2, 1), (1, 3), (3, 4), (4, 3), (2, 3)]))
+        slow: |
+          def mutual_pairs(follows):
+              count = 0
+              for a, b in follows:
+                  if (b, a) in follows:
+                      count += 1
+              return count // 2
+
+
+          if __name__ == "__main__":
+              print(mutual_pairs([(1, 2), (2, 1), (1, 3), (3, 4), (4, 3), (2, 3)]))
+        hints:
+          - "Build an adjacency list first: a dict that maps each person to the set of people they follow."
+          - "Then, for each follow `(a, b)`, check whether b follows a: `a in following[b]`, O(1) on average. Mind people who follow nobody: they aren't keys of the dict."
+          - "Every mutual pair is found twice, once from each side, so halve the count at the end. (Or count only the follows with `a < b`.)"
+        tests:
+          - call: print(mutual_pairs([(1, 2), (2, 1), (1, 3), (3, 4), (4, 3), (2, 3)]))
+          - call: mutual_pairs([])
+            hidden: true
+          - call: mutual_pairs([(5, 9), (9, 5)])
+            hidden: true
+          - call: mutual_pairs([(1, 2), (2, 3), (3, 1)])
+            hidden: true
+          - call: mutual_pairs([(1, 2), (2, 1), (2, 3), (3, 2), (1, 3), (3, 1), (4, 1)])
+            hidden: true
+          - call: mutual_pairs([(i, (i * 7 + 1) % 60_000) for i in range(60_000)] + [((i * 7 + 1) % 60_000, i) for i in range(0, 60_000, 3)])
+            hidden: true
+            big: true
+
+  - id: dsa-graphs-bfs
+    slug: bfs
+    title: Breadth-first search
+    text: |
+      A rumor starts with one person. In the first hour, everyone that person talks to hears it. In the second hour, everyone *they* talk to hears it, and so on. The hour in which you first hear it is the number of links in the shortest chain of people from the first person to you. **Breadth-first search** (BFS) works out that number for every vertex of a graph in which each edge counts as one step: it finds the vertices one edge from the start, then the ones two edges away, then three.
+
+      It's the level-order walk of the module on trees, with one change. A tree has only one way down to each node, so level order never meets a node twice. A graph can lead back to a vertex along another edge or around a cycle, so BFS must remember which vertices it has found and never queue one again. In Python, that memory is a dict, `dist`, from each vertex found so far to its number of steps: `w not in dist` asks "is w new?" in O(1) on average, and `dist[w]` is w's distance.
+
+      The search puts the start vertex, at distance 0, in a queue, a `collections.deque`. Then, until the queue is empty, it takes the vertex at the front, and each neighbor of it that is new gets that vertex's distance plus 1 and joins the back of the queue.
+
+      ```python run
+      from collections import deque
+
+
+      def bfs(graph, start):
+          dist = {start: 0}
+          queue = deque([start])
+          while queue:
+              v = queue.popleft()
+              for w in graph[v]:
+                  if w not in dist:
+                      dist[w] = dist[v] + 1
+                      queue.append(w)
+          return dist
+
+
+      graph = {
+          "A": ["B", "C"],
+          "B": ["A", "D"],
+          "C": ["A", "D", "E"],
+          "D": ["B", "C", "F"],
+          "E": ["C", "F"],
+          "F": ["D", "E"],
+          "G": [],
+      }
+      print(bfs(graph, "A"))
+      print(bfs(graph, "G"))
+      ```
+
+      ```output
+      {'A': 0, 'B': 1, 'C': 1, 'D': 2, 'E': 2, 'F': 3}
+      {'G': 0}
+      ```
+
+      G has no edges, so the search from A never gets there: G is **unreachable** from A, and has no distance. The search from G finds only G itself.
+
+      ### Why the first visit is the shortest
+
+      The queue holds the vertices in rings around the start: the ones at distance 1, then the ones at distance 2, and so on. All the vertices at distance d leave the queue before any at distance d + 1, and the neighbors they add get d + 1, at the back. So vertices leave in order of distance. When BFS first reaches w from v, every vertex nearer the start than v has already left the queue, and none of them had an edge to w, or w would have been found sooner. So there is no shorter way to w, and its distance never needs to change. D is found from B, at 2. C finds it again, also at 2, but D is already in `dist` and is skipped.
+
+      ### Why it needs the visited check
+
+      Without the `if w not in dist` check, a vertex joins the queue again every time it's reached. In a triangle, each vertex sends the other two back into the queue, forever:
+
+      ```python run
+      from collections import deque
+
+      graph = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
+      queue = deque(["A"])
+      taken = []
+      for _ in range(10):
+          v = queue.popleft()
+          taken.append(v)
+          for w in graph[v]:
+              queue.append(w)
+      print(taken)
+      print(len(queue), "waiting")
+      ```
+
+      ```output
+      ['A', 'B', 'C', 'A', 'C', 'A', 'B', 'B', 'C', 'A']
+      11 waiting
+      ```
+
+      This loop stops only because it was told to stop after 10 rounds. As `while queue:`, it would never end: each round takes one vertex out and puts two in. Mark a vertex when it *joins* the queue, as `dist[w] = ...` does, rather than when it leaves: then each vertex joins once, however many edges lead to it.
+
+      ### On a grid
+
+      A maze on a grid is a graph without an adjacency list. Each open cell `(r, c)` is a vertex, and its neighbors are the open cells above, below, left and right of it, worked out when needed. Cells outside the grid and walls (`#`) are skipped:
+
+      ```python run
+      from collections import deque
+
+
+      def steps(grid, start, goal):
+          rows, cols = len(grid), len(grid[0])
+          dist = {start: 0}
+          queue = deque([start])
+          while queue:
+              r, c = queue.popleft()
+              if (r, c) == goal:
+                  return dist[(r, c)]
+              for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                  if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != "#" and (nr, nc) not in dist:
+                      dist[(nr, nc)] = dist[(r, c)] + 1
+                      queue.append((nr, nc))
+          return -1
+
+
+      maze = [
+          "...#....",
+          ".#.#.##.",
+          ".#...#..",
+          ".####.##",
+          "......#.",
+      ]
+      print(steps(maze, (0, 0), (0, 7)))
+      print(steps(maze, (0, 0), (4, 5)))
+      print(steps(maze, (0, 0), (4, 7)))
+      ```
+
+      ```output
+      11
+      9
+      -1
+      ```
+
+      The search stops as soon as the goal leaves the queue. The bottom right corner is walled in, so the queue runs empty first, and -1 says the goal can't be reached.
+
+      ### What it costs
+
+      Each vertex joins the queue at most once and leaves it once, O(1) each with a deque, and each edge is looked at once (from both of its ends, if it's undirected): O(V + E) time, and O(V) memory for `dist` and the queue. A grid of R rows and C columns has R·C cells with at most 4 neighbors each: O(R·C).
+
+      Two Python mistakes keep the answers right and ruin the cost:
+
+      - **A list of visited vertices.** `(r, c) not in visited` on a list compares with every cell found so far: O(V) for each check, O(V²) in all. A maze with 45,000 open cells then takes billions of comparisons. Use a set or a dict.
+      - **A list as the queue.** `queue.pop(0)` moves every item behind the first one: O(n) for each pop. `deque.popleft()` is O(1).
+
+      ### The path, not just its length
+
+      To get the path itself, remember where each vertex was found from, in a dict `came_from`: `came_from[w] = v` when w joins the queue, and `came_from[start] = None`. At the goal, follow `came_from` back, one vertex at a time, until you reach the start, collecting the vertices on the way. Then reverse the list. Each vertex was found from a vertex one step nearer the start, so the path is a shortest one.
+
+      **Your turn:** this program runs a BFS on a directed graph and prints each vertex as it leaves the queue, with its distance. What does it print? Type each line it prints.
+    predict: |
+      from collections import deque
+
+      graph = {1: [2, 5], 2: [3], 3: [1, 4], 4: [], 5: [4, 6], 6: [3]}
+      dist = {1: 0}
+      queue = deque([1])
+      while queue:
+          v = queue.popleft()
+          print(v, dist[v])
+          for w in graph[v]:
+              if w not in dist:
+                  dist[w] = dist[v] + 1
+                  queue.append(w)
+    hints:
+      - "The queue starts with 1. When 1 leaves, its neighbors 2 and 5 join, in that order, both at distance 1."
+      - "Next 2 leaves and 3 joins at distance 2. Then 5 leaves, and 4 and 6 join, also at distance 2."
+      - "Edges go one way here. 3 to 1 and 6 to 3 lead to vertices that are already in `dist`, so they change nothing."
+    more:
+      - task: |
+          A maze is a list of strings: `.` is open, `#` is a wall, `S` is the start and `E` the exit. Write `shortest_path(grid)` that returns the fewest moves from S to E, moving up, down, left or right, or -1 when E can't be reached. Keep the cells you've found in a set or a dict: the hidden tests have mazes of 240 by 280 and 301 by 301 cells, with tens of thousands of open cells, where a list of visited cells takes billions of comparisons.
+
+          For example, this program:
+
+          ```python fragment
+          maze = [
+              "S..#....",
+              ".#.#.##.",
+              ".#...#E.",
+              ".####.#.",
+              "......#.",
+          ]
+          print(shortest_path(maze))
+          ```
+
+          prints:
+
+          ```
+          14
+          ```
+        seed: |
+          from collections import deque
+
+
+          def shortest_path(grid):
+              pass
+
+
+          if __name__ == "__main__":
+              maze = [
+                  "S..#....",
+                  ".#.#.##.",
+                  ".#...#E.",
+                  ".####.#.",
+                  "......#.",
+              ]
+              print(shortest_path(maze))
+        solution: |
+          from collections import deque
+
+
+          def shortest_path(grid):
+              rows, cols = len(grid), len(grid[0])
+              for r in range(rows):
+                  for c in range(cols):
+                      if grid[r][c] == "S":
+                          start = (r, c)
+              dist = {start: 0}
+              queue = deque([start])
+              while queue:
+                  r, c = queue.popleft()
+                  if grid[r][c] == "E":
+                      return dist[(r, c)]
+                  for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                      if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != "#" and (nr, nc) not in dist:
+                          dist[(nr, nc)] = dist[(r, c)] + 1
+                          queue.append((nr, nc))
+              return -1
+
+
+          if __name__ == "__main__":
+              maze = [
+                  "S..#....",
+                  ".#.#.##.",
+                  ".#...#E.",
+                  ".####.#.",
+                  "......#.",
+              ]
+              print(shortest_path(maze))
+        slow: |
+          from collections import deque
+
+
+          def shortest_path(grid):
+              rows, cols = len(grid), len(grid[0])
+              for r in range(rows):
+                  for c in range(cols):
+                      if grid[r][c] == "S":
+                          start = (r, c)
+              visited = [start]
+              queue = deque([(start, 0)])
+              while queue:
+                  (r, c), moves = queue.popleft()
+                  if grid[r][c] == "E":
+                      return moves
+                  for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                      if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] != "#" and (nr, nc) not in visited:
+                          visited.append((nr, nc))
+                          queue.append(((nr, nc), moves + 1))
+              return -1
+
+
+          if __name__ == "__main__":
+              maze = [
+                  "S..#....",
+                  ".#.#.##.",
+                  ".#...#E.",
+                  ".####.#.",
+                  "......#.",
+              ]
+              print(shortest_path(maze))
+        hints:
+          - "First find S: loop over the rows and columns until `grid[r][c] == \"S\"`."
+          - "Then run the lesson's grid BFS from S, with a dict `dist` of the cells found so far. Return `dist[(r, c)]` when the cell that leaves the queue is E."
+          - "A neighbor joins the queue when it's inside the grid, isn't a wall and isn't in `dist` yet. If the queue runs empty, E can't be reached: return -1."
+        tests:
+          - call: |
+              maze = [
+                  "S..#....",
+                  ".#.#.##.",
+                  ".#...#E.",
+                  ".####.#.",
+                  "......#.",
+              ]
+              print(shortest_path(maze))
+          - call: shortest_path(["E", "S"])
+            hidden: true
+          - call: shortest_path([".S.", "###", "..E"])
+            hidden: true
+          - call: shortest_path(["S.", "#.", "E."])
+            hidden: true
+          - call: shortest_path([".....", ".S...", ".....", "....E"])
+            hidden: true
+          - call: shortest_path(["S..#.", ".#.#.", "..##E"])
+            hidden: true
+          - call: shortest_path(["E....", "####.", "S....", ".###.", "....."])
+            hidden: true
+          - call: shortest_path(["S" + "." * 279] + ["." * 280] * 238 + ["." * 279 + "E"])
+            hidden: true
+            big: true
+          - call: |
+              size = 301
+              maze = ["".join("#" if (r % 4 == 1 and c < size - 1) or (r % 4 == 3 and c > 0) else "." for c in range(size)) for r in range(size)]
+              maze[0] = "S" + maze[0][1:]
+              maze[-1] = maze[-1][:-1] + "E"
+              print(shortest_path(maze))
+            hidden: true
+            big: true
+      - task: |
+          A subway map is a dict: each station maps to a list of the stations one stop away. Write `route(graph, start, goal)` that returns the list of stations on a shortest route, from `start` to `goal`, both included, or `None` when there's no route. In the tests, there is only one shortest route each time.
+
+          For example, this program:
+
+          ```python fragment
+          subway = {
+              "Airport": ["Docks"],
+              "Docks": ["Airport", "Market", "Museum"],
+              "Market": ["Docks", "Stadium"],
+              "Museum": ["Docks", "Park"],
+              "Park": ["Museum", "Library"],
+              "Library": ["Park", "Zoo"],
+              "Stadium": ["Market", "Zoo"],
+              "Zoo": ["Library", "Stadium"],
+          }
+          print(route(subway, "Airport", "Zoo"))
+          ```
+
+          prints:
+
+          ```
+          ['Airport', 'Docks', 'Market', 'Stadium', 'Zoo']
+          ```
+        seed: |
+          from collections import deque
+
+
+          def route(graph, start, goal):
+              pass
+
+
+          if __name__ == "__main__":
+              subway = {
+                  "Airport": ["Docks"],
+                  "Docks": ["Airport", "Market", "Museum"],
+                  "Market": ["Docks", "Stadium"],
+                  "Museum": ["Docks", "Park"],
+                  "Park": ["Museum", "Library"],
+                  "Library": ["Park", "Zoo"],
+                  "Stadium": ["Market", "Zoo"],
+                  "Zoo": ["Library", "Stadium"],
+              }
+              print(route(subway, "Airport", "Zoo"))
+        solution: |
+          from collections import deque
+
+
+          def route(graph, start, goal):
+              came_from = {start: None}
+              queue = deque([start])
+              while queue:
+                  station = queue.popleft()
+                  if station == goal:
+                      path = []
+                      while station is not None:
+                          path.append(station)
+                          station = came_from[station]
+                      path.reverse()
+                      return path
+                  for nxt in graph[station]:
+                      if nxt not in came_from:
+                          came_from[nxt] = station
+                          queue.append(nxt)
+              return None
+
+
+          if __name__ == "__main__":
+              subway = {
+                  "Airport": ["Docks"],
+                  "Docks": ["Airport", "Market", "Museum"],
+                  "Market": ["Docks", "Stadium"],
+                  "Museum": ["Docks", "Park"],
+                  "Park": ["Museum", "Library"],
+                  "Library": ["Park", "Zoo"],
+                  "Stadium": ["Market", "Zoo"],
+                  "Zoo": ["Library", "Stadium"],
+              }
+              print(route(subway, "Airport", "Zoo"))
+        hints:
+          - "Run a BFS from `start` with a dict `came_from` in place of `dist`: `came_from[start] = None`, and `came_from[nxt] = station` when `nxt` joins the queue. Its keys are the stations seen so far."
+          - "When the station that leaves the queue is the goal, walk back: append the station, move to `came_from[station]`, and stop after the start, whose entry is `None`."
+          - "The walk back collects the stations from the goal to the start, so reverse the list before returning it. If the queue runs empty, return `None`."
+        tests:
+          - call: |
+              subway = {
+                  "Airport": ["Docks"],
+                  "Docks": ["Airport", "Market", "Museum"],
+                  "Market": ["Docks", "Stadium"],
+                  "Museum": ["Docks", "Park"],
+                  "Park": ["Museum", "Library"],
+                  "Library": ["Park", "Zoo"],
+                  "Stadium": ["Market", "Zoo"],
+                  "Zoo": ["Library", "Stadium"],
+              }
+              print(route(subway, "Airport", "Zoo"))
+          - call: |
+              subway = {
+                  "Airport": ["Docks"],
+                  "Docks": ["Airport", "Market", "Museum"],
+                  "Market": ["Docks", "Stadium"],
+                  "Museum": ["Docks", "Park"],
+                  "Park": ["Museum", "Library"],
+                  "Library": ["Park", "Zoo"],
+                  "Stadium": ["Market", "Zoo"],
+                  "Zoo": ["Library", "Stadium"],
+              }
+              print(route(subway, "Park", "Airport"))
+              print(route(subway, "Library", "Stadium"))
+              print(route(subway, "Zoo", "Zoo"))
+            hidden: true
+          - call: 'print(route({"A": ["B"], "B": ["A"], "C": []}, "A", "C"))'
+            hidden: true
+          - call: "route({1: [2, 3], 2: [4], 3: [], 4: [3]}, 1, 4)"
+            hidden: true
+          - call: |
+              line = {i: [j for j in (i - 1, i + 1) if 0 <= j < 3000] for i in range(3000)}
+              path = route(line, 0, 2999)
+              print(len(path), path[:3], path[-1])
+            hidden: true
+
+  - id: dsa-graphs-dfs
+    slug: dfs
+    title: Depth-first search and flood fill
+    text: |
+      BFS spreads out in rings. **Depth-first search** (DFS) does the opposite: it follows one way as far as it goes, and only when it's stuck does it back up to the last vertex with a way it hasn't tried yet. Many questions don't care about the order, only about *which* vertices can be reached. Can I get from here to there? Which cells belong to this region? How many separate groups are there? DFS answers those, and its natural form is a recursive function:
+
+      ```python run
+      graph = {1: [2, 3], 2: [4], 3: [4, 5], 4: [6], 5: [], 6: []}
+      order = []
+
+
+      def dfs(v, seen):
+          seen.add(v)
+          order.append(v)
+          for w in graph[v]:
+              if w not in seen:
+                  dfs(w, seen)
+
+
+      dfs(1, set())
+      print(order)
+      ```
+
+      ```output
+      [1, 2, 4, 6, 3, 5]
+      ```
+
+      From 1 it goes to 2, from 2 to 4, from 4 to 6, and only then backs up all the way to 1 to try 3. BFS would visit 1, 2, 3, 4, 5, 6. Both find every vertex that can be reached from the start, in O(V + E).
+
+      ### Python's recursion limit
+
+      Each call of `dfs` waits on Python's call stack until the vertices below it are done, so the recursion goes as deep as the longest path the search follows. Python stops at about 1000 waiting calls:
+
+      ```python run crash
+      def dfs(graph, v, seen):
+          seen.add(v)
+          for w in graph[v]:
+              if w not in seen:
+                  dfs(graph, w, seen)
+
+
+      chain = {v: [v + 1] for v in range(5000)}
+      chain[5000] = []
+      seen = set()
+      dfs(chain, 0, seen)
+      print(len(seen))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 11, in <module>
+          dfs(chain, 0, seen)
+          ~~~^^^^^^^^^^^^^^^^
+        File "main.py", line 5, in dfs
+          dfs(graph, w, seen)
+          ~~~^^^^^^^^^^^^^^^^
+        File "main.py", line 5, in dfs
+          dfs(graph, w, seen)
+          ~~~^^^^^^^^^^^^^^^^
+        File "main.py", line 5, in dfs
+          dfs(graph, w, seen)
+          ~~~^^^^^^^^^^^^^^^^
+        [Previous line repeated 996 more times]
+      RecursionError: maximum recursion depth exceeded
+      ```
+
+      A big image, a maze with long corridors or a long chain of friends easily goes deeper than that. Raising the limit with `sys.setrecursionlimit` is a risky fix: the recursion goes deeper, but every waiting call still takes memory, and the browser's Python, with its smaller stack, can crash outright. Interviewers like to ask about this. The answer is to keep the waiting work in a list of your own, a **stack**: `append` pushes an item (O(1) amortized) and `pop` takes the one pushed last (O(1)). A list can hold millions of items.
+
+      ### Flood fill with a stack
+
+      A paint bucket fills the region of same-colored pixels around the one you click. That's a search on the grid, where the neighbors of a cell are the cells above, below, left and right of it with the old color. Strings can't be changed, so the picture is a list of lists of characters:
+
+      ```python run
+      def fill(picture, row, col, color):
+          old = picture[row][col]
+          if old == color:
+              return
+          rows, cols = len(picture), len(picture[0])
+          picture[row][col] = color
+          stack = [(row, col)]
+          while stack:
+              r, c = stack.pop()
+              for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                  if 0 <= nr < rows and 0 <= nc < cols and picture[nr][nc] == old:
+                      picture[nr][nc] = color
+                      stack.append((nr, nc))
+
+
+      picture = [list(line) for line in ["..##..", ".#..#.", "##..#.", "..##.."]]
+      fill(picture, 1, 2, "o")
+      fill(picture, 0, 0, "~")
+      for line in picture:
+          print("".join(line))
+      ```
+
+      ```output
+      ~~##..
+      ~#oo#.
+      ##oo#.
+      ..##..
+      ```
+
+      The new color marks the cells that are done, so the picture is its own visited set. A cell is painted when it's pushed, so it's never pushed twice. The stack takes the cells in another order than the recursion would, but it reaches the same cells, and that's all a fill needs. Mind the first `if`: when the old color is already the new color, painted cells still look unpainted, and the loop would never end.
+
+      ### Counting groups
+
+      The pieces of a graph that are connected inside but not to each other are its **connected components**: circles of friends, islands on a map, separate computer networks. To find them all, try every vertex as a start. A vertex that has been seen belongs to a group found before. Any other vertex starts a new group, and a search from it collects the whole group:
+
+      ```python run
+      def groups(n, edges):
+          graph = [[] for _ in range(n)]
+          for a, b in edges:
+              graph[a].append(b)
+              graph[b].append(a)
+          seen = [False] * n
+          result = []
+          for start in range(n):
+              if seen[start]:
+                  continue
+              seen[start] = True
+              stack = [start]
+              group = []
+              while stack:
+                  v = stack.pop()
+                  group.append(v)
+                  for w in graph[v]:
+                      if not seen[w]:
+                          seen[w] = True
+                          stack.append(w)
+              result.append(sorted(group))
+          return result
+
+
+      print(groups(8, [(0, 3), (5, 1), (3, 6), (2, 7), (6, 0)]))
+      ```
+
+      ```output
+      [[0, 3, 6], [1, 5], [2, 7], [4]]
+      ```
+
+      The key is that `seen` is shared by all the searches. Each vertex is pushed and popped once in the whole run, and each edge is looked at twice: O(V + E) in all. Searching from every vertex with a fresh `seen` each time finds each group again from every one of its vertices: O(V·(V + E)), billions of steps for 100,000 people in a few big groups.
+
+      ### What it costs
+
+      DFS takes O(V + E) time like BFS, and O(V) memory for the visited marks and the stack: O(R·C) for both on a grid of R by C cells. Use BFS when the number of steps matters, and either one when only reaching matters. In Python, write it with your own stack whenever the input can be big.
+
+      **Your turn:** `reachable(graph, start)` counts the vertices that can be reached from `start`, with a stack of its own. Fill in the blanks: take the next vertex off the stack, and mark each new neighbor as seen before pushing it. The program should print:
+
+      ```
+      10000 10
+      3 4
+      ```
+    fill: |
+      def reachable(graph, start):
+          seen = {start}
+          stack = [start]
+          while stack:
+              v = [[stack.pop()]]
+              for w in graph[v]:
+                  if w not in seen:
+                      [[seen.add(w)]]
+                      stack.append(w)
+          return len(seen)
+
+
+      chain = {v: [v + 1] for v in range(9999)}
+      chain[9999] = []
+      print(reachable(chain, 0), reachable(chain, 9990))
+      loops = {1: [2], 2: [3, 1], 3: [1], 4: [1]}
+      print(reachable(loops, 1), reachable(loops, 4))
+    hints:
+      - "A stack takes the item that was pushed last: `stack.pop()`."
+      - "Mark the neighbor before pushing it, so it's never pushed twice and the loops in the graph don't send the search around forever: `seen.add(w)`."
+    tests:
+      - expect: |
+          10000 10
+          3 4
+    more:
+      - task: |
+          This `count_islands` counts the islands of a map: `#` is land and `.` is water, and land cells that touch up, down, left or right belong to the same island. It gives the right answers, but `explore` calls itself once for every cell of an island, and the hidden tests have islands of thousands of cells, where Python stops with a `RecursionError`. Rewrite `explore` with a stack of your own, so that it works on any map.
+
+          For example, this program:
+
+          ```python fragment
+          print(count_islands([".#..##", ".#...#", "...#..", "##.#.."]))
+          print(count_islands(["..#", ".#.", "#.."]))
+          ```
+
+          prints (cells that only touch at a corner are separate islands):
+
+          ```
+          4
+          3
+          ```
+        seed: |
+          def explore(grid, r, c, seen):
+              if r < 0 or r >= len(grid) or c < 0 or c >= len(grid[0]):
+                  return
+              if grid[r][c] != "#" or (r, c) in seen:
+                  return
+              seen.add((r, c))
+              explore(grid, r - 1, c, seen)
+              explore(grid, r + 1, c, seen)
+              explore(grid, r, c - 1, seen)
+              explore(grid, r, c + 1, seen)
+
+
+          def count_islands(grid):
+              seen = set()
+              islands = 0
+              for r in range(len(grid)):
+                  for c in range(len(grid[0])):
+                      if grid[r][c] == "#" and (r, c) not in seen:
+                          islands += 1
+                          explore(grid, r, c, seen)
+              return islands
+
+
+          if __name__ == "__main__":
+              print(count_islands([".#..##", ".#...#", "...#..", "##.#.."]))
+              print(count_islands(["..#", ".#.", "#.."]))
+        solution: |
+          def explore(grid, r, c, seen):
+              rows, cols = len(grid), len(grid[0])
+              seen.add((r, c))
+              stack = [(r, c)]
+              while stack:
+                  r, c = stack.pop()
+                  for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                      if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == "#" and (nr, nc) not in seen:
+                          seen.add((nr, nc))
+                          stack.append((nr, nc))
+
+
+          def count_islands(grid):
+              seen = set()
+              islands = 0
+              for r in range(len(grid)):
+                  for c in range(len(grid[0])):
+                      if grid[r][c] == "#" and (r, c) not in seen:
+                          islands += 1
+                          explore(grid, r, c, seen)
+              return islands
+
+
+          if __name__ == "__main__":
+              print(count_islands([".#..##", ".#...#", "...#..", "##.#.."]))
+              print(count_islands(["..#", ".#.", "#.."]))
+        hints:
+          - "`count_islands` can stay as it is. Only `explore` needs to change: it gets a land cell that hasn't been seen, and must mark its whole island as seen."
+          - "Mark the first cell as seen and push it on a list `stack`. While the stack isn't empty, pop a cell and look at its four neighbors."
+          - "A neighbor goes on the stack (and into `seen`) when it's inside the grid, is land and isn't in `seen` yet. That's the lesson's flood fill, with `seen` as the paint."
+        tests:
+          - call: |
+              print(count_islands([".#..##", ".#...#", "...#..", "##.#.."]))
+              print(count_islands(["..#", ".#.", "#.."]))
+          - call: count_islands(["..", "..", ".."])
+            hidden: true
+          - call: count_islands(["###", "#.#", "###"])
+            hidden: true
+          - call: count_islands(["#.#.#", ".....", "#####"])
+            hidden: true
+          - call: count_islands(["#" * 4000])
+            hidden: true
+          - call: count_islands(["#" * 70] * 70)
+            hidden: true
+          - call: count_islands([("#." * 60)[r % 2:][:100] for r in range(100)])
+            hidden: true
+      - task: |
+          A school has n students, numbered 0 to n - 1, and `friendships` lists pairs `(a, b)` of students who are friends. A **circle** of friends is a group of students connected by friendships, directly or through other students. Write `largest_circle(n, friendships)` that returns the number of students in the largest circle. A student without friends is a circle of one.
+
+          The hidden tests have 100,000 students, so share one visited list among all the searches: a fresh search from every student is O(n·(n + E)). And search with a stack of your own, since a circle can be a chain of thousands of students.
+
+          For example, this program:
+
+          ```python fragment
+          print(largest_circle(7, [(0, 1), (2, 3), (1, 4), (5, 3), (4, 0)]))
+          print(largest_circle(3, []))
+          ```
+
+          prints:
+
+          ```
+          3
+          1
+          ```
+        seed: |
+          def largest_circle(n, friendships):
+              pass
+
+
+          if __name__ == "__main__":
+              print(largest_circle(7, [(0, 1), (2, 3), (1, 4), (5, 3), (4, 0)]))
+              print(largest_circle(3, []))
+        solution: |
+          def largest_circle(n, friendships):
+              friends = [[] for _ in range(n)]
+              for a, b in friendships:
+                  friends[a].append(b)
+                  friends[b].append(a)
+              seen = [False] * n
+              largest = 0
+              for start in range(n):
+                  if seen[start]:
+                      continue
+                  seen[start] = True
+                  stack = [start]
+                  size = 0
+                  while stack:
+                      student = stack.pop()
+                      size += 1
+                      for friend in friends[student]:
+                          if not seen[friend]:
+                              seen[friend] = True
+                              stack.append(friend)
+                  largest = max(largest, size)
+              return largest
+
+
+          if __name__ == "__main__":
+              print(largest_circle(7, [(0, 1), (2, 3), (1, 4), (5, 3), (4, 0)]))
+              print(largest_circle(3, []))
+        slow: |
+          def circle_size(friends, start):
+              seen = {start}
+              stack = [start]
+              while stack:
+                  student = stack.pop()
+                  for friend in friends[student]:
+                      if friend not in seen:
+                          seen.add(friend)
+                          stack.append(friend)
+              return len(seen)
+
+
+          def largest_circle(n, friendships):
+              friends = [[] for _ in range(n)]
+              for a, b in friendships:
+                  friends[a].append(b)
+                  friends[b].append(a)
+              largest = 0
+              for student in range(n):
+                  largest = max(largest, circle_size(friends, student))
+              return largest
+
+
+          if __name__ == "__main__":
+              print(largest_circle(7, [(0, 1), (2, 3), (1, 4), (5, 3), (4, 0)]))
+              print(largest_circle(3, []))
+        hints:
+          - "Build the adjacency list first, with each friendship in both students' lists. Then do what the lesson's `groups` does, but count each group's students instead of listing them."
+          - "Loop over every student. One who has been seen belongs to a circle you've already counted: skip it. Any other starts a new search, with a stack, that counts the students it pops."
+          - "Keep one `seen` list for all the searches, so every student is counted once in the whole run, and keep the largest count."
+        tests:
+          - call: |
+              print(largest_circle(7, [(0, 1), (2, 3), (1, 4), (5, 3), (4, 0)]))
+              print(largest_circle(3, []))
+          - call: largest_circle(1, [])
+            hidden: true
+          - call: largest_circle(6, [(0, 1), (1, 2), (3, 4), (4, 5), (5, 3), (2, 0)])
+            hidden: true
+          - call: largest_circle(6, [(5, 4), (3, 4), (2, 3), (0, 1)])
+            hidden: true
+          - call: largest_circle(2000, [(i, i + 1) for i in range(1999)])
+            hidden: true
+          - call: largest_circle(100_000, [(i, i + 3) for i in range(99_997)])
+            hidden: true
+            big: true
+          - call: largest_circle(100_000, [(i, i // 2) for i in range(1, 60_000)] + [(i, i + 1) for i in range(60_000, 99_999, 2)])
+            hidden: true
+            big: true
+
+  - id: dsa-graphs-topological-sort
+    slug: topological-sort
+    title: Topological sort
+    text: |
+      Some jobs must wait for others. A pizza can't go in the oven before the toppings are on, a course can't start before its prerequisites, and a program can't be built before the libraries it uses. These are directed graphs, where an edge from a to b says "a comes before b". An order of all the vertices in which every edge points forward, from earlier to later, is a **topological order**, and finding one is a **topological sort**.
+
+      It exists exactly when the graph has no directed **cycle**: in a, b, c, a, each of them would have to come before itself. A directed graph without cycles is a **DAG**, a directed acyclic graph.
+
+      ### Kahn's algorithm
+
+      The **in-degree** of a vertex, the number of edges coming in, is here the number of jobs it still waits for. A job with in-degree 0 waits for nothing and can go now. **Kahn's algorithm** works from that:
+
+      1. Count every vertex's in-degree, in one pass over the edges.
+      2. Put the vertices with in-degree 0 in a queue.
+      3. Take a vertex from the queue and add it to the order. Its edges are now done, so lower the in-degree of the vertex at the other end of each one by 1. A vertex whose in-degree reaches 0 has nothing left to wait for, and joins the queue.
+      4. When the queue is empty, the order holds every vertex, unless the graph has a cycle.
+
+      ```python run
+      from collections import deque
+
+
+      def topological_order(graph):
+          indegree = {v: 0 for v in graph}
+          for v in graph:
+              for w in graph[v]:
+                  indegree[w] += 1
+          queue = deque([v for v in graph if indegree[v] == 0])
+          order = []
+          while queue:
+              v = queue.popleft()
+              order.append(v)
+              for w in graph[v]:
+                  indegree[w] -= 1
+                  if indegree[w] == 0:
+                      queue.append(w)
+          return order
+
+
+      pizza = {
+          "make dough": ["roll out"],
+          "make sauce": ["add toppings"],
+          "grate cheese": ["add toppings"],
+          "roll out": ["add toppings"],
+          "add toppings": ["bake"],
+          "heat oven": ["bake"],
+          "bake": [],
+      }
+      print(topological_order(pizza))
+      ```
+
+      ```output
+      ['make dough', 'make sauce', 'grate cheese', 'heat oven', 'roll out', 'add toppings', 'bake']
+      ```
+
+      Why it's right: a vertex joins the queue only when its in-degree reaches 0, that is, once every vertex with an edge into it is already in the order. So every edge points forward. Often many orders are right (the oven could be heated first), and Kahn's algorithm gives one of them. When a task wants one particular order, such as the smallest number first whenever there's a choice, use a heap from `heapq` in place of the deque.
+
+      ### Finding a cycle
+
+      On a cycle, each vertex waits for the one before it, so none of them ever reaches in-degree 0, and neither does anything that waits for them. The queue runs empty early, and the order comes out short:
+
+      ```python run
+      from collections import deque
+
+
+      def topological_order(graph):
+          indegree = {v: 0 for v in graph}
+          for v in graph:
+              for w in graph[v]:
+                  indegree[w] += 1
+          queue = deque([v for v in graph if indegree[v] == 0])
+          order = []
+          while queue:
+              v = queue.popleft()
+              order.append(v)
+              for w in graph[v]:
+                  indegree[w] -= 1
+                  if indegree[w] == 0:
+                      queue.append(w)
+          return order
+
+
+      loop = {"a": ["b"], "b": ["c"], "c": ["a", "d"], "d": [], "e": ["d"]}
+      order = topological_order(loop)
+      print(order)
+      if len(order) < len(loop):
+          done = set(order)
+          print("stuck:", [v for v in loop if v not in done])
+      ```
+
+      ```output
+      ['e']
+      stuck: ['a', 'b', 'c', 'd']
+      ```
+
+      a, b and c are a cycle. d isn't on it, but it waits for c, so it's stuck too. Only e gets done.
+
+      So never take a short order for a finished one: compare its length with the number of vertices. The vertices left out are the ones on a cycle or behind one. (Another classic way to find a cycle is a DFS that marks each vertex "in progress" until everything after it is done: an edge back to a vertex in progress closes a cycle. Kahn's algorithm finds it without any recursion.)
+
+      ### What it costs
+
+      Counting the in-degrees is one pass over the edges. After that, each vertex joins and leaves the queue once, and each edge lowers an in-degree once: O(V + E) time, and O(V + E) memory for the adjacency lists and the counts. With a heap instead of the deque, each vertex costs O(log V) more: O(V log V + E).
+
+      The tempting way is to look for a job that has nothing left to wait for, take it, and look again. Each look scans the vertices, once for every vertex taken: O(V²), billions of steps for 100,000 packages. Kahn's queue already holds the jobs that are ready, so nothing is ever searched for.
+
+      **Your turn:** fill in the blanks of Kahn's algorithm: counting each vertex's in-degree, and the moment a vertex is ready to join the queue. The program should print:
+
+      ```
+      [2, 3, 1, 4, 0]
+      [1, 3]
+      ```
+    fill: |
+      from collections import deque
+
+
+      def order(n, edges):
+          indegree = [0] * n
+          after = [[] for _ in range(n)]
+          for a, b in edges:
+              after[a].append(b)
+              [[indegree[b] += 1]]
+          queue = deque([v for v in range(n) if indegree[v] == 0])
+          result = []
+          while queue:
+              v = queue.popleft()
+              result.append(v)
+              for w in after[v]:
+                  indegree[w] -= 1
+                  if [[indegree[w] == 0]]:
+                      queue.append(w)
+          return result
+
+
+      print(order(5, [(3, 1), (1, 0), (3, 4), (4, 0), (2, 4)]))
+      print(order(4, [(3, 0), (0, 2), (2, 0), (1, 3)]))
+    hints:
+      - "An edge from a to b is one more thing b waits for, so it adds 1 to b's in-degree: `indegree[b] += 1`."
+      - "A vertex is ready when nothing is left to wait for, the moment its in-degree reaches 0: `indegree[w] == 0`."
+    tests:
+      - expect: |
+          [2, 3, 1, 4, 0]
+          [1, 3]
+    more:
+      - task: |
+          Packages numbered 0 to n - 1 must be installed so that each one comes after the packages it needs. `deps` lists pairs `(a, b)`: package a must be installed before package b. Write `install_order(n, deps)` that returns the order as a list, taking the smallest-numbered package whenever several are ready, or `None` when there's a cycle and no order exists.
+
+          Keep the ready packages in a heap with `heapq`, so the smallest one comes out in O(log n). The hidden tests have 100,000 packages: looking for the next ready package with a scan of all of them is O(n²).
+
+          For example, here 0, 4 and 5 are ready at the start. After 5, both 1 and 2 are, and 1 goes first. So this program:
+
+          ```python fragment
+          print(install_order(6, [(5, 2), (2, 3), (4, 3), (0, 1), (5, 1)]))
+          print(install_order(4, [(1, 3), (3, 2), (2, 1), (0, 2)]))
+          ```
+
+          prints:
+
+          ```
+          [0, 4, 5, 1, 2, 3]
+          None
+          ```
+        seed: |
+          import heapq
+
+
+          def install_order(n, deps):
+              pass
+
+
+          if __name__ == "__main__":
+              print(install_order(6, [(5, 2), (2, 3), (4, 3), (0, 1), (5, 1)]))
+              print(install_order(4, [(1, 3), (3, 2), (2, 1), (0, 2)]))
+        solution: |
+          import heapq
+
+
+          def install_order(n, deps):
+              needs = [0] * n
+              after = [[] for _ in range(n)]
+              for a, b in deps:
+                  after[a].append(b)
+                  needs[b] += 1
+              ready = [p for p in range(n) if needs[p] == 0]
+              heapq.heapify(ready)
+              order = []
+              while ready:
+                  p = heapq.heappop(ready)
+                  order.append(p)
+                  for q in after[p]:
+                      needs[q] -= 1
+                      if needs[q] == 0:
+                          heapq.heappush(ready, q)
+              if len(order) < n:
+                  return None
+              return order
+
+
+          if __name__ == "__main__":
+              print(install_order(6, [(5, 2), (2, 3), (4, 3), (0, 1), (5, 1)]))
+              print(install_order(4, [(1, 3), (3, 2), (2, 1), (0, 2)]))
+        slow: |
+          import heapq
+
+
+          def install_order(n, deps):
+              needs = [0] * n
+              after = [[] for _ in range(n)]
+              for a, b in deps:
+                  after[a].append(b)
+                  needs[b] += 1
+              installed = [False] * n
+              order = []
+              while len(order) < n:
+                  ready = None
+                  for p in range(n):
+                      if not installed[p] and needs[p] == 0:
+                          ready = p
+                          break
+                  if ready is None:
+                      return None
+                  installed[ready] = True
+                  order.append(ready)
+                  for q in after[ready]:
+                      needs[q] -= 1
+              return order
+
+
+          if __name__ == "__main__":
+              print(install_order(6, [(5, 2), (2, 3), (4, 3), (0, 1), (5, 1)]))
+              print(install_order(4, [(1, 3), (3, 2), (2, 1), (0, 2)]))
+        hints:
+          - "Count each package's in-degree and build the lists of what comes after each one, in one pass over `deps`. The packages with in-degree 0 are ready."
+          - "Put the ready packages in a list and `heapq.heapify` it. Then, while it isn't empty, `heapq.heappop` gives the smallest ready package: add it to the order, and lower the in-degree of each package after it. One that reaches 0 goes in with `heapq.heappush`."
+          - "When the heap runs empty, the order is complete only if it has all n packages. If it's shorter, the rest are on a cycle or wait for one: return `None`."
+        tests:
+          - call: |
+              print(install_order(6, [(5, 2), (2, 3), (4, 3), (0, 1), (5, 1)]))
+              print(install_order(4, [(1, 3), (3, 2), (2, 1), (0, 2)]))
+          - call: install_order(5, [])
+            hidden: true
+          - call: install_order(1, [])
+            hidden: true
+          - call: install_order(4, [(3, 1), (1, 2), (2, 0)])
+            hidden: true
+          - call: install_order(5, [(4, 0), (4, 2), (0, 3), (2, 3), (3, 1)])
+            hidden: true
+          - call: install_order(5, [(4, 1), (3, 1), (2, 0)])
+            hidden: true
+          - call: print(install_order(5, [(3, 4), (4, 2), (2, 4), (0, 1)]))
+            hidden: true
+          - call: |
+              order = install_order(100_000, [(i + 1, i) for i in range(99_999)])
+              print(len(order), order[:3], order[-1])
+            hidden: true
+            big: true
+          - call: |
+              order = install_order(100_000, [(i, i + 50_000) for i in range(50_000)])
+              print(len(order), order[:3], order[49_999:50_002], order[-1])
+            hidden: true
+            big: true
+          - call: print(install_order(100_000, [(i + 1, i) for i in range(99_999)] + [(0, 99_999)]))
+            hidden: true
+            big: true
+      - task: |
+          A school has n courses, numbered 0 to n - 1. `prereqs` lists pairs `(a, b)`: course a must be passed in an earlier term than course b. Any number of courses can be taken in the same term. Write `fewest_terms(n, prereqs)` that returns the fewest terms needed to pass every course, or -1 when that's impossible because of a cycle.
+
+          Run Kahn's algorithm one **level** at a time, like the level-by-level BFS of the module on trees: the courses that are ready at the start make up the first term, and the courses they unlock make up the next. The hidden tests have 60,000 courses and up to 60,000 terms, so don't scan all the courses again for every term.
+
+          For example, courses 0 and 1 can be taken in the first term, then 2 and 4, and 3 last. So this program:
+
+          ```python fragment
+          print(fewest_terms(5, [(0, 2), (1, 2), (2, 3), (1, 4)]))
+          print(fewest_terms(2, [(0, 1), (1, 0)]))
+          ```
+
+          prints:
+
+          ```
+          3
+          -1
+          ```
+        seed: |
+          def fewest_terms(n, prereqs):
+              pass
+
+
+          if __name__ == "__main__":
+              print(fewest_terms(5, [(0, 2), (1, 2), (2, 3), (1, 4)]))
+              print(fewest_terms(2, [(0, 1), (1, 0)]))
+        solution: |
+          def fewest_terms(n, prereqs):
+              needs = [0] * n
+              unlocks = [[] for _ in range(n)]
+              for a, b in prereqs:
+                  unlocks[a].append(b)
+                  needs[b] += 1
+              term = [c for c in range(n) if needs[c] == 0]
+              terms = 0
+              passed = 0
+              while term:
+                  terms += 1
+                  passed += len(term)
+                  next_term = []
+                  for course in term:
+                      for later in unlocks[course]:
+                          needs[later] -= 1
+                          if needs[later] == 0:
+                              next_term.append(later)
+                  term = next_term
+              if passed < n:
+                  return -1
+              return terms
+
+
+          if __name__ == "__main__":
+              print(fewest_terms(5, [(0, 2), (1, 2), (2, 3), (1, 4)]))
+              print(fewest_terms(2, [(0, 1), (1, 0)]))
+        slow: |
+          def fewest_terms(n, prereqs):
+              needs = [[] for _ in range(n)]
+              for a, b in prereqs:
+                  needs[b].append(a)
+              passed = [False] * n
+              terms = 0
+              left = n
+              while left > 0:
+                  term = [c for c in range(n) if not passed[c] and all(passed[a] for a in needs[c])]
+                  if not term:
+                      return -1
+                  for course in term:
+                      passed[course] = True
+                  left -= len(term)
+                  terms += 1
+              return terms
+
+
+          if __name__ == "__main__":
+              print(fewest_terms(5, [(0, 2), (1, 2), (2, 3), (1, 4)]))
+              print(fewest_terms(2, [(0, 1), (1, 0)]))
+        hints:
+          - "Count the in-degrees and build the lists of the courses each course unlocks, as for Kahn's algorithm. The courses with in-degree 0 make up the first term."
+          - "For each term, go through its courses and lower the in-degree of every course they unlock. The ones that reach 0 make up the next term. Count the terms until a term is empty."
+          - "Count the courses passed too. If they're fewer than n at the end, some courses are on a cycle or behind one: return -1."
+        tests:
+          - call: |
+              print(fewest_terms(5, [(0, 2), (1, 2), (2, 3), (1, 4)]))
+              print(fewest_terms(2, [(0, 1), (1, 0)]))
+          - call: fewest_terms(6, [])
+            hidden: true
+          - call: fewest_terms(4, [(0, 1), (1, 2), (2, 3)])
+            hidden: true
+          - call: fewest_terms(4, [(3, 2), (2, 1), (0, 1)])
+            hidden: true
+          - call: fewest_terms(6, [(0, 1), (1, 2), (0, 3), (3, 4), (4, 5), (5, 2)])
+            hidden: true
+          - call: fewest_terms(5, [(0, 1), (1, 2), (2, 3), (3, 1), (0, 4)])
+            hidden: true
+          - call: fewest_terms(60_000, [(i, i + 1) for i in range(59_999)])
+            hidden: true
+            big: true
+          - call: fewest_terms(60_000, [(i // 2, i) for i in range(1, 60_000)] + [(i, i + 1) for i in range(40_000, 59_999)])
+            hidden: true
+            big: true
+
+  - id: dsa-graphs-dijkstra
+    slug: dijkstra
+    title: Dijkstra's shortest paths
+    text: |
+      Until now, every edge cost one step. Real routes have **weights**: minutes of driving, the price of a flight, the delay of a network link. Then the fewest edges aren't always the cheapest: one road of 10 minutes from A to B loses to three roads of 1 minute each, from A through C and D to B, though BFS would pick the single road. **Dijkstra's algorithm** finds the cheapest way from one start to every vertex, as long as no weight is negative. A weighted adjacency list keeps a pair for each edge, the neighbor and the weight.
+
+      ### Like BFS, with a heap
+
+      BFS takes the vertices in order of their number of steps. Dijkstra takes them in order of their **distance**, the total weight of the best way found so far, by keeping them in a heap of `(distance, vertex)` pairs: `heapq` pops the smallest pair, and pairs compare by their first item first.
+
+      1. The start has distance 0, and the heap holds `(0, start)`.
+      2. Pop the closest pair, `(d, v)`. If v already has a smaller distance, the pair is stale (more on that below): skip it. Otherwise `d` is v's final distance.
+      3. For each edge from v to w with weight `cost`, the way through v reaches w for `d + cost`. If w has no distance yet, or a bigger one, store the new one and push `(d + cost, w)`. This is called **relaxing** the edge.
+
+      ```python run
+      import heapq
+
+
+      def dijkstra(graph, start):
+          dist = {start: 0}
+          heap = [(0, start)]
+          while heap:
+              d, v = heapq.heappop(heap)
+              if d > dist[v]:
+                  print("skip", v, d)
+                  continue
+              print("take", v, d)
+              for w, cost in graph[v]:
+                  if w not in dist or d + cost < dist[w]:
+                      dist[w] = d + cost
+                      heapq.heappush(heap, (d + cost, w))
+          return dist
+
+
+      roads = {
+          "A": [("B", 10), ("C", 1)],
+          "B": [("A", 10), ("D", 1), ("E", 2)],
+          "C": [("A", 1), ("D", 1)],
+          "D": [("C", 1), ("B", 1), ("E", 7)],
+          "E": [("B", 2), ("D", 7)],
+      }
+      print(dijkstra(roads, "A"))
+      ```
+
+      ```output
+      take A 0
+      take C 1
+      take D 2
+      take B 3
+      take E 5
+      skip E 9
+      skip B 10
+      {'A': 0, 'B': 3, 'C': 1, 'D': 2, 'E': 5}
+      ```
+
+      ### Skipping stale entries
+
+      `heapq` can't lower the distance of a pair that's already in the heap. So when a cheaper way to a vertex turns up, Dijkstra pushes a new pair and leaves the old one behind. B was pushed at 10 (straight from A) and later at 3 (through C and D), and E at 9 and then at 5. When an old pair finally comes out, its distance is bigger than `dist[v]`: it's **stale**, and `continue` skips it. Without that check the answers stay right, but every stale pair relaxes all the edges of its vertex again, for nothing.
+
+      ### Why it's right, and why no weight may be negative
+
+      When `(d, v)` is the smallest pair in the heap, could a cheaper way to v still be found later? That way would have to leave the vertices already taken through some vertex x that is still waiting in the heap, at a distance of at least d, and the edges after x only add to that. So it costs at least d, and d is final. That's also why a search for one goal can stop as soon as the goal comes out of the heap.
+
+      The argument needs "only add". A negative weight can make a later way cheaper, and then a distance taken as final isn't:
+
+      ```python run
+      import heapq
+
+
+      def cheapest(graph, start, goal):
+          dist = {start: 0}
+          heap = [(0, start)]
+          while heap:
+              d, v = heapq.heappop(heap)
+              if v == goal:
+                  return d
+              if d > dist[v]:
+                  continue
+              for w, cost in graph[v]:
+                  if w not in dist or d + cost < dist[w]:
+                      dist[w] = d + cost
+                      heapq.heappush(heap, (d + cost, w))
+          return None
+
+
+      graph = {"A": [("B", 2), ("C", 5)], "B": [], "C": [("B", -4)]}
+      print(cheapest(graph, "A", "B"))
+      ```
+
+      ```output
+      2
+      ```
+
+      B came out first, at 2, and was taken as final. But A, C, B costs 5 - 4 = 1. Graphs with negative weights need a slower algorithm, such as Bellman-Ford, O(V·E).
+
+      ### What it costs
+
+      Each edge pushes at most one pair, so the heap never holds more than E + 1 pairs, and each push and pop is O(log E), which is O(log V): E is at most V², so log E is at most 2 log V. In all, O((V + E) log V) time and O(V + E) memory.
+
+      The tempting way, trying every path and keeping the cheapest, explodes. In a **ladder**, two rows of vertices joined by rungs, each rung doubles the paths from one corner to the opposite one:
+
+      ```python run
+      def count_paths(graph, v, goal, on_path):
+          if v == goal:
+              return 1
+          on_path.add(v)
+          total = 0
+          for w in graph[v]:
+              if w not in on_path:
+                  total += count_paths(graph, w, goal, on_path)
+          on_path.remove(v)
+          return total
+
+
+      def ladder(k):
+          graph = {v: [] for v in range(2 * k)}
+          for i in range(k):
+              graph[i].append(k + i)
+              graph[k + i].append(i)
+          for i in range(k - 1):
+              for v in [i, k + i]:
+                  graph[v].append(v + 1)
+                  graph[v + 1].append(v)
+          return graph
+
+
+      for k in [4, 8, 12, 16]:
+          print(k, "rungs:", count_paths(ladder(k), 0, 2 * k - 1, set()), "paths")
+      ```
+
+      ```output
+      4 rungs: 8 paths
+      8 rungs: 128 paths
+      12 rungs: 2048 paths
+      16 rungs: 32768 paths
+      ```
+
+      A ladder of 60 rungs has 2⁵⁹ paths, over 500 million billion: no computer gets through them. Dijkstra takes each of its 120 vertices once.
+
+      **Your turn:** fill in the blanks of Dijkstra's algorithm: taking the closest pair from the heap, recognizing a stale pair, and the distance that goes into the heap with a neighbor. `taken` lists the vertices whose edges were relaxed, so a stale pair that isn't skipped shows up twice. The program should print:
+
+      ```
+      {'home': 0, 'bakery': 3, 'park': 1, 'school': 4}
+      ['home', 'park', 'bakery', 'school']
+      ```
+    fill: |
+      import heapq
+
+
+      def dijkstra(graph, start):
+          dist = {start: 0}
+          heap = [(0, start)]
+          taken = []
+          while heap:
+              d, v = [[heapq.heappop(heap)]]
+              if [[d > dist[v]‖d != dist[v]‖dist[v] < d]]:
+                  continue
+              taken.append(v)
+              for w, cost in graph[v]:
+                  if w not in dist or d + cost < dist[w]:
+                      dist[w] = d + cost
+                      heapq.heappush(heap, ([[d + cost]], w))
+          return dist, taken
+
+
+      roads = {
+          "home": [("bakery", 4), ("park", 1)],
+          "park": [("bakery", 2), ("school", 6)],
+          "bakery": [("school", 1)],
+          "school": [],
+      }
+      dist, taken = dijkstra(roads, "home")
+      print(dist)
+      print(taken)
+    hints:
+      - "`heapq.heappop(heap)` takes the pair with the smallest distance. A pair is stale when its distance is bigger than the best one known for its vertex: `d > dist[v]`."
+      - "The neighbor goes into the heap with the distance just stored for it, `d + cost`, first in the pair, so that the heap orders by distance."
+    tests:
+      - expect: |
+          {'home': 0, 'bakery': 3, 'park': 1, 'school': 4}
+          ['home', 'park', 'bakery', 'school']
+    more:
+      - task: |
+          A country has n towns, numbered 0 to n - 1, and `roads` lists its roads as `(a, b, minutes)`: a two-way road between towns a and b that takes that many minutes. Write `cheapest(n, roads, start, goal)` that returns the fewest minutes it takes to drive from `start` to `goal`, or -1 when there's no way. No road takes a negative number of minutes.
+
+          Use Dijkstra's algorithm, and stop as soon as the goal comes out of the heap. Trying every route is hopeless: one hidden test is a ladder of 60 rungs, with 2⁵⁹ routes between its corners, and another has 20,000 towns.
+
+          For example, from 0 to 4 the best way is 0, 1, 3, 2, 4: 2 + 4 + 1 + 6 = 13 minutes, though it takes four roads and 0, 3, 4 takes only two (9 + 10 = 19 minutes). So this program:
+
+          ```python fragment
+          roads = [(0, 3, 9), (0, 1, 2), (1, 3, 4), (1, 2, 7), (3, 2, 1), (2, 4, 6), (3, 4, 10)]
+          print(cheapest(5, roads, 0, 4))
+          print(cheapest(5, roads, 4, 1))
+          ```
+
+          prints:
+
+          ```
+          13
+          11
+          ```
+        seed: |
+          import heapq
+
+
+          def cheapest(n, roads, start, goal):
+              pass
+
+
+          if __name__ == "__main__":
+              roads = [(0, 3, 9), (0, 1, 2), (1, 3, 4), (1, 2, 7), (3, 2, 1), (2, 4, 6), (3, 4, 10)]
+              print(cheapest(5, roads, 0, 4))
+              print(cheapest(5, roads, 4, 1))
+        solution: |
+          import heapq
+
+
+          def cheapest(n, roads, start, goal):
+              graph = [[] for _ in range(n)]
+              for a, b, minutes in roads:
+                  graph[a].append((b, minutes))
+                  graph[b].append((a, minutes))
+              dist = [None] * n
+              dist[start] = 0
+              heap = [(0, start)]
+              while heap:
+                  d, town = heapq.heappop(heap)
+                  if town == goal:
+                      return d
+                  if d > dist[town]:
+                      continue
+                  for other, minutes in graph[town]:
+                      if dist[other] is None or d + minutes < dist[other]:
+                          dist[other] = d + minutes
+                          heapq.heappush(heap, (d + minutes, other))
+              return -1
+
+
+          if __name__ == "__main__":
+              roads = [(0, 3, 9), (0, 1, 2), (1, 3, 4), (1, 2, 7), (3, 2, 1), (2, 4, 6), (3, 4, 10)]
+              print(cheapest(5, roads, 0, 4))
+              print(cheapest(5, roads, 4, 1))
+        slow: |
+          import heapq
+
+
+          def explore(graph, town, goal, minutes, on_path):
+              if town == goal:
+                  return minutes
+              best = -1
+              for other, cost in graph[town]:
+                  if other not in on_path:
+                      on_path.add(other)
+                      found = explore(graph, other, goal, minutes + cost, on_path)
+                      on_path.remove(other)
+                      if found != -1 and (best == -1 or found < best):
+                          best = found
+              return best
+
+
+          def cheapest(n, roads, start, goal):
+              graph = [[] for _ in range(n)]
+              for a, b, minutes in roads:
+                  graph[a].append((b, minutes))
+                  graph[b].append((a, minutes))
+              return explore(graph, start, goal, 0, {start})
+
+
+          if __name__ == "__main__":
+              roads = [(0, 3, 9), (0, 1, 2), (1, 3, 4), (1, 2, 7), (3, 2, 1), (2, 4, 6), (3, 4, 10)]
+              print(cheapest(5, roads, 0, 4))
+              print(cheapest(5, roads, 4, 1))
+        hints:
+          - "Build a weighted adjacency list: for each road, `(b, minutes)` goes into a's list and `(a, minutes)` into b's."
+          - "Keep the best known minutes for each town (a list of `None`s to start, with 0 for `start`) and a heap of `(minutes, town)` pairs. Pop the closest; if it's the goal, return its minutes, and if it's stale, skip it."
+          - "Otherwise relax each road from the town: when `d + minutes` beats the other town's best (or it has none), store it and push the pair. If the heap runs empty, the goal can't be reached: -1."
+        tests:
+          - call: |
+              roads = [(0, 3, 9), (0, 1, 2), (1, 3, 4), (1, 2, 7), (3, 2, 1), (2, 4, 6), (3, 4, 10)]
+              print(cheapest(5, roads, 0, 4))
+              print(cheapest(5, roads, 4, 1))
+          - call: cheapest(3, [(0, 1, 5)], 2, 2)
+            hidden: true
+          - call: cheapest(4, [(0, 1, 5), (2, 3, 1)], 0, 3)
+            hidden: true
+          - call: cheapest(4, [(0, 3, 50), (0, 1, 10), (1, 2, 10), (2, 3, 10)], 0, 3)
+            hidden: true
+          - call: cheapest(3, [(0, 1, 0), (1, 2, 0), (0, 2, 1)], 2, 0)
+            hidden: true
+          - call: cheapest(2, [(0, 1, 5), (1, 0, 2)], 0, 1)
+            hidden: true
+          - call: |
+              k = 60
+              roads = [(i, i + 1, i * 7 % 10 + 1) for i in range(k - 1)]
+              roads += [(k + i, k + i + 1, i * 3 % 10 + 1) for i in range(k - 1)]
+              roads += [(i, k + i, i * 5 % 7 + 1) for i in range(k)]
+              print(cheapest(2 * k, roads, 0, 2 * k - 1))
+            hidden: true
+            big: true
+          - call: |
+              n = 20_000
+              roads = [(i, i + 1, i % 9 + 1) for i in range(n - 1)] + [(i, i * 37 % n, i % 50 + 5) for i in range(n)]
+              print(cheapest(n, roads, 0, n - 1), cheapest(n + 1, roads, 0, n))
+            hidden: true
+            big: true
+      - task: |
+          Each cell of a grid has a cost to enter. Write `cheapest_grid(costs)` that returns the smallest total cost of a way from the top left cell to the bottom right one, moving up, down, left or right, counting the cost of every cell on the way, both ends included. All costs are positive.
+
+          The grid is a graph whose vertices are the cells: run Dijkstra's algorithm with a heap of `(total, row, column)` and a dict of the best total for each cell. Moving only right and down isn't enough: the best way can go up or left. And trying every way is hopeless: a 10 by 10 grid already has about 41 billion billion of them, and the hidden tests have grids of 150 by 150.
+
+          For example, here the best way goes right twice and down twice, then left back to the first column, down to the bottom row and right along it: 2 + 1 + 1 + 1 + 2 + 1 + 1 + 1 + 2 + 1 + 1 + 1 + 3 = 18. Moving only right and down, the best you can do is 20. So this program:
+
+          ```python fragment
+          costs = [
+              [2, 1, 1, 6, 3],
+              [8, 9, 1, 7, 4],
+              [1, 1, 2, 8, 2],
+              [1, 7, 9, 9, 1],
+              [2, 1, 1, 1, 3],
+          ]
+          print(cheapest_grid(costs))
+          ```
+
+          prints:
+
+          ```
+          18
+          ```
+        seed: |
+          import heapq
+
+
+          def cheapest_grid(costs):
+              pass
+
+
+          if __name__ == "__main__":
+              costs = [
+                  [2, 1, 1, 6, 3],
+                  [8, 9, 1, 7, 4],
+                  [1, 1, 2, 8, 2],
+                  [1, 7, 9, 9, 1],
+                  [2, 1, 1, 1, 3],
+              ]
+              print(cheapest_grid(costs))
+        solution: |
+          import heapq
+
+
+          def cheapest_grid(costs):
+              rows, cols = len(costs), len(costs[0])
+              best = {(0, 0): costs[0][0]}
+              heap = [(costs[0][0], 0, 0)]
+              while heap:
+                  total, r, c = heapq.heappop(heap)
+                  if (r, c) == (rows - 1, cols - 1):
+                      return total
+                  if total > best[(r, c)]:
+                      continue
+                  for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                      if 0 <= nr < rows and 0 <= nc < cols:
+                          new_total = total + costs[nr][nc]
+                          if (nr, nc) not in best or new_total < best[(nr, nc)]:
+                              best[(nr, nc)] = new_total
+                              heapq.heappush(heap, (new_total, nr, nc))
+
+
+          if __name__ == "__main__":
+              costs = [
+                  [2, 1, 1, 6, 3],
+                  [8, 9, 1, 7, 4],
+                  [1, 1, 2, 8, 2],
+                  [1, 7, 9, 9, 1],
+                  [2, 1, 1, 1, 3],
+              ]
+              print(cheapest_grid(costs))
+        slow: |
+          import heapq
+
+
+          def walk(costs, r, c, total, on_path):
+              rows, cols = len(costs), len(costs[0])
+              if (r, c) == (rows - 1, cols - 1):
+                  return total
+              best = None
+              for nr, nc in [(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)]:
+                  if 0 <= nr < rows and 0 <= nc < cols and (nr, nc) not in on_path:
+                      on_path.add((nr, nc))
+                      found = walk(costs, nr, nc, total + costs[nr][nc], on_path)
+                      on_path.remove((nr, nc))
+                      if found is not None and (best is None or found < best):
+                          best = found
+              return best
+
+
+          def cheapest_grid(costs):
+              return walk(costs, 0, 0, costs[0][0], {(0, 0)})
+
+
+          if __name__ == "__main__":
+              costs = [
+                  [2, 1, 1, 6, 3],
+                  [8, 9, 1, 7, 4],
+                  [1, 1, 2, 8, 2],
+                  [1, 7, 9, 9, 1],
+                  [2, 1, 1, 1, 3],
+              ]
+              print(cheapest_grid(costs))
+        hints:
+          - "Start with `best = {(0, 0): costs[0][0]}` and the heap `[(costs[0][0], 0, 0)]`: the start cell's own cost counts."
+          - "Pop the smallest total. If its cell is the bottom right one, that total is the answer. If it's bigger than the best total stored for the cell, it's stale: skip it."
+          - "Otherwise look at the four neighbors inside the grid. Entering one costs `total + costs[nr][nc]`: when that beats the neighbor's best (or it has none), store it and push `(new_total, nr, nc)`."
+        tests:
+          - call: |
+              costs = [
+                  [2, 1, 1, 6, 3],
+                  [8, 9, 1, 7, 4],
+                  [1, 1, 2, 8, 2],
+                  [1, 7, 9, 9, 1],
+                  [2, 1, 1, 1, 3],
+              ]
+              print(cheapest_grid(costs))
+          - call: cheapest_grid([[5]])
+            hidden: true
+          - call: cheapest_grid([[2, 3, 4]])
+            hidden: true
+          - call: cheapest_grid([[1, 1, 5, 9], [9, 1, 1, 9], [9, 9, 1, 9], [9, 1, 1, 9], [9, 1, 9, 9], [9, 1, 1, 1]])
+            hidden: true
+          - call: cheapest_grid([[1, 1, 1, 1, 1], [9, 9, 9, 9, 1], [1, 1, 1, 1, 1], [1, 9, 9, 9, 9], [1, 1, 1, 1, 1]])
+            hidden: true
+          - call: cheapest_grid([[(r * 7 + c * 3) % 5 + 1 for c in range(5)] for r in range(5)])
+            hidden: true
+          - call: cheapest_grid([[(r * 5 + c * 11) % 7 + 1 for c in range(10)] for r in range(10)])
+            hidden: true
+            big: true
+          - call: cheapest_grid([[500 if (r % 4 == 1 and c < 149) or (r % 4 == 3 and c > 0) else 1 for c in range(150)] for r in range(150)])
+            hidden: true
+            big: true
+          - call: cheapest_grid([[(r * 31 + c * 17) % 9 + 1 for c in range(150)] for r in range(150)])
+            hidden: true
+            big: true
+
+  - id: dsa-graphs-union-find
+    slug: union-find
+    title: "Challenge: union-find"
+    text: |
+      Think of a jigsaw puzzle on a table. Pieces snap together one pair at a time, and the loose pieces and finished chunks on the table are the connected components of a graph that only ever grows. In between snaps you may want to know whether two pieces already belong to the same chunk, or how many chunks are left. The DFS of step 3 can tell you, but it starts from nothing every time: O(V + E) for each question, again and again as the puzzle grows. **Union-find**, also called a **disjoint set union** (DSU), is built for groups that only merge. It answers "same group?" and joins two groups, each in almost O(1).
+
+      ### A parent list
+
+      Each group is a small tree, kept in a list `parent`: `parent[x]` is the vertex above x. The vertex at the top of a group, its **root**, is its own parent, and it names the group. At the start, every vertex is alone, so `parent = list(range(n))`. Two operations do the work:
+
+      - **find(x)** follows the parents up from x to the root. Two vertices are in the same group exactly when they have the same root.
+      - **union(a, b)** finds both roots. If they differ, it hangs one root under the other, and the two groups are one.
+
+      ```python run
+      def find(parent, x):
+          while parent[x] != x:
+              x = parent[x]
+          return x
+
+
+      def union(parent, a, b):
+          root_a, root_b = find(parent, a), find(parent, b)
+          if root_a != root_b:
+              parent[root_a] = root_b
+
+
+      parent = list(range(7))
+      union(parent, 5, 2)
+      union(parent, 0, 6)
+      union(parent, 5, 0)
+      print(parent)
+      print(find(parent, 5) == find(parent, 6), find(parent, 1) == find(parent, 3))
+      ```
+
+      ```output
+      [6, 1, 6, 3, 4, 2, 6]
+      True False
+      ```
+
+      After the three unions, 0, 2, 5 and 6 share the root 6, while 1, 3 and 4 are still alone. The tree needn't look like the edges you added: the last union named 5 and 0, but it hung 5's root, 2, under 0's root, 6, so `parent[5]` is still 2 and 5 is two steps below the root.
+
+      ### The trap: tall trees
+
+      Nothing here keeps the trees short. When person after person joins the group of person 0 with `union(0, i)`, each union hangs the old root under i, and 0 sinks to the bottom of a chain:
+
+      ```python run
+      def find(parent, x):
+          while parent[x] != x:
+              x = parent[x]
+          return x
+
+
+      def depth(parent, x):
+          steps = 0
+          while parent[x] != x:
+              x = parent[x]
+              steps += 1
+          return steps
+
+
+      for n in [10, 100, 1000]:
+          parent = list(range(n))
+          for i in range(1, n):
+              root_a, root_b = find(parent, 0), find(parent, i)
+              if root_a != root_b:
+                  parent[root_a] = root_b
+          print(n, "people: 0 is", depth(parent, 0), "steps below its root")
+      ```
+
+      ```output
+      10 people: 0 is 9 steps below its root
+      100 people: 0 is 99 steps below its root
+      1000 people: 0 is 999 steps below its root
+      ```
+
+      Each `find(0)` walks the whole chain so far, so the n unions take 1 + 2 + ... + (n - 1) steps: O(n²), 5 billion steps for 100,000 people.
+
+      ### Two fixes
+
+      - **Union by size:** keep the size of each group at its root, and hang the root of the smaller group under the root of the bigger one. A vertex gets one step further from its root only when its group at least doubles in size, which can happen at most log₂ n times. So no tree is ever taller than log₂ n.
+      - **Path compression:** once `find` has found the root, it walks the path again and points every vertex on it straight at the root. The next `find` from any of them takes one step.
+
+      ```python run
+      class UnionFind:
+          def __init__(self, n):
+              self.parent = list(range(n))
+              self.size = [1] * n
+              self.groups = n
+
+          def find(self, x):
+              root = x
+              while self.parent[root] != root:
+                  root = self.parent[root]
+              while self.parent[x] != root:
+                  next_x = self.parent[x]
+                  self.parent[x] = root
+                  x = next_x
+              return root
+
+          def union(self, a, b):
+              root_a, root_b = self.find(a), self.find(b)
+              if root_a == root_b:
+                  return False
+              if self.size[root_a] < self.size[root_b]:
+                  root_a, root_b = root_b, root_a
+              self.parent[root_b] = root_a
+              self.size[root_a] += self.size[root_b]
+              self.groups -= 1
+              return True
+
+
+      network = UnionFind(6)
+      for a, b in [(0, 1), (3, 4), (1, 2), (2, 0), (1, 4)]:
+          if not network.union(a, b):
+              print("redundant:", a, b)
+      print(network.groups, "groups")
+      print(network.size[network.find(3)], network.find(0) == network.find(4))
+
+      people = UnionFind(1000)
+      for i in range(1, 1000):
+          people.union(0, i)
+      print(people.groups, max(people.parent))
+      ```
+
+      ```output
+      redundant: 2 0
+      2 groups
+      5 True
+      1 0
+      ```
+
+      `groups` starts at n and goes down by one with every union that joins two groups. In `people`, the big group's root 0 stays on top, and every other person hangs right under it: the largest parent is 0.
+
+      With both fixes, m operations on n vertices take O(m·α(n)) time, where α is a function that grows so slowly that it's at most 4 for any n that fits in a computer. In practice that's O(1) for each operation, with O(n) memory. Write `find` with loops, as here: a recursive `find` is shorter, but on a tall tree it hits Python's recursion limit before it has compressed anything.
+
+      ### Redundant edges
+
+      `union` returns `False` when a and b are already in the same group. Then the edge between them connects nothing new: it is **redundant**, and in graph words it closes a cycle. That's how union-find finds the extra cable in a network, and how Kruskal's algorithm builds the cheapest network that connects every vertex: it goes through the edges from the cheapest up and skips each one that `union` says is redundant.
+
+      **Your turn:** fill in the blanks: path compression's pointer, the comparison that picks the bigger group, and the root that the smaller root hangs under. The program should print:
+
+      ```
+      0 [0, 0, 0, 0, 0, 5]
+      True False
+      [0, 0, 0, 0, 0, 0] 6
+      ```
+    fill: |
+      def find(parent, x):
+          root = x
+          while parent[root] != root:
+              root = parent[root]
+          while x != root:
+              next_x = parent[x]
+              parent[x] = [[root]]
+              x = next_x
+          return root
+
+
+      def union(parent, size, a, b):
+          root_a, root_b = find(parent, a), find(parent, b)
+          if root_a == root_b:
+              return False
+          if size[root_a] [[<]] size[root_b]:
+              root_a, root_b = root_b, root_a
+          parent[root_b] = [[root_a]]
+          size[root_a] += size[root_b]
+          return True
+
+
+      parent = [0, 0, 1, 2, 3, 5]
+      size = [5, 1, 1, 1, 1, 1]
+      print(find(parent, 4), parent)
+      print(union(parent, size, 5, 2), union(parent, size, 3, 1))
+      print(parent, size[0])
+    hints:
+      - "Path compression points every vertex on the path straight at the root that the first loop found."
+      - "After the `if`, `root_a` must be the root of the bigger group, so swap when a's group is smaller: `<`. Then the smaller root, `root_b`, hangs under `root_a`."
+    tests:
+      - expect: |
+          0 [0, 0, 0, 0, 0, 5]
+          True False
+          [0, 0, 0, 0, 0, 0] 6
+    more:
+      - task: |
+          Write a class `UnionFind` for the vertices 0 to n - 1, with union by size and path compression:
+
+          - `UnionFind(n)` starts with every vertex in a group of its own;
+          - `find(x)` returns the root of x's group;
+          - `union(a, b)` joins the groups of a and b and returns `True`, or returns `False` when they already were one group;
+          - `size_of(x)` returns the number of vertices in x's group;
+          - the attribute `groups` is the number of groups.
+
+          The hidden tests make 100,000 unions in which everyone joins one group: without the two fixes, a chain forms, and each `find` walks all of it.
+
+          For example, this program:
+
+          ```python fragment
+          sets = UnionFind(8)
+          print(sets.union(1, 5), sets.union(7, 5), sets.union(5, 1), sets.union(3, 0))
+          print(sets.groups, sets.size_of(7), sets.find(1) == sets.find(7), sets.find(0) == sets.find(5))
+          ```
+
+          prints:
+
+          ```
+          True True False True
+          5 3 True False
+          ```
+        seed: |
+          class UnionFind:
+              def __init__(self, n):
+                  pass
+
+
+          if __name__ == "__main__":
+              sets = UnionFind(8)
+              print(sets.union(1, 5), sets.union(7, 5), sets.union(5, 1), sets.union(3, 0))
+              print(sets.groups, sets.size_of(7), sets.find(1) == sets.find(7), sets.find(0) == sets.find(5))
+        solution: |
+          class UnionFind:
+              def __init__(self, n):
+                  self.parent = list(range(n))
+                  self.size = [1] * n
+                  self.groups = n
+
+              def find(self, x):
+                  root = x
+                  while self.parent[root] != root:
+                      root = self.parent[root]
+                  while self.parent[x] != root:
+                      next_x = self.parent[x]
+                      self.parent[x] = root
+                      x = next_x
+                  return root
+
+              def union(self, a, b):
+                  root_a, root_b = self.find(a), self.find(b)
+                  if root_a == root_b:
+                      return False
+                  if self.size[root_a] < self.size[root_b]:
+                      root_a, root_b = root_b, root_a
+                  self.parent[root_b] = root_a
+                  self.size[root_a] += self.size[root_b]
+                  self.groups -= 1
+                  return True
+
+              def size_of(self, x):
+                  return self.size[self.find(x)]
+
+
+          if __name__ == "__main__":
+              sets = UnionFind(8)
+              print(sets.union(1, 5), sets.union(7, 5), sets.union(5, 1), sets.union(3, 0))
+              print(sets.groups, sets.size_of(7), sets.find(1) == sets.find(7), sets.find(0) == sets.find(5))
+        slow: |
+          class UnionFind:
+              def __init__(self, n):
+                  self.parent = list(range(n))
+                  self.size = [1] * n
+                  self.groups = n
+
+              def find(self, x):
+                  while self.parent[x] != x:
+                      x = self.parent[x]
+                  return x
+
+              def union(self, a, b):
+                  root_a, root_b = self.find(a), self.find(b)
+                  if root_a == root_b:
+                      return False
+                  self.parent[root_a] = root_b
+                  self.size[root_b] += self.size[root_a]
+                  self.groups -= 1
+                  return True
+
+              def size_of(self, x):
+                  return self.size[self.find(x)]
+
+
+          if __name__ == "__main__":
+              sets = UnionFind(8)
+              print(sets.union(1, 5), sets.union(7, 5), sets.union(5, 1), sets.union(3, 0))
+              print(sets.groups, sets.size_of(7), sets.find(1) == sets.find(7), sets.find(0) == sets.find(5))
+        hints:
+          - "`__init__` makes three attributes: `parent = list(range(n))`, `size = [1] * n` and `groups = n`. `find` and `union` are the lesson's, as methods."
+          - "`union` swaps the two roots when a's group is the smaller one, hangs `root_b` under `root_a`, adds the sizes at the new root and takes 1 off `groups`. It returns `False` early when the roots are the same."
+          - "The size of a group is kept at its root, so `size_of(x)` is `self.size[self.find(x)]`. Write `find` with two loops: one up to the root, one that points the path at it."
+        tests:
+          - call: |
+              sets = UnionFind(8)
+              print(sets.union(1, 5), sets.union(7, 5), sets.union(5, 1), sets.union(3, 0))
+              print(sets.groups, sets.size_of(7), sets.find(1) == sets.find(7), sets.find(0) == sets.find(5))
+          - call: |
+              sets = UnionFind(1)
+              print(sets.groups, sets.find(0), sets.size_of(0), sets.union(0, 0))
+            hidden: true
+          - call: |
+              sets = UnionFind(5)
+              print(sets.union(3, 4), sets.union(4, 3), sets.groups)
+              print(sets.union(0, 1), sets.union(1, 2), sets.size_of(0), sets.size_of(4))
+              print(sets.union(2, 4), sets.groups, sets.size_of(3), sets.find(0) == sets.find(4))
+            hidden: true
+          - call: |
+              sets = UnionFind(100_000)
+              for i in range(1, 100_000):
+                  sets.union(0, i)
+              print(sets.groups, sets.size_of(0), sets.find(99_999) == sets.find(0))
+            hidden: true
+            big: true
+          - call: |
+              sets = UnionFind(100_000)
+              for i in range(1, 100_000):
+                  sets.union(i, 0)
+              print(sets.groups, sets.size_of(99_999), sets.find(5) == sets.find(0))
+            hidden: true
+            big: true
+      - task: |
+          A network of n computers, numbered 0 to n - 1, is built one cable at a time, in the order of the list `cables`. Each cable `(a, b)` connects two computers. Write `first_redundant(n, cables)` that returns the first cable whose two computers were already connected, directly or through other computers, by the cables before it, or `None` when every cable connects something new.
+
+          A search from a to b before each cable would answer, but costs O(n) for each cable, and the hidden tests have 100,000 computers. Use union-find.
+
+          For example, in this program 2 and 0 are already connected through 1 when the cable `(2, 0)` comes:
+
+          ```python fragment
+          print(first_redundant(5, [(0, 1), (1, 2), (3, 4), (2, 0), (1, 3)]))
+          print(first_redundant(3, [(0, 1), (1, 2)]))
+          ```
+
+          prints:
+
+          ```
+          (2, 0)
+          None
+          ```
+        seed: |
+          def first_redundant(n, cables):
+              pass
+
+
+          if __name__ == "__main__":
+              print(first_redundant(5, [(0, 1), (1, 2), (3, 4), (2, 0), (1, 3)]))
+              print(first_redundant(3, [(0, 1), (1, 2)]))
+        solution: |
+          def find(parent, x):
+              root = x
+              while parent[root] != root:
+                  root = parent[root]
+              while parent[x] != root:
+                  next_x = parent[x]
+                  parent[x] = root
+                  x = next_x
+              return root
+
+
+          def first_redundant(n, cables):
+              parent = list(range(n))
+              size = [1] * n
+              for a, b in cables:
+                  root_a, root_b = find(parent, a), find(parent, b)
+                  if root_a == root_b:
+                      return (a, b)
+                  if size[root_a] < size[root_b]:
+                      root_a, root_b = root_b, root_a
+                  parent[root_b] = root_a
+                  size[root_a] += size[root_b]
+              return None
+
+
+          if __name__ == "__main__":
+              print(first_redundant(5, [(0, 1), (1, 2), (3, 4), (2, 0), (1, 3)]))
+              print(first_redundant(3, [(0, 1), (1, 2)]))
+        slow: |
+          def connected(graph, a, b):
+              seen = {a}
+              stack = [a]
+              while stack:
+                  v = stack.pop()
+                  if v == b:
+                      return True
+                  for w in graph[v]:
+                      if w not in seen:
+                          seen.add(w)
+                          stack.append(w)
+              return False
+
+
+          def first_redundant(n, cables):
+              graph = [[] for _ in range(n)]
+              for a, b in cables:
+                  if connected(graph, a, b):
+                      return (a, b)
+                  graph[a].append(b)
+                  graph[b].append(a)
+              return None
+
+
+          if __name__ == "__main__":
+              print(first_redundant(5, [(0, 1), (1, 2), (3, 4), (2, 0), (1, 3)]))
+              print(first_redundant(3, [(0, 1), (1, 2)]))
+        hints:
+          - "Start with `parent = list(range(n))` and `size = [1] * n`, and go through the cables in order."
+          - "For each cable, find the roots of a and b. The same root means a and b are already connected: return the cable as a tuple."
+          - "Otherwise join the two groups by size, the smaller root under the bigger one. If no cable was redundant, return `None`."
+        tests:
+          - call: |
+              print(first_redundant(5, [(0, 1), (1, 2), (3, 4), (2, 0), (1, 3)]))
+              print(first_redundant(3, [(0, 1), (1, 2)]))
+          - call: first_redundant(2, [(0, 1), (1, 0)])
+            hidden: true
+          - call: first_redundant(5, [(3, 4), (0, 2), (4, 0), (2, 3), (1, 2)])
+            hidden: true
+          - call: print(first_redundant(1, []))
+            hidden: true
+          - call: first_redundant(6, [(4, 5), (3, 4), (0, 1), (1, 2), (2, 3), (5, 1), (0, 5)])
+            hidden: true
+          - call: first_redundant(100_000, [(i, i + 1) for i in range(99_999)] + [(0, 99_999)])
+            hidden: true
+            big: true
+          - call: first_redundant(100_000, [(0, i) for i in range(1, 100_000)] + [(500, 99_000)])
+            hidden: true
+            big: true

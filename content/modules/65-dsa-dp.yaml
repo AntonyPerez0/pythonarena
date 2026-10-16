@@ -1,0 +1,1672 @@
+id: dsa-dp
+summary: Stop working out the same small question twice, keep each answer, and build bigger answers on top of the ones you kept. Memoization with a dict and functools.cache, bottom-up tables that need no recursion, coin change, paths through a grid, the longest common subsequence and edit distance with the answer read back from the table, and the 0/1 knapsack, with big tests where the plain recursive way takes exponential time.
+steps:
+  - id: dsa-dp-memoization
+    slug: memoization
+    title: Memoization
+    text: |
+      The backtracking module tried every choice, and the number of choices grew exponentially. Often, though, an exponential search asks the **same smaller questions** again and again. **Dynamic programming** (DP) answers each different question **once**, stores the answer, and builds the big answer from the stored small ones.
+
+      The classic example is the Fibonacci numbers. Start from 0 and 1, and get every next number by adding up the last two: 0, 1, 1, 2, 3, 5, 8, 13 and so on. You wrote them with recursion in the recursion module. This version counts its calls:
+
+      ```python run
+      calls = 0
+
+
+      def fib(n):
+          global calls
+          calls += 1
+          if n < 2:
+              return n
+          return fib(n - 1) + fib(n - 2)
+
+
+      for n in [10, 20, 25]:
+          calls = 0
+          print(f"fib({n}) = {fib(n)}, {calls} calls")
+      ```
+
+      ```output
+      fib(10) = 55, 177 calls
+      fib(20) = 6765, 21891 calls
+      fib(25) = 75025, 242785 calls
+      ```
+
+      ### Why it's slow
+
+      `fib(25)` calls `fib(24)` and `fib(23)`. But `fib(24)` calls `fib(23)` as well, so `fib(23)` is worked out twice, `fib(22)` three times, `fib(21)` five times: the repeats grow like the Fibonacci numbers themselves. Each step of n multiplies the calls by about 1.6, so the time is exponential, about O(1.6ⁿ), and `fib(50)` would make over 40 billion calls. Yet `fib(25)` only ever asks 26 **different** questions, `fib(0)` up to `fib(25)`: all the rest is repetition.
+
+      ### A memo
+
+      **Memoization** keeps a **memo**: a dict from each question to its answer. Before working anything out, the function looks in the memo, and after working it out, it stores the answer there:
+
+      ```python run
+      calls = 0
+
+
+      def fib(n, memo):
+          global calls
+          calls += 1
+          if n < 2:
+              return n
+          if n in memo:
+              return memo[n]           # solved before: look it up
+          result = fib(n - 1, memo) + fib(n - 2, memo)
+          memo[n] = result             # store it for next time
+          return result
+
+
+      for n in [10, 20, 25]:
+          calls = 0
+          print(f"fib({n}) = {fib(n, {})}, {calls} calls")
+      print(fib(90, {}))
+      ```
+
+      ```output
+      fib(10) = 55, 19 calls
+      fib(20) = 6765, 39 calls
+      fib(25) = 75025, 49 calls
+      2880067194370816120
+      ```
+
+      Each `fib(k)` is worked out once. After that, asking again costs one dict lookup, O(1) on average. The answer may be reused because it depends **only on the arguments**: `fib(23)` is the same number however you got there. That's what DP needs: the plain recursion asks the same smaller questions many times (**overlapping subproblems**), and the big answer is built from the answers to smaller questions of the same kind (called **optimal substructure** when the answer is a best one).
+
+      So memoizing a recursive function takes three small changes to it: a memo that every call can reach, a lookup before any work is done, and a store just before the answer is returned. The memo's **key** must hold every argument that changes. For a function of two numbers, use a tuple, `memo[(row, col)]`: a tuple can be a dict key, a list can't.
+
+      ### functools.cache
+
+      The hash tables module showed `functools.lru_cache`. Its sibling **`functools.cache`** never forgets anything, so it is memoization in one line: put `@cache` above the function, and Python keeps the dict for you, keyed by all the arguments together:
+
+      ```python run
+      from functools import cache
+
+
+      @cache
+      def fib(n):
+          if n < 2:
+              return n
+          return fib(n - 1) + fib(n - 2)
+
+
+      print(fib(90))
+      print(fib.cache_info())
+      ```
+
+      ```output
+      2880067194370816120
+      CacheInfo(hits=88, misses=91, maxsize=None, currsize=91)
+      ```
+
+      The 91 misses are the 91 different questions, `fib(0)` to `fib(90)`, each worked out once, and the 88 hits are repeats answered from the cache. The arguments become dict keys, so they must be hashable: numbers, strings and tuples work, while a list stops with `TypeError: unhashable type: 'list'`. Pass a tuple or an index instead.
+
+      ### The recursion limit
+
+      A memo makes the calls fewer, not shallower. `fib(5000)` still calls `fib(4999)`, which calls `fib(4998)`, and so on: 5,000 calls waiting at once, and Python stops at about 1,000:
+
+      ```python run crash
+      def fib(n, memo):
+          if n < 2:
+              return n
+          if n not in memo:
+              memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+          return memo[n]
+
+
+      print(fib(500, {}) % 1000)
+      print(fib(5000, {}) % 1000)
+      ```
+
+      ```output
+      125
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 10, in <module>
+          print(fib(5000, {}) % 1000)
+                ~~~^^^^^^^^^^
+        File "main.py", line 5, in fib
+          memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+                    ~~~^^^^^^^^^^^^^
+        File "main.py", line 5, in fib
+          memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+                    ~~~^^^^^^^^^^^^^
+        File "main.py", line 5, in fib
+          memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+                    ~~~^^^^^^^^^^^^^
+        [Previous line repeated 996 more times]
+      RecursionError: maximum recursion depth exceeded
+      ```
+
+      `@cache` doesn't get around this: its calls wait on each other the same way. Each one also passes through the cache's own code, written in C, so in the browser, whose stack is smaller, a deep cached recursion can even crash Python outright before it reaches the limit. So keep memoized recursion to small depths (100 dice, a grid of 20 rows), and for big inputs fill the answers in without recursion, from the smallest question up: that's the next step. Don't raise the limit with `sys.setrecursionlimit` either: every waiting call still takes memory, and the browser's Python can crash outright. Interviewers like to hear you say this.
+
+      ### What it costs
+
+      A memoized function costs **the number of different questions times the work for each one**. `fib` has n + 1 questions and does O(1) work for each, so it takes O(n) time. The memo holds one answer per question, O(n) memory, and the waiting calls take O(n) more.
+
+      **Your turn:** `choose(n, k, memo)` counts the ways to choose k of n items. It's the take-or-leave choice of the backtracking module: either the last item is taken, and the other k - 1 come from the first n - 1 items, or it's left, and all k come from the first n - 1. Without a memo, `choose(40, 20, {})` makes over 275 billion calls. Fill in the blanks: the memo's key, which must hold both numbers that change, and the check that the answer is already in the memo. The program should print:
+
+      ```
+      10
+      137846528820
+      ```
+    fill: |
+      def choose(n, k, memo):
+          if k == 0 or k == n:
+              return 1
+          key = [[(n, k)‖n, k]]
+          if [[key in memo]]:
+              return memo[key]
+          memo[key] = choose(n - 1, k - 1, memo) + choose(n - 1, k, memo)
+          return memo[key]
+
+
+      print(choose(5, 2, {}))
+      print(choose(40, 20, {}))
+    hints:
+      - "The answer depends on both `n` and `k`, so the key must hold both of them: a tuple."
+      - "The key is `(n, k)`, and the check asks whether that key is already in the dict: `key in memo`."
+    tests:
+      - expect: |
+          10
+          137846528820
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          from functools import cache
+
+
+          @cache
+          def f(n):
+              print("solving", n)
+              if n < 2:
+                  return n
+              return f(n - 1) + f(n - 2)
+
+
+          print(f(4))
+          print(f(5))
+        hints:
+          - "`f(4)` calls `f(3)` first, which calls `f(2)` first, and so on down to `f(1)`. Each of them prints when it starts."
+          - "When `f(2)` then asks for `f(0)`, that one is new too. But when `f(3)` asks for `f(1)`, and `f(4)` for `f(2)`, the answers come from the cache: nothing is printed."
+          - "`f(5)` is new, so it prints. It needs `f(4)` and `f(3)`, which are both in the cache already."
+      - task: |
+          Write `rolls(dice, faces, total)`: in how many ways can `dice` dice, each with the faces 1 to `faces`, show numbers that add up to `total`? The dice are different dice, so a 1 on the first and a 2 on the second is another way than a 2 on the first and a 1 on the second.
+
+          The last die shows some face f from 1 to `faces`, and the other dice must then make `total - f`: add up those counts. With no dice left, there's exactly one way to make a total of 0, and none to make anything else. Plain recursion tries every one of the `faces ** dice` rolls, and the tests go up to 100 dice, so memoize.
+
+          For example, `rolls(2, 6, 7)` returns 6 (1 + 6, 2 + 5, 3 + 4, 4 + 3, 5 + 2 and 6 + 1):
+
+          ```
+          6
+          ```
+        seed: |
+          def rolls(dice, faces, total):
+              pass
+
+
+          if __name__ == "__main__":
+              print(rolls(2, 6, 7))
+        solution: |
+          from functools import cache
+
+
+          @cache
+          def rolls(dice, faces, total):
+              if dice == 0:
+                  return 1 if total == 0 else 0
+              ways = 0
+              for face in range(1, faces + 1):
+                  if face <= total:
+                      ways += rolls(dice - 1, faces, total - face)
+              return ways
+
+
+          if __name__ == "__main__":
+              print(rolls(2, 6, 7))
+        slow: |
+          def rolls(dice, faces, total):
+              if dice == 0:
+                  return 1 if total == 0 else 0
+              ways = 0
+              for face in range(1, faces + 1):
+                  if face <= total:
+                      ways += rolls(dice - 1, faces, total - face)
+              return ways
+
+
+          if __name__ == "__main__":
+              print(rolls(2, 6, 7))
+        hints:
+          - "Start with the plain recursion. The base case is `dice == 0`: return 1 when `total == 0`, and 0 otherwise. Otherwise loop over the faces and add up `rolls(dice - 1, faces, total - face)`."
+          - "Then memoize it: `from functools import cache` and `@cache` above the function. Or pass a dict along and use a key that holds every argument that changes."
+          - "A dict that is shared by every call of `rolls` needs the faces in its key as well: `rolls(2, 6, 7)` and `rolls(2, 4, 7)` ask different questions."
+        tests:
+          - call: rolls(2, 6, 7)
+          - call: rolls(1, 6, 7)
+            hidden: true
+          - call: rolls(3, 6, 10)
+            hidden: true
+          - call: rolls(0, 6, 0)
+            hidden: true
+          - call: rolls(3, 6, 2)
+            hidden: true
+          - call: print(rolls(2, 6, 7), rolls(2, 4, 7), rolls(4, 2, 6))
+            hidden: true
+          - call: rolls(30, 6, 105)
+            hidden: true
+            big: true
+          - call: rolls(100, 6, 350) % 1_000_000_007
+            hidden: true
+            big: true
+          - call: rolls(40, 10, 220) % 1_000_000_007
+            hidden: true
+            big: true
+
+  - id: dsa-dp-bottom-up
+    slug: bottom-up
+    title: Bottom-up tables
+    text: |
+      Memoization is **top-down**: the first call asks the big question, the recursion works its way down to the small ones, and each answer is saved as it comes back up. **Bottom-up** DP, also called **tabulation**, turns this around. A loop fills a list, smallest questions first, going in an order where every answer an entry needs has been filled in before the loop gets to it. With no recursion there's no recursion limit, and a loop that indexes a list is faster than calls and dict lookups.
+
+      ### Climbing stairs
+
+      You climb a staircase one or two steps at a time. In how many ways can you climb n steps? Think about the **last move**: it was one step, from step n - 1, or two steps, from step n - 2. So `ways[n] = ways[n - 1] + ways[n - 2]`. Standing at the bottom counts as the one way to climb 0 steps (no moves at all), and a single step can only be climbed one way. Fill the list from there up:
+
+      ```python run
+      def stairs(n):
+          ways = [0] * (n + 1)
+          ways[0] = 1
+          for i in range(1, n + 1):
+              ways[i] = ways[i - 1]
+              if i >= 2:
+                  ways[i] += ways[i - 2]
+          return ways
+
+
+      print(stairs(10))
+      ```
+
+      ```output
+      [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
+      ```
+
+      The list has `n + 1` places, for 0 to n steps. Leaving out the `+ 1` is the classic off-by-one: `ways[n]` then stops with an `IndexError`. Negative indexes are the other trap: at `i = 1`, `ways[i - 2]` is `ways[-1]`, the **last** item of the list, and Python hands it over without an error. The `if i >= 2` keeps the loop from reading it. No call waits on another, so the recursion limit is gone: the loop goes as high as you like. The cost is O(n) additions and O(n) entries, but that counts each entry as O(1), which is true only while the numbers stay small. These counts grow by about one digit every five steps, and a sum of numbers with thousands of digits is slow to work out and takes room to keep: "Huge answers" below shows the fix.
+
+      ### Tilings
+
+      The same thinking counts tilings. In how many ways can 1 × 2 dominoes cover a strip 2 high and n long? Look at the left end. Either one domino stands upright there, covering the first column and leaving a strip n - 1 long, or two dominoes lie flat, one above the other, covering two columns and leaving n - 2:
+
+      ```text
+      upright:  |...      flat:  ==..
+                |...             ==..
+      ```
+
+      So `tilings(n) = tilings(n - 1) + tilings(n - 2)`, with one tiling of the empty strip and one of a strip 1 long: the stairs again. That's the heart of DP: say what an entry means, then find how it's built from smaller entries by looking at the **first or last choice**.
+
+      ### Keeping only the last values
+
+      `ways[i]` reads only the two entries before it, and once they're used, the older ones are never read again. So two variables are enough, and the memory drops to O(1):
+
+      ```python run
+      def tilings(n):
+          before, current = 1, 1          # strips 0 and 1 long
+          for _ in range(n - 1):
+              before, current = current, before + current
+          return current
+
+
+      print([tilings(n) for n in range(1, 11)])
+      ```
+
+      ```output
+      [1, 2, 3, 5, 8, 13, 21, 34, 55, 89]
+      ```
+
+      The two variables must change **together**. `before, current = current, before + current` works out both values on the right from the old ones before it assigns either. Written as two lines, `before = current` and then `current = before + current`, the second line already sees the new `before`, so it adds `current` to itself, and the numbers just double: 2, 4, 8, 16.
+
+      ### Huge answers
+
+      Counts grow fast: the ways to climb 1,000 steps have 209 digits. Python's whole numbers never overflow, but adding numbers of thousands of digits is slower than adding small ones, and Python won't even turn a number of more than 4,300 digits into text:
+
+      ```python run crash
+      a, b = 0, 1
+      for _ in range(30_000):
+          a, b = b, a + b
+      print(a)
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 4, in <module>
+          print(a)
+          ~~~~~^^^
+      ValueError: Exceeds the limit (4300 digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit
+      ```
+
+      So counting problems usually ask for the answer **modulo 1,000,000,007**, the remainder after dividing by that prime. Take `% MOD` after every addition: `(a + b) % m` is the same as `(a % m + b % m) % m`, so the remainders add up like the numbers do, and every entry stays below 1,000,000,007.
+
+      **Your turn:** on a steep staircase with long legs, every move takes you up **2 or 3** steps, never just 1. Write `stairs(n)`: the number of ways to climb exactly n steps, modulo `MOD`. There's 1 way to climb 0 steps, none to climb 1, and 2 ways to climb 5 (2 + 3 and 3 + 2). The tests go up to 200,000 steps, where plain recursion never ends and memoized recursion would wait on about 100,000 calls at once, far past Python's limit, so fill a table from the bottom up.
+
+      For example, `print(stairs(5), stairs(10))` prints:
+
+      ```
+      2 7
+      ```
+    seed: |
+      MOD = 1_000_000_007
+
+
+      def stairs(n):
+          pass
+
+
+      if __name__ == "__main__":
+          print(stairs(5), stairs(10))
+    solution: |
+      MOD = 1_000_000_007
+
+
+      def stairs(n):
+          ways = [0] * (n + 1)
+          ways[0] = 1
+          for i in range(1, n + 1):
+              total = 0
+              if i >= 2:
+                  total += ways[i - 2]
+              if i >= 3:
+                  total += ways[i - 3]
+              ways[i] = total % MOD
+          return ways[n]
+
+
+      if __name__ == "__main__":
+          print(stairs(5), stairs(10))
+    slow: |
+      MOD = 1_000_000_007
+
+
+      def stairs(n):
+          if n < 0:
+              return 0
+          if n == 0:
+              return 1
+          return (stairs(n - 2) + stairs(n - 3)) % MOD
+
+
+      if __name__ == "__main__":
+          print(stairs(5), stairs(10))
+    hints:
+      - "The last move went up 2 or 3 steps, so the ways to climb `i` steps are the ways for `i - 2` and for `i - 3` added up."
+      - "Make `ways = [0] * (n + 1)` with `ways[0] = 1`. For `i` from 1 to `n`, add up the entries that exist (`i - 2` and `i - 3` only when they're 0 or more: a negative index would read from the end of the list) and store the sum `% MOD`."
+      - "`ways[1]` stays 0, since no move is 1 step long. Return `ways[n]`."
+    forbid:
+      - pattern: setrecursionlimit
+        message: "Don't raise the recursion limit: the browser's Python can crash. Fill a table from the bottom up instead."
+    tests:
+      - call: print(stairs(5), stairs(10))
+      - call: print(stairs(0), stairs(1), stairs(2), stairs(3), stairs(4))
+        hidden: true
+      - call: stairs(30)
+        hidden: true
+      - call: stairs(160)
+        hidden: true
+        big: true
+      - call: stairs(200_000)
+        hidden: true
+        big: true
+    more:
+      - task: |
+          A strip 2 high and n long can be tiled with 2 × 2 squares as well as 1 × 2 dominoes. At the left end there are now three choices: an upright domino (leaving n - 1), two flat dominoes (leaving n - 2) or a square (leaving n - 2). So `tiles(n) = tiles(n - 1) + 2 * tiles(n - 2)`, and `tiles(0)` and `tiles(1)` are both 1.
+
+          This `tiles` keeps only the last two values, but from n = 3 on its answers are wrong. Fix it, so that `print([tiles(n) for n in range(6)])` prints:
+
+          ```
+          [1, 1, 3, 5, 11, 21]
+          ```
+        seed: |
+          def tiles(n):
+              before, current = 1, 1
+              for _ in range(n - 1):
+                  before = current
+                  current = current + 2 * before
+              return current
+
+
+          if __name__ == "__main__":
+              print([tiles(n) for n in range(6)])
+        solution: |
+          def tiles(n):
+              before, current = 1, 1
+              for _ in range(n - 1):
+                  before, current = current, current + 2 * before
+              return current
+
+
+          if __name__ == "__main__":
+              print([tiles(n) for n in range(6)])
+        hints:
+          - "Follow `tiles(3)` by hand. The first round comes out right, since `before` and `current` both start at 1. After the second round, `before` should be `tiles(2)` = 3 and `current` should be `tiles(3)` = 5. What do the two lines leave in them?"
+          - "`before = current` runs first, so when the next line uses `before`, it gets the new value, not `tiles(n - 2)`."
+          - "Work out both new values from the old ones at once, with one assignment of two variables, as the lesson's `tilings` does."
+        tests:
+          - call: print([tiles(n) for n in range(6)])
+          - call: tiles(10)
+            hidden: true
+          - call: tiles(30)
+            hidden: true
+          - call: tiles(100)
+            hidden: true
+      - task: |
+          A temp worker is offered a shift on each of the coming days, and `pay[i]` is what the shift on day i pays, counting the days from 0. The rule: never two days in a row. Write `best_total(pay)`, the most the worker can earn. `pay` may be empty: then the answer is 0.
+
+          Look at the last day. Either the worker skips it and earns the best total of the days before it, or works it and earns its pay plus the best total of all the days but the last two. The tests have 300,000 days, so fill the answers in from the first day on. Two variables are enough: the best total up to the day before, and up to the day before that.
+
+          For example, `best_total([5, 1, 2, 9, 3])` returns 14, working the first and the fourth day:
+
+          ```
+          14
+          ```
+        seed: |
+          def best_total(pay):
+              pass
+
+
+          if __name__ == "__main__":
+              print(best_total([5, 1, 2, 9, 3]))
+        solution: |
+          def best_total(pay):
+              two_back, one_back = 0, 0
+              for p in pay:
+                  two_back, one_back = one_back, max(one_back, two_back + p)
+              return one_back
+
+
+          if __name__ == "__main__":
+              print(best_total([5, 1, 2, 9, 3]))
+        slow: |
+          def best_from(pay, i):
+              if i >= len(pay):
+                  return 0
+              return max(best_from(pay, i + 1), pay[i] + best_from(pay, i + 2))
+
+
+          def best_total(pay):
+              return best_from(pay, 0)
+
+
+          if __name__ == "__main__":
+              print(best_total([5, 1, 2, 9, 3]))
+        hints:
+          - "Think of `best[i]` as the most there is to earn in the first `i` days, days 0 to `i - 1`. Skipping the last of those days (day `i - 1`) gives `best[i - 1]`; working it gives `best[i - 2] + pay[i - 1]`. Take the bigger."
+          - "With no days, the best is 0, and with one day it's that day's pay. A list of `len(pay) + 1` entries works, with `best[1]` set only when there is a day; so do two variables, `two_back` and `one_back`, both 0 at the start, which handle an empty `pay` on their own."
+          - "For each day's pay `p`, the new best is `max(one_back, two_back + p)`. Then shift: the old `one_back` becomes `two_back`. Assign both at once."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Fill the answers in from the first day on instead."
+        tests:
+          - call: best_total([5, 1, 2, 9, 3])
+          - call: best_total([])
+            hidden: true
+          - call: best_total([7])
+            hidden: true
+          - call: best_total([3, 8])
+            hidden: true
+          - call: best_total([2, 7, 9, 3, 1])
+            hidden: true
+          - call: best_total([4, 1, 1, 4])
+            hidden: true
+          - call: best_total([10, 0, 0, 10, 0, 0, 10])
+            hidden: true
+          - call: best_total([i * 7919 % 1000 for i in range(80)])
+            hidden: true
+            big: true
+          - call: best_total([i * 7919 % 1000 for i in range(300_000)])
+            hidden: true
+            big: true
+
+  - id: dsa-dp-coin-change
+    slug: coin-change
+    title: Coin change
+    text: |
+      A vending machine has to give change. With the coins 1, 5, 10 and 25, the obvious way is **greedy**: take the biggest coin that fits, again and again. For these coins greedy happens to give the fewest coins. For others it doesn't:
+
+      ```python run
+      def greedy(coins, amount):
+          count = 0
+          for coin in sorted(coins, reverse=True):
+              count += amount // coin       # as many of this coin as fit
+              amount %= coin
+          return count
+
+
+      print(greedy([1, 5, 10, 25], 63))
+      print(greedy([1, 4, 5], 8))
+      ```
+
+      ```output
+      6
+      4
+      ```
+
+      63 is 25 + 25 + 10 + 1 + 1 + 1, six coins. But 8 comes out as 5 + 1 + 1 + 1, four coins, when 4 + 4 needs only two. Once greedy has taken the 5, it's stuck with the 3 that's left, and it never goes back to ask whether a smaller first coin would leave a better rest. DP does ask that, for every coin, and it can afford to: it works out each amount only once.
+
+      ### The fewest coins
+
+      Write `best[a]` for the smallest number of coins that add up to `a`. However the best way to make `a` looks, it ends with some **last coin** `c`. Take that coin away and `a - c` is left, made in as few coins as possible too, or there would be a better way to make `a`. So try each coin `c` that fits, and `best[a]` is the smallest `best[a - c] + 1` among them. No coins at all make 0, so `best[0] = 0`, and the list fills in for `a = 1, 2, 3` and on: `a - c` is always a smaller amount, already done.
+
+      Some amounts can't be made at all: with only 3s and 5s, there's no way to make 7. They need a value that means "impossible" and never wins the smallest. **`math.inf`** is a float bigger than every number, and `inf + 1` is still `inf`, so an amount that can't be made stays that way:
+
+      ```python run
+      from math import inf
+
+
+      def fewest_table(coins, amount):
+          best = [0] + [inf] * amount
+          for a in range(1, amount + 1):
+              for coin in coins:
+                  if coin <= a and best[a - coin] + 1 < best[a]:
+                      best[a] = best[a - coin] + 1
+          return best
+
+
+      print(fewest_table([1, 4, 5], 8))
+      print(fewest_table([5, 3], 7))
+      ```
+
+      ```output
+      [0, 1, 2, 3, 1, 1, 2, 3, 2]
+      [0, inf, inf, 1, inf, 1, 2, inf]
+      ```
+
+      `best[8]` is 2, from `best[4] + 1`: a 4 on top of the best way to make 4. The 5 was tried too, but `best[3] + 1` is 4. In the second table, 1, 2, 4 and 7 can't be made, and their entries are still `inf`. A function that answers -1 for "impossible" checks for `inf` at the end. With k coin values, each amount looks at k coins: O(amount × k) time and O(amount) memory. That depends on the amount itself, not on its number of digits: an amount of a billion needs a billion entries.
+
+      ### Counting the ways
+
+      In how many ways can you make 4 with the coins 1, 2 and 3? There's 3 + 1, 2 + 2, 2 + 1 + 1 and 1 + 1 + 1 + 1: four, where 3 + 1 and 1 + 3 count as the same way. Let `ways[a]` be the number of ways to make `a`, with `ways[0] = 1` (the empty way). Here the order of the two loops decides **what** you count:
+
+      ```python run
+      def combinations(coins, amount):
+          ways = [1] + [0] * amount
+          for coin in coins:                       # coins outside
+              for a in range(coin, amount + 1):
+                  ways[a] += ways[a - coin]
+          return ways[amount]
+
+
+      def orderings(coins, amount):
+          ways = [1] + [0] * amount
+          for a in range(1, amount + 1):           # amounts outside
+              for coin in coins:
+                  if coin <= a:
+                      ways[a] += ways[a - coin]
+          return ways[amount]
+
+
+      print(combinations([1, 2, 3], 4), orderings([1, 2, 3], 4))
+      ```
+
+      ```output
+      4 7
+      ```
+
+      - **Coins outside:** the first round makes every amount with 1s only, the second adds 2s on top of those ways, the third adds 3s. Every way is built with its coins in the order of the list, so 1 + 1 + 2 is built once, and never as 2 + 1 + 1. That counts **combinations**.
+      - **Amounts outside:** for each amount the last coin can be any coin, so 2 + 1 + 1, 1 + 2 + 1 and 1 + 1 + 2 are three different ways. That counts **orderings**, like the climbs of the last step, where 1 + 2 and 2 + 1 were different.
+
+      Mixing the two up is the classic coin change bug: no error, just a bigger number. Both cost O(amount × k) time and O(amount) memory. A backtracking search that took or left each coin, coming back to the same coin again and again, would count the ways one at a time, and that takes as long as there are ways: 642 million for an amount of 300 with the coins 3 to 12.
+
+      **Your turn:** write `min_coins(coins, amount)`. It returns the smallest number of coins whose values add up to `amount`, with as many coins of each value as you like. When no mix of the coins reaches `amount` exactly, it returns -1. The tests go up to amounts of 80,000, so fill a table from the bottom up.
+
+      For example, `print(min_coins([1, 4, 5], 8), min_coins([5, 3], 7))` prints:
+
+      ```
+      2 -1
+      ```
+    seed: |
+      def min_coins(coins, amount):
+          pass
+
+
+      if __name__ == "__main__":
+          print(min_coins([1, 4, 5], 8), min_coins([5, 3], 7))
+    solution: |
+      from math import inf
+
+
+      def min_coins(coins, amount):
+          best = [0] + [inf] * amount
+          for a in range(1, amount + 1):
+              for coin in coins:
+                  if coin <= a and best[a - coin] + 1 < best[a]:
+                      best[a] = best[a - coin] + 1
+          if best[amount] == inf:
+              return -1
+          return best[amount]
+
+
+      if __name__ == "__main__":
+          print(min_coins([1, 4, 5], 8), min_coins([5, 3], 7))
+    slow: |
+      def min_coins(coins, amount):
+          if amount == 0:
+              return 0
+          best = -1
+          for coin in coins:
+              if coin <= amount:
+                  rest = min_coins(coins, amount - coin)
+                  if rest != -1 and (best == -1 or rest + 1 < best):
+                      best = rest + 1
+          return best
+
+
+      if __name__ == "__main__":
+          print(min_coins([1, 4, 5], 8), min_coins([5, 3], 7))
+    hints:
+      - "Make `best = [0] + [inf] * amount` (with `from math import inf`): 0 coins make 0, and every other amount is impossible until a way is found."
+      - "Go through the amounts `a` from 1 up to `amount`. For each coin that isn't bigger than `a`, `best[a - coin] + 1` is a candidate: keep it in `best[a]` when it's smaller. An impossible `best[a - coin]` is `inf`, and `inf + 1` never wins."
+      - "At the end, `best[amount]` is still `inf` when the amount can't be made: return -1 then."
+    forbid:
+      - pattern: setrecursionlimit
+        message: "Don't raise the recursion limit: the browser's Python can crash. Fill a table from the bottom up instead."
+    tests:
+      - call: print(min_coins([1, 4, 5], 8), min_coins([5, 3], 7))
+      - call: min_coins([4], 7)
+        hidden: true
+      - call: min_coins([9], 0)
+        hidden: true
+      - call: min_coins([6, 4], 6)
+        hidden: true
+      - call: min_coins([1, 5, 10, 25], 41)
+        hidden: true
+      - call: min_coins([4, 10, 25], 41)
+        hidden: true
+      - call: min_coins([9, 6, 5, 1], 11)
+        hidden: true
+      - call: min_coins([1, 5, 10, 25], 300)
+        hidden: true
+        big: true
+      - call: min_coins([3, 7, 405, 436], 50_000)
+        hidden: true
+        big: true
+      - call: min_coins([173, 391, 67, 452], 80_000)
+        hidden: true
+        big: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          ways = [1, 0, 0, 0, 0, 0, 0, 0]
+          for coin in [2, 3]:
+              for a in range(coin, 8):
+                  ways[a] += ways[a - coin]
+              print(ways)
+        hints:
+          - "After the round for the coin 2, only even amounts can be made, each in exactly one way."
+          - "In the round for 3, go from `a = 3` up and add `ways[a - 3]` to each entry. Entries you've just changed in this round count: `ways[6]` adds the new `ways[3]`."
+          - "6 is 2 + 2 + 2 or 3 + 3, and 7 is 2 + 2 + 3 only."
+      - task: |
+          Write `count_ways(coins, amount)`: the number of different ways to make `amount` from the coins, using each coin value any number of times, where ways with the same coins in another order count once. The coin values are different positive numbers.
+
+          A search that tries the coins one by one, the backtracking way, finds the ways one at a time. That's far too slow here: the tests include an amount of 300 with the coins 3 to 12, which can be made in 642 million ways, and others go up to an amount of 20,000, far deeper than recursion can go. Fill a table, with the loops in the order that counts combinations.
+
+          For example, `count_ways([2, 5, 3, 6], 10)` returns 5 (5 + 5, 2 + 2 + 6, 2 + 3 + 5, 2 + 2 + 3 + 3 and 2 + 2 + 2 + 2 + 2):
+
+          ```
+          5
+          ```
+        seed: |
+          def count_ways(coins, amount):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_ways([2, 5, 3, 6], 10))
+        solution: |
+          def count_ways(coins, amount):
+              ways = [1] + [0] * amount
+              for coin in coins:
+                  for a in range(coin, amount + 1):
+                      ways[a] += ways[a - coin]
+              return ways[amount]
+
+
+          if __name__ == "__main__":
+              print(count_ways([2, 5, 3, 6], 10))
+        slow: |
+          def count_from(coins, i, remaining):
+              if remaining == 0:
+                  return 1
+              if i == len(coins):
+                  return 0
+              total = count_from(coins, i + 1, remaining)
+              if coins[i] <= remaining:
+                  total += count_from(coins, i, remaining - coins[i])
+              return total
+
+
+          def count_ways(coins, amount):
+              return count_from(coins, 0, amount)
+
+
+          if __name__ == "__main__":
+              print(count_ways([2, 5, 3, 6], 10))
+        hints:
+          - "Make `ways = [1] + [0] * amount`: there's one way to make 0, with no coins."
+          - "The outer loop goes through the coins. For each coin, the inner loop goes through the amounts from that coin's value up to `amount`, and each amount gains `ways[a - coin]`."
+          - "With the amounts on the outside you'd count 2 + 3 + 5 and 5 + 3 + 2 as two ways: the first test's answer would be 17."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Fill a table from the bottom up instead."
+        tests:
+          - call: count_ways([2, 5, 3, 6], 10)
+          - call: count_ways([4], 7)
+            hidden: true
+          - call: count_ways([6], 0)
+            hidden: true
+          - call: count_ways([5, 2, 3], 10)
+            hidden: true
+          - call: count_ways([1, 5, 10, 25], 100)
+            hidden: true
+          - call: count_ways(list(range(3, 13)), 300)
+            hidden: true
+            big: true
+          - call: count_ways([1, 2, 5, 10, 20, 50, 100, 200], 20_000)
+            hidden: true
+            big: true
+
+  - id: dsa-dp-grid-paths
+    slug: grid-paths
+    title: Paths through a grid
+    text: |
+      A floor-cleaning robot starts on the top-left cell of a grid of floor tiles, and it knows only two moves: one cell **right** or one cell **down**. Count the different routes that bring it to the bottom-right cell. The backtracking module counted paths by walking every one of them, which takes as long as there are paths, and a 20 × 20 grid has over 35 billion right-and-down paths. DP counts them without walking any.
+
+      Every route into a cell ends with a last move, and there are only two kinds: down out of the cell above, or right out of the cell to the left. No route is of both kinds, so the count for a cell is the two counts added up:
+
+      ```text
+      paths[r][c] = paths[r - 1][c] + paths[r][c - 1]
+      ```
+
+      A cell on the top row is reached only by moving right all the way, and a cell in the left column only by moving down all the way: one route each. Go through the rows from the top, and through each row from the left, and both cells a count needs are finished before it:
+
+      ```python run
+      rows, cols = 3, 5
+      paths = [[0] * cols for _ in range(rows)]
+      for r in range(rows):
+          for c in range(cols):
+              if r == 0 or c == 0:
+                  paths[r][c] = 1                                   # along an edge
+              else:
+                  paths[r][c] = paths[r - 1][c] + paths[r][c - 1]   # above + left
+      for row in paths:
+          print(row)
+      ```
+
+      ```output
+      [1, 1, 1, 1, 1]
+      [1, 2, 3, 4, 5]
+      [1, 3, 6, 10, 15]
+      ```
+
+      The bottom-right cell says 15. Each cell takes one addition, so a grid of rows × cols cells costs O(rows × cols) time and memory: 400 additions for the 20 × 20 grid, instead of 35 billion paths.
+
+      ### A table of lists: the trap
+
+      The table is built with `[[0] * cols for _ in range(rows)]`, a new list for every row. The shorter `[[0] * cols] * rows` looks the same, but it isn't. `*` repeats the **reference** to one inner list, so every row is the same list, as the references module showed:
+
+      ```python repl
+      >>> table = [[0] * 3] * 2
+      >>> table[0][0] = 7
+      >>> table
+      [[7, 0, 0], [7, 0, 0]]
+      >>> table = [[0] * 3 for _ in range(2)]
+      >>> table[0][0] = 7
+      >>> table
+      [[7, 0, 0], [0, 0, 0]]
+      ```
+
+      `[0] * 3` on its own is fine: a number can't be changed in place, so sharing it does no harm. A list of lists needs the comprehension.
+
+      ### Walls
+
+      Now some cells hold furniture, `#`, and the robot can't drive onto them. Such a wall cell gets 0 routes. Watch the edges: along the top row, the only way in is from the left, so one wall there cuts off the rest of that row, and the left column works the same way going down. Rather than writing those rules out, add up only the neighbors that exist:
+
+      ```python run
+      def count_paths(grid):
+          rows, cols = len(grid), len(grid[0])
+          paths = [[0] * cols for _ in range(rows)]
+          for r in range(rows):
+              for c in range(cols):
+                  if grid[r][c] == "#":
+                      continue                              # a wall: 0 paths
+                  if r == 0 and c == 0:
+                      paths[r][c] = 1
+                  else:
+                      above = paths[r - 1][c] if r > 0 else 0
+                      left = paths[r][c - 1] if c > 0 else 0
+                      paths[r][c] = above + left
+          return paths[rows - 1][cols - 1]
+
+
+      print(count_paths([".....",
+                         "..#..",
+                         "....."]))
+      print(count_paths(["...#.",
+                         ".....",
+                         "....."]))
+      ```
+
+      ```output
+      6
+      12
+      ```
+
+      The open 3 × 5 grid had 15 routes. In the first grid, the 9 that pass through the middle cell are gone. In the second, the 3 routes through the wall are gone, and the top-right cell is cut off with them: the only way into it was from the left, through the wall, so it gets 0 routes.
+
+      ### The cheapest path
+
+      Now each cell has a cost, and you want the right-and-down path from corner to corner with the smallest total cost, both corners included. The same table works with another rule: the cheapest way into a cell comes from the cheaper of its two neighbors, so
+
+      ```text
+      best[r][c] = cost[r][c] + min(best[r - 1][c], best[r][c - 1])
+      ```
+
+      On the top row there's only the neighbor on the left, and in the left column only the one above. Trying every path instead takes as long as there are paths: exponential again.
+
+      Each row of these tables reads only the row above it, so, as with the stairs, you could keep a single row and update it in place, for O(cols) memory. Keep the whole table when you want to read it afterward, for instance to find the path itself.
+
+      **Your turn:** write `cheapest_path(cost)`. `cost` is a list of rows of numbers, all 0 or more, and the function returns the smallest total of the costs along a right-and-down path from the top-left cell to the bottom-right one, both included. The tests have grids of 300 × 300, so fill a table: trying every path takes forever.
+
+      For example, this program:
+
+      ```python fragment
+      cost = [[2, 7, 1, 3],
+              [1, 8, 2, 4],
+              [5, 1, 3, 1]]
+      print(cheapest_path(cost))
+      ```
+
+      prints 13, the cost of the path through 2, 1, 5, 1, 3 and 1:
+
+      ```
+      13
+      ```
+    seed: |
+      def cheapest_path(cost):
+          pass
+
+
+      if __name__ == "__main__":
+          cost = [[2, 7, 1, 3],
+                  [1, 8, 2, 4],
+                  [5, 1, 3, 1]]
+          print(cheapest_path(cost))
+    solution: |
+      def cheapest_path(cost):
+          rows, cols = len(cost), len(cost[0])
+          best = [[0] * cols for _ in range(rows)]
+          for r in range(rows):
+              for c in range(cols):
+                  if r == 0 and c == 0:
+                      best[r][c] = cost[r][c]
+                  elif r == 0:
+                      best[r][c] = best[r][c - 1] + cost[r][c]
+                  elif c == 0:
+                      best[r][c] = best[r - 1][c] + cost[r][c]
+                  else:
+                      best[r][c] = min(best[r - 1][c], best[r][c - 1]) + cost[r][c]
+          return best[rows - 1][cols - 1]
+
+
+      if __name__ == "__main__":
+          cost = [[2, 7, 1, 3],
+                  [1, 8, 2, 4],
+                  [5, 1, 3, 1]]
+          print(cheapest_path(cost))
+    slow: |
+      def cheapest_from(cost, r, c):
+          rows, cols = len(cost), len(cost[0])
+          if r == rows - 1 and c == cols - 1:
+              return cost[r][c]
+          if r == rows - 1:
+              return cost[r][c] + cheapest_from(cost, r, c + 1)
+          if c == cols - 1:
+              return cost[r][c] + cheapest_from(cost, r + 1, c)
+          return cost[r][c] + min(cheapest_from(cost, r + 1, c), cheapest_from(cost, r, c + 1))
+
+
+      def cheapest_path(cost):
+          return cheapest_from(cost, 0, 0)
+
+
+      if __name__ == "__main__":
+          cost = [[2, 7, 1, 3],
+                  [1, 8, 2, 4],
+                  [5, 1, 3, 1]]
+          print(cheapest_path(cost))
+    hints:
+      - "Make a table `best` of the same size with `[[0] * cols for _ in range(rows)]`, where `best[r][c]` is the cheapest total of a path from the top-left cell to `(r, c)`."
+      - "The top-left entry is its own cost. On the top row, add the cost to the entry on the left; in the left column, to the entry above. Everywhere else, add it to the smaller of the two."
+      - "Go through the rows from the top and through each row from the left. The answer is the last entry of the last row."
+    tests:
+      - call: |
+          cost = [[2, 7, 1, 3],
+                  [1, 8, 2, 4],
+                  [5, 1, 3, 1]]
+          print(cheapest_path(cost))
+      - call: cheapest_path([[9]])
+        hidden: true
+      - call: cheapest_path([[4, 1, 6]])
+        hidden: true
+      - call: cheapest_path([[3], [0], [7]])
+        hidden: true
+      - call: cheapest_path([[1, 9, 1, 1], [1, 1, 1, 9], [9, 9, 1, 1]])
+        hidden: true
+      - call: cheapest_path([[0, 0], [0, 0]])
+        hidden: true
+      - call: cheapest_path([[(r * 31 + c * 17) % 10 for c in range(20)] for r in range(20)])
+        hidden: true
+        big: true
+      - call: cheapest_path([[(r * 31 + c * 17) % 10 for c in range(300)] for r in range(300)])
+        hidden: true
+        big: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          grid = ["....",
+                  "..#.",
+                  "#..."]
+          paths = [[0] * 4 for _ in range(3)]
+          for r in range(3):
+              for c in range(4):
+                  if grid[r][c] == "#":
+                      continue
+                  if r == 0 and c == 0:
+                      paths[r][c] = 1
+                  else:
+                      above = paths[r - 1][c] if r > 0 else 0
+                      left = paths[r][c - 1] if c > 0 else 0
+                      paths[r][c] = above + left
+              print(paths[r])
+        hints:
+          - "The program prints each row once it's filled. The top row has no wall, so every cell in it has 1 path."
+          - "In the second row, the wall stays 0, and the cell after it gets only the paths from above: it can't be entered from the wall."
+          - "In the third row, the first cell is a wall. The cell next to it can then only be entered from above."
+      - task: |
+          A park ranger's map is a list of strings where `#` is forest and `.` is open land. Write `largest_square(grid)`: how long is the side of the largest square patch of forest, a square in which every cell is `#`? A map without any forest gives 0.
+
+          Work out, for every cell, `side[r][c]`: the side of the largest forest square that has the cell `(r, c)` as its **lower-right** corner. An open cell gets 0. A forest cell can stretch the squares that end just above it, just to its left and diagonally up-left of it, but only as far as the smallest of the three allows, so it gets that smallest entry plus 1 (a neighbor off the map counts as 0). The answer is the biggest entry. The tests have maps of 300 × 300, where checking every square one by one never ends.
+
+          For example, this program:
+
+          ```python fragment
+          grid = ["..##.",
+                  "####.",
+                  ".###.",
+                  ".###.",
+                  "#...."]
+          print(largest_square(grid))
+          ```
+
+          prints 3, for the square in the middle of the map:
+
+          ```
+          3
+          ```
+        seed: |
+          def largest_square(grid):
+              pass
+
+
+          if __name__ == "__main__":
+              grid = ["..##.",
+                      "####.",
+                      ".###.",
+                      ".###.",
+                      "#...."]
+              print(largest_square(grid))
+        solution: |
+          def largest_square(grid):
+              rows, cols = len(grid), len(grid[0])
+              side = [[0] * cols for _ in range(rows)]
+              biggest = 0
+              for r in range(rows):
+                  for c in range(cols):
+                      if grid[r][c] != "#":
+                          continue
+                      if r == 0 or c == 0:
+                          side[r][c] = 1
+                      else:
+                          side[r][c] = 1 + min(side[r - 1][c], side[r][c - 1], side[r - 1][c - 1])
+                      biggest = max(biggest, side[r][c])
+              return biggest
+
+
+          if __name__ == "__main__":
+              grid = ["..##.",
+                      "####.",
+                      ".###.",
+                      ".###.",
+                      "#...."]
+              print(largest_square(grid))
+        slow: |
+          def all_forest(grid, top, left, size):
+              for r in range(top, top + size):
+                  for c in range(left, left + size):
+                      if grid[r][c] != "#":
+                          return False
+              return True
+
+
+          def largest_square(grid):
+              rows, cols = len(grid), len(grid[0])
+              biggest = 0
+              for top in range(rows):
+                  for left in range(cols):
+                      size = 1
+                      while top + size <= rows and left + size <= cols and all_forest(grid, top, left, size):
+                          biggest = max(biggest, size)
+                          size += 1
+              return biggest
+
+
+          if __name__ == "__main__":
+              grid = ["..##.",
+                      "####.",
+                      ".###.",
+                      ".###.",
+                      "#...."]
+              print(largest_square(grid))
+        hints:
+          - "Make a table `side` of zeros, the size of the map, and a variable for the biggest entry so far."
+          - "Fill it row by row, left to right. Skip `.` cells. A `#` on the top row or in the left column gets 1, since its square can't be bigger."
+          - "Any other `#` cell gets `1 + min(side[r - 1][c], side[r][c - 1], side[r - 1][c - 1])`. Keep the biggest entry, and return it."
+        tests:
+          - call: |
+              grid = ["..##.",
+                      "####.",
+                      ".###.",
+                      ".###.",
+                      "#...."]
+              print(largest_square(grid))
+          - call: largest_square(["....", "....", "...."])
+            hidden: true
+          - call: largest_square(["#"])
+            hidden: true
+          - call: largest_square(["###", "###", "###"])
+            hidden: true
+          - call: largest_square(["##.", "###", ".##"])
+            hidden: true
+          - call: largest_square([".####", "#####", "####.", "####."])
+            hidden: true
+          - call: largest_square(["#" * 100 + "." + "#" * 199 for _ in range(300)])
+            hidden: true
+            big: true
+          - call: largest_square(["".join("." if (r * 7 + c * 3) % 101 == 0 else "#" for c in range(300)) for r in range(300)])
+            hidden: true
+            big: true
+
+  - id: dsa-dp-lcs
+    slug: lcs
+    title: Longest common subsequence and edit distance
+    text: |
+      Cross out some characters of a string, and what's left is a **subsequence** of it: the characters that stay keep their order, with gaps where others were. `"ace"` is a subsequence of `"abcde"`. Take two strings, and the longest string you can get from **both** by crossing out characters is their **longest common subsequence** (LCS). That's how `diff` and Git compare two versions of a file, line by line: the lines in the LCS are the ones nobody touched. Trying every subsequence is hopeless, since a string of n characters has 2ⁿ of them. DP works on **prefixes** instead, the first few characters of each string.
+
+      ### The table
+
+      `length[i][j]` holds the length of the LCS of `a[:i]` and `b[:j]`, the first `i` characters of `a` and the first `j` of `b`. Each entry depends on the last characters of those prefixes, `a[i - 1]` and `b[j - 1]`:
+
+      - When they **match**, the LCS of the two prefixes may as well finish with that character, after the LCS of the shorter prefixes: `length[i][j] = length[i - 1][j - 1] + 1`.
+      - When they don't, a common subsequence can't finish with both, so one of the two can go. Try leaving out each and keep the longer result: `length[i][j] = max(length[i - 1][j], length[i][j - 1])`.
+
+      An empty prefix has nothing in common with anything, so row 0 and column 0 are all 0. That's why the table has `len(a) + 1` rows and `len(b) + 1` columns, and why the characters are `a[i - 1]` and `b[j - 1]`: entry `i` is about the first `i` characters, and the last of them is at index `i - 1`.
+
+      ```python run
+      a, b = "PYTHON", "TYPHOON"
+      length = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+      for i in range(1, len(a) + 1):
+          for j in range(1, len(b) + 1):
+              if a[i - 1] == b[j - 1]:
+                  length[i][j] = length[i - 1][j - 1] + 1
+              else:
+                  length[i][j] = max(length[i - 1][j], length[i][j - 1])
+
+      print("   " + "  ".join(b))
+      for i in range(1, len(a) + 1):
+          print(a[i - 1], length[i][1:])
+      ```
+
+      ```output
+         T  Y  P  H  O  O  N
+      P [0, 0, 1, 1, 1, 1, 1]
+      Y [0, 1, 1, 1, 1, 1, 1]
+      T [1, 1, 1, 1, 1, 1, 1]
+      H [1, 1, 1, 2, 2, 2, 2]
+      O [1, 1, 1, 2, 3, 3, 3]
+      N [1, 1, 1, 2, 3, 3, 4]
+      ```
+
+      The bottom-right entry is the answer: the LCS is 4 characters long. The table has (n + 1) × (m + 1) entries for strings of n and m characters, each O(1): O(n × m) time and memory. For two strings of 1,000 characters, that's a million entries instead of 2¹⁰⁰⁰ subsequences.
+
+      The classic slip is to compare `a[i]` and `b[j]`, out of habit:
+
+      ```python run crash
+      a, b = "cat", "act"
+      length = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+      for i in range(1, len(a) + 1):
+          for j in range(1, len(b) + 1):
+              if a[i] == b[j]:              # should be a[i - 1] and b[j - 1]
+                  length[i][j] = length[i - 1][j - 1] + 1
+              else:
+                  length[i][j] = max(length[i - 1][j], length[i][j - 1])
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 5, in <module>
+          if a[i] == b[j]:              # should be a[i - 1] and b[j - 1]
+                     ~^^^
+      IndexError: string index out of range
+      ```
+
+      Row 1 is about `"c"`, but it compares `a[1]`, the `"a"`, and at `j = 3` it asks for `b[3]`, one past the end of `"act"`.
+
+      ### Getting the string back
+
+      The table holds lengths, but it also remembers which choice made each entry, so you can walk back from the bottom-right corner, `i = len(a)` and `j = len(b)`, until `i` or `j` is 0:
+
+      - When `a[i - 1]` and `b[j - 1]` are the same character, it's part of the answer. Save it in a list, then step back in both strings: `i - 1` and `j - 1`.
+      - Otherwise go to the neighbor the entry came from: up (`i - 1`) when `length[i - 1][j] >= length[i][j - 1]`, else left (`j - 1`).
+
+      The walk finds the characters from the end backward, so `found[::-1]` turns the list around. In the PYTHON table it starts at N, where the letters match, and finds `"PHON"`. Two strings often have several longest common subsequences (`"THON"` and `"YHON"` are just as long), and a different rule for ties finds a different one.
+
+      ### Edit distance
+
+      The **edit distance** (or Levenshtein distance) between two words is the fewest one-character changes that turn one into the other, where a change **inserts**, **deletes** or **replaces** a character. `"brain"` becomes `"bread"` in 3, for example by inserting e after the r, deleting the i and replacing the n with a d. A spell checker offers the words at the smallest distance from your typo.
+
+      `dist[i][j]` holds the edit distance from `a[:i]` to `b[:j]`:
+
+      - The edges come first. Emptying `i` characters takes `i` deletes, so `dist[i][0] = i`, and building `j` characters from nothing takes `j` inserts, so `dist[0][j] = j`. Leaving these edges at 0 is the common mistake: the distance from `"abc"` to `""` then comes out 0.
+      - When `a[i - 1]` and `b[j - 1]` are the same, the ends need no change, and what's left costs `dist[i - 1][j - 1]`.
+      - When they're different, one change fixes the end, on top of what came before: a replace of `a[i - 1]` by `b[j - 1]` (`dist[i - 1][j - 1] + 1`), a delete of `a[i - 1]` (`dist[i - 1][j] + 1`) or an insert of `b[j - 1]` (`dist[i][j - 1] + 1`). `dist[i][j]` is the smallest of the three.
+
+      Here is the table from `"cat"` (down) to `"act"` (across):
+
+      | | `""` | a | c | t |
+      | --- | --- | --- | --- | --- |
+      | `""` | 0 | 1 | 2 | 3 |
+      | c | 1 | 1 | 1 | 2 |
+      | a | 2 | 1 | 2 | 2 |
+      | t | 3 | 2 | 2 | **2** |
+
+      Swapping two neighbors costs 2 edits. Like the LCS, the table costs O(n × m) time and memory, while the plain recursion tries up to three edits at every step: exponential.
+
+      **Your turn:** write `lcs(a, b)`, which returns one longest common subsequence of the strings `a` and `b`, built with the table and the walk back above, going up on a tie. The tests have strings of 600 and 450 characters, so fill the table without recursion.
+
+      For example, `lcs("DYNAMIC", "PROGRAMMING")` returns:
+
+      ```
+      'AMI'
+      ```
+    seed: |
+      def lcs(a, b):
+          pass
+
+
+      if __name__ == "__main__":
+          print(repr(lcs("DYNAMIC", "PROGRAMMING")))
+    solution: |
+      def lcs(a, b):
+          length = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+          for i in range(1, len(a) + 1):
+              for j in range(1, len(b) + 1):
+                  if a[i - 1] == b[j - 1]:
+                      length[i][j] = length[i - 1][j - 1] + 1
+                  else:
+                      length[i][j] = max(length[i - 1][j], length[i][j - 1])
+          found = []
+          i, j = len(a), len(b)
+          while i > 0 and j > 0:
+              if a[i - 1] == b[j - 1]:
+                  found.append(a[i - 1])
+                  i -= 1
+                  j -= 1
+              elif length[i - 1][j] >= length[i][j - 1]:
+                  i -= 1
+              else:
+                  j -= 1
+          return "".join(found[::-1])
+
+
+      if __name__ == "__main__":
+          print(repr(lcs("DYNAMIC", "PROGRAMMING")))
+    slow: |
+      def lcs_of(a, b, i, j):
+          if i == 0 or j == 0:
+              return ""
+          if a[i - 1] == b[j - 1]:
+              return lcs_of(a, b, i - 1, j - 1) + a[i - 1]
+          up = lcs_of(a, b, i - 1, j)
+          left = lcs_of(a, b, i, j - 1)
+          if len(up) >= len(left):
+              return up
+          return left
+
+
+      def lcs(a, b):
+          return lcs_of(a, b, len(a), len(b))
+
+
+      if __name__ == "__main__":
+          print(repr(lcs("DYNAMIC", "PROGRAMMING")))
+    hints:
+      - "Build `length` with `len(a) + 1` rows of `len(b) + 1` zeros, and fill it as the lesson's program does."
+      - "Then start at `i, j = len(a), len(b)` and step back until one of them reaches 0. On equal characters, append `a[i - 1]` to a list and decrease both. Otherwise decrease `i` when `length[i - 1][j] >= length[i][j - 1]`, and `j` when not."
+      - "The list holds the characters from the last one back to the first: `\"\".join(found[::-1])` gives the string."
+    forbid:
+      - pattern: setrecursionlimit
+        message: "Don't raise the recursion limit: the browser's Python can crash. Fill the table with loops instead."
+    tests:
+      - call: lcs("DYNAMIC", "PROGRAMMING")
+      - call: lcs("PYTHON", "TYPHOON")
+        hidden: true
+      - call: lcs("ORANGE", "ARRANGE")
+        hidden: true
+      - call: lcs("breakfast", "fastbreak")
+        hidden: true
+      - call: lcs("dog", "cat")
+        hidden: true
+      - call: lcs("", "seven")
+        hidden: true
+      - call: lcs("level", "level")
+        hidden: true
+      - call: lcs("".join(chr(97 + i * 5 % 19) for i in range(30)), "".join(chr(97 + i * 8 % 21) for i in range(30)))
+        hidden: true
+        big: true
+      - call: |
+          found = lcs("".join(chr(97 + i * 5 % 19) for i in range(600)), "".join(chr(97 + i * 8 % 21) for i in range(450)))
+          print(len(found), found[:20])
+        hidden: true
+        big: true
+    more:
+      - task: |
+          What does this program print? Type each line it prints.
+        predict: |
+          a, b = "an", "can"
+          dist = [[0] * 4 for _ in range(3)]
+          for i in range(3):
+              dist[i][0] = i
+          for j in range(4):
+              dist[0][j] = j
+          for i in range(1, 3):
+              for j in range(1, 4):
+                  if a[i - 1] == b[j - 1]:
+                      dist[i][j] = dist[i - 1][j - 1]
+                  else:
+                      dist[i][j] = 1 + min(dist[i - 1][j - 1],  # replace
+                                           dist[i - 1][j],      # delete
+                                           dist[i][j - 1])      # insert
+          for row in dist:
+              print(row)
+        hints:
+          - "The first row is the edge: 0, 1, 2, 3 inserts. The first column is 0, 1, 2 deletes."
+          - "Row 1 is for `\"a\"`. Against `\"c\"` the letters differ, so take 1 plus the smallest of the three neighbors. Against `\"ca\"` the last letters match: copy the entry diagonally up-left."
+          - "The last entry is the edit distance from `\"an\"` to `\"can\"`: one insert."
+      - task: |
+          Write `edit_distance(a, b)`: the smallest number of one-character inserts, deletes and replaces that turn the string `a` into the string `b`. Use the lesson's table `dist`: set its edges, then work out each other entry from the three next to it. The tests have strings of 600 and 450 characters, where trying every edit never ends.
+
+          For example, `print(edit_distance("brain", "bread"), edit_distance("cat", "act"))` prints:
+
+          ```
+          3 2
+          ```
+        seed: |
+          def edit_distance(a, b):
+              pass
+
+
+          if __name__ == "__main__":
+              print(edit_distance("brain", "bread"), edit_distance("cat", "act"))
+        solution: |
+          def edit_distance(a, b):
+              dist = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+              for i in range(len(a) + 1):
+                  dist[i][0] = i
+              for j in range(len(b) + 1):
+                  dist[0][j] = j
+              for i in range(1, len(a) + 1):
+                  for j in range(1, len(b) + 1):
+                      if a[i - 1] == b[j - 1]:
+                          dist[i][j] = dist[i - 1][j - 1]
+                      else:
+                          dist[i][j] = 1 + min(dist[i - 1][j - 1],  # replace
+                                               dist[i - 1][j],      # delete
+                                               dist[i][j - 1])      # insert
+              return dist[len(a)][len(b)]
+
+
+          if __name__ == "__main__":
+              print(edit_distance("brain", "bread"), edit_distance("cat", "act"))
+        slow: |
+          def distance(a, b, i, j):
+              if i == 0:
+                  return j
+              if j == 0:
+                  return i
+              if a[i - 1] == b[j - 1]:
+                  return distance(a, b, i - 1, j - 1)
+              return 1 + min(distance(a, b, i - 1, j - 1),  # replace
+                             distance(a, b, i - 1, j),      # delete
+                             distance(a, b, i, j - 1))      # insert
+
+
+          def edit_distance(a, b):
+              return distance(a, b, len(a), len(b))
+
+
+          if __name__ == "__main__":
+              print(edit_distance("brain", "bread"), edit_distance("cat", "act"))
+        hints:
+          - "Make `dist` with `len(a) + 1` rows of `len(b) + 1` zeros. Then set the edges: `dist[i][0] = i` for every row, and `dist[0][j] = j` for every column."
+          - "For `i` and `j` from 1: equal characters `a[i - 1]` and `b[j - 1]` copy `dist[i - 1][j - 1]`. Otherwise it's 1 plus the smallest of `dist[i - 1][j - 1]`, `dist[i - 1][j]` and `dist[i][j - 1]`."
+          - "The answer is the bottom-right entry, `dist[len(a)][len(b)]`."
+        forbid:
+          - pattern: setrecursionlimit
+            message: "Don't raise the recursion limit: the browser's Python can crash. Fill the table with loops instead."
+        tests:
+          - call: print(edit_distance("brain", "bread"), edit_distance("cat", "act"))
+          - call: print(edit_distance("", "tea"), edit_distance("cake", ""), edit_distance("", ""))
+            hidden: true
+          - call: edit_distance("radar", "radar")
+            hidden: true
+          - call: edit_distance("stone", "tones")
+            hidden: true
+          - call: edit_distance("algorithm", "altruistic")
+            hidden: true
+          - call: edit_distance("garden", "gardener")
+            hidden: true
+          - call: edit_distance("abcdefghijklmnopqrst", "ABCDEFGHIJKLMNOPQRST")
+            hidden: true
+            big: true
+          - call: edit_distance("".join(chr(97 + i * 5 % 19) for i in range(600)), "".join(chr(97 + i * 8 % 21) for i in range(450)))
+            hidden: true
+            big: true
+
+  - id: dsa-dp-knapsack
+    slug: knapsack
+    title: "Challenge: the 0/1 knapsack"
+    text: |
+      A delivery drone can lift only so many kilos. Each parcel waiting at the depot has a weight and a fee for delivering it, and a parcel either flies **whole or stays behind**: you can't take half of one, or the same one twice. That "all or nothing" is the "0/1" in the name. Which parcels should go up to earn the most without overloading the drone? This is the **0/1 knapsack** (a knapsack is a backpack, the classic version of the story), and it's the best-known DP problem in interviews.
+
+      Greedy fails again. Take parcels of 2, 3, 5 and 6 kilos, with fees of 3, 6, 8 and 9, and a drone that lifts 7 kilos. The biggest fee first takes the 6 kilos (fee 9) and then has room for nothing else: 9. The best fee per kilo first takes the 3 kilos (2 per kilo), then the 2 kilos: 9 again. But 2 + 5 kilos make exactly 7 and earn 3 + 8 = 11. Trying every choice of parcels finds that, but n parcels can be chosen in 2ⁿ ways.
+
+      ### The table
+
+      `best[i][c]` holds the most you can earn with the first `i` items and a capacity of `c`. Item `i` sits at index `i - 1`, with weight `w` and value `v`, and as in the backtracking module there are two choices for it:
+
+      - **Leave it:** then everything comes from the earlier items, `best[i - 1][c]`.
+      - **Take it**, if it fits (`w <= c`): it earns `v`, and the earlier items fill the `c - w` that's left as well as they can, `v + best[i - 1][c - w]`.
+
+      `best[i][c]` is the bigger of the two, and with no items everything is 0:
+
+      ```python run
+      def knapsack_table(weights, values, capacity):
+          n = len(weights)
+          best = [[0] * (capacity + 1) for _ in range(n + 1)]
+          for i in range(1, n + 1):
+              w, v = weights[i - 1], values[i - 1]
+              for c in range(capacity + 1):
+                  best[i][c] = best[i - 1][c]                  # leave item i
+                  if w <= c and v + best[i - 1][c - w] > best[i][c]:
+                      best[i][c] = v + best[i - 1][c - w]      # take item i
+          return best
+
+
+      for row in knapsack_table([2, 3, 5, 6], [3, 6, 8, 9], 7):
+          print(row)
+      ```
+
+      ```output
+      [0, 0, 0, 0, 0, 0, 0, 0]
+      [0, 0, 3, 3, 3, 3, 3, 3]
+      [0, 0, 3, 6, 6, 9, 9, 9]
+      [0, 0, 3, 6, 6, 9, 9, 11]
+      [0, 0, 3, 6, 6, 9, 9, 11]
+      ```
+
+      The answer is the bottom-right entry, 11. To find **which** items, walk back up from it: where `best[i][c]` differs from `best[i - 1][c]` just above it, item `i` was taken, so take its weight off `c`; either way, go up a row. Here row 4's 11 is the same as the 11 above it, so the 6 kilos stay behind. Row 3's 11 differs from the 9 above it, so the 5 kilos fly, which leaves a capacity of 2. In that column, row 2's 3 is the same as the 3 above it (the 3 kilos stay), and row 1's 3 differs from the 0 above it: the 2 kilos fly. The table has (n + 1) × (capacity + 1) entries, each O(1): O(n × capacity) time and memory.
+
+      ### One row is enough
+
+      A row of the table is built from the row just above it and nothing else. So one list can stand in for the whole table, overwritten item after item, as long as the inner loop runs through the capacities **from the top down**:
+
+      ```python fragment
+      best = [0] * (capacity + 1)
+      for w, v in zip(weights, values):
+          for c in range(capacity, w - 1, -1):
+              best[c] = max(best[c], v + best[c - w])
+      ```
+
+      **`zip(weights, values)`** walks through the two lists side by side: it gives the pairs `(weights[0], values[0])`, `(weights[1], values[1])` and so on, and `for w, v in` unpacks each pair into two variables, just as `for i in range(len(weights))` with `weights[i]` and `values[i]` would.
+
+      Why downward? `c - w` is smaller than `c`, so on the way down the loop reaches `best[c - w]` only **after** `best[c]`. When `best[c]` is worked out, `best[c - w]` is untouched by this item, and it still says what the earlier items alone can earn: exactly what the row above would have held. Going **up** is the classic mistake. Then `best[c - w]` may already include this item, and the item is taken again and again: that's the coin change step, where each coin could be used any number of times:
+
+      ```python run
+      def one_row(weights, values, capacity, downward):
+          best = [0] * (capacity + 1)
+          for w, v in zip(weights, values):
+              if downward:
+                  capacities = range(capacity, w - 1, -1)
+              else:
+                  capacities = range(w, capacity + 1)
+              for c in capacities:
+                  best[c] = max(best[c], v + best[c - w])
+          return best[capacity]
+
+
+      print(one_row([3], [8], 9, True), one_row([3], [8], 9, False))
+      ```
+
+      ```output
+      8 24
+      ```
+
+      One item of weight 3 and a capacity of 9: going down packs it once, going up three times. The one row needs only O(capacity) memory, for the same O(n × capacity) time, but it can't tell you which items were taken: that needs the whole table.
+
+      ### Which sums can you make?
+
+      The same shape answers yes-or-no questions, such as "can some of these numbers add up to exactly t?": a knapsack with true and false instead of values. In Python, a **set of the sums you can make** says it directly. Start with `{0}` (take nothing), and for each number, add it to every sum so far:
+
+      ```python run
+      sums = {0}
+      for x in [3, 5, 9]:
+          sums |= {s + x for s in sums}
+      print(sorted(sums))
+      ```
+
+      ```output
+      [0, 3, 5, 8, 9, 12, 14, 17]
+      ```
+
+      `a | b` makes the **union** of two sets: a set of everything that's in `a`, in `b` or in both. `sums |= new` puts every item of `new` into `sums`, the way `+=` adds to a number. Python builds the whole right side first, so the comprehension adds `x` to the sums as they were **before** this number, and no sum gets `x` twice: each number is used at most once, the set's way of going downward. Keep only the sums up to t (`if s + x <= t`), and the set never holds more than t + 1 sums: O(n × t) time and O(t) memory, instead of 2ⁿ subsets. (`sorted` gives the sums in order: a set has no order of its own.)
+
+      ### When the table is too big
+
+      O(n × capacity) depends on the capacity's **size**, not on how many digits it has (it's called **pseudo-polynomial** time). Ten items with a capacity of 10 billion would need 10 billion entries per item, and simply trying the 2¹⁰ = 1,024 subsets would be far faster. DP pays when the capacity or the target is modest, as in most interview problems.
+
+      **Your turn:** write `knapsack(weights, values, capacity)`: the most total value of items whose weights add up to at most `capacity`, each item taken at most once. `weights[i]` and `values[i]` belong to item i, and all of them are positive whole numbers. The tests have 200 items and a capacity of 1,000, where trying every subset never ends, so fill a table, or one row going down.
+
+      For example, `knapsack([2, 3, 5, 6], [3, 6, 8, 9], 7)` returns 11:
+
+      ```
+      11
+      ```
+    seed: |
+      def knapsack(weights, values, capacity):
+          pass
+
+
+      if __name__ == "__main__":
+          print(knapsack([2, 3, 5, 6], [3, 6, 8, 9], 7))
+    solution: |
+      def knapsack(weights, values, capacity):
+          best = [0] * (capacity + 1)
+          for w, v in zip(weights, values):
+              for c in range(capacity, w - 1, -1):
+                  if v + best[c - w] > best[c]:
+                      best[c] = v + best[c - w]
+          return best[capacity]
+
+
+      if __name__ == "__main__":
+          print(knapsack([2, 3, 5, 6], [3, 6, 8, 9], 7))
+    slow: |
+      def best_from(weights, values, i, room):
+          if i == len(weights):
+              return 0
+          best = best_from(weights, values, i + 1, room)
+          if weights[i] <= room:
+              best = max(best, values[i] + best_from(weights, values, i + 1, room - weights[i]))
+          return best
+
+
+      def knapsack(weights, values, capacity):
+          return best_from(weights, values, 0, capacity)
+
+
+      if __name__ == "__main__":
+          print(knapsack([2, 3, 5, 6], [3, 6, 8, 9], 7))
+    hints:
+      - "The table way: `best` with `len(weights) + 1` rows of `capacity + 1` zeros. Row `i` leaves item `i` (copy the entry above) or takes it when it fits (its value plus the entry above, `w` to the left), whichever is bigger."
+      - "The one-row way: `best = [0] * (capacity + 1)`, and for each item, loop `c` from `capacity` down to its weight, keeping the bigger of `best[c]` and `v + best[c - w]`."
+      - "Going down is what keeps each item to one use. Going up, the 3-kilo parcel could fly twice, and the first test would give 12 instead of 11."
+    tests:
+      - call: knapsack([2, 3, 5, 6], [3, 6, 8, 9], 7)
+      - call: knapsack([3], [8], 9)
+        hidden: true
+      - call: knapsack([7, 9], [5, 8], 6)
+        hidden: true
+      - call: knapsack([], [], 10)
+        hidden: true
+      - call: knapsack([3, 4, 2], [30, 50, 15], 6)
+        hidden: true
+      - call: knapsack([12, 2, 1, 1, 4], [4, 2, 1, 2, 10], 15)
+        hidden: true
+      - call: knapsack([i % 10 + 1 for i in range(60)], [i * 13 % 37 + 1 for i in range(60)], 200)
+        hidden: true
+        big: true
+      - call: knapsack([i * 7 % 23 + 1 for i in range(200)], [i * 13 % 37 + 1 for i in range(200)], 1000)
+        hidden: true
+        big: true
+    more:
+      - task: |
+          `count_subsets(numbers, target)` should count the subsets of the positive `numbers` that add up to exactly `target`, each number used at most once. It keeps one row, `ways[s]`, the number of ways to make each sum, as the coin change step did. But it counts too many: `count_subsets([3, 1, 4, 2, 5], 7)` returns 13. Fix it, so that it returns 3 (3 + 4, 2 + 5 and 1 + 4 + 2):
+
+          ```
+          3
+          ```
+        seed: |
+          def count_subsets(numbers, target):
+              ways = [1] + [0] * target
+              for x in numbers:
+                  for s in range(x, target + 1):
+                      ways[s] += ways[s - x]
+              return ways[target]
+
+
+          if __name__ == "__main__":
+              print(count_subsets([3, 1, 4, 2, 5], 7))
+        solution: |
+          def count_subsets(numbers, target):
+              ways = [1] + [0] * target
+              for x in numbers:
+                  for s in range(target, x - 1, -1):
+                      ways[s] += ways[s - x]
+              return ways[target]
+
+
+          if __name__ == "__main__":
+              print(count_subsets([3, 1, 4, 2, 5], 7))
+        hints:
+          - "Which subsets does it count for `count_subsets([2], 4)`? It answers 1, but the only number is 2, and 4 needs it twice."
+          - "Going up through the sums, `ways[s - x]` may already count ways that use `x`, so `x` gets used again: that's the coin change, with unlimited coins."
+          - "Loop the sums downward, from `target` to `x`: `range(target, x - 1, -1)`."
+        tests:
+          - call: count_subsets([3, 1, 4, 2, 5], 7)
+          - call: count_subsets([2], 4)
+            hidden: true
+          - call: count_subsets([5, 5], 5)
+            hidden: true
+          - call: count_subsets([1, 2, 3], 0)
+            hidden: true
+          - call: count_subsets([4, 6], 5)
+            hidden: true
+          - call: count_subsets([1] * 10, 5)
+            hidden: true
+          - call: count_subsets(list(range(1, 31)), 100)
+            hidden: true
+      - task: |
+          Two friends split a pile of parcels to carry home, and `numbers` holds the parcels' weights. Every parcel goes to one of the two, and the loads should be as even as possible. Write `min_difference(numbers)`: the smallest possible difference between the two loads.
+
+          The lighter load is at most half the total, so collect every load it could be, up to half the total, with a set as in the lesson. The heaviest of those, `s`, is the most even split: the other friend carries `total - s`, and the difference is `total - 2 * s`. The tests have 200 weights up to 100, where trying every split never ends.
+
+          For example, `min_difference([8, 3, 5, 9, 2])` returns 1 (8 + 5 is 13, against 3 + 9 + 2 = 14):
+
+          ```
+          1
+          ```
+        seed: |
+          def min_difference(numbers):
+              pass
+
+
+          if __name__ == "__main__":
+              print(min_difference([8, 3, 5, 9, 2]))
+        solution: |
+          def min_difference(numbers):
+              total = sum(numbers)
+              half = total // 2
+              sums = {0}
+              for x in numbers:
+                  sums |= {s + x for s in sums if s + x <= half}
+              return total - 2 * max(sums)
+
+
+          if __name__ == "__main__":
+              print(min_difference([8, 3, 5, 9, 2]))
+        slow: |
+          def best_from(numbers, i, group, total):
+              if i == len(numbers):
+                  return abs(total - 2 * group)
+              take = best_from(numbers, i + 1, group + numbers[i], total)
+              leave = best_from(numbers, i + 1, group, total)
+              return min(take, leave)
+
+
+          def min_difference(numbers):
+              return best_from(numbers, 0, 0, sum(numbers))
+
+
+          if __name__ == "__main__":
+              print(min_difference([8, 3, 5, 9, 2]))
+        hints:
+          - "Work out `total = sum(numbers)` and `half = total // 2`. The lighter load never weighs more than `half`, so bigger sums can be thrown away."
+          - "Start from `sums = {0}`, an empty load. For each weight `x`, add `{s + x for s in sums if s + x <= half}` to the set with `|=`."
+          - "The biggest load in the set, `max(sums)`, is the closest to half. The other friend carries `total - max(sums)`, so the difference is `total - 2 * max(sums)`."
+        tests:
+          - call: min_difference([8, 3, 5, 9, 2])
+          - call: min_difference([4, 7, 2, 5])
+            hidden: true
+          - call: print(min_difference([12]), min_difference([]))
+            hidden: true
+          - call: min_difference([10, 10, 1])
+            hidden: true
+          - call: min_difference([2, 4, 8, 16, 33])
+            hidden: true
+          - call: min_difference([i * 37 % 100 + 1 for i in range(40)])
+            hidden: true
+            big: true
+          - call: min_difference([i * 37 % 100 + 1 for i in range(200)])
+            hidden: true
+            big: true

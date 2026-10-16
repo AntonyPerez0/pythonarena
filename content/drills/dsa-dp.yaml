@@ -1,0 +1,302 @@
+topic: dsa-dp
+drills:
+  - type: predict
+    after: memoization
+    code: |
+      calls = 0
+
+
+      def fib(n, memo):
+          global calls
+          calls += 1
+          if n < 2:
+              return n
+          if n not in memo:
+              memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+          return memo[n]
+
+
+      print(fib(6, {}), calls)
+    why: "Each of `fib(2)` to `fib(6)` is worked out once. The first call for each n goes down the `n - 1` side, and the `n - 2` side then finds its answer in the memo: 2 × 6 - 1 = 11 calls, instead of 25 without the memo."
+
+  - type: bug
+    after: memoization
+    code: |
+      def choose(n, k, memo):
+          if k == 0 or k == n:
+              return 1
+          key = n  # BUG
+          if key not in memo:
+              memo[key] = choose(n - 1, k - 1, memo) + choose(n - 1, k, memo)
+          return memo[key]
+
+
+      print(choose(5, 2, {}))
+    fix: key = (n, k)
+    why: "The answer depends on `n` and `k`, but the key holds only `n`, so `choose(4, 1)` and `choose(4, 2)` share one entry, and the second gets the first one's answer: 4 instead of 6, and 8 in all instead of 10. The key must hold every argument that changes: `(n, k)`."
+
+  - type: runs
+    after: memoization
+    code: |
+      from functools import cache
+
+
+      @cache
+      def total(values):
+          if not values:
+              return 0
+          return values[0] + total(values[1:])
+
+
+      print(total([3, 4, 5]))
+    why: "`@cache` stores its answers in a dict keyed by the arguments, and a list can't be a dict key: `TypeError: unhashable type: 'list'`. Pass a tuple, or an index into the list, instead."
+
+  - type: choice
+    after: memoization
+    prompt: What does the memoized `fib(n)` cost in time, with the memo starting empty?
+    choices:
+      - "O(1.6ⁿ), like the plain recursion"
+      - "O(n)"
+      - "O(n²)"
+      - "O(log n)"
+    answer: 2
+    why: "There are n + 1 different questions, `fib(0)` to `fib(n)`, each worked out once with O(1) work, and every repeat is one dict lookup. A memoized function costs the number of different questions times the work for each."
+
+  - type: runs
+    after: memoization
+    code: |
+      def fib(n, memo):
+          if n < 2:
+              return n
+          if n not in memo:
+              memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+          return memo[n]
+
+
+      print(fib(3000, {}) % 1000)
+    why: "The memo makes the calls fewer, not shallower: `fib(3000)` waits for `fib(2999)`, which waits for `fib(2998)`, and so on, 3,000 calls at once. Python stops at about 1,000 with a `RecursionError`. For big inputs, fill the answers in bottom-up, with a loop."
+
+  - type: bug
+    after: bottom-up
+    code: |
+      def stairs(n):
+          ways = [0] * n  # BUG
+          ways[0] = 1
+          for i in range(1, n + 1):
+              ways[i] = ways[i - 1]
+              if i >= 2:
+                  ways[i] += ways[i - 2]
+          return ways[n]
+
+
+      print(stairs(5))
+    fix: ways = [0] * (n + 1)
+    why: "The table needs a place for every number of steps from 0 to n: that's n + 1 places. With only n, `ways[n]` is past the end, and the loop stops with an `IndexError` at `i == n`."
+
+  - type: fill
+    after: bottom-up
+    code: |
+      def fib(n):
+          a, b = 0, 1
+          for _ in range(n):
+              a, b = [[b, a + b]]
+          return a
+
+
+      print(fib(10))
+    why: "Both values on the right are worked out from the old `a` and `b` before either is assigned, so the pair moves one step along the sequence each round: only the last two values are kept, O(1) memory."
+
+  - type: predict
+    after: bottom-up
+    code: |
+      before, current = 1, 1
+      for _ in range(4):
+          before = current
+          current = before + current
+      print(current)
+    why: "`before = current` runs first, so the next line adds `current` to itself: the numbers double, 2, 4, 8, 16, instead of following the sequence 2, 3, 5, 8. Assign both at once: `before, current = current, before + current`."
+
+  - type: predict
+    after: coin-change
+    code: |
+      coins = [1, 6, 10]
+      amount = 12
+      count = 0
+      for coin in sorted(coins, reverse=True):
+          count += amount // coin
+          amount %= coin
+      print(count)
+    why: "Greedy takes the 10 first and then needs two 1s: 3 coins. But 6 + 6 makes 12 with 2. Greedy never asks what its first choice costs later; the DP table looks at every coin for every amount."
+
+  - type: choice
+    after: coin-change
+    prompt: "`ways[a] += ways[a - coin]` fills a table of the ways to make each amount. Which loop order counts `1 + 2` and `2 + 1` as one way?"
+    choices:
+      - "The coins in the outer loop, the amounts in the inner loop"
+      - "The amounts in the outer loop, the coins in the inner loop"
+      - "Either order gives the same count"
+    answer: 1
+    why: "With the coins outside, every way is built with its coins in the order of the list, so each combination is made once. With the amounts outside, the last coin can be any coin, so `1 + 2` and `2 + 1` are counted as two orderings."
+
+  - type: predict
+    after: grid-paths
+    code: |
+      table = [[0] * 3] * 2
+      table[0][1] = 5
+      print(table)
+    why: "`* 2` repeats the reference to one inner list, so both rows are the same list, and changing a cell of one row changes the other. A table needs a new list for each row: `[[0] * 3 for _ in range(2)]`."
+
+  - type: choice
+    after: grid-paths
+    prompt: "An open 25 × 25 grid has about 32 trillion right-and-down routes from its top-left cell to its bottom-right cell. How many additions does the DP table take to count them?"
+    choices:
+      - "About 625, one per cell"
+      - "About 32 trillion, one per route"
+      - "About 48, one per move of a route"
+      - "About 390,000, one per pair of cells"
+    answer: 1
+    why: "A cell's count is the count above it plus the count on its left, added once and then reused by the cells after it: O(rows × cols). Walking the routes one by one takes as long as there are routes."
+
+  - type: bug
+    after: lcs
+    code: |
+      a, b = "abcd", "acd"
+      length = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+      for i in range(1, len(a) + 1):
+          for j in range(1, len(b) + 1):
+              if a[i] == b[j]:  # BUG
+                  length[i][j] = length[i - 1][j - 1] + 1
+              else:
+                  length[i][j] = max(length[i - 1][j], length[i][j - 1])
+      print(length[len(a)][len(b)])
+    fix: "if a[i - 1] == b[j - 1]:"
+    why: "Entry `i` of the table is about the first `i` characters, and the last of them is at index `i - 1`. With `a[i]` and `b[j]`, the program compares the wrong characters, and already in the first row, at `j == len(b)`, `b[j]` is past the end of `b`: `IndexError`."
+
+  - type: choice
+    after: lcs
+    prompt: What do the LCS and edit distance tables cost for two strings of n and m characters?
+    choices:
+      - "O(n × m) time and memory"
+      - "O(n + m) time and memory"
+      - "O(2ⁿ) time"
+      - "O(n × m) time and O(1) memory"
+    answer: 1
+    why: "There's an entry for every pair of prefix lengths, (n + 1) × (m + 1) of them, and each takes O(1) from entries already there. A row reads only the row above, so two rows are enough when you want just the number, O(m) memory, but walking back to the string needs the whole table."
+
+  - type: bug
+    after: knapsack
+    code: |
+      weights, values, capacity = [3, 4], [5, 6], 8
+      best = [0] * (capacity + 1)
+      for w, v in zip(weights, values):
+          for c in range(w, capacity + 1):  # BUG
+              best[c] = max(best[c], v + best[c - w])
+      print(best[capacity])
+    fix: "for c in range(capacity, w - 1, -1):"
+    why: "Going up, `best[c - w]` may already hold this item, so it's packed again: two of the 4 give 12. Going down, `best[c - w]` still holds the items before this one, so each item is used once: 3 + 4 gives 11."
+
+  - type: predict
+    after: knapsack
+    code: |
+      sums = {0}
+      for x in [2, 3, 7]:
+          sums |= {s + x for s in sums if s + x <= 10}
+      print(sorted(sums))
+    why: "Each round adds the number to every sum made so far, from the set as it was before that round, so each number is used at most once. 2 + 3 + 7 = 12 is over the limit of 10, so it's left out."
+
+  - type: boss
+    after: bottom-up
+    prompt: |
+      A secret note turns each letter into its place in the alphabet, A as 1, B as 2 and so on to Z as 26, and then runs the numbers together with no spaces. So the digits can often be split back into letters in more than one way. Write `decodings(digits)`: the number of ways to split the string `digits` into letters. `"1312"` splits in 4 ways: 1 3 1 2 (ACAB), 13 1 2 (MAB), 1 3 12 (ACL) and 13 12 (ML). No letter's number starts with 0, so a 0 has to be the second digit of 10 (J) or 20 (T): `"205"` splits only as 20 5, and `"2005"` can't be split at all. An empty string splits in one way, into no letters.
+
+      Let `ways[i]` count the splits of the first `i` digits. The last letter of such a split is one digit, `digits[i - 1]`, when that digit isn't 0, or two digits, `digits[i - 2:i]`, when they make a number from 10 to 26.
+
+      For example, `print(decodings("1312"), decodings("2005"))` prints:
+
+      ```
+      4 0
+      ```
+    seed: |
+      def decodings(digits):
+          pass
+
+
+      if __name__ == "__main__":
+          print(decodings("1312"), decodings("2005"))
+    solution: |
+      def decodings(digits):
+          n = len(digits)
+          ways = [0] * (n + 1)
+          ways[0] = 1
+          for i in range(1, n + 1):
+              if digits[i - 1] != "0":
+                  ways[i] = ways[i - 1]
+              if i >= 2 and 10 <= int(digits[i - 2:i]) <= 26:
+                  ways[i] += ways[i - 2]
+          return ways[n]
+
+
+      if __name__ == "__main__":
+          print(decodings("1312"), decodings("2005"))
+    hints:
+      - "Make `ways = [0] * (len(digits) + 1)` with `ways[0] = 1`: the empty string splits in one way."
+      - "For each `i` from 1: when `digits[i - 1]` isn't `\"0\"`, it can be a letter by itself, so every split of the first `i - 1` digits goes on with it: start from `ways[i - 1]`."
+      - "When `i >= 2` and `int(digits[i - 2:i])` is from 10 to 26, the last two digits can be one letter too: add `ways[i - 2]`. A `\"05\"` gives 5, so the 10 to 26 check also stops a 0 from starting a letter. Return `ways[len(digits)]`."
+    tests:
+      - call: print(decodings("1312"), decodings("2005"))
+      - call: print(decodings("205"), decodings("7"), decodings("27"), decodings(""))
+        hidden: true
+      - call: print(decodings("110"), decodings("2626"), decodings("0"), decodings("301"), decodings("1020"))
+        hidden: true
+      - call: decodings("12" * 20)
+        hidden: true
+
+  - type: boss
+    after: lcs
+    prompt: |
+      A hiker's watch records the height above sea level every few minutes. Pick some of the readings, keeping them in the order they were taken (skipping any you like), so that each picked reading is **higher** than the one picked before it. Write `lis_length(heights)`: the most readings you can pick that way, which is the length of the longest **strictly increasing subsequence**. For `[3, 8, 4, 5, 1, 9, 6, 7]` it's 5: 3, 4, 5, 6 and 7.
+
+      Let `longest[i]` be the most readings you can pick when the last one picked is `heights[i]`. Picking that reading alone gives 1. And every earlier reading `heights[j]` that is lower can come just before it, giving `longest[j] + 1`. Take the biggest of those. The answer is the biggest entry of `longest`, or 0 when there are no readings.
+
+      For example, `lis_length([3, 8, 4, 5, 1, 9, 6, 7])` returns:
+
+      ```
+      5
+      ```
+    seed: |
+      def lis_length(heights):
+          pass
+
+
+      if __name__ == "__main__":
+          print(lis_length([3, 8, 4, 5, 1, 9, 6, 7]))
+    solution: |
+      def lis_length(heights):
+          if not heights:
+              return 0
+          longest = [1] * len(heights)
+          for i in range(len(heights)):
+              for j in range(i):
+                  if heights[j] < heights[i] and longest[j] + 1 > longest[i]:
+                      longest[i] = longest[j] + 1
+          return max(longest)
+
+
+      if __name__ == "__main__":
+          print(lis_length([3, 8, 4, 5, 1, 9, 6, 7]))
+    hints:
+      - "Start with `longest = [1] * len(heights)`: any reading on its own is a climb of one reading."
+      - "For each `i`, go through every `j` before it. When `heights[j] < heights[i]`, the readings picked up to `j` can go on with reading `i`, so `longest[j] + 1` is a candidate for `longest[i]`."
+      - "Return the biggest entry with `max(longest)`, but check for an empty list first: `max` of an empty list is an error."
+    tests:
+      - call: lis_length([3, 8, 4, 5, 1, 9, 6, 7])
+      - call: lis_length([6, 6, 6, 6])
+        hidden: true
+      - call: print(lis_length([]), lis_length([42]))
+        hidden: true
+      - call: print(lis_length([2, 4, 6, 8]), lis_length([8, 6, 4, 2]))
+        hidden: true
+      - call: lis_length([5, 1, 6, 2, 7, 3, 8, 4])
+        hidden: true
+      - call: lis_length([i * 37 % 101 for i in range(300)])
+        hidden: true

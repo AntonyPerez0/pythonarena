@@ -1,0 +1,1536 @@
+id: dsa-complexity
+summary: How the work of a program grows with its input, in Big-O, and the classic ways to make it grow slower. Sets and dicts that trade memory for speed, binary search and the bisect module, two pointers on sorted data, prefix sums and sliding windows, each with tests big enough that a slow way runs out of time.
+steps:
+  - id: dsa-complexity-big-o
+    slug: big-o
+    title: Big-O in practice
+    text: |
+      Two programs can give the same answer while one finishes in a blink and the other runs for an hour. The computer isn't the difference. What matters is **how the work grows** as the input grows: with 10 values both are instant, with a million values only one of them is.
+
+      You could time a program with a clock, but the time changes from computer to computer and with whatever else the computer is doing. Counting steps doesn't. Here three functions count how many times their innermost line runs:
+
+      ```python run
+      def one_loop(n):
+          steps = 0
+          for i in range(n):
+              steps += 1
+          return steps
+
+
+      def every_pair(n):
+          steps = 0
+          for i in range(n):
+              for j in range(i + 1, n):
+                  steps += 1
+          return steps
+
+
+      def halving(n):
+          steps = 0
+          while n > 1:
+              n = n // 2
+              steps += 1
+          return steps
+
+
+      for n in [10, 100, 1000]:
+          print(n, one_loop(n), every_pair(n), halving(n))
+      ```
+
+      ```output
+      10 10 45 3
+      100 100 4950 6
+      1000 1000 499500 9
+      ```
+
+      Read the columns down. `one_loop` grows with n: ten times the input, ten times the work. `every_pair` meets each pair of values once, n × (n - 1) / 2 steps: ten times the input, about a hundred times the work. `halving` halves n until 1 is left, so ten times the input adds only about three steps.
+
+      ### Big-O
+
+      **Big-O notation** names that growth and leaves out the details. `one_loop` is **O(n)**, `every_pair` is **O(n²)** and `halving` is **O(log n)**. Two more come up all the time: **O(1)**, the same work whatever the size, and **O(n log n)**, the cost of sorting.
+
+      | Big-O | n = 1,000 | n = 1,000,000 | For example |
+      | --- | --- | --- | --- |
+      | O(1) | 1 | 1 | `values[i]`, `len(values)` |
+      | O(log n) | 10 | 20 | binary search |
+      | O(n) | 1,000 | 1,000,000 | one loop over the list |
+      | O(n log n) | 10,000 | 20,000,000 | `sorted(values)` |
+      | O(n²) | 1,000,000 | 1,000,000,000,000 | a loop over every pair |
+
+      Big-O drops **constant factors**: `every_pair` does about n²/2 steps, and that is still O(n²). Two loops one after the other do 2n steps, still O(n). For big inputs, the growth beats any constant. Plain Python does roughly ten to fifty million simple steps a second, so an O(n²) loop over 200,000 values, 20 billion steps, runs for many minutes, while an O(n) loop over them takes a fraction of a second.
+
+      ### Loops you don't see
+
+      A line can be a loop in disguise. `x in values` on a list, `values.index(x)`, `values.count(x)`, `values.remove(x)`, `max(values)` and `sum(values)` go through the items one by one: O(n) each. A slice `values[a:b]` copies its items, and `values.pop(0)` or `values.insert(0, x)` moves every other item by one place. Put one of them in a loop over the list and you have O(n²) without a second `for`.
+
+      These two functions find the best profit from buying on one day and selling on a later day. Both are right:
+
+      ```python run
+      def best_profit_slow(prices):
+          best = 0
+          for i in range(len(prices) - 1):
+              best = max(best, max(prices[i + 1:]) - prices[i])
+          return best
+
+
+      def best_profit(prices):
+          best = 0
+          lowest = prices[0]
+          for price in prices:
+              lowest = min(lowest, price)
+              best = max(best, price - lowest)
+          return best
+
+
+      prices = [9, 11, 8, 5, 7, 10, 6]
+      print(best_profit_slow(prices))
+      print(best_profit(prices))
+      ```
+
+      ```output
+      5
+      5
+      ```
+
+      `best_profit_slow` has one `for`, but `max(prices[i + 1:])` copies and scans the rest of the list in every round: O(n²) in all. `best_profit` remembers the lowest price so far instead, so each round is O(1): the function is O(n) time, with O(1) extra memory (two variables, whatever the length of the list). Remembering something as you go is the most common way to remove a hidden loop.
+
+      ### Sorting first
+
+      Sorting costs O(n log n), and it often pays: after sorting, equal and close values sit next to each other. To find out whether a list has a repeated value, comparing every pair is O(n²). In a sorted list, a repeated value sits right next to its twin, so one pass over the neighbors is enough: O(n log n) for the sort plus O(n) for the pass, O(n log n) in all.
+
+      ```python run
+      def has_repeat(values):
+          ordered = sorted(values)
+          for i in range(len(ordered) - 1):
+              if ordered[i] == ordered[i + 1]:
+                  return True
+          return False
+
+
+      print(has_repeat([31, 7, 19, 7, 2]))
+      print(has_repeat([31, 7, 19, 8, 2]))
+      ```
+
+      ```output
+      True
+      False
+      ```
+
+      `sorted` makes a new sorted list, O(n) extra memory, and leaves the original as it was.
+
+      **Your turn:** what does this program print? Count the steps of each function by hand, and watch how each count grows when n doubles. Type each line it prints.
+    predict: |
+      def a(n):
+          steps = 0
+          for i in range(n):
+              for j in range(3):
+                  steps += 1
+          return steps
+
+
+      def b(n):
+          steps = 0
+          for i in range(n):
+              for j in range(i):
+                  steps += 1
+          return steps
+
+
+      def c(n):
+          steps = 0
+          while n > 1:
+              n = n // 2
+              steps += 1
+          return steps
+
+
+      print(a(8), b(8), c(8))
+      print(a(16), b(16), c(16))
+    hints:
+      - "In `a`, the inner loop always runs 3 times, whatever `i` is. In `b`, it runs `i` times: 0 times, then 1, then 2, and so on."
+      - "`b(8)` is 0 + 1 + 2 + ... + 7 = 28. `c` halves n until it reaches 1: 8, 4, 2, 1 is three halvings."
+      - "When n doubles, `a` doubles (O(n)), `b` grows about four times (O(n²)), and `c` grows by one (O(log n))."
+    more:
+      - task: |
+          A **record** is a value greater than every value before it. The first value is always a record. This function counts the records in a list, and it gives the right answers, but `max(values[:i])` is a hidden loop: it makes the function O(n²), and the hidden test has 200,000 values. Make it O(n), without changing what it returns.
+
+          For example, `count_records([3, 1, 4, 1, 5, 9, 2, 6])` returns (the records are 3, 4, 5 and 9):
+
+          ```
+          4
+          ```
+        seed: |
+          def count_records(values):
+              count = 0
+              for i in range(len(values)):
+                  if i == 0 or values[i] > max(values[:i]):
+                      count += 1
+              return count
+
+
+          if __name__ == "__main__":
+              print(count_records([3, 1, 4, 1, 5, 9, 2, 6]))
+        solution: |
+          def count_records(values):
+              count = 0
+              highest = None
+              for value in values:
+                  if highest is None or value > highest:
+                      count += 1
+                      highest = value
+              return count
+
+
+          if __name__ == "__main__":
+              print(count_records([3, 1, 4, 1, 5, 9, 2, 6]))
+        slow: |
+          def count_records(values):
+              count = 0
+              for i in range(len(values)):
+                  if i == 0 or values[i] > max(values[:i]):
+                      count += 1
+              return count
+
+
+          if __name__ == "__main__":
+              print(count_records([3, 1, 4, 1, 5, 9, 2, 6]))
+        hints:
+          - "`max(values[:i])` is the highest value before position `i`. Instead of working it out again in every round, remember it as you go, as `best_profit` remembers the lowest price."
+          - "Keep a variable `highest`, the greatest value so far. A value greater than `highest` is a record, and it becomes the new `highest`."
+          - "Mind the first value and negative values: don't start `highest` at 0. Start it at `None` (and treat the first value as a record), or at `values[0]` when the list isn't empty."
+        tests:
+          - call: count_records([3, 1, 4, 1, 5, 9, 2, 6])
+          - call: count_records([])
+            hidden: true
+          - call: count_records([5, 5, 5])
+            hidden: true
+          - call: count_records([-3, -1, -2, 0])
+            hidden: true
+          - call: count_records([10, 9, 8, 7])
+            hidden: true
+          - call: count_records([i * 7919 % 200_003 for i in range(200_000)])
+            hidden: true
+            big: true
+      - task: |
+          Write `smallest_gap(values)`: the smallest difference between two values of the list (the larger one minus the smaller one). The list has at least two values. Comparing every pair is O(n²), too slow for the hidden test's 100,000 values: sort first, and the closest values sit next to each other.
+
+          For example, `smallest_gap([40, 7, 22, 31, 15])` returns (22 - 15):
+
+          ```
+          7
+          ```
+        seed: |
+          def smallest_gap(values):
+              pass
+
+
+          if __name__ == "__main__":
+              print(smallest_gap([40, 7, 22, 31, 15]))
+        solution: |
+          def smallest_gap(values):
+              ordered = sorted(values)
+              best = ordered[1] - ordered[0]
+              for i in range(1, len(ordered) - 1):
+                  gap = ordered[i + 1] - ordered[i]
+                  if gap < best:
+                      best = gap
+              return best
+
+
+          if __name__ == "__main__":
+              print(smallest_gap([40, 7, 22, 31, 15]))
+        slow: |
+          def smallest_gap(values):
+              best = abs(values[0] - values[1])
+              for i in range(len(values)):
+                  for j in range(i + 1, len(values)):
+                      if abs(values[i] - values[j]) < best:
+                          best = abs(values[i] - values[j])
+              return best
+
+
+          if __name__ == "__main__":
+              print(smallest_gap([40, 7, 22, 31, 15]))
+        hints:
+          - "In a sorted list, the two closest values are always neighbors: any value between two others is closer to each of them than they are to each other."
+          - "Sort the values with `sorted`, then go through the neighbors `ordered[i]` and `ordered[i + 1]` and keep the smallest difference."
+          - "Start `best` from the first pair of neighbors, `ordered[1] - ordered[0]`, so you have a real difference to compare with."
+        tests:
+          - call: smallest_gap([40, 7, 22, 31, 15])
+          - call: smallest_gap([5, 1])
+            hidden: true
+          - call: smallest_gap([3, 9, 3])
+            hidden: true
+          - call: smallest_gap([-10, 4, -2, 15])
+            hidden: true
+          - call: smallest_gap([100, 1, 50, 120, 70])
+            hidden: true
+          - call: smallest_gap([50, 2, 30, 49])
+            hidden: true
+          - call: smallest_gap([i * i % 1_000_003 for i in range(1, 100_001)])
+            hidden: true
+            big: true
+
+  - id: dsa-complexity-sets-and-dicts
+    slug: sets-and-dicts
+    title: Sets and dicts for speed
+    text: |
+      The last step removed hidden loops by remembering something as you go. Very often, what you need to remember is *which values you have seen*, and then everything depends on how fast you can ask "have I seen this one?"
+
+      ### `in` on a list and on a set
+
+      `x in values` on a list compares `x` with the items one by one, from the start: O(n). A **set** keeps its values in a table, each at a place worked out from the value's **hash**, a number Python computes from the value. To answer `x in seen`, Python computes the hash of `x` and looks in that one place, so the answer takes O(1) on average, however big the set is. A dict finds its keys in the same way. (The worst case, when many values land in the same place, is O(n), and it's rare. The module on hash tables shows how the table works.)
+
+      ```python repl
+      >>> numbers = [4, 8, 15, 16, 23, 42]
+      >>> 23 in numbers
+      True
+      >>> lookup = set(numbers)
+      >>> 23 in lookup
+      True
+      >>> 7 in lookup
+      False
+      ```
+
+      The answers are the same; the cost isn't. Building `set(numbers)` costs O(n) time once, and the set takes O(n) extra memory: you **trade memory for speed**. In a loop over n values, `in` on a list makes the loop O(n²); on a set, O(n).
+
+      One trap: `if x in set(numbers):` inside the loop builds a new set in every round, which is O(n) again. Build the set once, before the loop.
+
+      ### Duplicates and the first repeated value
+
+      `set(values)` drops repeats, so a list has a duplicate when its set is smaller than the list. To find *which* value repeats first, keep a set of the values seen so far:
+
+      ```python run
+      def has_duplicate(values):
+          return len(set(values)) != len(values)
+
+
+      def first_repeat(values):
+          seen = set()
+          for value in values:
+              if value in seen:
+                  return value
+              seen.add(value)
+          return None
+
+
+      print(has_duplicate([3, 1, 4, 1, 5]))
+      print(has_duplicate([2, 7, 1, 8]))
+      print(first_repeat([5, 3, 9, 3, 5]))
+      print(first_repeat([1, 2, 3]))
+      ```
+
+      ```output
+      True
+      False
+      3
+      None
+      ```
+
+      Each round does one lookup and one `add`, both O(1) on average, so `first_repeat` is O(n) time and O(n) memory. With `seen = []` and `append`, it gives the same answers in O(n²).
+
+      ### Two values that add up to a target
+
+      Is there a pair of values that adds up to `target`? Comparing every pair is O(n²). Turn the question around: for each value `x`, the partner it needs is `target - x`. If that partner is among the values seen so far, there's a pair:
+
+      ```python run
+      def has_pair(values, target):
+          seen = set()
+          for x in values:
+              if target - x in seen:
+                  return True
+              seen.add(x)
+          return False
+
+
+      print(has_pair([8, 3, 11, 5], 16))
+      print(has_pair([8, 3, 11, 5], 10))
+      print(has_pair([5], 10))
+      ```
+
+      ```output
+      True
+      False
+      False
+      ```
+
+      11 and 5 make 16, and no two values make 10. The order of the two lines in the loop matters: the check comes before the `add`, so a value never pairs with itself, and the lone 5 doesn't count as 5 + 5.
+
+      When you need *where* the partner is, not just whether it exists, use a dict instead of a set: map each value seen to its index, `positions[x] = i`, and `positions[target - x]` gives the partner's index. That's the classic interview question "two sum".
+
+      **Your turn:** a shop sent out some orders, and `missing` lists the ones that never arrived, in the order they were sent. Fill in the blank so that each `not in` check is O(1): the hidden test has 200,000 orders. The call `print(missing([101, 102, 103, 104, 105], [104, 101, 105]))` should print:
+
+      ```
+      [102, 103]
+      ```
+    fill: |
+      def missing(sent, received):
+          received_set = [[set(received)]]
+          result = []
+          for order in sent:
+              if order not in received_set:
+                  result.append(order)
+          return result
+
+
+      if __name__ == "__main__":
+          print(missing([101, 102, 103, 104, 105], [104, 101, 105]))
+    slow: |
+      def missing(sent, received):
+          received_set = received
+          result = []
+          for order in sent:
+              if order not in received_set:
+                  result.append(order)
+          return result
+
+
+      if __name__ == "__main__":
+          print(missing([101, 102, 103, 104, 105], [104, 101, 105]))
+    hints:
+      - "`order not in received` would look through the whole list of received orders for every order sent: O(n²)."
+      - "Turn the list into a set once, before the loop, so each lookup is O(1) on average: `set(received)`."
+    tests:
+      - call: print(missing([101, 102, 103, 104, 105], [104, 101, 105]))
+      - call: missing([1, 2, 3], [])
+        hidden: true
+      - call: missing([7, 8], [8, 7, 9])
+        hidden: true
+      - call: len(missing(list(range(200_000)), list(range(0, 400_000, 2))))
+        hidden: true
+        big: true
+    more:
+      - task: |
+          Write `two_sum(numbers, target)`: return a tuple `(i, j)` with the indexes of two values that add up to `target`, with `i < j`, or `None` if no two values do. A value can't pair with itself. In the tests, the values are all different, and at most one pair adds up to the target. It must be O(n): the hidden test has 200,000 values.
+
+          For example, `two_sum([7, 2, 13, 11], 24)` returns (13 + 11):
+
+          ```
+          (2, 3)
+          ```
+        seed: |
+          def two_sum(numbers, target):
+              pass
+
+
+          if __name__ == "__main__":
+              print(two_sum([7, 2, 13, 11], 24))
+        solution: |
+          def two_sum(numbers, target):
+              positions = {}
+              for j, x in enumerate(numbers):
+                  if target - x in positions:
+                      return (positions[target - x], j)
+                  positions[x] = j
+              return None
+
+
+          if __name__ == "__main__":
+              print(two_sum([7, 2, 13, 11], 24))
+        slow: |
+          def two_sum(numbers, target):
+              for i in range(len(numbers)):
+                  for j in range(i + 1, len(numbers)):
+                      if numbers[i] + numbers[j] == target:
+                          return (i, j)
+              return None
+
+
+          if __name__ == "__main__":
+              print(two_sum([7, 2, 13, 11], 24))
+        hints:
+          - "Use a dict that maps each value seen so far to its index. For each value `x` at index `j`, its partner is `target - x`."
+          - "If `target - x` is a key of the dict, its index comes first: return `(positions[target - x], j)`. Otherwise add `x` to the dict."
+          - "Check before you add `x`, so a value doesn't pair with itself: `two_sum([5, 1, 4], 10)` must give `None`."
+        tests:
+          - call: two_sum([7, 2, 13, 11], 24)
+          - call: two_sum([3, 9], 12)
+            hidden: true
+          - call: print(two_sum([4, 6, 1], 20))
+            hidden: true
+          - call: two_sum([-5, 10, 0, 8], 3)
+            hidden: true
+          - call: print(two_sum([5, 1, 4], 10))
+            hidden: true
+          - call: print(two_sum([], 1))
+            hidden: true
+          - call: two_sum([2 * i for i in range(200_000)] + [7], 400_005)
+            hidden: true
+            big: true
+      - task: |
+          Write `longest_streak(values)`: the length of the longest run of consecutive whole numbers that are all in the list, such as 4, 5, 6, 7. The values can be in any order and can repeat. An empty list gives 0. It must be O(n): the hidden test has 200,000 values that form one long run, and counting up from every value of it is O(n²).
+
+          For example, `longest_streak([10, 4, 20, 1, 3, 2, 11])` returns (1, 2, 3 and 4):
+
+          ```
+          4
+          ```
+        seed: |
+          def longest_streak(values):
+              pass
+
+
+          if __name__ == "__main__":
+              print(longest_streak([10, 4, 20, 1, 3, 2, 11]))
+        solution: |
+          def longest_streak(values):
+              present = set(values)
+              best = 0
+              for value in present:
+                  if value - 1 not in present:
+                      length = 1
+                      while value + length in present:
+                          length += 1
+                      best = max(best, length)
+              return best
+
+
+          if __name__ == "__main__":
+              print(longest_streak([10, 4, 20, 1, 3, 2, 11]))
+        slow: |
+          def longest_streak(values):
+              present = set(values)
+              best = 0
+              for value in present:
+                  length = 1
+                  while value + length in present:
+                      length += 1
+                  best = max(best, length)
+              return best
+
+
+          if __name__ == "__main__":
+              print(longest_streak([10, 4, 20, 1, 3, 2, 11]))
+        hints:
+          - "Put the values in a set, so that \"is `value + 1` in the list?\" is an O(1) question."
+          - "From a value, count upward while `value + length` is in the set. But counting from every value of a run of 200,000 numbers is O(n²) again."
+          - "Only start counting at the first value of a run: a value whose `value - 1` is not in the set. Then every value is counted at most twice in all."
+        tests:
+          - call: longest_streak([10, 4, 20, 1, 3, 2, 11])
+          - call: longest_streak([])
+            hidden: true
+          - call: longest_streak([5, 5, 5])
+            hidden: true
+          - call: longest_streak([-2, 0, -1, 7, 1])
+            hidden: true
+          - call: longest_streak([9, 1, 5])
+            hidden: true
+          - call: longest_streak([6, 8, 7, 7, 9, 2, 3])
+            hidden: true
+          - call: longest_streak(list(range(200_000, 0, -1)))
+            hidden: true
+            big: true
+
+  - id: dsa-complexity-binary-search
+    slug: binary-search
+    title: Binary search
+    text: |
+      You met binary search in the recursion module: look at the middle item of a sorted list, and drop the half where the target can't be. Interviews usually want it as a loop. It needs no recursion, only two variables, `lo` and `hi`, the edges of the part still to search. This one prints what it looks at:
+
+      ```python run
+      def find(values, target):
+          lo = 0
+          hi = len(values) - 1
+          while lo <= hi:
+              mid = (lo + hi) // 2
+              print("looks at index", mid, "value", values[mid])
+              if values[mid] == target:
+                  return mid
+              if values[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid - 1
+          return -1
+
+
+      values = [3, 8, 14, 21, 30, 42, 57, 61, 77]
+      print(find(values, 57))
+      print(find(values, 10))
+      ```
+
+      ```output
+      looks at index 4 value 30
+      looks at index 6 value 57
+      6
+      looks at index 4 value 30
+      looks at index 1 value 8
+      looks at index 2 value 14
+      -1
+      ```
+
+      **Why it's right:** the loop keeps one promise: if the target is in the list, it's somewhere from `lo` to `hi`. When `values[mid]` is smaller than the target, so is every value before it, since the list is sorted, and the target can only be after `mid`: `lo = mid + 1`. When it's greater, `hi = mid - 1`. Each round also drops `mid` itself, so the range shrinks and the loop ends. Once `lo` passes `hi`, the range is empty, and the promise says the target isn't there.
+
+      **What it costs:** each round halves the range, so it's O(log n) time: 20 looks for a million values, 30 for a billion. The memory is O(1). The list must be sorted, though. Sorting costs O(n log n), which pays when you search the same list many times.
+
+      ### The off-by-one traps
+
+      Every `+ 1` and `- 1` matters:
+
+      - With `while lo < hi`, the loop stops when one item is left, without looking at it. `find(values, 77)` would return -1.
+      - With `lo = mid` instead of `mid + 1`, once `lo` and `hi` are neighbors, `mid` is `lo`. If the target is greater, `lo = mid` changes nothing, and the loop never ends.
+      - With `hi = len(values)`, the range starts one place past the end, and a search for a big value looks there:
+
+      ```python run crash
+      def find(values, target):
+          lo = 0
+          hi = len(values)
+          while lo <= hi:
+              mid = (lo + hi) // 2
+              if values[mid] == target:
+                  return mid
+              if values[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid - 1
+          return -1
+
+
+      print(find([3, 8, 14], 99))
+      ```
+
+      ```crash
+      Traceback (most recent call last):
+        File "main.py", line 15, in <module>
+          print(find([3, 8, 14], 99))
+                ~~~~^^^^^^^^^^^^^^^^
+        File "main.py", line 6, in find
+          if values[mid] == target:
+             ~~~~~~^^^^^
+      IndexError: list index out of range
+      ```
+
+      ### Where would it go?
+
+      Often you want the place where a value *would* go: the first index whose value is at least the target. That answer can be "after everything", so `hi` starts at `len(values)`, one past the end, and the range is from `lo` up to but not including `hi`. Since `mid` may be the answer, it stays in the range, `hi = mid`, and the loop runs while the range isn't empty, `lo < hi`:
+
+      ```python fragment
+      def first_at_least(values, target):
+          lo = 0
+          hi = len(values)
+          while lo < hi:
+              mid = (lo + hi) // 2
+              if values[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid
+          return lo
+      ```
+
+      Both styles work; mixing them causes the bugs above.
+
+      ### The `bisect` module
+
+      Python has this search ready-made in the **`bisect`** module, O(log n) and written in C. `bisect_left(values, x)` is `first_at_least`. `bisect_right(values, x)` is the first index whose value is greater than `x`. Between the two sit exactly the copies of `x`:
+
+      ```python repl
+      >>> from bisect import bisect_left, bisect_right
+      >>> prices = [5, 8, 8, 12, 20, 20, 20, 35, 50]
+      >>> bisect_left(prices, 20)
+      4
+      >>> bisect_right(prices, 20)
+      7
+      >>> bisect_right(prices, 20) - bisect_left(prices, 20)
+      3
+      >>> bisect_left(prices, 10)
+      3
+      >>> bisect_right(prices, 35) - bisect_left(prices, 8)
+      7
+      ```
+
+      A shop's prices, sorted: 3 items cost 20. `bisect_left(prices, 10)` is 3, which says two things at once: a 10 would go at index 3, and 3 items cost less than 10, since everything before that index is smaller. The last line counts the items that cost from 8 to 35: 7 of them. In general, the number of values from `low` to `high` is `bisect_right(values, high) - bisect_left(values, low)`: two O(log n) searches, however many values there are between. `bisect.insort(values, x)` puts `x` in its place, finding it in O(log n), but inserting it is O(n), since every item after it moves.
+
+      **Your turn:** what does this program print? Follow `lo` and `hi` round by round. Type each line it prints.
+    predict: |
+      def find(values, target):
+          lo = 0
+          hi = len(values) - 1
+          while lo <= hi:
+              mid = (lo + hi) // 2
+              print(values[mid])
+              if values[mid] == target:
+                  return mid
+              if values[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid - 1
+          return -1
+
+
+      print(find([2, 5, 9, 12, 20, 25, 31, 40, 48, 50, 63], 45))
+    hints:
+      - "The list has 11 values, at indexes 0 to 10, so the first `mid` is (0 + 10) // 2 = 5, the value 25."
+      - "25 is smaller than 45, so `lo` becomes 6. The next `mid` is (6 + 10) // 2 = 8, the value 48, which is greater: `hi` becomes 7."
+      - "Keep going until `lo` is greater than `hi`. 45 isn't in the list, so the last line is -1."
+    more:
+      - task: |
+          This binary search should return the index of `target` in the sorted list `values`, or -1 if it isn't there. It misses some values that are in the list. Fix it, and keep it a binary search: the hidden test makes about 10,000 searches in a list of 1,000,000 values, too many for a search that goes through the list one by one.
+
+          For example, `find([4, 9, 15], 15)` should return:
+
+          ```
+          2
+          ```
+        seed: |
+          def find(values, target):
+              lo = 0
+              hi = len(values) - 1
+              while lo < hi:
+                  mid = (lo + hi) // 2
+                  if values[mid] == target:
+                      return mid
+                  if values[mid] < target:
+                      lo = mid + 1
+                  else:
+                      hi = mid - 1
+              return -1
+
+
+          if __name__ == "__main__":
+              print(find([4, 9, 15], 15))
+        solution: |
+          def find(values, target):
+              lo = 0
+              hi = len(values) - 1
+              while lo <= hi:
+                  mid = (lo + hi) // 2
+                  if values[mid] == target:
+                      return mid
+                  if values[mid] < target:
+                      lo = mid + 1
+                  else:
+                      hi = mid - 1
+              return -1
+
+
+          if __name__ == "__main__":
+              print(find([4, 9, 15], 15))
+        slow: |
+          def find(values, target):
+              if target in values:
+                  return values.index(target)
+              return -1
+
+
+          if __name__ == "__main__":
+              print(find([4, 9, 15], 15))
+        hints:
+          - "Trace `find([4, 9, 15], 15)`: `lo` is 0 and `hi` is 2, `mid` is 1, and 9 is smaller than 15, so `lo` becomes 2. Is the loop's condition still true?"
+          - "`lo` and `hi` are both inside the range, so when they are equal, one item is still left to look at."
+          - "The loop must also run when `lo == hi`: `while lo <= hi`."
+        tests:
+          - call: find([4, 9, 15], 15)
+          - call: find([4, 9, 15], 4)
+            hidden: true
+          - call: find([7], 7)
+            hidden: true
+          - call: find([], 3)
+            hidden: true
+          - call: "[find([1, 3, 5, 7, 9, 11], x) for x in [1, 5, 6, 11, 12, 0]]"
+            hidden: true
+          - call: |
+              values = list(range(0, 3_000_000, 3))
+              print(sum(find(values, x) for x in range(0, 3_000_000, 301)))
+            hidden: true
+            big: true
+      - task: |
+          Write `count_in_ranges(values, queries)`. The list `values` is in no particular order, and each query is a tuple `(low, high)`, where `low` is never greater than `high`. A query's answer is how many values are at least `low` and at most `high`. Return a list of the answers, in the order of the queries. The hidden test has 20,000 queries about a list of 300,000 values: a loop over the list for each query is too slow, and so is sorting the list again for each one.
+
+          For example, `count_in_ranges([21, 15, 30, 12, 15, 18, 15], [(15, 21), (19, 29), (0, 100)])` returns:
+
+          ```
+          [5, 1, 7]
+          ```
+        seed: |
+          def count_in_ranges(values, queries):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_in_ranges([21, 15, 30, 12, 15, 18, 15], [(15, 21), (19, 29), (0, 100)]))
+        solution: |
+          from bisect import bisect_left, bisect_right
+
+
+          def count_in_ranges(values, queries):
+              ordered = sorted(values)
+              answers = []
+              for low, high in queries:
+                  answers.append(bisect_right(ordered, high) - bisect_left(ordered, low))
+              return answers
+
+
+          if __name__ == "__main__":
+              print(count_in_ranges([21, 15, 30, 12, 15, 18, 15], [(15, 21), (19, 29), (0, 100)]))
+        slow: |
+          def count_in_ranges(values, queries):
+              answers = []
+              for low, high in queries:
+                  count = 0
+                  for value in values:
+                      if low <= value <= high:
+                          count += 1
+                  answers.append(count)
+              return answers
+
+
+          if __name__ == "__main__":
+              print(count_in_ranges([21, 15, 30, 12, 15, 18, 15], [(15, 21), (19, 29), (0, 100)]))
+        hints:
+          - "Binary search needs a sorted list. Sort once, before the queries: `ordered = sorted(values)` costs O(n log n), and then every query can use two O(log n) searches in `ordered`."
+          - "In the sorted list, `bisect_left(ordered, low)` is the index of the first value that is at least `low`, and `bisect_right(ordered, high)` is the index just after the last value that is at most `high`."
+          - "A query's answer is the difference of those two indexes. A loop over the queries can unpack each tuple: `for low, high in queries:`."
+        tests:
+          - call: count_in_ranges([21, 15, 30, 12, 15, 18, 15], [(15, 21), (19, 29), (0, 100)])
+          - call: count_in_ranges([3, 1, 2], [(5, 9), (-5, 1)])
+            hidden: true
+          - call: count_in_ranges([4, 4, 4], [(4, 4), (5, 5)])
+            hidden: true
+          - call: count_in_ranges([], [(1, 5)])
+            hidden: true
+          - call: count_in_ranges([10, 2, 8, 6, 4], [(3, 9), (2, 2), (11, 20)])
+            hidden: true
+          - call: count_in_ranges([5, 1], [])
+            hidden: true
+          - call: sum(count_in_ranges([i * 7_919 % 200_003 for i in range(300_000)], [(q, q + 50_000) for q in range(0, 200_000, 10)]))
+            hidden: true
+            big: true
+
+  - id: dsa-complexity-two-pointers
+    slug: two-pointers
+    title: Two pointers
+    text: |
+      Binary search used the order of a sorted list to drop half of it at a time. **Two pointers** use the order in another way: two indexes walk along the data, and at each step the order tells which one to move. Each one only ever moves in one direction, so together they take O(n) steps.
+
+      ### A pair with a given sum
+
+      In the step on sets and dicts, you found two values that add up to a target with a set: O(n) time and O(n) memory. If the list is sorted, you can do it with no extra memory. Start `left` at the smallest value and `right` at the largest, and look at their sum:
+
+      ```python run
+      def has_pair(values, target):
+          left = 0
+          right = len(values) - 1
+          while left < right:
+              total = values[left] + values[right]
+              print(values[left], "+", values[right], "=", total)
+              if total == target:
+                  return True
+              if total < target:
+                  left += 1
+              else:
+                  right -= 1
+          return False
+
+
+      print(has_pair([1, 4, 6, 9, 13, 15], 22))
+      ```
+
+      ```output
+      1 + 15 = 16
+      4 + 15 = 19
+      6 + 15 = 21
+      9 + 15 = 24
+      9 + 13 = 22
+      True
+      ```
+
+      **Why it's right:** when the sum is too small, `values[left]` can't be in any pair. Its biggest possible partner, `values[right]`, isn't enough, and every other partner still in play is smaller. So dropping it loses nothing. In the same way, when the sum is too big, `values[right]` is too big even with the smallest value still in play. Each round drops one value that can't be in a pair, and after at most n - 1 rounds the pointers meet: O(n) time, O(1) memory. If the list isn't sorted, sorting it first costs O(n log n), and then a set is faster.
+
+      ### Merging two sorted lists
+
+      To merge two sorted lists into one, put a pointer at the front of each. The smallest value left is at one of the two pointers, so take the smaller one and move that pointer on. When one list runs out, the rest of the other comes after, already in order:
+
+      ```python run
+      def merge(a, b):
+          result = []
+          i = 0
+          j = 0
+          while i < len(a) and j < len(b):
+              if a[i] <= b[j]:
+                  result.append(a[i])
+                  i += 1
+              else:
+                  result.append(b[j])
+                  j += 1
+          result += a[i:]
+          result += b[j:]
+          return result
+
+
+      print(merge([2, 5, 8, 9], [1, 5, 7, 12, 15]))
+      ```
+
+      ```output
+      [1, 2, 5, 5, 7, 8, 9, 12, 15]
+      ```
+
+      Every round appends one value, so it's O(n + m) for lists of n and m values. Taking the values with `a.pop(0)` instead would be O(n) per value, since every value after it moves one place.
+
+      ### Removing duplicates, and a trap
+
+      A first try at removing repeats often removes items from a list while a loop goes over the same list. That skips items:
+
+      ```python run
+      values = [2, 5, 5, 5, 5, 8]
+      for value in values:
+          if values.count(value) > 1:
+              values.remove(value)
+      print(values)
+      ```
+
+      ```output
+      [2, 5, 5, 8]
+      ```
+
+      The loop goes by position. Each `remove` shifts the later items one place to the left, so the item that moves into the current place is never looked at. It's also O(n²), since `count` and `remove` each go through the list.
+
+      For a sorted list, two pointers do it in place: `read` looks at every value, and `write` is where the next value to keep goes. A value is new exactly when it differs from the last value kept, `values[write - 1]`:
+
+      ```python run
+      def remove_duplicates(values):
+          write = 0
+          for read in range(len(values)):
+              if write == 0 or values[read] != values[write - 1]:
+                  values[write] = values[read]
+                  write += 1
+          del values[write:]
+
+
+      values = [2, 5, 5, 5, 5, 8, 8, 9]
+      remove_duplicates(values)
+      print(values)
+      ```
+
+      ```output
+      [2, 5, 8, 9]
+      ```
+
+      `read` moves every round and `write` only when a value is kept, never back: O(n) time and O(1) extra memory. The `del` at the end cuts off what's left over.
+
+      **Your turn:** fill in the blanks so that each case moves the correct pointer, and the function returns the pair of values that adds up to `target`, or `None`. The program should print:
+
+      ```
+      (4, 18)
+      (9, 11)
+      None
+      ```
+    fill: |
+      def pair_with_sum(values, target):
+          left = 0
+          right = len(values) - 1
+          while left < right:
+              total = values[left] + values[right]
+              if total == target:
+                  return (values[left], values[right])
+              if total < target:
+                  [[left += 1‖left = left + 1]]
+              else:
+                  [[right -= 1‖right = right - 1]]
+          return None
+
+
+      numbers = [1, 4, 9, 11, 15, 18]
+      print(pair_with_sum(numbers, 22))
+      print(pair_with_sum(numbers, 20))
+      print(pair_with_sum(numbers, 3))
+    hints:
+      - "When the sum is too small, the smaller value can't be in any pair: drop it by moving `left` up. When it's too big, drop the larger value by moving `right` down."
+      - "The first blank is `left += 1` and the second `right -= 1`."
+    tests:
+      - expect: |
+          (4, 18)
+          (9, 11)
+          None
+    more:
+      - task: |
+          Write `common(a, b)`: a sorted list of the values that are in both `a` and `b`. Both lists are sorted, and neither has a repeated value. Walk along both with two pointers, as in merging, for O(n + m): the hidden test has 200,000 values in each list.
+
+          For example, `common([1, 4, 6, 9, 13], [2, 4, 5, 9, 10, 13])` returns:
+
+          ```
+          [4, 9, 13]
+          ```
+        seed: |
+          def common(a, b):
+              pass
+
+
+          if __name__ == "__main__":
+              print(common([1, 4, 6, 9, 13], [2, 4, 5, 9, 10, 13]))
+        solution: |
+          def common(a, b):
+              result = []
+              i = 0
+              j = 0
+              while i < len(a) and j < len(b):
+                  if a[i] == b[j]:
+                      result.append(a[i])
+                      i += 1
+                      j += 1
+                  elif a[i] < b[j]:
+                      i += 1
+                  else:
+                      j += 1
+              return result
+
+
+          if __name__ == "__main__":
+              print(common([1, 4, 6, 9, 13], [2, 4, 5, 9, 10, 13]))
+        slow: |
+          def common(a, b):
+              return [x for x in a if x in b]
+
+
+          if __name__ == "__main__":
+              print(common([1, 4, 6, 9, 13], [2, 4, 5, 9, 10, 13]))
+        hints:
+          - "Start a pointer at the front of each list. If the two values are equal, it's a common value: keep it and move both pointers on."
+          - "If `a[i]` is smaller than `b[j]`, then `a[i]` can't be in `b`: everything from `b[j]` on is greater. Move `i` on. In the same way, move `j` on when `b[j]` is the smaller one."
+          - "Stop as soon as one list runs out: `while i < len(a) and j < len(b)`."
+        tests:
+          - call: common([1, 4, 6, 9, 13], [2, 4, 5, 9, 10, 13])
+          - call: common([], [1, 2])
+            hidden: true
+          - call: common([1, 2, 3], [4, 5])
+            hidden: true
+          - call: common([5, 6, 7], [5, 6, 7])
+            hidden: true
+          - call: common([-3, 0, 8], [-3, 8, 20])
+            hidden: true
+          - call: len(common(list(range(0, 600_000, 3)), list(range(0, 400_000, 2))))
+            hidden: true
+            big: true
+      - task: |
+          Write `count_pairs(values, limit)`: how many pairs of positions `i < j` have `values[i] + values[j] <= limit`. The list is sorted. The hidden test has 200,000 values, and checking every pair is O(n²): use two pointers.
+
+          For example, `count_pairs([1, 2, 4, 5, 9], 7)` returns (1 + 2, 1 + 4, 1 + 5, 2 + 4 and 2 + 5):
+
+          ```
+          5
+          ```
+        seed: |
+          def count_pairs(values, limit):
+              pass
+
+
+          if __name__ == "__main__":
+              print(count_pairs([1, 2, 4, 5, 9], 7))
+        solution: |
+          def count_pairs(values, limit):
+              count = 0
+              left = 0
+              right = len(values) - 1
+              while left < right:
+                  if values[left] + values[right] <= limit:
+                      count += right - left
+                      left += 1
+                  else:
+                      right -= 1
+              return count
+
+
+          if __name__ == "__main__":
+              print(count_pairs([1, 2, 4, 5, 9], 7))
+        slow: |
+          def count_pairs(values, limit):
+              count = 0
+              for i in range(len(values)):
+                  for j in range(i + 1, len(values)):
+                      if values[i] + values[j] <= limit:
+                          count += 1
+              return count
+
+
+          if __name__ == "__main__":
+              print(count_pairs([1, 2, 4, 5, 9], 7))
+        hints:
+          - "Start `left` at 0 and `right` at the last index. If `values[right]` is too big even with `values[left]`, the smallest value, it's too big for every pair: move `right` down."
+          - "If `values[left] + values[right] <= limit`, then `values[left]` also works with every value between `left` and `right`, which are smaller than `values[right]`. That's `right - left` pairs at once."
+          - "After counting those pairs, every pair with `values[left]` is counted: move `left` up. Stop when the pointers meet."
+        tests:
+          - call: count_pairs([1, 2, 4, 5, 9], 7)
+          - call: count_pairs([], 10)
+            hidden: true
+          - call: count_pairs([3], 10)
+            hidden: true
+          - call: count_pairs([1, 1, 1], 2)
+            hidden: true
+          - call: count_pairs([5, 6, 7], 4)
+            hidden: true
+          - call: count_pairs([-4, -1, 2, 3, 8], 1)
+            hidden: true
+          - call: count_pairs(list(range(0, 600_000, 3)), 500_000)
+            hidden: true
+            big: true
+
+  - id: dsa-complexity-prefix-sums
+    slug: prefix-sums
+    title: Prefix sums
+    text: |
+      A step counter keeps how many steps you walked each day. How many steps from day 3 to day 10? `sum(steps[3:11])` answers in O(k) for a range of k days. That's fine once. But an app that answers 100,000 such questions about 100,000 days adds up billions of numbers, the same ones again and again.
+
+      ### Prefix sums
+
+      Do the adding once. A **prefix sum** list holds, at index `i`, the sum of the first `i` values:
+
+      ```text
+      values:     5   2   7   1   4
+      prefix:  0  5   7  14  15  19
+      ```
+
+      `prefix[0]` is 0, the sum of no values, so the list is one longer than `values`. The sum of `values[start:end]` is then `prefix[end] - prefix[start]`: `prefix[end]` adds up everything before `end`, `prefix[start]` everything before `start`, and taking one from the other leaves exactly the values from `start` to `end - 1`. One subtraction, O(1), for any range:
+
+      ```python run
+      def make_prefix(values):
+          prefix = [0]
+          for value in values:
+              prefix.append(prefix[-1] + value)
+          return prefix
+
+
+      values = [5, 2, 7, 1, 4]
+      prefix = make_prefix(values)
+      print(prefix)
+      print(prefix[4] - prefix[1], sum(values[1:4]))
+      print(prefix[5] - prefix[0], sum(values))
+      ```
+
+      ```output
+      [0, 5, 7, 14, 15, 19]
+      10 10
+      19 19
+      ```
+
+      Building it is O(n) time and O(n) memory, once. After that, every range sum is O(1). The `start` and `end` work like a slice's, so they're easy to remember. The common mistake is to leave out the 0 at the front: then `prefix[i]` includes `values[i]`, every index is off by one, and a range that starts at 0 needs a special case.
+
+      ### `itertools.accumulate`
+
+      The standard library makes the running totals for you, in C:
+
+      ```python repl
+      >>> from itertools import accumulate
+      >>> list(accumulate([5, 2, 7, 1, 4]))
+      [5, 7, 14, 15, 19]
+      >>> list(accumulate([5, 2, 7, 1, 4], initial=0))
+      [0, 5, 7, 14, 15, 19]
+      ```
+
+      Without `initial=0` you get the totals without the 0 at the front; with it, the prefix list above.
+
+      ### How many stretches add up to k?
+
+      A harder question: how many stretches of values in a row (**subarrays**) add up to exactly `k`? Trying every start and end is O(n²). Prefix sums turn it into lookups. The stretch from `start` to `end` adds up to `k` when `prefix[end] - prefix[start] == k`, that is, when `prefix[start] == prefix[end] - k`. So walk along the list keeping the running total, and at each value count how many earlier prefix sums were `total - k`. A dict of counts answers that in O(1):
+
+      ```python run
+      def count_stretches(values, k):
+          seen = {0: 1}
+          total = 0
+          count = 0
+          for value in values:
+              total += value
+              count += seen.get(total - k, 0)
+              seen[total] = seen.get(total, 0) + 1
+          return count
+
+
+      print(count_stretches([3, 4, -2, 5, 1, -4, 6], 7))
+      ```
+
+      ```output
+      3
+      ```
+
+      The three stretches are 3, 4, then 4, -2, 5, and then 3, 4, -2, 5, 1, -4. The dict starts as `{0: 1}`: that's the empty prefix before the first value, so stretches that start at index 0 are counted too. Each value costs O(1) on average, so the function is O(n) time and O(n) memory. It works with negative values as well, which the sliding windows of the next step can't handle.
+
+      **Your turn:** `minutes` holds how many minutes you practiced the piano each day, and `practiced(first_day, last_day)` should give the minutes from `first_day` to `last_day`, both days included. Fill in the blank with the right index of `prefix`. The program should print:
+
+      ```
+      75
+      140
+      20
+      ```
+    fill: |
+      from itertools import accumulate
+
+      minutes = [20, 45, 0, 30, 15, 60, 10, 25]
+      prefix = list(accumulate(minutes, initial=0))
+
+
+      def practiced(first_day, last_day):
+          return prefix[[[last_day + 1‖1 + last_day]]] - prefix[first_day]
+
+
+      print(practiced(1, 3))
+      print(practiced(3, 7))
+      print(practiced(0, 0))
+    hints:
+      - "The days from `first_day` to `last_day`, both included, are the slice `minutes[first_day:last_day + 1]`."
+      - "The sum of `values[start:end]` is `prefix[end] - prefix[start]`, and here `end` is one past the last day: `last_day + 1`."
+    tests:
+      - expect: |
+          75
+          140
+          20
+    more:
+      - task: |
+          Write `range_sums(values, queries)`. Each query is a tuple `(start, end)`, and its answer is the sum of `values[start:end]`. Return a list of the answers, in the order of the queries. The hidden test has 200,000 values and 100,000 queries: build the prefix sums once and answer each query in O(1).
+
+          For example, `range_sums([5, 2, 7, 1, 4], [(1, 4), (0, 5), (2, 3), (3, 3)])` returns:
+
+          ```
+          [10, 19, 7, 0]
+          ```
+        seed: |
+          def range_sums(values, queries):
+              pass
+
+
+          if __name__ == "__main__":
+              print(range_sums([5, 2, 7, 1, 4], [(1, 4), (0, 5), (2, 3), (3, 3)]))
+        solution: |
+          from itertools import accumulate
+
+
+          def range_sums(values, queries):
+              prefix = list(accumulate(values, initial=0))
+              return [prefix[end] - prefix[start] for start, end in queries]
+
+
+          if __name__ == "__main__":
+              print(range_sums([5, 2, 7, 1, 4], [(1, 4), (0, 5), (2, 3), (3, 3)]))
+        slow: |
+          def range_sums(values, queries):
+              return [sum(values[start:end]) for start, end in queries]
+
+
+          if __name__ == "__main__":
+              print(range_sums([5, 2, 7, 1, 4], [(1, 4), (0, 5), (2, 3), (3, 3)]))
+        hints:
+          - "First make the prefix sums, once, before you look at the queries: with a loop, or with `accumulate(values, initial=0)`."
+          - "For each query `(start, end)`, the answer is `prefix[end] - prefix[start]`. A loop over the queries can unpack each tuple: `for start, end in queries:`."
+        tests:
+          - call: range_sums([5, 2, 7, 1, 4], [(1, 4), (0, 5), (2, 3), (3, 3)])
+          - call: range_sums([], [(0, 0)])
+            hidden: true
+          - call: range_sums([-3, 8, -1], [(0, 2), (1, 3), (0, 3)])
+            hidden: true
+          - call: range_sums([4], [])
+            hidden: true
+          - call: sum(range_sums([i % 101 - 50 for i in range(200_000)], [(i % 1000, 199_000 + i % 1000) for i in range(100_000)]))
+            hidden: true
+            big: true
+      - task: |
+          Write `longest_stretch(values, k)`: the length of the longest stretch of values in a row that adds up to exactly `k`, or 0 if there is none. Values can be negative. The hidden test has 200,000 values, so trying every start and end is too slow.
+
+          For example, `longest_stretch([3, 4, -2, 5, 1, -4, 6], 7)` returns (3, 4, -2, 5, 1, -4):
+
+          ```
+          6
+          ```
+        seed: |
+          def longest_stretch(values, k):
+              pass
+
+
+          if __name__ == "__main__":
+              print(longest_stretch([3, 4, -2, 5, 1, -4, 6], 7))
+        solution: |
+          def longest_stretch(values, k):
+              first = {0: 0}
+              total = 0
+              best = 0
+              for i, value in enumerate(values):
+                  total += value
+                  if total - k in first:
+                      best = max(best, i + 1 - first[total - k])
+                  if total not in first:
+                      first[total] = i + 1
+              return best
+
+
+          if __name__ == "__main__":
+              print(longest_stretch([3, 4, -2, 5, 1, -4, 6], 7))
+        slow: |
+          def longest_stretch(values, k):
+              best = 0
+              for start in range(len(values)):
+                  total = 0
+                  for end in range(start, len(values)):
+                      total += values[end]
+                      if total == k:
+                          best = max(best, end - start + 1)
+              return best
+
+
+          if __name__ == "__main__":
+              print(longest_stretch([3, 4, -2, 5, 1, -4, 6], 7))
+        hints:
+          - "As in `count_stretches`, a stretch adds up to `k` when an earlier prefix sum equals `total - k`. This time you want the earliest such prefix, as it gives the longest stretch."
+          - "Keep a dict that maps each prefix sum to the first position where it appeared, starting with `{0: 0}`. After adding `values[i]`, the prefix covers `i + 1` values, so a match at position `p` gives a stretch of `i + 1 - p` values."
+          - "Only store a prefix sum the first time you see it: a later, equal prefix sum would give shorter stretches."
+        tests:
+          - call: longest_stretch([3, 4, -2, 5, 1, -4, 6], 7)
+          - call: longest_stretch([], 0)
+            hidden: true
+          - call: longest_stretch([1, 2, 3], 10)
+            hidden: true
+          - call: longest_stretch([1, -1, 1, -1], 0)
+            hidden: true
+          - call: longest_stretch([5, 1, 5], 5)
+            hidden: true
+          - call: longest_stretch([2, 3, -3, 4, 1], 4)
+            hidden: true
+          - call: longest_stretch([(i * 37) % 11 - 5 for i in range(200_000)], 3)
+            hidden: true
+            big: true
+
+  - id: dsa-complexity-sliding-window
+    slug: sliding-window
+    title: "Challenge: sliding windows"
+    text: |
+      A **window** is a stretch of values in a row, seen through a frame that slides along the list. Plenty of interview problems ask for the best window: the 7 days in a row with the most sales, the longest stretch of a text with no repeated letter. Working out every window of k values from scratch costs O(n·k), and when the windows can be any length, even growing a window from each start costs O(n²). A sliding window reuses the work: when the window moves, only what enters it and what leaves it changes.
+
+      ### A window of fixed size
+
+      The best sum of k values in a row. Instead of `sum(values[i - k + 1:i + 1])` at every position, an O(k) sum each time, keep the window's total. When the window moves one place, add the value that enters and subtract the one that leaves:
+
+      ```python run
+      def best_sum(values, k):
+          total = sum(values[:k])
+          best = total
+          for i in range(k, len(values)):
+              total += values[i] - values[i - k]
+              best = max(best, total)
+          return best
+
+
+      print(best_sum([4, 2, 12, 3, 8, 1, 7], 3))
+      ```
+
+      ```output
+      23
+      ```
+
+      The window that ends at `i` holds `values[i - k + 1]` to `values[i]`, so `values[i]` enters and `values[i - k]`, the value k places back, leaves. Each move is O(1), so the whole function is O(n), whatever k is.
+
+      ### A window that grows and shrinks
+
+      Sometimes the size isn't fixed: the longest stretch of days whose spending adds up to at most a budget, `limit`. Move `right` along one value at a time and add the new value. While the window breaks the rule, here a total over the limit, take `values[left]` out and move `left` on. Then the window from `left` to `right` is fine, and its length is a candidate:
+
+      ```python run
+      def longest_within(values, limit):
+          left = 0
+          total = 0
+          best = 0
+          for right in range(len(values)):
+              total += values[right]
+              while total > limit:
+                  total -= values[left]
+                  left += 1
+              best = max(best, right - left + 1)
+          return best
+
+
+      print(longest_within([2, 1, 3, 2, 6, 1, 1, 1, 2], 6))
+      print(longest_within([5, -4, 1], 2))  # a negative value: see below
+      ```
+
+      ```output
+      4
+      2
+      ```
+
+      There's a loop inside a loop, and still the function is O(n): `right` moves n times, and `left` only moves forward, so it moves at most n times in all, however the moves are spread. Each value enters the window once and leaves it at most once. The memory is O(1): a few numbers, however long the list is.
+
+      **Why it's right:** the values aren't negative, so adding a value never makes the total smaller. Once the window from `left` is over the limit, every longer window from `left` is too, and `left` can move on for good. With negative values that's no longer true, and the window can miss the answer. That's the second call above: `[5, -4, 1]` adds up to 2, within the limit, so the answer is 3. But the window drops the 5 as soon as the total goes over 2, before the -4 can bring it back down, and it returns 2. For a stretch that adds up to *exactly* k, negative values are no problem: use the prefix sums and the dict of the last step.
+
+      The window's **state** isn't always a total. For a stretch of text with no repeated character, the state is which characters are in the window, kept in a set or in a dict of where each character was last seen. When the new character is already in the window, `left` moves past its earlier copy. The dict has one entry for each different character of the text: O(n) memory at most, and at most 26 entries for a text of lowercase letters.
+
+      ### Three jobs in one loop
+
+      Look again at the loop of `longest_within`. Each round does three jobs, and most windows of changing size do the same three:
+
+      - **Grow:** the `for` loop hands `right` the next value, and `total += values[right]` takes it in.
+      - **Repair:** `while total > limit`, the window isn't allowed, so it gives back `values[left]` and `left` moves on. Since `left` never moves back, all the repairs together cost O(n).
+      - **Measure:** now the window from `left` to `right` is allowed, and `right - left + 1` may be the best so far.
+
+      Only the state and the rule change from problem to problem. When the question is the *shortest* window that reaches a target, repairing and measuring trade places: while the window still reaches the target, measure it first, then give back `values[left]` to see whether a shorter window reaches it too.
+
+      **Your turn:** `count_windows(values, k, goal)` counts the windows of `k` values in a row whose total is at least `goal`. Fill in the blank that updates the total when the window moves one place: the hidden test has 300,000 values and k = 150,000, so summing each window again is too slow. The call `print(count_windows([4, 2, 12, 3, 8, 1, 7], 3, 16))` should print (the windows 18, 17, 23 and 16):
+
+      ```
+      4
+      ```
+    fill: |
+      def count_windows(values, k, goal):
+          total = sum(values[:k])
+          count = 1 if total >= goal else 0
+          for i in range(k, len(values)):
+              leaving = values[i - k]
+              [[total += values[i] - leaving‖total = total + values[i] - leaving]]
+              if total >= goal:
+                  count += 1
+          return count
+
+
+      if __name__ == "__main__":
+          print(count_windows([4, 2, 12, 3, 8, 1, 7], 3, 16))
+    slow: |
+      def count_windows(values, k, goal):
+          total = sum(values[:k])
+          count = 1 if total >= goal else 0
+          for i in range(k, len(values)):
+              leaving = values[i - k]
+              total = sum(values[i - k + 1:i + 1])
+              if total >= goal:
+                  count += 1
+          return count
+
+
+      if __name__ == "__main__":
+          print(count_windows([4, 2, 12, 3, 8, 1, 7], 3, 16))
+    hints:
+      - "The window moves on by one: `values[i]` enters it, and `leaving`, the value k places back, leaves it. Summing the whole window again would be O(k) per move."
+      - "Add the value that enters and subtract the one that leaves, in one line: `total += values[i] - leaving`."
+    tests:
+      - call: print(count_windows([4, 2, 12, 3, 8, 1, 7], 3, 16))
+      - call: count_windows([5, 5, 5, 5], 2, 11)
+        hidden: true
+      - call: count_windows([1, 9, 1, 9, 1], 2, 10)
+        hidden: true
+      - call: count_windows([3, 8], 2, 11)
+        hidden: true
+      - call: count_windows([i * 7 % 101 for i in range(300_000)], 150_000, 7_500_000)
+        hidden: true
+        big: true
+    more:
+      - task: |
+          Write `longest_unique(text)`: the length of the longest stretch of `text` in which no character appears twice. An empty text gives 0. The hidden test has a text of 200,000 characters whose answer is 20,000, so starting over at every position is too slow: slide a window, and remember where each character was last seen.
+
+          For example, `longest_unique("abcabcbb")` returns (`"abc"`):
+
+          ```
+          3
+          ```
+        seed: |
+          def longest_unique(text):
+              pass
+
+
+          if __name__ == "__main__":
+              print(longest_unique("abcabcbb"))
+        solution: |
+          def longest_unique(text):
+              last = {}
+              left = 0
+              best = 0
+              for right, char in enumerate(text):
+                  if char in last and last[char] >= left:
+                      left = last[char] + 1
+                  last[char] = right
+                  best = max(best, right - left + 1)
+              return best
+
+
+          if __name__ == "__main__":
+              print(longest_unique("abcabcbb"))
+        slow: |
+          def longest_unique(text):
+              best = 0
+              for start in range(len(text)):
+                  seen = set()
+                  for char in text[start:]:
+                      if char in seen:
+                          break
+                      seen.add(char)
+                  best = max(best, len(seen))
+              return best
+
+
+          if __name__ == "__main__":
+              print(longest_unique("abcabcbb"))
+        hints:
+          - "Move `right` along the text. Keep a dict `last` that maps each character to the index where it was last seen."
+          - "If the character at `right` was last seen inside the window, at an index of `left` or more, the window must start just after that copy: `left = last[char] + 1`. A copy before `left` is no longer in the window, so it doesn't count."
+          - "Then store the character's new index and compare the window's length, `right - left + 1`, with the best so far. Try `\"abba\"`: the answer is 2, and `left` must never move back."
+        tests:
+          - call: longest_unique("abcabcbb")
+          - call: longest_unique("")
+            hidden: true
+          - call: longest_unique("aaaa")
+            hidden: true
+          - call: longest_unique("abba")
+            hidden: true
+          - call: longest_unique("pwwkew")
+            hidden: true
+          - call: longest_unique("dvdf")
+            hidden: true
+          - call: longest_unique("".join(chr(19968 + i % 20000) for i in range(200_000)))
+            hidden: true
+            big: true
+      - task: |
+          Write `shortest_stretch(values, target)`: the length of the shortest stretch of values in a row whose sum is at least `target`, or 0 if no stretch reaches it. All the values are positive. The hidden test has 200,000 values, and the answer is about 50,000 long, so trying every start is too slow: slide a window, for O(n).
+
+          For example, `shortest_stretch([2, 3, 1, 2, 4, 3], 7)` returns (4 and 3):
+
+          ```
+          2
+          ```
+        seed: |
+          def shortest_stretch(values, target):
+              pass
+
+
+          if __name__ == "__main__":
+              print(shortest_stretch([2, 3, 1, 2, 4, 3], 7))
+        solution: |
+          def shortest_stretch(values, target):
+              left = 0
+              total = 0
+              best = 0
+              for right in range(len(values)):
+                  total += values[right]
+                  while total >= target:
+                      if best == 0 or right - left + 1 < best:
+                          best = right - left + 1
+                      total -= values[left]
+                      left += 1
+              return best
+
+
+          if __name__ == "__main__":
+              print(shortest_stretch([2, 3, 1, 2, 4, 3], 7))
+        slow: |
+          def shortest_stretch(values, target):
+              best = 0
+              for start in range(len(values)):
+                  total = 0
+                  for end in range(start, len(values)):
+                      total += values[end]
+                      if total >= target:
+                          if best == 0 or end - start + 1 < best:
+                              best = end - start + 1
+                          break
+              return best
+
+
+          if __name__ == "__main__":
+              print(shortest_stretch([2, 3, 1, 2, 4, 3], 7))
+        hints:
+          - "Grow the window with `right`, adding each value to `total`, as in `longest_within`."
+          - "While the total reaches the target, the window from `left` to `right` is a candidate: compare its length with the best so far, then take `values[left]` out and move `left` on to try a shorter one."
+          - "Use 0 for \"no window found yet\", and only replace the best when it's 0 or the new length is smaller."
+        tests:
+          - call: shortest_stretch([2, 3, 1, 2, 4, 3], 7)
+          - call: shortest_stretch([1, 1, 1], 5)
+            hidden: true
+          - call: shortest_stretch([5, 1, 9], 9)
+            hidden: true
+          - call: shortest_stretch([1, 2, 3, 4, 5], 15)
+            hidden: true
+          - call: shortest_stretch([], 3)
+            hidden: true
+          - call: shortest_stretch([1, 4, 4], 4)
+            hidden: true
+          - call: shortest_stretch([i % 7 + 1 for i in range(200_000)], 200_000)
+            hidden: true
+            big: true

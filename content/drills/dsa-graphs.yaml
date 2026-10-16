@@ -1,0 +1,352 @@
+topic: dsa-graphs
+drills:
+  - type: predict
+    after: adjacency-lists
+    code: |
+      graph = [[]] * 4
+      graph[1].append(2)
+      graph[2].append(1)
+      print(graph[0], len(graph[3]))
+    why: "`[[]] * 4` repeats a reference to one list four times, so all four vertices share it, and both appends go into that one list. `[[] for _ in range(4)]` makes four separate lists."
+
+  - type: bug
+    after: adjacency-lists
+    code: |
+      edges = [(0, 1), (1, 2), (2, 3)]
+      graph = [[] for _ in range(4)]
+      for a, b in edges:
+          graph[a].append(b)
+          graph[a].append(b)  # BUG
+      print([len(neighbors) for neighbors in graph])
+    fix: graph[b].append(a)
+    why: "In an undirected graph each edge goes into the lists of both its ends. The repeated line adds b to a's list twice, so the degrees come out as `[2, 2, 2, 0]` instead of `[1, 2, 2, 1]`."
+
+  - type: choice
+    after: adjacency-lists
+    prompt: "A graph with E edges is kept as a plain list of pairs, `edges = [(a, b), ...]`. What does `(a, b) in edges` cost, and what does `b in graph[a]` cost when `graph` is a dict of neighbor sets?"
+    choices:
+      - "O(1) for both"
+      - "O(E) for the list, O(1) on average for the set"
+      - "O(log E) for the list, O(1) for the set"
+    answer: 2
+    why: "`in` on a list compares the pairs one by one, O(E). A set finds b by its hash, O(1) on average. Adjacency sets cost O(V + E) memory once, and every edge check after that is fast."
+
+  - type: bug
+    after: bfs
+    code: |
+      from collections import deque
+
+      graph = {0: [1, 2], 1: [3], 2: [4], 3: [], 4: [3]}
+      dist = {0: 0}
+      queue = deque([0])
+      while queue:
+          v = queue.pop()  # BUG
+          for w in graph[v]:
+              if w not in dist:
+                  dist[w] = dist[v] + 1
+                  queue.append(w)
+      print(dist[3])
+    fix: v = queue.popleft()
+    why: "`pop` takes the vertex added last, so the search goes deep first: 0, 2, 4, and 3 gets distance 3 from 4 before 1 is ever taken. BFS takes the oldest vertex with `popleft`, so vertices leave in order of distance, and 3 gets 2, through 1."
+
+  - type: choice
+    after: bfs
+    prompt: "A BFS on a grid keeps the cells it has found in a list and checks `(nr, nc) not in visited` before adding a cell. What does the search cost on a grid with n open cells?"
+    choices:
+      - "O(n), like any BFS"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "Each check scans the list of cells found so far, up to n of them, and there are about 4n checks. A set or a dict makes each check O(1) on average, and the search O(n)."
+
+  - type: boss
+    after: bfs
+    prompt: |
+      Write `knight_moves(n, start, goal)` that returns the fewest moves a chess knight needs from `start` to `goal` on an n by n board, or -1 when it can't get there. Squares are `(row, column)` pairs, from 0 to n - 1. A knight moves two squares one way and one square the other: from `(r, c)` it can go to `(r + 2, c + 1)`, `(r + 1, c + 2)`, `(r - 1, c + 2)` and the five other such squares, as long as they're on the board.
+
+      For example, this call:
+
+      ```python fragment
+      print(knight_moves(8, (0, 0), (7, 7)))
+      ```
+
+      prints:
+
+      ```
+      6
+      ```
+    seed: |
+      from collections import deque
+
+
+      def knight_moves(n, start, goal):
+          pass
+
+
+      if __name__ == "__main__":
+          print(knight_moves(8, (0, 0), (7, 7)))
+    solution: |
+      from collections import deque
+
+
+      def knight_moves(n, start, goal):
+          dist = {start: 0}
+          queue = deque([start])
+          while queue:
+              r, c = queue.popleft()
+              if (r, c) == goal:
+                  return dist[(r, c)]
+              for dr, dc in [(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)]:
+                  nr, nc = r + dr, c + dc
+                  if 0 <= nr < n and 0 <= nc < n and (nr, nc) not in dist:
+                      dist[(nr, nc)] = dist[(r, c)] + 1
+                      queue.append((nr, nc))
+          return -1
+
+
+      if __name__ == "__main__":
+          print(knight_moves(8, (0, 0), (7, 7)))
+    hints:
+      - "The squares are the vertices, and the knight's moves are the edges. Every move counts as one step, so BFS finds the fewest."
+      - "Make a list of the eight moves as `(dr, dc)` pairs: every combination of 1 and 2 with both signs, one of them in the row and the other in the column."
+      - "Run BFS from `start` with a dict of distances. A square joins the queue when it's on the board and not in the dict yet. Return the distance when the goal leaves the queue, and -1 if the queue runs empty."
+    tests:
+      - call: print(knight_moves(8, (0, 0), (7, 7)))
+      - call: knight_moves(5, (2, 2), (2, 2))
+        hidden: true
+      - call: knight_moves(8, (0, 0), (1, 2))
+        hidden: true
+      - call: knight_moves(3, (0, 0), (1, 1))
+        hidden: true
+      - call: knight_moves(4, (0, 0), (3, 3))
+        hidden: true
+      - call: knight_moves(100, (0, 0), (99, 99))
+        hidden: true
+
+  - type: runs
+    after: dfs
+    code: |
+      def dfs(graph, v, seen):
+          seen.add(v)
+          for w in graph[v]:
+              if w not in seen:
+                  dfs(graph, w, seen)
+
+
+      line = {v: [v + 1] for v in range(2000)}
+      line[2000] = []
+      dfs(line, 0, set())
+      print("done")
+    why: "Each call waits for the call on the next vertex, so the line of 2,001 vertices needs 2,001 nested calls, and Python stops at about 1000 with a `RecursionError`. A stack of your own, a list with `append` and `pop`, has no such limit."
+
+  - type: predict
+    after: dfs
+    code: |
+      graph = {1: [2, 3], 2: [4], 3: [4], 4: []}
+      seen = {1}
+      stack = [1]
+      order = []
+      while stack:
+          v = stack.pop()
+          order.append(v)
+          for w in graph[v]:
+              if w not in seen:
+                  seen.add(w)
+                  stack.append(w)
+      print(order)
+    why: "1 pushes 2 and then 3, and `pop` takes the one pushed last: 3. It pushes 4, which comes next. 4 is already seen when 2 is finally taken, so it isn't pushed again."
+
+  - type: fill
+    after: dfs
+    code: |
+      graph = {1: [2], 2: [1], 3: [], 4: [5], 5: [4]}
+      seen = set()
+      groups = 0
+      for start in graph:
+          if start not in seen:
+              [[groups += 1‖groups = groups + 1]]
+              seen.add(start)
+              stack = [start]
+              while stack:
+                  v = stack.pop()
+                  for w in graph[v]:
+                      if w not in seen:
+                          seen.add(w)
+                          stack.append(w)
+      print(groups)
+    why: "A start that hasn't been seen belongs to no group found so far, so it starts a new one, and the search marks the whole group as seen. The groups are 1 and 2, 3 alone, and 4 and 5."
+
+  - type: predict
+    after: topological-sort
+    code: |
+      from collections import deque
+
+      after = {0: [3], 1: [3, 2], 2: [4], 3: [4], 4: []}
+      indegree = {0: 0, 1: 0, 2: 1, 3: 2, 4: 2}
+      queue = deque([0, 1])
+      order = []
+      while queue:
+          v = queue.popleft()
+          order.append(v)
+          for w in after[v]:
+              indegree[w] -= 1
+              if indegree[w] == 0:
+                  queue.append(w)
+      print(order)
+    why: "0 leaves 3 waiting for one more edge. 1 then frees both 3 and 2, in the order of its list. 3 lowers 4 to 1, and 2 frees it."
+
+  - type: bug
+    after: topological-sort
+    code: |
+      deps = [(0, 1), (1, 2), (0, 2)]
+      indegree = [0, 0, 0]
+      for a, b in deps:
+          indegree[a] += 1  # BUG
+      ready = [v for v in range(3) if indegree[v] == 0]
+      print(ready)
+    fix: indegree[b] += 1
+    why: "An edge from a to b is something b waits for, so it adds to b's in-degree. Counting at a gives each vertex its out-degree instead, and the task that must come last looks ready first."
+
+  - type: choice
+    after: topological-sort
+    prompt: Kahn's algorithm runs on a directed graph of 10 vertices and ends with only 7 of them in the order. What does that mean?
+    choices:
+      - "The 3 missing vertices have no edges at all"
+      - "The graph has a cycle: the 3 missing vertices are on it, or wait for a vertex on it"
+      - "The queue should have been a stack"
+    answer: 2
+    why: "A vertex without edges has in-degree 0, so it's in the order from the start. Vertices on a cycle each wait for another one on it, so none of them reaches in-degree 0, and neither does anything after them."
+
+  - type: boss
+    after: topological-sort
+    prompt: |
+      Tasks are numbered 0 to n - 1, and `(a, b)` in `deps` means task a must be done before task b. Write `stuck_tasks(n, deps)` that returns a sorted list of the tasks that can never be done: the ones on a cycle, and the ones that wait, directly or not, for a task on a cycle.
+
+      For example, 1 and 2 wait for each other, and 3 waits for 2. So this call:
+
+      ```python fragment
+      print(stuck_tasks(6, [(0, 1), (1, 2), (2, 1), (2, 3), (4, 5)]))
+      ```
+
+      prints:
+
+      ```
+      [1, 2, 3]
+      ```
+    seed: |
+      from collections import deque
+
+
+      def stuck_tasks(n, deps):
+          pass
+
+
+      if __name__ == "__main__":
+          print(stuck_tasks(6, [(0, 1), (1, 2), (2, 1), (2, 3), (4, 5)]))
+    solution: |
+      from collections import deque
+
+
+      def stuck_tasks(n, deps):
+          needs = [0] * n
+          after = [[] for _ in range(n)]
+          for a, b in deps:
+              after[a].append(b)
+              needs[b] += 1
+          queue = deque([t for t in range(n) if needs[t] == 0])
+          done = [False] * n
+          while queue:
+              t = queue.popleft()
+              done[t] = True
+              for u in after[t]:
+                  needs[u] -= 1
+                  if needs[u] == 0:
+                      queue.append(u)
+          return [t for t in range(n) if not done[t]]
+
+
+      if __name__ == "__main__":
+          print(stuck_tasks(6, [(0, 1), (1, 2), (2, 1), (2, 3), (4, 5)]))
+    hints:
+      - "Run Kahn's algorithm: count the in-degrees, start the queue with the tasks of in-degree 0, and mark each task you take from the queue as done."
+      - "A task whose in-degree reaches 0 joins the queue. Tasks on a cycle, and tasks behind one, never get there."
+      - "When the queue is empty, the tasks that were never marked done are the stuck ones. Going through `range(n)` lists them in order."
+    tests:
+      - call: print(stuck_tasks(6, [(0, 1), (1, 2), (2, 1), (2, 3), (4, 5)]))
+      - call: stuck_tasks(4, [(0, 1), (1, 2), (2, 3)])
+        hidden: true
+      - call: stuck_tasks(3, [(1, 1)])
+        hidden: true
+      - call: stuck_tasks(5, [(0, 1), (1, 0), (2, 3), (3, 4), (4, 2)])
+        hidden: true
+      - call: stuck_tasks(5, [(3, 4), (4, 0), (0, 3), (1, 2)])
+        hidden: true
+
+  - type: predict
+    after: dijkstra
+    code: |
+      import heapq
+
+      graph = {"a": [("b", 5), ("c", 1)], "b": [("d", 1)], "c": [("b", 2), ("d", 7)], "d": []}
+      dist = {"a": 0}
+      heap = [(0, "a")]
+      while heap:
+          d, v = heapq.heappop(heap)
+          if d > dist[v]:
+              continue
+          for w, cost in graph[v]:
+              if w not in dist or d + cost < dist[w]:
+                  dist[w] = d + cost
+                  heapq.heappush(heap, (d + cost, w))
+      print(dist["b"], dist["d"])
+    why: "From a, b costs 5 and c 1. c comes out first and finds b for 1 + 2 = 3, cheaper than 5. Then b, at 3, finds d for 4, cheaper than the 8 through c. The old pairs for b at 5 and d at 8 are stale and skipped."
+
+  - type: choice
+    after: dijkstra
+    prompt: Why does Dijkstra's algorithm need weights that aren't negative?
+    choices:
+      - "`heapq` can't hold negative numbers"
+      - "A vertex's distance is final when it leaves the heap, but a negative edge found later could still lower it"
+      - "With negative weights the heap gives the largest pair first"
+    answer: 2
+    why: "When `(d, v)` is the smallest pair in the heap, any other way to v goes through a vertex that's at least d away, and the edges after it only add. A negative edge breaks the \"only add\", so a later way can be cheaper than the distance already taken as final."
+
+  - type: bug
+    after: dijkstra
+    code: |
+      import heapq
+
+      heap = []
+      for town, minutes in [("Zurich", 2), ("Bern", 7), ("Aarau", 5)]:
+          heapq.heappush(heap, (town, minutes))  # BUG
+      print(heapq.heappop(heap))
+    fix: heapq.heappush(heap, (minutes, town))
+    why: "Tuples compare by their first item first, so this heap is ordered by the town's name, and Aarau comes out first. With the minutes first, the closest town comes out first, as Dijkstra's algorithm needs."
+
+  - type: predict
+    after: union-find
+    code: |
+      parent = list(range(7))
+
+
+      def find(x):
+          while parent[x] != x:
+              x = parent[x]
+          return x
+
+
+      for a, b in [(6, 2), (5, 5), (1, 4), (2, 4), (4, 6)]:
+          if find(a) != find(b):
+              parent[find(a)] = find(b)
+      print(len({find(x) for x in range(7)}))
+    why: "Each group has one root, so the number of different roots is the number of groups. 1, 2, 4 and 6 end up in one group. `(5, 5)` changes nothing, and `(4, 6)` finds them already joined. With 0, 3 and 5 alone, that makes 4 groups."
+
+  - type: choice
+    after: union-find
+    prompt: "Union-find without union by size and without path compression: n people join person 0's group, one `union(0, i)` at a time, and each union hangs 0's root under i. What do the n unions cost?"
+    choices:
+      - "O(n)"
+      - "O(n log n)"
+      - "O(n²)"
+    answer: 3
+    why: "Each union makes the chain under the new root one longer, with 0 at its bottom, and the next `find(0)` walks all of it: 1 + 2 + ... + (n - 1) steps. Either fix alone keeps each find short."
