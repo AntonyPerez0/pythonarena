@@ -1,6 +1,6 @@
 # The Pro Track
 
-Projects for your own computer, for after the course: each is a small Python project with starter code, pytest tests that fail until you write the missing parts, and a GitHub Actions workflow that runs the tests in your own GitHub repository. The site's page for them is [the Pro Track](https://antonyperez0.github.io/pythonarena/pro/), with the setup steps (Python 3.14, a virtual environment, pip and pytest) and a download (zip) for each project.
+Projects for your own computer, for after the course: each is a small Python project with starter code, pytest tests that fail until you write the missing parts, and a GitHub Actions workflow that runs the tests in your own GitHub repository. The site's page for them is [the Pro Track](https://pythonarena.org/pro/), with the setup steps (Python 3.14, a virtual environment, pip and pytest) and a download (zip) for each project.
 
 Each project is a folder here, `pro-track/<id>/`. Its `README.md` says what to build, step by step, and how to run the tests (`python -m pytest`) and the program.
 

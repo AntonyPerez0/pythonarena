@@ -75,7 +75,7 @@ The tests are in [`tests/`](tests/), one file for each step.
 
 ## What you need
 
-- **Python 3.14** (3.12 or newer works too). Check it in a terminal with `python3 --version` (on Windows, `py --version`). [The Pro Track page](https://antonyperez0.github.io/pythonarena/pro/) shows how to install Python and set up a project, step by step.
+- **Python 3.14** (3.12 or newer works too). Check it in a terminal with `python3 --version` (on Windows, `py --version`). [The Pro Track page](https://pythonarena.org/pro/) shows how to install Python and set up a project, step by step.
 - **A code editor.** [Visual Studio Code](https://code.visualstudio.com) with its Python extension is the one the course uses; PyCharm works just as well.
 - **pytest**, the tool that runs the tests. You don't download it yourself: pip installs it from [`requirements.txt`](requirements.txt) in step 0, so that step needs an internet connection.
 - **Git**, if you want to put the project on GitHub from the terminal (optional). Get it from [git-scm.com](https://git-scm.com/downloads), or with your package manager (`brew install git`, `sudo apt install git`).

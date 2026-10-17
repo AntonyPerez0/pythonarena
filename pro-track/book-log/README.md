@@ -59,7 +59,7 @@ The menu, the class `Book` and the start of the program are ready. Your part is 
 
 ## What you need
 
-- **Python 3.14** (3.12 or newer works too). Check it in a terminal with `python3 --version` (on Windows, `py --version`). [The Pro Track page](https://antonyperez0.github.io/pythonarena/pro/) shows how to install Python and set up a project, step by step.
+- **Python 3.14** (3.12 or newer works too). Check it in a terminal with `python3 --version` (on Windows, `py --version`). [The Pro Track page](https://pythonarena.org/pro/) shows how to install Python and set up a project, step by step.
 - **No database to install.** SQLite is a database that keeps everything in one file, and the module `sqlite3` that uses it comes with Python.
 - **A code editor.** [Visual Studio Code](https://code.visualstudio.com) with its Python extension is the one the course uses; PyCharm works just as well.
 - **pytest**, the tool that runs the tests. pip installs it from [`requirements.txt`](requirements.txt) in step 0, so that step needs an internet connection.

@@ -37,9 +37,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # The site's own domain, also set under Settings > Pages > Custom domain.
-  # Empty: publish at https://<owner>.github.io/<repo>/
-  CUSTOM_DOMAIN: ""
+  # The site's own domain, also set under Settings > Pages > Custom domain (its DNS at Cloudflare:
+  # README.md, "The domain, with Cloudflare DNS"). Empty: publish at https://<owner>.github.io/<repo>/
+  CUSTOM_DOMAIN: "pythonarena.org"
   # The reference CPython: exactly the version Pyodide runs (node_modules/pyodide/pyodide-lock.json);
   # the content build stops if they differ.
   REFERENCE_PYTHON: "3.14.2"

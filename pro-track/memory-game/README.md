@@ -31,7 +31,7 @@ The tests are in [`tests/`](tests/), one file for each of steps 1 to 6. None of 
 
 ## What you need
 
-- **Python 3.14** (3.12 or newer works too). Check it in a terminal with `python3 --version` (on Windows, `py --version`). [The Pro Track page](https://antonyperez0.github.io/pythonarena/pro/) shows how to install Python and set up a project, step by step.
+- **Python 3.14** (3.12 or newer works too). Check it in a terminal with `python3 --version` (on Windows, `py --version`). [The Pro Track page](https://pythonarena.org/pro/) shows how to install Python and set up a project, step by step.
 - **pygame and pytest.** You don't download them yourself: pip installs both from [`requirements.txt`](requirements.txt) in step 0, so that step needs an internet connection. The project uses **pygame-ce**, the community edition of pygame: you `import pygame` and use the same functions as in the course's pygame modules. Don't install `pygame` and `pygame-ce` in the same environment, since both are imported as `pygame`; the project's own virtual environment keeps them apart from anything else on your computer.
 - **A computer with a screen** to play the game. The tests don't need one.
 - **A code editor.** [Visual Studio Code](https://code.visualstudio.com) with its Python extension is the one the course uses; PyCharm works just as well.

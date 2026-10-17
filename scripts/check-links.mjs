@@ -21,7 +21,7 @@ export const ALLOWED_HOSTS = [
   // The course this site follows, and the site's own pages.
   'programming-26.mooc.fi',
   'mooc.fi',
-  'antonyperez0.github.io',
+  'pythonarena.org',
   // The other Arena sites, linked from the header and the footer.
   'cpparena.com',
   'javaarena.com',
@@ -176,8 +176,8 @@ export async function checkLinks({ root, dist, base }) {
   const home = readFileSync(join(dist, 'index.html'), 'utf8');
   const canonical = /<link rel="canonical" href="([^"]+)"/.exec(home)?.[1];
   if (!canonical) problems.push('index.html: no canonical link, so the site\'s own address is unknown');
-  // The site's own address names dist's top folder. Its path is usually the base path, but a local build
-  // keeps the live site's address (SITE_URL's default, /pythonarena/) while its pages sit at BASE_PATH (/).
+  // The site's own address names dist's top folder. Its path is usually the base path, but a build can
+  // name the live site (SITE_URL's default) while its pages sit at another BASE_PATH.
   const siteHome = canonical ? new URL('./', canonical).href : null;
   const repoUrl = /\bhref="(https:\/\/github\.com\/[^/"]+\/[^/"]+)"/.exec(home)?.[1];
   const rawUrl = repoUrl?.replace('https://github.com/', 'https://raw.githubusercontent.com/');
