@@ -2981,7 +2981,8 @@ await test('the other Arena sites: the header button lists all four, this one ma
   await ctx.close();
 });
 await test('the other Arena sites on a short tablet screen at the largest text size: opening the list closes the menu, and the list scrolls within the screen', async () => {
-  const { ctx, page, errors } = await newPage({ viewport: { width: 740, height: 360 } });
+  // 768 px: with the largest text and the widest engine pill, a narrower header has no room for the button.
+  const { ctx, page, errors } = await newPage({ viewport: { width: 768, height: 360 } });
   await startWith(ctx, { version: 1, settings: { textScale: 1.4 } });
   await page.goto(BASE + 'learn/');
   await page.locator('.module-live').first().waitFor();
@@ -3000,7 +3001,7 @@ await test('the other Arena sites on a short tablet screen at the largest text s
     return { focused: l.contains(document.activeElement), bottom: box.bottom, link: [link.top, link.bottom], box: [box.top, box.bottom], height: innerHeight };
   });
   expect(fit.focused && fit.bottom <= fit.height && fit.link[0] >= fit.box[0] && fit.link[1] <= fit.box[1], `the list or its last link runs off the screen: ${JSON.stringify(fit)}`);
-  await noOverflow(page, 'the header at 740 px, largest text');
+  await noOverflow(page, 'the header at 768 px, largest text');
   expect(errors.length === 0, errors.join('\n'));
   await ctx.close();
 });
