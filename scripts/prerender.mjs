@@ -3,9 +3,9 @@
 // React app replaces the pre-rendered content when it starts. Also writes 404.html (GitHub Pages
 // serves it for unknown addresses, and the app then shows the right page), sitemap.xml and robots.txt.
 //
-// Env: SITE_URL (default https://antonyperez0.github.io/pythonarena), BASE_PATH (default /). CI sets
-// both. A plain local build keeps the live site's address in canonical links and the sitemap while its
-// pages sit at /: scripts/check-links.mjs reads that address from the home page and checks it in dist.
+// Env: SITE_URL (default https://pythonarena.org), BASE_PATH (default /). CI sets both. The site's
+// address goes into canonical links and the sitemap: scripts/check-links.mjs reads it from the home
+// page and checks it in dist.
 import fs from "node:fs";
 import path from "node:path";
 import { marked } from "marked";
@@ -23,7 +23,7 @@ import { COST_COLUMNS, INTERVIEW_HEADINGS, INTERVIEW_START, INTERVIEW_TITLE, PAT
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const DIST = path.join(ROOT, "dist");
 // Host names are case-insensitive, but canonical links should match what GitHub Pages serves (lower case).
-const siteUrl = new URL(process.env.SITE_URL ?? "https://antonyperez0.github.io/pythonarena");
+const siteUrl = new URL(process.env.SITE_URL ?? "https://pythonarena.org");
 const SITE = `${siteUrl.protocol}//${siteUrl.host.toLowerCase()}${siteUrl.pathname}`.replace(/\/$/, "");
 const BASE = process.env.BASE_PATH ?? "/";
 const NAME = "Python Arena";
@@ -497,7 +497,7 @@ const ARENAS = [
   ["cpp", "C/C++ Arena", "C and C++", "https://cpparena.com/"],
   ["java", "Java Arena", "Java", "https://javaarena.com/"],
   ["rust", "RustArena", "Rust", "https://rustarena.app/"],
-  ["python", "Python Arena", "Python", "https://antonyperez0.github.io/pythonarena/"],
+  ["python", "Python Arena", "Python", "https://pythonarena.org/"],
 ];
 const arenaText = (name, sub) => `<span class="arena-text"><span class="arena-name">${name}</span><span class="arena-sub">${sub}</span></span>`;
 const ARENA_ROW = `<div class="arena-family"><h2>Arena sites</h2><p>Learn another language the same way, free.</p><ul class="arena-cards">${ARENAS.map(([id, name, language, url]) => `<li>${id === "python" ? `<div class="arena-item arena-here">${ARENA_MARKS[id]}${arenaText(name, "You're here")}</div>` : `<a class="arena-item" href="${url}">${ARENA_MARKS[id]}${arenaText(name, `Learn ${language} <span aria-hidden="true">·</span> ${new URL(url).host}`)}</a>`}</li>`).join("")}</ul></div>`;

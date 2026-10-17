@@ -21,7 +21,7 @@ export const ARENAS: Arena[] = [
   { id: "cpp", name: "C/C++ Arena", language: "C and C++", url: "https://cpparena.com/" },
   { id: "java", name: "Java Arena", language: "Java", url: "https://javaarena.com/" },
   { id: "rust", name: "RustArena", language: "Rust", url: "https://rustarena.app/" },
-  { id: "python", name: "Python Arena", language: "Python", url: "https://antonyperez0.github.io/pythonarena/" },
+  { id: "python", name: "Python Arena", language: "Python", url: "https://pythonarena.org/" },
 ];
 
 const OTHERS = ARENAS.filter((a) => a.id !== HERE);

@@ -1,6 +1,6 @@
 # Python Arena
 
-The site: **https://antonyperez0.github.io/pythonarena/**
+The site: **https://pythonarena.org/**
 
 A free, non-commercial site for learning Python in the browser, with **real Python running on your own device**: CPython 3.14, compiled to WebAssembly by [Pyodide](https://pyodide.org). It follows the order and topics of the University of Helsinki's [Python Programming MOOC 2026](https://programming-26.mooc.fi) (parts 1 to 14), with its own lessons and exercises. It is a sister site of [C/C++ Arena](https://github.com/AntonyPerez0/cpp-arena), [Java Arena](https://github.com/AntonyPerez0/Java-Arena) and [RustArena](https://github.com/AntonyPerez0/RustArena), and works the same way.
 
@@ -67,7 +67,7 @@ npm run dev        # checks the lessons, then serves http://localhost:5173/
 | `node scripts/build-content.mjs --dry --module-file 05-conditionals.yaml` | Checks one module (and its drills) without writing anything, for writing lessons |
 | `node scripts/make-sprites.mjs` | Draws the pygame lessons' images into `content/assets/` |
 
-A plain `npm run build` (no variables set) makes the site for `/`, and `npm run check-links` checks it as it is. The canonical links and the sitemap still name the live site (`SITE_URL`, by default `https://antonyperez0.github.io/pythonarena`); the link check finds those pages in `dist/`. CI sets `BASE_PATH` and `SITE_URL` for the project page (see Deploy). To build the same way here, set both for the build and for the checks. `node scripts/serve.mjs` serves `dist/` the way GitHub Pages does, at http://127.0.0.1:4173/ (under `BASE_PATH` when it is set).
+A plain `npm run build` (no variables set) makes the site as CI does for the live site: pages at `/`, with canonical links and the sitemap naming `SITE_URL`, by default `https://pythonarena.org`. `npm run check-links` checks it as it is. To build for a github.io project page instead (see Deploy), set `BASE_PATH` and `SITE_URL` for the build and for the checks. `node scripts/serve.mjs` serves `dist/` the way GitHub Pages does, at http://127.0.0.1:4173/ (under `BASE_PATH` when it is set).
 
 ## Deploy
 
@@ -82,9 +82,35 @@ A plain `npm run build` (no variables set) makes the site for `/`, and `npm run 
 | `lighthouse` | Lighthouse scores against `lighthouserc.cjs` | pull requests, after `build` |
 | `deploy` | publishes exactly the `dist` the build job made | `main`, after all of the above |
 
-In the repository's **Settings > Pages**, set **Source** to **GitHub Actions** once. The site is then at `https://<owner>.github.io/<repo>/`; set `CUSTOM_DOMAIN` in the workflow to use your own domain instead.
+In the repository's **Settings > Pages**, set **Source** to **GitHub Actions** once. `CUSTOM_DOMAIN` in the workflow is the site's own domain, `pythonarena.org`: the build makes the site for `/`, with its canonical links, sitemap and `robots.txt` at that domain. Left empty, the site is published at `https://<owner>.github.io/<repo>/` instead.
 
-Search engines read `robots.txt` only at the top of a host, so on a project page they never see the site's own (`/<repo>/robots.txt`), which names the sitemap. Submit the sitemap yourself, once, in [Google Search Console](https://search.google.com/search-console) and [Bing Webmaster Tools](https://www.bing.com/webmasters): `https://<owner>.github.io/<repo>/sitemap.xml` (for this site, https://antonyperez0.github.io/pythonarena/sitemap.xml). With `CUSTOM_DOMAIN` set, `robots.txt` is at the top of the domain and names the sitemap, so there is nothing to submit.
+### The domain, with Cloudflare DNS
+
+The domain's DNS is at Cloudflare; GitHub Pages serves the site and gets its HTTPS certificate. Set it up once, in this order:
+
+1. **Verify the domain with GitHub**, so no other GitHub Pages site can claim it: in your GitHub account's **Settings > Pages**, **Add a domain**, `pythonarena.org`. Add the TXT record GitHub shows in Cloudflare (**DNS > Records > Add record**), then **Verify**.
+2. **Point the domain at GitHub Pages** in Cloudflare's **DNS > Records**. Delete any other A, AAAA or CNAME records for `pythonarena.org` and `www` first (a parking page, say), then add these, each with **Proxy status** set to **DNS only** (the grey cloud):
+
+   | Type | Name | Content |
+   |---|---|---|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | AAAA | `@` | `2606:50c0:8000::153` |
+   | AAAA | `@` | `2606:50c0:8001::153` |
+   | AAAA | `@` | `2606:50c0:8002::153` |
+   | AAAA | `@` | `2606:50c0:8003::153` |
+   | CNAME | `www` | `antonyperez0.github.io` |
+
+3. **Deploy**: merge the change that sets `CUSTOM_DOMAIN` into `main`, and wait for the workflow's `deploy` job.
+4. **Give the repository its domain**: the repository's **Settings > Pages > Custom domain**, `pythonarena.org`, **Save**. GitHub checks the DNS and gets a certificate, which takes from a few minutes to an hour; then tick **Enforce HTTPS**. From then on `https://antonyperez0.github.io/pythonarena/` and `www.pythonarena.org` redirect to `https://pythonarena.org/`.
+
+Between steps 3 and 4, the github.io address shows pages without their styles and scripts (they are built for `/`), so do step 4 right after the deploy.
+
+The records stay **DNS only**: GitHub Pages checks that the domain points at it and gets the certificate itself, and Cloudflare's proxy hides both from it. GitHub Pages already serves the site over HTTPS from its own CDN.
+
+With `CUSTOM_DOMAIN` set, `robots.txt` is at the top of the domain and names the sitemap, so search engines find it on their own. Submitting it in [Google Search Console](https://search.google.com/search-console) and [Bing Webmaster Tools](https://www.bing.com/webmasters) (`https://pythonarena.org/sitemap.xml`) gets the pages read sooner. Without a custom domain, search engines never see the site's `robots.txt` (it is at `/<repo>/robots.txt`, and they read it only at the top of a host), so submit `https://<owner>.github.io/<repo>/sitemap.xml` yourself.
 
 ## License
 
