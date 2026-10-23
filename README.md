@@ -1,12 +1,83 @@
+<div align="center">
+
+<a href="https://pythonarena.org/"><img src="public/favicon.svg" alt="Python Arena logo" width="96" height="96"></a>
+
 # Python Arena
 
-The site: **https://pythonarena.org/**
+**Learn Python by writing real Python, right in your browser.**
+
+Free and non-commercial. No account, no ads, no tracking.
+
+[![Live site](https://img.shields.io/badge/live-pythonarena.org-3776AB?style=for-the-badge&logo=python&logoColor=FFD43B)](https://pythonarena.org/)
+[![Build, verify and deploy](https://img.shields.io/github/actions/workflow/status/AntonyPerez0/pythonarena/deploy.yml?branch=main&style=for-the-badge&label=build)](https://github.com/AntonyPerez0/pythonarena/actions/workflows/deploy.yml)
+[![Stars](https://img.shields.io/github/stars/AntonyPerez0/pythonarena?style=for-the-badge&color=FFD43B)](https://github.com/AntonyPerez0/pythonarena/stargazers)
+
+[![CPython 3.14](https://img.shields.io/badge/CPython-3.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Pyodide 314.0.7](https://img.shields.io/badge/Pyodide-314.0.7-654FF0?logo=webassembly&logoColor=white)](https://pyodide.org/)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Code: MIT](https://img.shields.io/badge/code-MIT-green)](LICENSE)
+[![Lessons: CC BY-NC-SA 4.0](https://img.shields.io/badge/lessons-CC%20BY--NC--SA%204.0-lightgrey)](content/LICENSE)
+
+[**Start learning**](https://pythonarena.org/learn/printing/) ·
+[All modules](https://pythonarena.org/learn/) ·
+[Deathmatch](https://pythonarena.org/deathmatch/) ·
+[Playground](https://pythonarena.org/playground/) ·
+[Report a problem](https://github.com/AntonyPerez0/pythonarena/issues/new)
+
+</div>
 
 https://github.com/user-attachments/assets/741f3cc9-38af-4b16-a9a0-e6b7f0b9fc0e
 
-A free, non-commercial site for learning Python in the browser, with **real Python running on your own device**: CPython 3.14, compiled to WebAssembly by [Pyodide](https://pyodide.org). It follows the order and topics of the University of Helsinki's [Python Programming MOOC 2026](https://programming-26.mooc.fi) (parts 1 to 14), with its own lessons and exercises. It is a sister site of [C/C++ Arena](https://github.com/AntonyPerez0/cpp-arena), [Java Arena](https://github.com/AntonyPerez0/Java-Arena) and [RustArena](https://github.com/AntonyPerez0/RustArena), and works the same way.
+## About
 
-Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation. "Python" is a registered trademark of the Python Software Foundation.
+Python Arena is a site for learning Python in the browser, with **real Python running on your own device**: CPython 3.14, compiled to WebAssembly by [Pyodide](https://pyodide.org). It follows the order and topics of the University of Helsinki's [Python Programming MOOC 2026](https://programming-26.mooc.fi) (parts 1 to 14), with its own lessons and exercises.
+
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <h3>🐍 Real Python</h3>
+      Every exercise runs on CPython 3.14 in your browser. Every example and model solution is checked on the reference CPython when the site is built, so the outputs you see are what Python really prints.
+    </td>
+    <td width="33%" valign="top">
+      <h3>📚 The whole course</h3>
+      65 modules: the MOOC's 58, from your first <code>print</code> to classes, recursion, regular expressions and games with pygame, plus 7 on data structures and algorithms.
+    </td>
+    <td width="33%" valign="top">
+      <h3>💡 Errors in plain English</h3>
+      Syntax errors and crashes come with a plain-English explanation and the line they happened on. Hints unlock one at a time, and a solution after all hints or three checks.
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <h3>🎯 Deathmatch</h3>
+      Endless quick drills: predict the output, fill the blank, spot the bug, will it run, pick one, and a boss rep every 8th rep. Your best streak sets your rank.
+    </td>
+    <td width="33%" valign="top">
+      <h3>🛠️ Projects and Pro Track</h3>
+      Four programs built over several milestones, then three projects for your own computer with Python 3.14 and pytest.
+    </td>
+    <td width="33%" valign="top">
+      <h3>📴 Private and offline</h3>
+      Progress stays in your browser. The site works offline once visited, can be installed as an app, and works on phones.
+    </td>
+  </tr>
+</table>
+
+### The Arena family
+
+Learn another language the same way, free: [C/C++ Arena](https://github.com/AntonyPerez0/cpp-arena) · [Java Arena](https://github.com/AntonyPerez0/Java-Arena) · [RustArena](https://github.com/AntonyPerez0/RustArena)
+
+> [!NOTE]
+> Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation. "Python" is a registered trademark of the Python Software Foundation.
+
+## Contents
+
+- [Status](#status)
+- [The site](#the-site)
+- [How the engine works](#how-the-engine-works)
+- [Run locally](#run-locally)
+- [Deploy](#deploy)
+- [License](#license)
 
 ## Status
 
@@ -86,7 +157,8 @@ A plain `npm run build` (no variables set) makes the site as CI does for the liv
 
 In the repository's **Settings > Pages**, set **Source** to **GitHub Actions** once. `CUSTOM_DOMAIN` in the workflow is the site's own domain, `pythonarena.org`: the build makes the site for `/`, with its canonical links, sitemap and `robots.txt` at that domain. Left empty, the site is published at `https://<owner>.github.io/<repo>/` instead.
 
-### The domain, with Cloudflare DNS
+<details>
+<summary><b>The domain, with Cloudflare DNS</b> (one-time setup)</summary>
 
 The domain's DNS is at Cloudflare; GitHub Pages serves the site and gets its HTTPS certificate. Set it up once, in this order:
 
@@ -113,6 +185,8 @@ Between steps 3 and 4, the github.io address shows pages without their styles an
 The records stay **DNS only**: GitHub Pages checks that the domain points at it and gets the certificate itself, and Cloudflare's proxy hides both from it. GitHub Pages already serves the site over HTTPS from its own CDN.
 
 With `CUSTOM_DOMAIN` set, `robots.txt` is at the top of the domain and names the sitemap, so search engines find it on their own. Submitting it in [Google Search Console](https://search.google.com/search-console) and [Bing Webmaster Tools](https://www.bing.com/webmasters) (`https://pythonarena.org/sitemap.xml`) gets the pages read sooner. Without a custom domain, search engines never see the site's `robots.txt` (it is at `/<repo>/robots.txt`, and they read it only at the top of a host), so submit `https://<owner>.github.io/<repo>/sitemap.xml` yourself.
+
+</details>
 
 ## License
 
