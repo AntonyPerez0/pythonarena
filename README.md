@@ -2,6 +2,10 @@
 
 The site: **https://pythonarena.org/**
 
+[![Python Arena in 45 seconds: click to play the video](.github/readme/python-arena.jpg)](.github/readme/python-arena.mp4)
+
+▶ [Watch Python Arena in 45 seconds](.github/readme/python-arena.mp4) (sound on)
+
 A free, non-commercial site for learning Python in the browser, with **real Python running on your own device**: CPython 3.14, compiled to WebAssembly by [Pyodide](https://pyodide.org). It follows the order and topics of the University of Helsinki's [Python Programming MOOC 2026](https://programming-26.mooc.fi) (parts 1 to 14), with its own lessons and exercises. It is a sister site of [C/C++ Arena](https://github.com/AntonyPerez0/cpp-arena), [Java Arena](https://github.com/AntonyPerez0/Java-Arena) and [RustArena](https://github.com/AntonyPerez0/RustArena), and works the same way.
 
 Python Arena is not affiliated with or endorsed by the University of Helsinki, MOOC.fi or the Python Software Foundation. "Python" is a registered trademark of the Python Software Foundation.
