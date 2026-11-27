@@ -1,6 +1,6 @@
 name: Build, verify and deploy to GitHub Pages
 
-# The jobs (README.md, "Deploy", says the same):
+# The jobs (docs/development.md, "Deploy", says the same):
 #
 #   build            npm ci, the unit tests (first: they need no build output), then npm run build:
 #                    every lesson, drill and project program run on the reference CPython (the content
@@ -38,7 +38,7 @@ concurrency:
 
 env:
   # The site's own domain, also set under Settings > Pages > Custom domain (its DNS at Cloudflare:
-  # README.md, "The domain, with Cloudflare DNS"). Empty: publish at https://<owner>.github.io/<repo>/
+  # docs/development.md, "The domain, with Cloudflare DNS"). Empty: publish at https://<owner>.github.io/<repo>/
   CUSTOM_DOMAIN: "pythonarena.org"
   # The reference CPython: exactly the version Pyodide runs (node_modules/pyodide/pyodide-lock.json);
   # the content build stops if they differ.
